@@ -1,13 +1,25 @@
 # Dozingo
 
-A bingo game for university lectures. Built with Go.
+A bingo game for university lectures.
 
 ---
+
+## Repository Structure
+
+This is a monorepo containing both the backend and frontend:
+
+```
+dozingo/
+├── backend/    ← Go API server (see backend/README.md)
+├── frontend/   ← Web frontend (see frontend/README.md)
+├── justfile    ← Project-wide commands + submodule imports
+└── docker-compose.yml ← Shared infrastructure (PostgreSQL)
+```
 
 ## Prerequisites
 
 Install these two things manually. Everything else is handled by
-[mise](https://mise.jdx.dev/) (a tool version manager), Docker, and Go modules.
+[mise](https://mise.jdx.dev/) (a tool version manager), Docker, and package managers.
 
 | Tool                      | What it's for                                                  | Install                                                                      |
 | ------------------------- | -------------------------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -36,8 +48,6 @@ echo 'eval "$(mise activate zsh)"' >> ~/.zshrc
 echo 'mise activate fish | source' >> ~/.config/fish/config.fish
 ```
 
-> If you skip this step, `just setup` will remind you.
-
 Verify everything works:
 
 ```bash
@@ -49,8 +59,8 @@ docker --version     # any recent version
 
 ```bash
 # 1. Clone the project
-git clone https://github.com/officeryoda/dozingo-backend.git
-cd dozingo-backend
+git clone https://github.com/officeryoda/dozingo.git
+cd dozingo
 
 # 2. Install all tools (Go, just, sqlc, etc.)
 mise install
@@ -58,120 +68,48 @@ mise install
 # 3. Run first-time setup (infra, migrations, codegen, deps)
 just setup
 
-# 4. Start the server
-just run
+# 4. Start the backend server
+just backend run
 ```
 
-The server runs at [http://localhost:4242](http://localhost:4242)
+The API server runs at [http://localhost:4242](http://localhost:4242)
 
 API docs are at [http://localhost:4242/docs](http://localhost:4242/docs)
 
-Health check:
-
-```bash
-curl http://localhost:4242/health
-# → {"status":"ok"}
-```
-
 ## Available Commands
 
-Run `just` (with no arguments) to see all commands:
+Run `just` (with no arguments) to see top-level commands.
+Run `just --list --list-submodules` to see all commands including submodules.
+
+### Root commands (infrastructure)
 
 ```bash
-just setup          # First-time setup (run once after cloning)
+just setup          # First-time setup (tools, infra, backend setup)
 just tools          # Install/update project tools via mise
-just run            # Start the Go server
 just infra-up       # Start postgres
 just infra-down     # Stop postgres
 just infra-reset    # Wipe database and restart from scratch
-just migrate-up     # Apply pending migrations
-just migrate-down   # Roll back the last migration
-just migrate-create # Create a new migration file
-just generate       # Regenerate Go code from SQL
-just test           # Run all tests
-just lint           # Run linter
 just db-shell       # Open a psql shell to the local database
 ```
 
-## Daily Workflow
+### Backend commands (`just backend <command>`)
 
 ```bash
-# Start infrastructure (if not already running)
-just infra-up
-
-# Work on the server
-just run
+just backend run             # Start the Go server
+just backend test            # Run all tests
+just backend lint            # Run linter
+just backend migrate-up      # Apply pending migrations
+just backend migrate-down    # Roll back the last migration
+just backend migrate-create  # Create a new migration file
+just backend generate        # Regenerate Go code from SQL
+just backend seed            # Seed database with sample data
+just backend setup           # Backend-specific setup (env, migrations, codegen)
 ```
 
-### Making a database change
+### Frontend commands (`just frontend <command>`)
 
 ```bash
-# 1. Create migration files
-just migrate-create add_lecturers_table
-
-# 2. Write your SQL in the new .up.sql and .down.sql files
-#    (in internal/db/migrations/)
-#    up.sql: everything needed to do the changes
-#    down.sql: reverses everything that up.sql does
-
-# 3. Apply the migration
-just migrate-up
-
-# 4. Write queries in internal/db/queries/
-#    (see existing files for examples)
-
-# 5. Regenerate Go code
-just generate
-
-# 6. Use the generated code in your handlers
-```
-
-### Adding a new API endpoint
-
-1.  Write your SQL queries in `internal/db/queries/\*.sql`
-2.  Run `just generate`
-3.  Create or edit a handler in `internal/handler/`
-4.  Register the route in `cmd/api/main.go`
-5.  API docs update automatically: check `/docs`
-
-## Project Structure
-
-```
-dozingo-backend/
-├── cmd/api/                    ← Entry point (main.go)
-├── internal/
-│   ├── config/                 ← Environment variable loading
-│   ├── db/
-│   │   ├── migrations/         ← SQL schema migrations (you write these)
-│   │   └── queries/            ← SQL queries for sqlc (you write these)
-│   ├── generated/              ← Auto-generated by sqlc (don't edit)
-│   ├── handler/                ← HTTP handlers (huma)
-│   ├── service/                ← Business logic
-│   └── middleware/             ← Auth, logging, etc.
-├── .mise.toml                  ← Pinned tool versions (managed by mise)
-├── docker-compose.yml          ← Local PostgreSQL
-├── sqlc.yaml                   ← sqlc configuration
-├── justfile                    ← All project commands
-└── .env                        ← Local config (gitignored)
-```
-
-## How the pieces fit together
-
-```
-HTTP Request
-     │
-     ▼
-  chi router + middleware
-     │
-     ▼
-  huma handler (automatic validation, OpenAPI docs)
-     │
-     ▼
-  service layer (game logic)
-     │
-     ▼
-  sqlc generated queries (type-safe database access)
-     │
-     ▼
-  pgx → PostgreSQL
+just frontend run    # Serve the frontend locally
+just frontend build  # Build for production
+just frontend test   # Run tests
 ```
