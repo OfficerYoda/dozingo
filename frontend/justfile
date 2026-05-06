@@ -1,0 +1,15 @@
+# Default: list available commands
+default:
+    @just --list
+
+# Serve the frontend locally
+run:
+    python3 -m http.server 3000
+
+# Placeholder for future build step
+build:
+    @echo "No build step configured yet."
+
+# Placeholder for future test step
+test:
+    @echo "No tests configured yet."

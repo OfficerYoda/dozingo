@@ -1,0 +1,65 @@
+# Load .env file from backend directory
+set dotenv-load
+
+# Default: list available commands
+default:
+    @just --list
+
+# === Setup ===
+
+# First-time backend setup (run once after cloning)
+setup:
+    @echo "Copying .env.example → .env (if .env doesn't exist)..."
+    cp -n .env.example .env || true
+    @echo "Running migrations..."
+    just migrate-up
+    @echo "Generating code..."
+    just generate
+    @echo "Installing Go dependencies..."
+    go mod tidy
+    @echo ""
+    @echo "Backend setup complete. Run 'just backend run' to start the server."
+
+# === Run ===
+
+# Start the Go server
+run:
+    go run ./cmd/api
+
+# === Database Migrations ===
+
+# Apply all pending migrations
+migrate-up:
+    migrate -path internal/db/migrations -database "$DATABASE_URL" up
+    migrate -path internal/db/migrations -database "$TEST_DATABASE_URL" up
+
+# Roll back the last migration
+migrate-down:
+    migrate -path internal/db/migrations -database "$DATABASE_URL" down 1
+    migrate -path internal/db/migrations -database "$TEST_DATABASE_URL" down 1
+
+# Create a new migration (usage: just backend migrate-create name_of_migration)
+migrate-create name:
+    migrate create -ext sql -dir internal/db/migrations -seq {{name}}
+
+# === Code Generation ===
+
+# Regenerate Go code from SQL queries
+generate:
+    sqlc generate
+
+# === Quality ===
+
+# Run all tests
+test:
+    go test ./...
+
+# Run linter
+lint:
+    golangci-lint run
+
+# === Seeding ===
+
+# Seed the database with sample data (truncates existing data first)
+seed:
+    go run ./cmd/seed
