@@ -1,5 +1,42 @@
 /* In this file, we define all of our core components */
 
+/* === Alerts === */
+.alert{
+    border-radius: var(--radius-md);
+    padding: 10px 15px;
+    margin: 10px 0;
+}
+.alert-success{
+    background-color: var(--color-success-bg);
+    color: var(--color-success-text);
+}
+.alert-warning{
+    background-color: var(--color-warning-bg);
+    color: var(--color-warning-text);
+}
+.alert-error{
+    background-color: var(--color-error-bg);
+    color: var(--color-error-text);
+}
+
+/* === Buttons === */
+.btn{
+    outline: none;
+    text-decoration: none;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    font-size: inherit;
+}
+.btn-primary{
+    background-color: var(--btn-primary-bg);
+    color: var(--btn-primary-text);
+}
+.btn-primary:hover{
+    text-decoration: none;
+    background-color: var(--btn-primary-hover);
+}
+
+/* === Cards === */
 .card{
     border-radius: var(--radius-lg);
     background-color: var(--card-bg);
