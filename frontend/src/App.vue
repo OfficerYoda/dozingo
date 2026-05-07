@@ -9,6 +9,7 @@
       <span>DOZINGO</span>
       <!-- Sidebar close btn later on -->
     </div>
+
     <div className="sidebar-content">
       <nav>
         <ul>
@@ -17,6 +18,17 @@
         </ul>
       </nav>
     </div>
+
+    <div className="sidebar-footer">
+      <nav>
+        <ul>
+          <li><RouterLink to="/settings">Settings</RouterLink></li>
+          <li><RouterLink to="/sign-out">Sign Out</RouterLink></li>
+          <li><RouterLink to="/profile">Profile</RouterLink></li>
+        </ul>
+      </nav>
+    </div>
+
   </aside>
 
   <main>
