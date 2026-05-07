@@ -48,3 +48,5 @@ build/
 .cache/
 .parcel-cache/
 .vite/
+
+.DS_Store
