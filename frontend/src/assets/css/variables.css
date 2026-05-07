@@ -1,10 +1,10 @@
-/* In this file, all of our core colors are defined via css variables. */
+/* In this file, all of our core css variables are defined. */
 
-/* ========== LIGHT THEME ========== */
+/* === LIGHT THEME === */
 :root {
     color-scheme: light;
 
-    /* ========== BRAND ========== */
+    /* Brand */
     --color-primary-50: #f2f4ff;
     --color-primary-100: #e0e7ff;
     --color-primary-200: #c7d2fe;
@@ -16,7 +16,7 @@
     --color-primary-800: #3730a3;
     --color-primary-900: #312e81;
 
-    /* ========== ACCENTS ========== */
+    /* Accents */
     --color-accent-green: #22c55e;
     --color-accent-green-soft: #dcfce7;
 
@@ -26,7 +26,7 @@
     --color-accent-yellow: #f59e0b;
     --color-accent-yellow-soft: #fef3c7;
 
-    /* ========== BACKGROUNDS ========== */
+    /* Backgrounds */
     --color-bg-main: #f7f8fc;
     --color-bg-surface: #ffffff;
     --color-bg-muted: #f1f3f9;
@@ -34,54 +34,54 @@
     --color-bg-hover: #e6e9f5;
     --color-bg-active: #dde1f2;
 
-    /* ========== TEXT ========== */
+    /* Text */
     --color-text-primary: #1f2937;
     --color-text-secondary: #6b7280;
     --color-text-muted: #9ca3af;
     --color-text-inverse: #ffffff;
 
-    /* ========== BORDERS ========== */
+    /* Borders */
     --color-border: #e5e7eb;
     --color-border-strong: #d1d5db;
 
-    /* ========== STATES PRIMITIVE ========== */
+    /* Primitive states */
     --color-success: var(--color-accent-green);
     --color-warning: var(--color-accent-yellow);
-    --color-error: var(--color-accent-red);
+    --color-danger: var(--color-accent-red);
     --color-info: var(--color-primary-500);
 
-    /* ========== STATE SEMANTICS ========== */
+    /* Semantic states */
     --color-success-bg: var(--color-accent-green-soft);
     --color-success-text: var(--color-accent-green);
 
     --color-warning-bg: var(--color-accent-yellow-soft);
     --color-warning-text: var(--color-accent-yellow);
 
-    --color-error-bg: var(--color-accent-red-soft);
-    --color-error-text: var(--color-accent-red);
+    --color-danger-bg: var(--color-accent-red-soft);
+    --color-danger-text: var(--color-accent-red);
 
-    /* ========== INTERACTIONS ========== */
+    /* Interactions */
     --color-primary-hover: var(--color-primary-600);
     --color-primary-active: var(--color-primary-700);
 
-    /* ========== SHADOWS ========== */
+    /* Shadows */
     --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
     --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
     --shadow-lg: 0 10px 25px rgba(0,0,0,0.12);
 
-    /* ========== FOCUS ========== */
+    /* Focus */
     --focus-ring: 0 0 0 3px rgba(99, 102, 241, 0.35);
 
-    /* ========== RADIUS ========== */
+    /* Radius */
     --radius-sm: 8px;
     --radius-md: 12px;
     --radius-lg: 16px;
 
-    /* ========== TRANSITIONS ========== */
+    /* Transitions */
     --transition-fast: 0.15s ease;
     --transition-normal: 0.25s ease;
 
-    /* ========== SEMANTICS ========== */
+    /* === SEMANTICS === */
 
     /* Backgrounds */
     --bg-page: var(--color-bg-main);
@@ -113,11 +113,11 @@
 }
 
 
-/* ========== DARK THEME ========== */
+/* === DARK THEME === */
 [data-theme="dark"] {
   color-scheme: dark;
 
-  /* ========== BRAND ========== */
+  /* Brand */
   --color-primary-50: #1e1b4b;
   --color-primary-100: #312e81;
   --color-primary-200: #3730a3;
@@ -129,7 +129,7 @@
   --color-primary-800: #c7d2fe;
   --color-primary-900: #e0e7ff;
 
-  /* ========== BACKGROUNDS ========== */
+  /* Backgrounds */
   --color-bg-main: #0f172a;
   --color-bg-surface: #111827;
   --color-bg-muted: #1f2937;
@@ -137,17 +137,17 @@
   --color-bg-hover: #1e293b;
   --color-bg-active: #2a3441;
 
-  /* ========== TEXT ========== */
+  /* Text */
   --color-text-primary: #f9fafb;
   --color-text-secondary: #d1d5db;
   --color-text-muted: #9ca3af;
   --color-text-inverse: #020617;
 
-  /* ========== BORDERS ========== */
+  /* Borders */
   --color-border: #1f2937;
   --color-border-strong: #374151;
 
-  /* ========== ACCENTS ========== */
+  /* Accents */
   --color-accent-green: #4ade80;
   --color-accent-green-soft: #052e16;
 
@@ -157,11 +157,11 @@
   --color-accent-yellow: #fbbf24;
   --color-accent-yellow-soft: #3b2f07;
 
-  /* ========== SHADOWS ========== */
+  /* Shadows */
   --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
   --shadow-md: 0 6px 16px rgba(0,0,0,0.4);
   --shadow-lg: 0 12px 30px rgba(0,0,0,0.5);
 
-  /* ========== FOCUS ========== */
+  /* Focus */
   --focus-ring: 0 0 0 3px rgba(129, 140, 248, 0.4);
 }

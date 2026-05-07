@@ -1,5 +1,12 @@
 /* In this file, we define all basics like typography and normalization */
 
+@font-face{
+    font-family: "Afacad";
+    src: url("./../fonts/Afacad.ttf") format("truetype");
+    font-style: normal;
+    font-display: swap;
+}
+
 *{
     box-sizing: border-box;
     margin: 0;
@@ -21,6 +28,7 @@ body{
 
 
 h1, h2, h3, h4, h5, h6{
+    font-family: "Afacad", system-ui, sans-serif;
     color: var(--text-heading);
     line-height: 1.2;
     font-weight: 700;
