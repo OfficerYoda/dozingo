@@ -1,0 +1,100 @@
+/* In this file, we define all basics like typography and normalization */
+
+*{
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html{
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+}
+
+body{
+    min-height: 100vh;
+    font-family: system-ui, sans-serif;
+    line-height: 1.5;
+    background-color: var(--bg-page);
+    color: var(--text-body);
+}
+
+
+h1, h2, h3, h4, h5, h6{
+    color: var(--text-heading);
+    line-height: 1.2;
+    font-weight: 700;
+    margin-bottom: 0.5em;
+}
+
+h1{ font-size: clamp(2rem, 5vw, 3.5rem); }
+h2{ font-size: clamp(1.75rem, 4vw, 2.75rem); }
+h3{ font-size: clamp(1.5rem, 3vw, 2rem); }
+h4{ font-size: 1.25rem; }
+h5{ font-size: 1.1rem; }
+h6{ font-size: 1rem; }
+
+p{
+    margin-bottom: 1rem;
+    max-width: 65ch;
+}
+
+small{
+    font-size: 0.875rem;
+}
+
+a{
+    color: inherit;
+    text-decoration: none;
+}
+
+a:hover{
+    text-decoration: underline;
+}
+
+ul, ol{
+    list-style-position: inside;
+}
+
+
+img, picture, video, canvas, svg{
+    display: block;
+    max-width: 100%;
+}
+
+img{
+    height: auto;
+}
+
+
+input, button, textarea, select{
+    font: inherit;
+    color: inherit;
+    border: none;
+    background: none;
+}
+
+button{
+    cursor: pointer;
+}
+
+textarea{
+    resize: vertical;
+}
+
+
+table{
+    border-collapse: collapse;
+    border-spacing: 0;
+}
+
+
+:focus-visible{
+    outline: 2px solid var(--focus, #4f46e5);
+    outline-offset: 2px;
+}
+
+::selection{
+    background-color: var(--selection-bg, #c7d2fe);
+    color: var(--selection-text, #111);
+}

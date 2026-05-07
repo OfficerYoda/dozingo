@@ -1,0 +1,7 @@
+/* In this file, we define all of our core components */
+
+.card{
+    border-radius: var(--radius-lg);
+    background-color: var(--card-bg);
+    padding: 20px;
+}
