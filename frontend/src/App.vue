@@ -1,29 +1,30 @@
 <template>
-  <header>
+  <div class="app-layout">
+      <header>
     <h1><!-- Page Title --></h1>
     <!-- Sidebar open btn later on -->
   </header>
 
   <aside>
-    <div className="sidebar-header">
+    <div class="sidebar-header">
       <span>DOZINGO</span>
       <!-- Sidebar close btn later on -->
     </div>
 
-    <div className="sidebar-content">
+    <div class="sidebar-content">
       <nav>
         <ul>
-          <li><RouterLink to="/">Home</RouterLink></li>
-          <li><RouterLink to="/about">Kategorien</RouterLink></li>
+          <li><RouterLink class="btn" to="/">Home</RouterLink></li>
+          <li><RouterLink class="btn btn-primary" to="/about">Kategorien</RouterLink></li>
         </ul>
       </nav>
     </div>
 
-    <div className="sidebar-footer">
+    <div class="sidebar-footer">
       <nav>
         <ul>
           <li><RouterLink to="/settings">Settings</RouterLink></li>
-          <li><RouterLink to="/sign-out">Sign Out</RouterLink></li>
+          <li class="sidebar-footer-signout">Sign Out</li>
           <li><RouterLink to="/profile">Profile</RouterLink></li>
         </ul>
       </nav>
@@ -38,10 +39,47 @@
   <footer>
     &#169 DOZINGO - Alle Rechte vorbehalten
   </footer>
+  </div>
 </template>
 
 <script setup lang="ts">
 
 </script>
 
-<style scoped></style>
+<style scoped>
+
+.app-layout {
+  display: grid;
+  grid-template-columns: 250px 1fr;
+  grid-template-rows: auto 1fr auto;
+}
+
+nav li {
+  list-style-type:none;
+  color: var(--color-primary-600);
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+header {
+  grid-column: 1 / -1;
+}
+
+aside {
+  background-color: var(--color-bg-sidebar);
+  grid-column: 1;
+}
+
+main {
+  grid-column: 2;
+}
+
+footer {
+  grid-column: 1 / -1;
+}
+
+.sidebar-footer-signout {
+  color: var(--color-accent-red)
+}
+
+</style>
