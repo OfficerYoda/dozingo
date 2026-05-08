@@ -51,7 +51,7 @@
 .app-layout {
   display: grid;
   grid-template-columns: 250px 1fr;
-  grid-template-rows: auto 1fr auto;
+  grid-template-rows: 1fr auto;
 }
 
 nav li {
@@ -62,20 +62,24 @@ nav li {
 }
 
 header {
-  grid-column: 1 / -1;
+  grid-column: 2;
+  grid-row: 1;
 }
 
 aside {
   background-color: var(--color-bg-sidebar);
   grid-column: 1;
+    grid-row: 1;
 }
 
 main {
   grid-column: 2;
+  grid-row: 1;
 }
 
 footer {
   grid-column: 1 / -1;
+    grid-row: 1;
 }
 
 .sidebar-footer-signout {
