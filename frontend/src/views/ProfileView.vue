@@ -1,6 +1,6 @@
 <template>
   <div className="container">
-    <h1>Home</h1>
+    <h1>Profile</h1>
     <p>Willkommen auf der  Profile Seite.</p>
   
     <div className="card">

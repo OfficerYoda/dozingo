@@ -6,14 +6,15 @@
 
   <aside>
     <div class="sidebar-header">
-      <span>DOZINGO</span>
+      <h3>DOZINGO</h3>
+      <small>Schoolary Playground</small>
     </div>
 
     <div class="sidebar-content">
       <nav>
         <ul>
-          <li><RouterLink to="/" class="sidebar-buttons"><Home :size="16" /> Home</RouterLink></li>
-          <li><RouterLink to="/about" class="sidebar-buttons"><LayoutGrid :size="16"/>Kategorien</RouterLink></li>
+          <li><RouterLink to="/" class="sidebar-buttons upper-buttons"><Home :size="20" /><small>Home</small></RouterLink></li>
+          <li><RouterLink to="/about" class="sidebar-buttons upper-buttons"><LayoutGrid :size="20"/><small>About</small></RouterLink></li>
         </ul>
       </nav>
     </div>
@@ -21,9 +22,9 @@
     <div class="sidebar-footer">
       <nav>
         <ul>
-          <li><RouterLink class="sidebar-buttons" to="/settings"><Settings :size="16"/>Settings</RouterLink></li>
-          <li class="sidebar-buttons sidebar-footer-signout"><LogOut :size="16" /> Sign Out</li>
-          <li><RouterLink class="sidebar-buttons" to="/profile"><UserCircle :size="16" /> Profile</RouterLink></li>
+          <li><RouterLink to="/settings" class="sidebar-buttons" ><Settings :size="20"/><small>Settings</small></RouterLink></li>
+          <li class="sidebar-buttons"><LogOut :size="20" class="sidebar-footer-signout"/><small class="sidebar-footer-signout">Sign Out</small> </li>
+          <li><RouterLink class="sidebar-buttons" to="/profile"><UserCircle :size="20"/><small>Profile</small></RouterLink></li>
         </ul>
       </nav>
     </div>
@@ -60,12 +61,18 @@ nav li {
   font-weight: 700;
 }
 
+.sidebar-header h3 {
+  color: var(--color-primary-800);
+  margin-bottom: 0;
+}
+
 header {
   grid-column: 2;
   grid-row: 1;
 }
 
 aside {
+  padding: 20px;
   background-color: var(--color-bg-sidebar);
   grid-column: 1;
   grid-row: 1 / -1;
@@ -75,17 +82,15 @@ aside {
 
 .sidebar-header {
   grid-row: 1;
-  padding-inline: 10px;
+  margin-bottom: 30px;
 }
 
 .sidebar-content {
   grid-row: 2;
-  padding-inline: 10px;
 }
 
 .sidebar-footer {
   grid-row: 3;
-  padding-inline: 10px;
 }
 
 main {
@@ -98,15 +103,26 @@ footer {
   grid-row: 3;
 }
 
-.sidebar-footer-signout {
-  color: var(--color-accent-red);
-}
-
 .sidebar-buttons {
   display: flex;
   flex-direction: row;
   align-items: center;
   gap: 8px;
+  padding: 10px;
+}
+
+.sidebar-buttons small {
+  font-size: medium;
+  font-weight: 400;
+}
+
+.sidebar-footer-signout {
+  color: var(--color-accent-red);
+}
+
+.router-link-exact-active.upper-buttons {
+  background-color: var(--color-primary-200);
+  border-radius: var(--radius-sm);
 }
 
 </style>

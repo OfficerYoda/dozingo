@@ -1,6 +1,6 @@
 <template>
   <div className="container">
-    <h1>Home</h1>
+    <h1>Settings</h1>
     <p>Willkommen auf der Einstellungsseite.</p>
   
     <div className="card">
