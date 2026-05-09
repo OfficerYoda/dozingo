@@ -50,8 +50,9 @@
 
 .app-layout {
   display: grid;
+  height: 100vh;
   grid-template-columns: 250px 1fr;
-  grid-template-rows: 1fr auto;
+  grid-template-rows: auto 1fr auto;
 }
 
 nav li {
@@ -69,7 +70,7 @@ header {
 aside {
   background-color: var(--color-bg-sidebar);
   grid-column: 1;
-    grid-row: 1;
+  grid-row: 1 / -1;
 }
 
 main {
@@ -78,8 +79,8 @@ main {
 }
 
 footer {
-  grid-column: 1 / -1;
-    grid-row: 1;
+  grid-column: 2;
+  grid-row: 3;
 }
 
 .sidebar-footer-signout {
