@@ -2,20 +2,18 @@
   <div class="app-layout">
       <header>
     <h1><!-- Page Title --></h1>
-    <!-- Sidebar open btn later on -->
   </header>
 
   <aside>
     <div class="sidebar-header">
       <span>DOZINGO</span>
-      <!-- Sidebar close btn later on -->
     </div>
 
     <div class="sidebar-content">
       <nav>
         <ul>
-          <li><RouterLink class="btn" to="/">Home</RouterLink></li>
-          <li><RouterLink class="btn btn-primary" to="/about">Kategorien</RouterLink></li>
+          <li><RouterLink to="/" class="sidebar-buttons"><Home :size="16" /> Home</RouterLink></li>
+          <li><RouterLink to="/about" class="sidebar-buttons"><LayoutGrid :size="16"/>Kategorien</RouterLink></li>
         </ul>
       </nav>
     </div>
@@ -23,9 +21,9 @@
     <div class="sidebar-footer">
       <nav>
         <ul>
-          <li><RouterLink to="/settings">Settings</RouterLink></li>
-          <li class="sidebar-footer-signout">Sign Out</li>
-          <li><RouterLink to="/profile">Profile</RouterLink></li>
+          <li><RouterLink class="sidebar-buttons" to="/settings"><Settings :size="16"/>Settings</RouterLink></li>
+          <li class="sidebar-buttons sidebar-footer-signout"><LogOut :size="16" /> Sign Out</li>
+          <li><RouterLink class="sidebar-buttons" to="/profile"><UserCircle :size="16" /> Profile</RouterLink></li>
         </ul>
       </nav>
     </div>
@@ -43,7 +41,7 @@
 </template>
 
 <script setup lang="ts">
-
+import { Home, LayoutGrid, Settings, LogOut, UserCircle} from 'lucide-vue-next'
 </script>
 
 <style scoped>
@@ -71,6 +69,23 @@ aside {
   background-color: var(--color-bg-sidebar);
   grid-column: 1;
   grid-row: 1 / -1;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+}
+
+.sidebar-header {
+  grid-row: 1;
+  padding-inline: 10px;
+}
+
+.sidebar-content {
+  grid-row: 2;
+  padding-inline: 10px;
+}
+
+.sidebar-footer {
+  grid-row: 3;
+  padding-inline: 10px;
 }
 
 main {
@@ -84,7 +99,14 @@ footer {
 }
 
 .sidebar-footer-signout {
-  color: var(--color-accent-red)
+  color: var(--color-accent-red);
+}
+
+.sidebar-buttons {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
 }
 
 </style>

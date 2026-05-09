@@ -74,7 +74,6 @@ img{
     height: auto;
 }
 
-
 input, button, textarea, select{
     font: inherit;
     color: inherit;
@@ -90,12 +89,10 @@ textarea{
     resize: vertical;
 }
 
-
 table{
     border-collapse: collapse;
     border-spacing: 0;
 }
-
 
 :focus-visible{
     outline: 2px solid var(--focus, #4f46e5);
