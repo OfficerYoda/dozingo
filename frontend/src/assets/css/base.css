@@ -24,6 +24,7 @@ body{
     line-height: 1.5;
     background-color: var(--bg-page);
     color: var(--text-body);
+    overflow-x: hidden;
 }
 
 
