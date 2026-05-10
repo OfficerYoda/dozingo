@@ -78,8 +78,6 @@ img{
 input, button, textarea, select{
     font: inherit;
     color: inherit;
-    border: none;
-    background: none;
 }
 
 button{
@@ -95,9 +93,20 @@ table{
     border-spacing: 0;
 }
 
-:focus-visible{
+:focus{
+    outline: none;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
     outline: 2px solid var(--focus, #4f46e5);
-    outline-offset: 2px;
+    outline-offset: 0px;
+    border-radius: var(--radius-sm);
+    transition: var(--transition-fast);
+    box-shadow: 0 0 0 5px color-mix(in srgb, var(--focus, #4f46e5) 30%, transparent);
 }
 
 ::selection{
