@@ -7,7 +7,7 @@
     <aside>
       <div class="sidebar-header">
         <span class="brand-title">DOZINGO</span>
-        <span class="brand-subtitle">Schoolary Playground</span>
+        <small class="brand-subtitle">Schoolary Playground</small>
       </div>
 
       <div class="sidebar-content">
