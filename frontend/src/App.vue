@@ -29,10 +29,6 @@
     </aside>
 
     <div class="content-area">
-      <header>
-        <h1><!-- Page Title --></h1>
-      </header>
-
       <main>
         <RouterView />
       </main>
@@ -84,6 +80,8 @@ aside {
 }
 
 .content-area {
+  padding: 0px;
+  margin: 0px;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
