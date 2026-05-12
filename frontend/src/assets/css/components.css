@@ -27,6 +27,7 @@
     font-size: inherit;
     display: inline-block;
     outline: none;
+    border: none;
 }
 .btn-primary{
     background-color: var(--btn-primary-bg);
