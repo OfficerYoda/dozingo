@@ -20,11 +20,13 @@
 }
 
 /* === Buttons === */
-.btn{
+.btn, button{
     text-decoration: none;
     padding: 8px 12px;
     border-radius: var(--radius-sm);
     font-size: inherit;
+    display: inline-block;
+    outline: none;
 }
 .btn-primary{
     background-color: var(--btn-primary-bg);
