@@ -34,6 +34,38 @@
     text-decoration: none;
     background-color: var(--btn-primary-hover);
 }
+.btn-secondary{
+    background-color: var(--color-primary-200);
+    color: var(--color-primary-800);
+}
+.btn-secondary:hover{
+    text-decoration: none;
+    background-color: color-mix(in srgb, var(--color-primary-200) 90%, #000);
+}
+.btn-success{
+    background-color: var(--color-accent-green);
+    color: var(--btn-primary-text);
+}
+.btn-success:hover{
+    text-decoration: none;
+    background-color: color-mix(in srgb, var(--color-accent-green) 80%, #000);
+}
+.btn-warning{
+    background-color: var(--color-accent-yellow);
+    color: var(--btn-primary-text);
+}
+.btn-warning:hover{
+    text-decoration: none;
+    background-color: color-mix(in srgb, var(--color-accent-yellow) 80%, #000);
+}
+.btn-danger{
+    background-color: var(--color-accent-red);
+    color: var(--btn-primary-text);
+}
+.btn-danger:hover{
+    text-decoration: none;
+    background-color: color-mix(in srgb, var(--color-accent-red) 80%, #000);
+}
 
 /* === Cards === */
 .card{

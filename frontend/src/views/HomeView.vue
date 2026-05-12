@@ -22,10 +22,10 @@
         <div className="col-6 sm-12">
           <div className="card">
             <h2>Buttons</h2>
-            <a href="" className="btn btn-primary">Primär</a>
-            <a href="" className="btn btn-secondary">Sekundär</a>
-            <a href="" className="btn btn-success">Erfolg</a>
-            <a href="" className="btn btn-warning">Warnung</a>
+            <a href="" className="btn btn-primary">Primär</a> 
+            <a href="" className="btn btn-secondary">Sekundär</a> 
+            <a href="" className="btn btn-success">Erfolg</a> 
+            <a href="" className="btn btn-warning">Warnung</a> 
             <a href="" className="btn btn-danger">Fehler</a>
           </div>
         </div>
