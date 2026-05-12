@@ -1,11 +1,11 @@
 <template>
   <div className="container">
     <h1>Profile</h1>
-    <p>Willkommen auf der  Profile Seite.</p>
-  
+    <p>Welcome to the Profile page.</p>
+
     <div className="card">
-        <h2>Karte</h2>
-        <p>Dies ist eine normale Karte</p>
+        <h2>Statistics</h2>
+        <p>This is a regular card.</p>
     </div>
   </div>
 </template>
