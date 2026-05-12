@@ -6,7 +6,7 @@
         <small class="brand-subtitle">Schoolary Playground</small>
       </div>
 
-      <div class="sidebar-content">
+      <div class="sidebar-content my-3">
         <nav>
           <ul>
             <li><RouterLink to="/" class="sidebar-buttons upper-buttons"><Home :size="20" />Home</RouterLink></li>
@@ -16,12 +16,12 @@
       </div>
 
       <div class="sidebar-footer">
-        <hr class="divider">
+        <hr class="m-0">
         <nav>
           <ul>
             <li><RouterLink to="/settings" class="sidebar-buttons"><Settings :size="20"/>Settings</RouterLink></li>
             <li><button class="sidebar-buttons"><LogOut :size="20" class="sidebar-footer-signout"/><span class="sidebar-footer-signout">Sign Out</span></button></li>
-            <hr class="divider">
+            <hr class="m-0">
             <li><RouterLink class="sidebar-buttons" to="/profile"><UserCircle :size="20"/>Profile</RouterLink></li>
           </ul>
         </nav>
@@ -30,7 +30,7 @@
 
     <div class="content-area">
       <header>
-        <h1>Settings</h1>
+        <h1 class="mb-0">Settings</h1>
       </header>
 
       <main>
@@ -113,11 +113,6 @@ main {
   border-radius: var(--radius-sm);
 }
 
-.divider {
-  border: none;
-  border-top: 1px solid var(--color-primary-100);
-}
-
 button {
   background: none;
   border: none;
@@ -133,10 +128,4 @@ header {
   display: flex;
   align-items: center;
 }
-
-h3 {
-  margin: 0;
-  color: var(--color-primary-800);
-}
-
 </style>

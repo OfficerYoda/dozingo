@@ -93,6 +93,12 @@ table{
     border-spacing: 0;
 }
 
+hr{
+    border: none;
+    border-top: 1px solid var(--border-default);
+    margin: 1.5rem 0;
+}
+
 :focus{
     outline: none;
 }

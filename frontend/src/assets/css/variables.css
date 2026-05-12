@@ -17,14 +17,14 @@
     --color-primary-900: #312e81;
 
     /* Accents */
-    --color-accent-green: #22c55e;
-    --color-accent-green-soft: #dcfce7;
+    --color-accent-green: rgba(0, 148, 50, 1);
+    --color-accent-green-soft: rgba(0, 148, 50, 0.2);
 
-    --color-accent-red: #ef4444;
-    --color-accent-red-soft: #fee2e2;
+    --color-accent-red: rgba(234, 32, 39, 1);
+    --color-accent-red-soft: rgba(234, 32, 39, 0.2);
 
-    --color-accent-yellow: #f59e0b;
-    --color-accent-yellow-soft: #fef3c7;
+    --color-accent-yellow: rgba(247, 159, 31, 1);
+    --color-accent-yellow-soft: rgba(247, 159, 31, 0.2);
 
     /* Backgrounds */
     --color-bg-main: #f7f8fc;
@@ -90,12 +90,6 @@
     --bg-subtle: var(--color-bg-muted);
     --bg-sidebar: var(--color-bg-sidebar);
 
-    /* Text */
-    --text-heading: var(--color-text-primary);
-    --text-body: var(--color-text-secondary);
-    --text-muted: var(--color-text-muted);
-    --text-inverse: var(--color-text-inverse);
-
     /* Borders */
     --border-default: var(--color-border);
     --border-strong: var(--color-border-strong);
@@ -109,7 +103,9 @@
     /* Cards */
     --card-bg: var(--bg-card);
     --card-border: var(--border-default);
-    --card-shadow: var(--shadow-sm);
+    --card-blue: #4052B6;
+    --card-green: #006B1B;
+    --card-yellow: #874E00;
 }
 
 
@@ -146,16 +142,6 @@
   /* Borders */
   --color-border: #1f2937;
   --color-border-strong: #374151;
-
-  /* Accents */
-  --color-accent-green: #4ade80;
-  --color-accent-green-soft: #052e16;
-
-  --color-accent-red: #f87171;
-  --color-accent-red-soft: #3f0d0d;
-
-  --color-accent-yellow: #fbbf24;
-  --color-accent-yellow-soft: #3b2f07;
 
   /* Shadows */
   --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);

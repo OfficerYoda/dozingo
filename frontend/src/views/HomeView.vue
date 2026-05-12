@@ -6,7 +6,7 @@
 
       <div className="grid">
         <div className="col-6 sm-12">
-          <div className="card">
+          <div className="card card-border-yellow">
               <h2>Alerts</h2>
               <div className="alert alert-success">
                 Das ist eine Erfolgsmeldung. 
@@ -20,7 +20,7 @@
           </div>
         </div>
         <div className="col-6 sm-12">
-          <div className="card">
+          <div className="card card-border-blue">
             <h2>Buttons</h2>
             <a href="" className="btn btn-primary">Primär</a> 
             <a href="" className="btn btn-secondary">Sekundär</a> 
@@ -30,7 +30,7 @@
           </div>
         </div>
         <div className="col-6 sm-12">
-          <div className="card">
+          <div className="card card-border-green">
             <h2>Dropdown</h2>
             <div class="dropdown">
               <button href="" className="btn btn-secondary dropdown-button">Dropdown</button> 

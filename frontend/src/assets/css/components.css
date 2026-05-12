@@ -3,20 +3,24 @@
 /* === Alerts === */
 .alert{
     border-radius: var(--radius-md);
+    border-left: 5px solid;
     padding: 10px 15px;
     margin: 10px 0;
 }
 .alert-success{
     background-color: var(--color-success-bg);
     color: var(--color-success-text);
+    border-color: var(--color-success-text);
 }
 .alert-warning{
     background-color: var(--color-warning-bg);
     color: var(--color-warning-text);
+    border-color: var(--color-warning-text);
 }
 .alert-danger{
     background-color: var(--color-danger-bg);
     color: var(--color-danger-text);
+    border-color: var(--color-danger-text);
 }
 
 /* === Buttons === */
@@ -76,7 +80,15 @@
     background-color: var(--card-bg);
     padding: 20px;
 }
-
+.card-border-green{
+    border-left: 5px solid var(--card-green);
+}
+.card-border-yellow{
+    border-left: 5px solid var(--card-yellow);
+}
+.card-border-blue{
+    border-left: 5px solid var(--card-blue);
+}
 
 /* === Dropdown === */
 .dropdown{
