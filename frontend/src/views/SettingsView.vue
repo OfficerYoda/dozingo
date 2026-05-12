@@ -1,13 +1,13 @@
 <template>
   <section>
   <div class="grid container">
-    <article class="accountsettings col-6 md-12">
-      <div class="title">
+    <article class="card col-6 md-12">
+      <div class="account-security-title">
         <ShieldUser :size="30"/>
         <h2 class="mb-0">Account Security</h2>
       </div>
 
-      <span class="subtitle">Authentication</span>
+      <span class="account-security-subtitle">Authentication</span>
 
       <div class="highlighedcard">
         <Smartphone :size="23"/>
@@ -28,29 +28,45 @@
       </div>
     </article>
 
-    <article class="display card col-6 md-12">
-      <span>Display</span>
+    <article class="card col-6 md-12">
+      <div class="display-title">
+        <Palette :size="30"/>
+        <h2 class="mb-0">Display</h2>
+      </div>
+
+      <div class="display-darkmode">
+        <div class="display-darkmode-info">
+          <span>Dark-Mode</span>
+          <small>Adjust for night study</small>
+        </div>
+        <input type="checkbox" id="my-toggle">
+      </div>
+
     </article>
 
-    <article class="deactivateaccount card col-12">
-      <span>Deactive Account</span>
-      <small>Temporarily hide your profile and rankings from the playground.</small>
-      <button class="btn btn-primary">Deactivate</button>
+    <article class="card deactivateaccount col-12">
+      <div class="deactivateaccount-title">
+        <h2 class="mb-0">Deactive Account</h2>
+        <small>Temporarily hide your profile and rankings from the playground.</small>
+      </div>
+      <button class="btn btn-danger">Deactivate</button>
     </article>
   </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import { ShieldUser, Key, Smartphone } from 'lucide-vue-next'
+import { ShieldUser, Key, Smartphone, Palette } from 'lucide-vue-next'
 </script>
 
 <style scoped>
 
-.accountsettings {
-  background-color: #F3EEFF;
-  border-radius: var(--radius-sm);
-  padding: 24px;
+.card {
+  background-color: #F3EEFF
+}
+
+.card.deactivateaccount {
+  background-color: var(--color-accent-red-soft);
 }
 
 .highlighedcard {
@@ -69,6 +85,16 @@ import { ShieldUser, Key, Smartphone } from 'lucide-vue-next'
   flex: 1;
 }
 
+.display-title {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+}
+
+.display-title svg {
+  color: #874E00;
+}
+
 .info span {
   color: #2C2A51;
   font-size: 16px;
@@ -79,32 +105,50 @@ import { ShieldUser, Key, Smartphone } from 'lucide-vue-next'
   color: #75729E;
 }
 
-ul {
-  list-style-type: none;
-}
-
-.title{
+.account-security-title{
   display: flex;
+    gap: 8px;
 }
 
-.title svg {
+.account-security-title svg {
   color: #B41340;
 }
 
-.title span {
+.display-darkmode {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.display-darkmode-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+h2 {
   color: #2C2A51;
-  font-size: 19px;
-  font-weight: 600;
 }
 
 .highlighedcard svg {
   color: #4052B6;
 }
 
-.subtitle {
+.account-security-subtitle {
   color: #75729E;
   font-weight: 500;
   padding-block-start: 20px;
+}
+
+
+.deactivateaccount {
+  display: flex;
+}
+
+.deactivateaccount-title {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
 </style>
