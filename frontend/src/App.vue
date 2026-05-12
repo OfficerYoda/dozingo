@@ -29,6 +29,10 @@
     </aside>
 
     <div class="content-area">
+      <header>
+        <h1>Settings</h1>
+      </header>
+
       <main>
         <RouterView />
       </main>
@@ -120,6 +124,19 @@ button {
   padding: 0;
   cursor: pointer;
   font: inherit;
+}
+
+header {
+  background-color: #aca8d718;
+  padding: 16px 24px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+h3 {
+  margin: 0;
+  color: var(--color-primary-800);
 }
 
 </style>

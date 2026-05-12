@@ -1,48 +1,44 @@
 <template>
-  <div>
-    <header>
-      <h3>Settings</h3>
-    </header>
-
-    <main>
-      <ul class="accountsettings">
-        <li class="title">
-          <ShieldUser :size="30"/>
-          <span>Account Security</span>
-        </li>
-
-        <li class="subtitle">Authentication</li>
-
-        <li class="highlighedcard">
-          <Smartphone :size="23"/>
-          <div class="info">
-            <span>2FA Security</span>
-            <small>Currently Disabled</small>
-          </div>
-          <button>Enable</button>
-        </li>
-
-        <li class="highlighedcard">
-          <Key :size="23"/>
-          <div class="info">
-            <span>Last password change</span>
-            <small>3 Months ago</small>
-          </div>
-          <button>Change</button>
-        </li>
-      </ul>
-
-      <div class="display card">
-        <span>Display</span>
+  <section>
+  <div class="grid container">
+    <article class="accountsettings col-6 md-12">
+      <div class="title">
+        <ShieldUser :size="30"/>
+        <h2 class="mb-0">Account Security</h2>
       </div>
 
-      <div class="deactivateaccount card">
-        <span>Deactive Account</span>
-        <small>Temporarily hide your profile and rankings from the playground.</small>
-        <button class="btn btn-primary">Deactivate</button>
+      <span class="subtitle">Authentication</span>
+
+      <div class="highlighedcard">
+        <Smartphone :size="23"/>
+        <div class="info">
+          <span>2FA Security</span>
+          <small>Currently Disabled</small>
+        </div>
+        <button>Enable</button>
       </div>
-    </main>
+
+      <div class="highlighedcard">
+        <Key :size="23"/>
+        <div class="info">
+          <span>Last password change</span>
+          <small>3 Months ago</small>
+        </div>
+        <button>Change</button>
+      </div>
+    </article>
+
+    <article class="display card col-6 md-12">
+      <span>Display</span>
+    </article>
+
+    <article class="deactivateaccount card col-12">
+      <span>Deactive Account</span>
+      <small>Temporarily hide your profile and rankings from the playground.</small>
+      <button class="btn btn-primary">Deactivate</button>
+    </article>
   </div>
+  </section>
 </template>
 
 <script setup lang="ts">
@@ -50,30 +46,6 @@ import { ShieldUser, Key, Smartphone } from 'lucide-vue-next'
 </script>
 
 <style scoped>
-
-header {
-  background-color: #aca8d718;
-  padding: 16px 24px;
-  width: 100%;
-  display: flex;
-  align-items: center;
-}
-
-h3 {
-  margin: 0;
-  color: var(--color-primary-800);
-}
-
-main {
-  padding: 24px;
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-}
-
-.card {
-  flex: 1;
-}
 
 .accountsettings {
   background-color: #F3EEFF;
@@ -83,11 +55,10 @@ main {
 
 .highlighedcard {
   background-color: #E9E5FF;
-  width: 500px;
   padding: 24px;
+  margin-top: 24px;
   border-radius: var(--radius-sm);
   display: flex;
-  flex-direction: row;
   align-items: center;
   gap: 12px;
 }
@@ -114,7 +85,6 @@ ul {
 
 .title{
   display: flex;
-  flex-direction: row;
 }
 
 .title svg {
@@ -135,7 +105,6 @@ ul {
   color: #75729E;
   font-weight: 500;
   padding-block-start: 20px;
-  padding-block-end: 13px;
 }
 
 </style>
