@@ -76,3 +76,41 @@
     background-color: var(--card-bg);
     padding: 20px;
 }
+
+
+/* === Dropdown === */
+.dropdown{
+    display: inline-block;
+    position: relative;
+}
+.dropdown .dropdown-button{
+    padding-right: 30px;
+    position: relative;
+}
+.dropdown .dropdown-button::after{
+    position: absolute;
+    top: 23%;
+    right: 10px;
+    content: "▼";
+}
+.dropdown .dropdown-menu{
+    display: none;
+    position: absolute;
+    top: 40px;
+    right: 0;
+    background-color: var(--color-primary-200);
+    list-style-type: none;
+    padding: 5px 0;
+    border-radius: var(--radius-sm);
+}
+.dropdown .dropdown-menu li{
+    padding: 4px 20px;
+    border-top: 1px solid var(--color-primary-100);
+}
+.dropdown .dropdown-menu li:last-of-type{
+    padding: 4px 20px;
+    border-bottom: 1px solid var(--color-primary-100);
+}
+.dropdown:hover .dropdown-menu{
+    display: block;
+}

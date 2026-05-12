@@ -29,6 +29,18 @@
             <a href="" className="btn btn-danger">Fehler</a>
           </div>
         </div>
+        <div className="col-6 sm-12">
+          <div className="card">
+            <h2>Dropdown</h2>
+            <div class="dropdown">
+              <button href="" className="btn btn-secondary dropdown-button">Dropdown</button> 
+              <ul class="dropdown-menu">
+                <li>My Profile</li>
+                <li>Logout</li>
+              </ul>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </section>
