@@ -17,7 +17,7 @@ TablePartial timestamps {
 Table users {
   id uuid [pk, default: `gen_random_uuid()`]
   username text [unique, not null]
-  email text [unique, not null]
+  email text [unique]
   ~timestamps
 }
 
