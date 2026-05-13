@@ -1,8 +1,7 @@
 <template>
   <section>
     <div className="container">
-      <h1>Dozingo</h1>
-      <p>Willkommen auf der Startseite.</p>
+      <p>Overview for all components and their usage.</p>
 
       <div className="grid">
         <div className="col-6 sm-12">
