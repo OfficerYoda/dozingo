@@ -12,16 +12,16 @@ import (
 )
 
 const createBoard = `-- name: CreateBoard :one
-INSERT INTO boards (title, size, author_id, lecturer_id)
+INSERT INTO boards (title, size, author_id, description)
 VALUES ($1, $2, $3, $4)
-RETURNING id, title, size, author_id, lecturer_id, created_at, updated_at
+RETURNING id, title, size, author_id, created_at, updated_at, description
 `
 
 type CreateBoardParams struct {
-	Title      string      `json:"title"`
-	Size       int32       `json:"size"`
-	AuthorID   pgtype.UUID `json:"author_id"`
-	LecturerID pgtype.UUID `json:"lecturer_id"`
+	Title       string      `json:"title"`
+	Size        int32       `json:"size"`
+	AuthorID    pgtype.UUID `json:"author_id"`
+	Description pgtype.Text `json:"description"`
 }
 
 func (q *Queries) CreateBoard(ctx context.Context, arg CreateBoardParams) (Board, error) {
@@ -29,7 +29,7 @@ func (q *Queries) CreateBoard(ctx context.Context, arg CreateBoardParams) (Board
 		arg.Title,
 		arg.Size,
 		arg.AuthorID,
-		arg.LecturerID,
+		arg.Description,
 	)
 	var i Board
 	err := row.Scan(
@@ -37,9 +37,9 @@ func (q *Queries) CreateBoard(ctx context.Context, arg CreateBoardParams) (Board
 		&i.Title,
 		&i.Size,
 		&i.AuthorID,
-		&i.LecturerID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Description,
 	)
 	return i, err
 }
@@ -47,7 +47,7 @@ func (q *Queries) CreateBoard(ctx context.Context, arg CreateBoardParams) (Board
 const deleteBoard = `-- name: DeleteBoard :one
 DELETE FROM boards
 WHERE id = $1
-RETURNING id, title, size, author_id, lecturer_id, created_at, updated_at
+RETURNING id, title, size, author_id, created_at, updated_at, description
 `
 
 func (q *Queries) DeleteBoard(ctx context.Context, id pgtype.UUID) (Board, error) {
@@ -58,15 +58,15 @@ func (q *Queries) DeleteBoard(ctx context.Context, id pgtype.UUID) (Board, error
 		&i.Title,
 		&i.Size,
 		&i.AuthorID,
-		&i.LecturerID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Description,
 	)
 	return i, err
 }
 
 const getBoardByID = `-- name: GetBoardByID :one
-SELECT id, title, size, author_id, lecturer_id, created_at, updated_at FROM boards
+SELECT id, title, size, author_id, created_at, updated_at, description FROM boards
 WHERE id = $1
 `
 
@@ -78,15 +78,15 @@ func (q *Queries) GetBoardByID(ctx context.Context, id pgtype.UUID) (Board, erro
 		&i.Title,
 		&i.Size,
 		&i.AuthorID,
-		&i.LecturerID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Description,
 	)
 	return i, err
 }
 
 const getBoards = `-- name: GetBoards :many
-SELECT id, title, size, author_id, lecturer_id, created_at, updated_at FROM boards
+SELECT id, title, size, author_id, created_at, updated_at, description FROM boards
 ORDER BY created_at DESC
 `
 
@@ -104,9 +104,9 @@ func (q *Queries) GetBoards(ctx context.Context) ([]Board, error) {
 			&i.Title,
 			&i.Size,
 			&i.AuthorID,
-			&i.LecturerID,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Description,
 		); err != nil {
 			return nil, err
 		}

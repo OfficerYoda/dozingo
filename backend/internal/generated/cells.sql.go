@@ -14,7 +14,7 @@ import (
 const createCell = `-- name: CreateCell :one
 INSERT INTO cells (board_id, content)
 VALUES ($1, $2)
-RETURNING id, board_id, content, created_at, updated_at
+RETURNING id, board_id, content, created_at, updated_at, value, author_id
 `
 
 type CreateCellParams struct {
@@ -31,6 +31,8 @@ func (q *Queries) CreateCell(ctx context.Context, arg CreateCellParams) (Cell, e
 		&i.Content,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Value,
+		&i.AuthorID,
 	)
 	return i, err
 }
@@ -38,7 +40,7 @@ func (q *Queries) CreateCell(ctx context.Context, arg CreateCellParams) (Cell, e
 const deleteCell = `-- name: DeleteCell :one
 DELETE FROM cells
 WHERE id = $1 and board_id = $2
-RETURNING id, board_id, content, created_at, updated_at
+RETURNING id, board_id, content, created_at, updated_at, value, author_id
 `
 
 type DeleteCellParams struct {
@@ -55,12 +57,14 @@ func (q *Queries) DeleteCell(ctx context.Context, arg DeleteCellParams) (Cell, e
 		&i.Content,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Value,
+		&i.AuthorID,
 	)
 	return i, err
 }
 
 const getCellsByBoardID = `-- name: GetCellsByBoardID :many
-SELECT id, board_id, content, created_at, updated_at FROM cells
+SELECT id, board_id, content, created_at, updated_at, value, author_id FROM cells
 WHERE board_id = $1
 `
 
@@ -79,6 +83,8 @@ func (q *Queries) GetCellsByBoardID(ctx context.Context, boardID pgtype.UUID) ([
 			&i.Content,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Value,
+			&i.AuthorID,
 		); err != nil {
 			return nil, err
 		}
@@ -94,7 +100,7 @@ const updateCell = `-- name: UpdateCell :one
 UPDATE cells
 SET content = $1
 WHERE id = $2 AND board_id = $3
-RETURNING id, board_id, content, created_at, updated_at
+RETURNING id, board_id, content, created_at, updated_at, value, author_id
 `
 
 type UpdateCellParams struct {
@@ -112,6 +118,8 @@ func (q *Queries) UpdateCell(ctx context.Context, arg UpdateCellParams) (Cell, e
 		&i.Content,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Value,
+		&i.AuthorID,
 	)
 	return i, err
 }
