@@ -24,7 +24,7 @@ type Cell struct {
 	Content   string             `json:"content"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
-	Value     pgtype.Int4        `json:"value"`
+	Value     int32              `json:"value"`
 	AuthorID  pgtype.UUID        `json:"author_id"`
 }
 

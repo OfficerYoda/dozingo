@@ -13,9 +13,11 @@ import (
 /// ===== Input/Output types =====
 
 type CellOutput struct {
-	ID      string `json:"id" format:"uuid"`
-	BoardID string `json:"board_id" format:"uuid"`
-	Content string `json:"content" format:"text"`
+	ID       string `json:"id" format:"uuid"`
+	BoardID  string `json:"board_id" format:"uuid"`
+	Content  string `json:"content" format:"text"`
+	AuthorID string `json:"author_id" format:"uuid"`
+	Value    string `json:"value" format:"integer"`
 }
 
 type GetCellsByBoardIDInput struct {
@@ -41,7 +43,8 @@ type UpdateCellInput struct {
 	BoardID string `path:"board_id" format:"uuid"`
 	CellID  string `path:"cell_id" format:"uuid"`
 	Body    struct {
-		Content string `json:"content" format:"text" required:"true" maxLength:"200"`
+		Content *string `json:"content" format:"text" maxLength:"200"`
+		Value   *int    `json:"value" format:"integer"`
 	}
 }
 
@@ -151,10 +154,21 @@ func updateCell(ctx context.Context, queries *generated.Queries, input UpdateCel
 		return nil, huma.Error400BadRequest("invalid cell_id", err)
 	}
 
+	var content string
+	if input.Body.Content != nil {
+		content = string(*input.Body.Value)
+	}
+
+	var value int32
+	if input.Body.Value != nil {
+		value = int32(*input.Body.Value)
+	}
+
 	cell, err := queries.UpdateCell(ctx, generated.UpdateCellParams{
 		ID:      cellID,
 		BoardID: boardID,
-		Content: input.Body.Content,
+		Content: content,
+		Value:   value,
 	})
 	if err != nil {
 		if err == pgx.ErrNoRows {

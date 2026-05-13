@@ -98,19 +98,26 @@ func (q *Queries) GetCellsByBoardID(ctx context.Context, boardID pgtype.UUID) ([
 
 const updateCell = `-- name: UpdateCell :one
 UPDATE cells
-SET content = $1
-WHERE id = $2 AND board_id = $3
+SET content = COALESCE($1, content),
+    value = COALESCE($2, value)
+WHERE id = $3 AND board_id = $4
 RETURNING id, board_id, content, created_at, updated_at, value, author_id
 `
 
 type UpdateCellParams struct {
 	Content string      `json:"content"`
+	Value   int32       `json:"value"`
 	ID      pgtype.UUID `json:"id"`
 	BoardID pgtype.UUID `json:"board_id"`
 }
 
 func (q *Queries) UpdateCell(ctx context.Context, arg UpdateCellParams) (Cell, error) {
-	row := q.db.QueryRow(ctx, updateCell, arg.Content, arg.ID, arg.BoardID)
+	row := q.db.QueryRow(ctx, updateCell,
+		arg.Content,
+		arg.Value,
+		arg.ID,
+		arg.BoardID,
+	)
 	var i Cell
 	err := row.Scan(
 		&i.ID,
