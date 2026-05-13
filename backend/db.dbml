@@ -58,7 +58,7 @@ Table cells {
   id uuid [pk, default: `gen_random_uuid()`]
   board_id uuid [not null]
   content text [not null]
-  value integer
+  value integer [not null]
   author_id uuid [note: 'null = canonical cell, set = personal cell']
   ~timestamps
 }

@@ -1,0 +1,2 @@
+UPDATE cells SET value = 1 WHERE value IS NULL;
+ALTER TABLE cells ALTER COLUMN value SET NOT NULL;
