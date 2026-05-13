@@ -16,7 +16,7 @@ TablePartial timestamps {
 
 Table users {
   id uuid [pk, default: `gen_random_uuid()`]
-  username text [unique]
+  username text [unique, not null]
   email text [unique, not null]
   ~timestamps
 }
@@ -29,7 +29,7 @@ Table user_authentications {
   ~timestamps
 
   indexes {
-    (provider, provider_user_id) [unique, name: 'uq_provider_identity']
+    (provider, provider_user_id) [unique]
   }
 }
 
@@ -48,7 +48,7 @@ Table boards {
   ~timestamps
 
   checks {
-    `size >= 3 AND size <= 7` [name: 'chk_board_size']
+    `size >= 3 AND size <= 7`
   }
 }
 
@@ -78,10 +78,10 @@ Table votes {
   ~timestamps
 
   indexes {
-    (user_id, board_id) [unique, name: 'uq_one_vote_per_user']
+    (user_id, board_id) [unique]
   }
   checks {
-    `vote_value IN (1, -1)` [name: 'chk_vote_value']
+    `vote_value IN (1, -1)`
   }
 }
 
@@ -100,7 +100,7 @@ Table games {
   ~timestamps
 
   checks {
-    `status IN ('active', 'completed', 'abandoned')` [name: 'chk_game_status']
+    `status IN ('active', 'completed', 'abandoned')`
   }
 }
 
@@ -117,7 +117,7 @@ Table game_cells {
   ~timestamps
 
   indexes {
-    (game_id, position) [unique, name: 'uq_game_cell_position']
+    (game_id, position) [unique]
   }
 }
 
