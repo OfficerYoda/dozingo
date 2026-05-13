@@ -26,6 +26,17 @@
           </div>
           <button class="btn btn-primary">Change</button>
         </div>
+
+        <div class="display-darkmode">
+          <div class="display-darkmode-info">
+            <span>Login-Notifiaction</span>
+            <small>Get notification for each login</small>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="btnToggle" name="btnToggle" />
+            <span class="slider"></span>
+          </label>
+        </div>
       </article>
 
       <article class="card col-6 md-12">
@@ -45,6 +56,20 @@
             <input type="checkbox" id="btnToggle" name="btnToggle" />
             <span class="slider"></span>
           </label>
+        </div>
+
+        <div class="display-darkmode">
+          <div class="display-darkmode-info">
+            <span>Color-Correction</span>
+            <small>Adapt the colors correction</small>
+          </div>
+          <div class="dropdown">
+            <button href="" className="btn btn-secondary dropdown-button">Color-Theme</button>
+            <ul class="dropdown-menu">
+              <li>Rot-Grün</li>
+              <li>Was weiß ich</li>
+            </ul>
+          </div>
         </div>
 
         <div class="display-fontsize">
@@ -252,7 +277,7 @@ input[type=range]::-webkit-slider-thumb {
   height: 0;
 }
 
-.toggle input:focus-visible + .slider {
+.toggle input:focus-visible+.slider {
   outline: 2px solid #4052B6;
   outline-offset: 2px;
 }

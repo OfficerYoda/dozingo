@@ -1,0 +1,34 @@
+{
+  "nav": {
+    "home": "Home",
+    "about": "About",
+    "settings": "Settings",
+    "profile": "Profile",
+    "signOut": "Sign Out"
+  },
+  "settings": {
+    "title": "Settings",
+    "security": {
+      "title": "Account Security",
+      "subtitle": "Authentication",
+      "twoFa": "2FA Security",
+      "enable": "Enable",
+      "lastPasswordChange": "Last password change",
+      "change": "Change"
+    },
+    "display": {
+      "title": "Display",
+      "subtitle": "Appearance",
+      "darkMode": "Dark Mode",
+      "darkModeDesc": "Adjust for night study",
+      "fontSize": "Font size adjustment",
+      "small": "Small",
+      "standard": "Standard",
+      "large": "Large"
+    },
+    "account": {
+      "deactivate": "Deactivate Account",
+      "deactivateDesc": "Temporarily hide your profile and rankings from the playground."
+    }
+  }
+}

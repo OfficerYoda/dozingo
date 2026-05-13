@@ -1,0 +1,34 @@
+{
+  "nav": {
+    "home": "Home",
+    "about": "Über uns",
+    "settings": "Einstellungen",
+    "profile": "Profil",
+    "signOut": "Abmelden"
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "security": {
+      "title": "Kontosicherheit",
+      "subtitle": "Authentifizierung",
+      "twoFa": "2FA-Sicherheit",
+      "enable": "Aktivieren",
+      "lastPasswordChange": "Letzte Passwortänderung",
+      "change": "Ändern"
+    },
+    "display": {
+      "title": "Anzeige",
+      "subtitle": "Erscheinungsbild",
+      "darkMode": "Dunkelmodus",
+      "darkModeDesc": "Für nächtliches Lernen anpassen",
+      "fontSize": "Schriftgröße anpassen",
+      "small": "Klein",
+      "standard": "Standard",
+      "large": "Groß"
+    },
+    "account": {
+      "deactivate": "Konto deaktivieren",
+      "deactivateDesc": "Dein Profil und deine Ranglisten vorübergehend aus dem Playground ausblenden."
+    }
+  }
+}
