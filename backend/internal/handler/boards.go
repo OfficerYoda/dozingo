@@ -40,10 +40,10 @@ type GetBoardByIDOutput struct {
 
 type CreateBoardInput struct {
 	Body struct {
-		Title       string `json:"title" format:"text" required:"true" maxLength:"200"`
-		Description string `json:"description" format:"text" maxLength:"500"`
-		Size        int32  `json:"size" format:"integer" required:"true" maxLength:"200"`
-		AuthorID    string `json:"author_id" format:"uuid" required:"true"`
+		Title       string  `json:"title" format:"text" required:"true" maxLength:"200"`
+		Description *string `json:"description,omitempty" format:"text" maxLength:"500"`
+		Size        int32   `json:"size" format:"integer" required:"true" maxLength:"200"`
+		AuthorID    string  `json:"author_id" format:"uuid" required:"true"`
 	}
 }
 
@@ -146,7 +146,11 @@ func createBoard(ctx context.Context, queries *generated.Queries, input CreateBo
 		return nil, huma.Error400BadRequest("invalid author_id", err)
 	}
 
-	description := pgTextFromString(input.Body.Description)
+	var descStr string
+	if input.Body.Description != nil {
+		descStr = *input.Body.Description
+	}
+	description := pgTextFromString(descStr)
 
 	board, err := queries.CreateBoard(ctx, generated.CreateBoardParams{
 		Title:       input.Body.Title,

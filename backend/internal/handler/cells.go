@@ -13,11 +13,11 @@ import (
 /// ===== Input/Output types =====
 
 type CellOutput struct {
-	ID       string `json:"id" format:"uuid"`
-	BoardID  string `json:"board_id" format:"uuid"`
-	Content  string `json:"content" format:"text"`
-	AuthorID string `json:"author_id" format:"uuid"`
-	Value    string `json:"value" format:"integer"`
+	ID       string  `json:"id" format:"uuid"`
+	BoardID  string  `json:"board_id" format:"uuid"`
+	Content  string  `json:"content" format:"text"`
+	AuthorID *string `json:"author_id" format:"uuid"`
+	Value    int32   `json:"value"`
 }
 
 type GetCellsByBoardIDInput struct {
@@ -32,7 +32,7 @@ type CreateCellInput struct {
 	BoardID string `path:"board_id" format:"uuid"`
 	Body    struct {
 		Content string `json:"content" format:"text" required:"true" maxLength:"200"`
-		Value   *int32 `json:"value" format:"integer"`
+		Value   *int32 `json:"value,omitempty"`
 	}
 }
 
@@ -44,8 +44,8 @@ type UpdateCellInput struct {
 	BoardID string `path:"board_id" format:"uuid"`
 	CellID  string `path:"cell_id" format:"uuid"`
 	Body    struct {
-		Content *string `json:"content" format:"text" maxLength:"200"`
-		Value   *int    `json:"value" format:"integer"`
+		Content *string `json:"content,omitempty" maxLength:"200"`
+		Value   *int    `json:"value,omitempty"`
 	}
 }
 
@@ -163,7 +163,7 @@ func updateCell(ctx context.Context, queries *generated.Queries, input UpdateCel
 
 	var content string
 	if input.Body.Content != nil {
-		content = string(*input.Body.Value)
+		content = *input.Body.Content
 	}
 
 	var value int32
@@ -214,9 +214,16 @@ func deleteCell(ctx context.Context, queries *generated.Queries, input DeleteCel
 /// ===== Helper =====
 
 func cellToOutput(cell generated.Cell) CellOutput {
+	var authorID *string
+	if cell.AuthorID.Valid {
+		s := cell.AuthorID.String()
+		authorID = &s
+	}
 	return CellOutput{
-		ID:      cell.ID.String(),
-		BoardID: cell.BoardID.String(),
-		Content: cell.Content,
+		ID:       cell.ID.String(),
+		BoardID:  cell.BoardID.String(),
+		Content:  cell.Content,
+		AuthorID: authorID,
+		Value:    cell.Value,
 	}
 }
