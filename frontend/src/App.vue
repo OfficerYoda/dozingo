@@ -1,6 +1,21 @@
+<script lang="ts">
+function openMenu(){
+  let aside = document.getElementById("aside");
+  aside?.classList.add('aside-open');
+  let disable_layer = document.getElementById("disable-layer");
+  disable_layer?.classList.add('disable-layer-active');
+}
+function closeMenu(){
+  let aside = document.getElementById("aside");
+  aside?.classList.remove('aside-open');
+  let disable_layer = document.getElementById("disable-layer");
+  disable_layer?.classList.remove('disable-layer-active');
+}
+</script>
+
 <template>
   <div class="app-layout">
-    <aside>
+    <aside id="aside">
       <div class="sidebar-header">
         <span class="brand-title">DOZINGO</span>
         <small class="brand-subtitle">Schoolary Playground</small>
@@ -31,6 +46,9 @@
 
     <div class="content-area">
       <header>
+        <button @click="openMenu">
+          <Menu :size="20"/>
+        </button> 
         <h1 class="mb-0">Settings</h1>
       </header>
 
@@ -41,21 +59,17 @@
       <footer>
         &#169 DOZINGO - Alle Rechte vorbehalten
       </footer>
+
+      <div class="disable-layer" id="disable-layer" @click="closeMenu"></div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { Home, LayoutGrid, Settings, LogOut, UserCircle} from 'lucide-vue-next'
+import { Home, LayoutGrid, Settings, LogOut, UserCircle, Menu} from 'lucide-vue-next'
 </script>
 
 <style scoped>
-
-.app-layout {
-  display: grid;
-  height: 100vh;
-  grid-template-columns: 250px 1fr;
-}
 
 nav li {
   list-style-type:none;
@@ -74,26 +88,6 @@ nav li {
 .brand-subtitle {
   display: block;
   font-size: 0.875rem;
-}
-
-aside {
-  padding: 20px;
-  background-color: var(--color-bg-sidebar);
-  display: grid;
-  grid-template-rows: auto 1fr auto;
-  overflow: hidden;
-}
-
-.content-area {
-  padding: 0px;
-  margin: 0px;
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
-}
-
-main {
-  flex: 1;
 }
 
 .sidebar-buttons {
