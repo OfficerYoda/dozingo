@@ -16,6 +16,9 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
+	"github.com/officeryoda/dozingo/internal/auth"
+	"github.com/officeryoda/dozingo/internal/generated"
+	"golang.org/x/crypto/bcrypt"
 )
 
 var (
@@ -25,6 +28,9 @@ var (
 
 // TestMain sets up the test database connection and router once for all tests.
 func TestMain(m *testing.M) {
+	// Use minimal bcrypt cost in tests for faster execution
+	auth.PasswordCost = bcrypt.MinCost
+
 	// Try loading .env from project root (relative to this package: internal/handler/)
 	_ = godotenv.Load("../../.env")
 
@@ -137,17 +143,28 @@ func assertJSONField(t *testing.T, data map[string]any, key string, expected str
 	}
 }
 
-// createTestUser creates a user via the API and returns its ID.
+// createTestUser creates a user via the auth register API and returns its ID.
 func createTestUser(t *testing.T, username, email string) string {
 	t.Helper()
-	w := doRequest(http.MethodPost, "/api/users", map[string]string{
+
+	body := map[string]any{
 		"username": username,
-		"email":    email,
-	})
+		"password": "testpassword123",
+	}
+	if email != "" {
+		body["email"] = email
+	}
+
+	w := doRequest(http.MethodPost, "/api/auth/register", body)
 	assertStatus(t, w, http.StatusOK)
-	var resp map[string]any
-	decodeJSON(t, w, &resp)
-	return resp["id"].(string)
+
+	// Look up the user ID from the database since the auth endpoint doesn't return it
+	queries := generated.New(testPool)
+	user, err := queries.GetUserByUsername(context.Background(), username)
+	if err != nil {
+		t.Fatalf("failed to look up user %q after registration: %v", username, err)
+	}
+	return user.ID.String()
 }
 
 // createTestBoard creates a board via the API and returns its ID.

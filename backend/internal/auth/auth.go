@@ -6,7 +6,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-const passwordCost = bcrypt.DefaultCost
+// PasswordCost is exposed so it can be reduced in tests to improve runtime
+var PasswordCost = bcrypt.DefaultCost
 
 var (
 	ErrPasswordTooLong    = errors.New("password exceeds maximum length")
@@ -19,7 +20,7 @@ func HashPassword(password string) (string, error) {
 		return "", ErrPasswordTooLong
 	}
 
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), passwordCost)
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), PasswordCost)
 	if err != nil {
 		return "", err
 	}
