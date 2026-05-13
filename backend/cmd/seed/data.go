@@ -6,19 +6,13 @@ type userData struct {
 	Email    string
 }
 
-// lecturerData holds name and slug pairs for seeding lecturers.
-type lecturerData struct {
-	Name string
-	Slug string
-}
-
 // boardData holds the definition of a board to seed.
-// AuthorIdx and LecturerIdx refer to indices in the users/lecturers slices.
+// AuthorIdx refers to an index in the users slice.
 type boardData struct {
 	Title       string
+	Description string
 	Size        int32
 	AuthorIdx   int
-	LecturerIdx int
 }
 
 // voteData holds a single vote to seed.
@@ -27,6 +21,22 @@ type voteData struct {
 	UserIdx  int
 	BoardIdx int
 	Value    int32 // 1 or -1
+}
+
+// gameData holds a game to seed.
+// PlayerIdx and BoardIdx refer to indices in the users/boards slices.
+type gameData struct {
+	PlayerIdx int
+	BoardIdx  int
+	Status    string // "active", "completed", or "abandoned"
+}
+
+// gameCellData holds a game cell to seed.
+// Position is 0-indexed (row-major order).
+type gameCellData struct {
+	Content  string
+	Position int32
+	IsMarked bool
 }
 
 // --- Seed Data ---
@@ -44,40 +54,32 @@ var users = []userData{
 	{Username: "emiliaWolf", Email: "emilia.wolf@stud.uni-koeln.de"},
 }
 
-var lecturers = []lecturerData{
-	{Name: "Prof. Dr. Hans-Peter Meinhardt", Slug: "hans-peter-meinhardt"},
-	{Name: "Prof. Dr. Claudia Bergmann", Slug: "claudia-bergmann"},
-	{Name: "Dr. Stefan Krause", Slug: "stefan-krause"},
-	{Name: "Prof. Dr. Ingrid Hoffmann", Slug: "ingrid-hoffmann"},
-	{Name: "Dr. Thomas Richter", Slug: "thomas-richter"},
-}
-
-// boards defines 15 boards with mixed sizes (3-7), each linked to an author and lecturer.
+// boards defines 15 boards with mixed sizes (3-7), each linked to an author.
 var boards = []boardData{
 	// Size 3 boards (n²=9, pool=12 cells each)
-	{Title: "Mathe 1 Bingo", Size: 3, AuthorIdx: 0, LecturerIdx: 0},
-	{Title: "Lineare Algebra Klassiker", Size: 3, AuthorIdx: 1, LecturerIdx: 2},
-	{Title: "Statistik Grundlagen", Size: 3, AuthorIdx: 4, LecturerIdx: 3},
+	{Title: "Mathe 1 Bingo", Description: "Klassiker aus der Mathe 1 Vorlesung", Size: 3, AuthorIdx: 0},
+	{Title: "Lineare Algebra Klassiker", Description: "Die besten Momente aus LinAlg", Size: 3, AuthorIdx: 1},
+	{Title: "Statistik Grundlagen", Description: "Statistik Vorlesung Bingo", Size: 3, AuthorIdx: 4},
 
 	// Size 4 boards (n²=16, pool=21 cells each)
-	{Title: "Theoretische Informatik", Size: 4, AuthorIdx: 2, LecturerIdx: 1},
-	{Title: "Physik Vorlesung", Size: 4, AuthorIdx: 3, LecturerIdx: 0},
-	{Title: "BWL Einführung", Size: 4, AuthorIdx: 5, LecturerIdx: 4},
+	{Title: "Theoretische Informatik", Description: "Turingmaschinen und mehr", Size: 4, AuthorIdx: 2},
+	{Title: "Physik Vorlesung", Description: "Experimente die schiefgehen", Size: 4, AuthorIdx: 3},
+	{Title: "BWL Einführung", Description: "PowerPoint-Schlachten und Buzzwords", Size: 4, AuthorIdx: 5},
 
 	// Size 5 boards (n²=25, pool=32 cells each)
-	{Title: "Algorithmen und Datenstrukturen", Size: 5, AuthorIdx: 6, LecturerIdx: 1},
-	{Title: "Softwaretechnik Bingo", Size: 5, AuthorIdx: 7, LecturerIdx: 2},
-	{Title: "Datenbanken Vorlesung", Size: 5, AuthorIdx: 0, LecturerIdx: 3},
+	{Title: "Algorithmen und Datenstrukturen", Description: "O-Notation und Rekursion", Size: 5, AuthorIdx: 6},
+	{Title: "Softwaretechnik Bingo", Description: "UML und Agile Methoden", Size: 5, AuthorIdx: 7},
+	{Title: "Datenbanken Vorlesung", Description: "SQL, Normalformen und Joins", Size: 5, AuthorIdx: 0},
 
 	// Size 6 boards (n²=36, pool=45 cells each)
-	{Title: "Betriebssysteme Chaos", Size: 6, AuthorIdx: 8, LecturerIdx: 0},
-	{Title: "Rechnernetze Marathon", Size: 6, AuthorIdx: 9, LecturerIdx: 4},
-	{Title: "Digitaltechnik Vorlesung", Size: 6, AuthorIdx: 1, LecturerIdx: 2},
+	{Title: "Betriebssysteme Chaos", Description: "Deadlocks und Race Conditions", Size: 6, AuthorIdx: 8},
+	{Title: "Rechnernetze Marathon", Description: "OSI-Modell und TCP/IP", Size: 6, AuthorIdx: 9},
+	{Title: "Digitaltechnik Vorlesung", Description: "Flip-Flops und Gatter", Size: 6, AuthorIdx: 1},
 
 	// Size 7 boards (n²=49, pool=62 cells each)
-	{Title: "Compilerbau Endgegner", Size: 7, AuthorIdx: 3, LecturerIdx: 1},
-	{Title: "Verteilte Systeme Bingo", Size: 7, AuthorIdx: 6, LecturerIdx: 3},
-	{Title: "Maschinelles Lernen Bingo", Size: 7, AuthorIdx: 2, LecturerIdx: 4},
+	{Title: "Compilerbau Endgegner", Description: "Parser, Lexer und Optimierung", Size: 7, AuthorIdx: 3},
+	{Title: "Verteilte Systeme Bingo", Description: "CAP-Theorem und Konsens", Size: 7, AuthorIdx: 6},
+	{Title: "Maschinelles Lernen Bingo", Description: "Gradient Descent und Overfitting", Size: 7, AuthorIdx: 2},
 }
 
 // cellPhrases contains German lecture bingo phrases for each board index.
@@ -693,4 +695,111 @@ var votes = []voteData{
 	{UserIdx: 7, BoardIdx: 12, Value: 1},
 	{UserIdx: 8, BoardIdx: 10, Value: 1},
 	{UserIdx: 9, BoardIdx: 9, Value: -1},
+}
+
+// games defines game sessions. Each game is played by a user on a board.
+var games = []gameData{
+	// User 0 plays board 0 (Mathe 1 Bingo, size 3 -> 9 cells) - completed
+	{PlayerIdx: 0, BoardIdx: 0, Status: "completed"},
+	// User 1 plays board 0 (Mathe 1 Bingo) - active
+	{PlayerIdx: 1, BoardIdx: 0, Status: "active"},
+	// User 2 plays board 3 (Theoretische Informatik, size 4 -> 16 cells) - active
+	{PlayerIdx: 2, BoardIdx: 3, Status: "active"},
+	// User 3 plays board 6 (Algorithmen und Datenstrukturen, size 5 -> 25 cells) - abandoned
+	{PlayerIdx: 3, BoardIdx: 6, Status: "abandoned"},
+	// User 5 plays board 1 (Lineare Algebra Klassiker, size 3 -> 9 cells) - active
+	{PlayerIdx: 5, BoardIdx: 1, Status: "active"},
+}
+
+// gameCells defines the game_cells for each game index.
+// Each game picks n² cells from the board's cell pool and assigns positions.
+// Position is 0-indexed in row-major order.
+var gameCells = map[int][]gameCellData{
+	// Game 0: User 0 on board 0 (Mathe 1, size 3 -> 9 cells, completed with marks)
+	0: {
+		{Content: "Prof sagt 'trivial'", Position: 0, IsMarked: true},
+		{Content: "Beweis wird übersprungen", Position: 1, IsMarked: true},
+		{Content: "'Das sieht man sofort'", Position: 2, IsMarked: true},
+		{Content: "Kreide bricht ab", Position: 3, IsMarked: true},
+		{Content: "Tafel ist voll, Prof wischt hektisch", Position: 4, IsMarked: false},
+		{Content: "Jemand fragt 'Kommt das in der Klausur?'", Position: 5, IsMarked: true},
+		{Content: "Prof rechnet sich an der Tafel vor", Position: 6, IsMarked: true},
+		{Content: "Epsilon-Delta taucht auf", Position: 7, IsMarked: true},
+		{Content: "'Übung für den Leser'", Position: 8, IsMarked: true},
+	},
+
+	// Game 1: User 1 on board 0 (Mathe 1, size 3 -> 9 cells, active with some marks)
+	1: {
+		{Content: "'Das sieht man sofort'", Position: 0, IsMarked: true},
+		{Content: "Prof verwechselt Plus und Minus", Position: 1, IsMarked: false},
+		{Content: "Studenten schauen verwirrt", Position: 2, IsMarked: true},
+		{Content: "Kreide bricht ab", Position: 3, IsMarked: false},
+		{Content: "Prof sagt 'trivial'", Position: 4, IsMarked: true},
+		{Content: "'Das hatten wir schon letzte Woche'", Position: 5, IsMarked: false},
+		{Content: "Beweis wird übersprungen", Position: 6, IsMarked: false},
+		{Content: "Epsilon-Delta taucht auf", Position: 7, IsMarked: true},
+		{Content: "Jemand fragt 'Kommt das in der Klausur?'", Position: 8, IsMarked: false},
+	},
+
+	// Game 2: User 2 on board 3 (Theoretische Informatik, size 4 -> 16 cells, active)
+	2: {
+		{Content: "Turingmaschine wird gezeichnet", Position: 0, IsMarked: true},
+		{Content: "'Das ist unentscheidbar'", Position: 1, IsMarked: false},
+		{Content: "Regulärer Ausdruck wird kompliziert", Position: 2, IsMarked: true},
+		{Content: "Pumping Lemma Beweis", Position: 3, IsMarked: false},
+		{Content: "Prof sagt 'Nichtdeterminismus'", Position: 4, IsMarked: true},
+		{Content: "Automat hat zu viele Zustände", Position: 5, IsMarked: false},
+		{Content: "Jemand fragt 'Wozu braucht man das?'", Position: 6, IsMarked: true},
+		{Content: "Chomsky-Hierarchie an der Tafel", Position: 7, IsMarked: false},
+		{Content: "Prof vergisst Endzustand", Position: 8, IsMarked: false},
+		{Content: "'Das reduzieren wir auf das Halteproblem'", Position: 9, IsMarked: true},
+		{Content: "Komplexitätsklasse P vs NP", Position: 10, IsMarked: false},
+		{Content: "Beweis durch Widerspruch", Position: 11, IsMarked: false},
+		{Content: "Prof schreibt Produktionsregel falsch", Position: 12, IsMarked: true},
+		{Content: "Kellerautomat wird eingeführt", Position: 13, IsMarked: false},
+		{Content: "Jemand sagt 'Das ist doch wie Mathe'", Position: 14, IsMarked: true},
+		{Content: "Sprache wird nicht akzeptiert", Position: 15, IsMarked: false},
+	},
+
+	// Game 3: User 3 on board 6 (Algorithmen, size 5 -> 25 cells, abandoned with few marks)
+	3: {
+		{Content: "O-Notation wird erklärt", Position: 0, IsMarked: true},
+		{Content: "'Das ist in O(n log n)'", Position: 1, IsMarked: false},
+		{Content: "Binärbaum wird gezeichnet", Position: 2, IsMarked: false},
+		{Content: "Prof sagt 'Divide and Conquer'", Position: 3, IsMarked: true},
+		{Content: "Rekursion wird rekursiv erklärt", Position: 4, IsMarked: false},
+		{Content: "Bubble Sort als Negativbeispiel", Position: 5, IsMarked: false},
+		{Content: "Hashtabelle Kollision", Position: 6, IsMarked: false},
+		{Content: "Prof vergisst Basisfall", Position: 7, IsMarked: false},
+		{Content: "'Das ist ein bekanntes Problem'", Position: 8, IsMarked: true},
+		{Content: "Heap wird aufgebaut", Position: 9, IsMarked: false},
+		{Content: "Adjazenzliste vs Adjazenzmatrix", Position: 10, IsMarked: false},
+		{Content: "Dijkstra wird falsch ausgesprochen", Position: 11, IsMarked: false},
+		{Content: "Prof zeichnet einen Graphen", Position: 12, IsMarked: false},
+		{Content: "Stack Overflow Witz", Position: 13, IsMarked: false},
+		{Content: "'Das überlasse ich als Übung'", Position: 14, IsMarked: false},
+		{Content: "Quicksort Worst Case", Position: 15, IsMarked: false},
+		{Content: "Jemand sagt 'Einfach sortieren'", Position: 16, IsMarked: false},
+		{Content: "Dynamische Programmierung eingeführt", Position: 17, IsMarked: false},
+		{Content: "Prof schreibt Pseudocode", Position: 18, IsMarked: false},
+		{Content: "Laufzeitanalyse wird kompliziert", Position: 19, IsMarked: false},
+		{Content: "Red-Black-Tree wird erwähnt", Position: 20, IsMarked: false},
+		{Content: "'Das geht auch effizienter'", Position: 21, IsMarked: false},
+		{Content: "BFS vs DFS Vergleich", Position: 22, IsMarked: false},
+		{Content: "Prof vergisst Kantenfall", Position: 23, IsMarked: false},
+		{Content: "Amortisierte Analyse", Position: 24, IsMarked: false},
+	},
+
+	// Game 4: User 5 on board 1 (Lineare Algebra, size 3 -> 9 cells, active)
+	4: {
+		{Content: "Matrix wird falsch multipliziert", Position: 0, IsMarked: false},
+		{Content: "'Der Beweis ist elegant'", Position: 1, IsMarked: true},
+		{Content: "Determinante vergessen", Position: 2, IsMarked: false},
+		{Content: "Prof zeichnet einen Vektorraum", Position: 3, IsMarked: true},
+		{Content: "Eigenwert-Witz", Position: 4, IsMarked: false},
+		{Content: "Jemand schläft ein", Position: 5, IsMarked: false},
+		{Content: "Prof sagt 'offensichtlich'", Position: 6, IsMarked: true},
+		{Content: "Rang der Matrix unklar", Position: 7, IsMarked: false},
+		{Content: "'Das ist ein Spezialfall'", Position: 8, IsMarked: false},
+	},
 }
