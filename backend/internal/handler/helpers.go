@@ -16,7 +16,7 @@ func pgTextFromString(s *string) pgtype.Text {
 	if s != nil {
 		return pgtype.Text{String: *s, Valid: true}
 	} else {
-		return pgtype.Text{String: "", Valid: true}
+		return pgtype.Text{String: "", Valid: false}
 	}
 }
 

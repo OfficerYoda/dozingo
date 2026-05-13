@@ -57,12 +57,12 @@ func TestMain(m *testing.M) {
 	apiGroup := huma.NewGroup(api, "/api")
 
 	RegisterHealth(apiGroup)
-	RegisterUsers(apiGroup, testPool)
 	RegisterBoards(apiGroup, testPool)
 	RegisterCells(apiGroup, testPool)
 	RegisterVotes(apiGroup, testPool)
 	RegisterGames(apiGroup, testPool)
 	RegisterGameCells(apiGroup, testPool)
+	RegisterAuth(apiGroup, testPool)
 
 	// Clean tables before running tests to ensure a fresh state
 	_, _ = testPool.Exec(context.Background(),

@@ -51,7 +51,7 @@ type GameCell struct {
 type User struct {
 	ID        pgtype.UUID        `json:"id"`
 	Username  string             `json:"username"`
-	Email     string             `json:"email"`
+	Email     pgtype.Text        `json:"email"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }
@@ -63,6 +63,14 @@ type UserAuthentication struct {
 	ProviderUserID string             `json:"provider_user_id"`
 	CreatedAt      pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+}
+
+type UserPassword struct {
+	ID           pgtype.UUID        `json:"id"`
+	UserID       pgtype.UUID        `json:"user_id"`
+	PasswordHash string             `json:"password_hash"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
 }
 
 type Vote struct {
