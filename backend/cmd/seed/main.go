@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/officeryoda/dozingo/internal/auth"
 	"github.com/officeryoda/dozingo/internal/config"
 	"github.com/officeryoda/dozingo/internal/generated"
 )
@@ -57,6 +58,10 @@ func seed(pool *pgxpool.Pool) error {
 		return err
 	}
 
+	if err := seedPasswords(ctx, q, userIDs); err != nil {
+		return err
+	}
+
 	boardIDs, err := seedBoards(ctx, q, userIDs)
 	if err != nil {
 		return err
@@ -85,7 +90,7 @@ func seed(pool *pgxpool.Pool) error {
 // truncateAll removes all data from tables in the correct order (respecting foreign keys).
 func truncateAll(ctx context.Context, tx pgx.Tx) error {
 	log.Println("Truncating all tables...")
-	_, err := tx.Exec(ctx, "TRUNCATE game_cells, games, votes, cells, boards, user_authentications, users CASCADE")
+	_, err := tx.Exec(ctx, "TRUNCATE game_cells, games, votes, cells, boards, user_passwords, user_authentications, users CASCADE")
 	if err != nil {
 		return fmt.Errorf("truncating tables: %w", err)
 	}
@@ -115,6 +120,27 @@ func seedUsers(ctx context.Context, q *generated.Queries) ([]pgtype.UUID, error)
 	}
 
 	return ids, nil
+}
+
+func seedPasswords(ctx context.Context, q *generated.Queries, userIDs []pgtype.UUID) error {
+	log.Printf("Seeding %d passwords...", len(passwords))
+
+	for _, p := range passwords {
+		hash, err := auth.HashPassword(p.Password)
+		if err != nil {
+			return fmt.Errorf("hashing password for user %d: %w", p.UserIdx, err)
+		}
+
+		_, err = q.UpsertUserPassword(ctx, generated.UpsertUserPasswordParams{
+			UserID:       userIDs[p.UserIdx],
+			PasswordHash: hash,
+		})
+		if err != nil {
+			return fmt.Errorf("creating password for user %d: %w", p.UserIdx, err)
+		}
+	}
+
+	return nil
 }
 
 func seedBoards(ctx context.Context, q *generated.Queries, userIDs []pgtype.UUID) ([]pgtype.UUID, error) {

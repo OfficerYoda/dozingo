@@ -52,6 +52,8 @@ var users = []userData{
 	{Username: "annaK99", Email: "anna.koch@stud.fu-berlin.de"},
 	{Username: "lukasBauer", Email: "lukas.bauer@stud.tu-darmstadt.de"},
 	{Username: "emiliaWolf", Email: "emilia.wolf@stud.uni-koeln.de"},
+	{Username: "ghostUser01", Email: ""},
+	{Username: "anon_student", Email: ""},
 }
 
 // boards defines 15 boards with mixed sizes (3-7), each linked to an author.
@@ -802,4 +804,20 @@ var gameCells = map[int][]gameCellData{
 		{Content: "Rang der Matrix unklar", Position: 7, IsMarked: false},
 		{Content: "'Das ist ein Spezialfall'", Position: 8, IsMarked: false},
 	},
+}
+
+// passwordData holds a password to seed for a user.
+// UserIdx refers to an index in the users slice.
+type passwordData struct {
+	UserIdx  int
+	Password string
+}
+
+// passwords defines which users get a password for local login.
+var passwords = []passwordData{
+	{UserIdx: 0, Password: "password123"},
+	{UserIdx: 1, Password: "securePass!"},
+	{UserIdx: 2, Password: "timoSecret42"},
+	{UserIdx: 10, Password: "ghostpass"},  // user with no email
+	{UserIdx: 11, Password: "anonpass"},   // user with no email
 }

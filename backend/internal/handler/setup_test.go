@@ -66,7 +66,7 @@ func TestMain(m *testing.M) {
 
 	// Clean tables before running tests to ensure a fresh state
 	_, _ = testPool.Exec(context.Background(),
-		"TRUNCATE TABLE game_cells, games, votes, cells, boards, users RESTART IDENTITY CASCADE")
+		"TRUNCATE TABLE game_cells, games, votes, cells, boards, user_passwords, users RESTART IDENTITY CASCADE")
 
 	code := m.Run()
 
@@ -78,7 +78,7 @@ func TestMain(m *testing.M) {
 func cleanupTables(t *testing.T) {
 	t.Helper()
 	_, err := testPool.Exec(context.Background(),
-		"TRUNCATE TABLE game_cells, games, votes, cells, boards, users RESTART IDENTITY CASCADE")
+		"TRUNCATE TABLE game_cells, games, votes, cells, boards, user_passwords, users RESTART IDENTITY CASCADE")
 	if err != nil {
 		t.Fatalf("failed to clean up tables: %v", err)
 	}
