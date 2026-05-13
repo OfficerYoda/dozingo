@@ -246,7 +246,15 @@ input[type=range]::-webkit-slider-thumb {
 }
 
 .toggle input {
-  display: none;
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle input:focus-visible + .slider {
+  outline: 2px solid #4052B6;
+  outline-offset: 2px;
 }
 
 .slider {
