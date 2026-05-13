@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -96,9 +97,16 @@ func seedUsers(ctx context.Context, q *generated.Queries) ([]pgtype.UUID, error)
 
 	ids := make([]pgtype.UUID, 0, len(users))
 	for _, u := range users {
+
+		var email pgtype.Text
+		if strings.TrimSpace(u.Email) != "" {
+			email = pgtype.Text{String: u.Email, Valid: true}
+		} else {
+			email = pgtype.Text{String: "", Valid: false}
+		}
 		user, err := q.CreateUser(ctx, generated.CreateUserParams{
 			Username: u.Username,
-			Email:    u.Email,
+			Email:    email,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("creating user %q: %w", u.Username, err)
