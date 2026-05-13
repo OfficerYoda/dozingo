@@ -21,6 +21,15 @@ Table users {
   ~timestamps
 }
 
+Table user_passwords {
+  id uuid [pk, default: `gen_random_uuid()`]
+  user_id uuid [not null]
+  password_hash text [not null]
+  ~timestamps
+}
+
+Ref: user_passwords.user_id - users.id [delete: cascade]
+
 Table user_authentications {
   id uuid [pk, default: `gen_random_uuid()`]
   user_id uuid [not null]
