@@ -11,6 +11,7 @@
           <ul>
             <li><RouterLink to="/" class="sidebar-buttons upper-buttons"><Home :size="20" />Home</RouterLink></li>
             <li><RouterLink to="/about" class="sidebar-buttons upper-buttons"><LayoutGrid :size="20"/>About</RouterLink></li>
+            <li><RouterLink to="/components" class="sidebar-buttons upper-buttons"><LayoutGrid :size="20"/>Components(only for dev)</RouterLink></li>
           </ul>
         </nav>
       </div>
