@@ -69,10 +69,10 @@ func registerRoutes(router *chi.Mux, pool *pgxpool.Pool) {
 	apiGroup := huma.NewGroup(api, "/api")
 
 	handler.RegisterHealth(apiGroup)
-	handler.RegisterLecturers(apiGroup, pool)
 	handler.RegisterBoards(apiGroup, pool)
 	handler.RegisterCells(apiGroup, pool)
 	handler.RegisterVotes(apiGroup, pool)
+	handler.RegisterGames(apiGroup, pool)
 }
 
 // startServer begins listening on the given port and blocks until the server exits.
