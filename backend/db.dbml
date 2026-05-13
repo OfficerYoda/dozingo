@@ -27,6 +27,7 @@ Table user_authentications {
   provider text [not null]
   provider_user_id text [not null]
   ~timestamps
+
   indexes {
     (provider, provider_user_id) [unique, name: 'uq_provider_identity']
   }
@@ -35,34 +36,39 @@ Table user_authentications {
 Ref: user_authentications.user_id > users.id [delete: cascade]
 
 //// ============================================
-//// BOARDS & RATINGS
+//// BOARDS & CELLS
 //// ============================================
-
-Table lecturers {
-  id uuid [pk, default: `gen_random_uuid()`]
-  name text [not null]
-  slug text [unique, not null, note: 'URL-friendly identifier']
-  ~timestamps
-}
 
 Table boards {
   id uuid [pk, default: `gen_random_uuid()`]
   title text [not null]
+  description text
   size integer [not null, default: 5, note: 'size=5 means a 5x5 board']
   author_id uuid [not null]
-  lecturer_id uuid
   ~timestamps
+
   checks {
     `size >= 3 AND size <= 7` [name: 'chk_board_size']
   }
 }
 
+Ref: boards.author_id > users.id [delete: cascade]
+
 Table cells {
   id uuid [pk, default: `gen_random_uuid()`]
   board_id uuid [not null]
   content text [not null]
+  value integer
+  author_id uuid [note: 'null = canonical cell, set = personal cell']
   ~timestamps
 }
+
+Ref: cells.board_id > boards.id [delete: cascade]
+Ref: cells.author_id > users.id [delete: cascade]
+
+//// ============================================
+//// VOTES
+//// ============================================
 
 Table votes {
   id uuid [pk, default: `gen_random_uuid()`]
@@ -70,6 +76,7 @@ Table votes {
   board_id uuid [not null]
   vote_value integer [not null]
   ~timestamps
+
   indexes {
     (user_id, board_id) [unique, name: 'uq_one_vote_per_user']
   }
@@ -78,8 +85,41 @@ Table votes {
   }
 }
 
-Ref: boards.author_id > users.id [delete: cascade]
-Ref: boards.lecturer_id > lecturers.id [delete: set null]
-Ref: cells.board_id > boards.id [delete: cascade]
 Ref: votes.user_id > users.id [delete: cascade]
 Ref: votes.board_id > boards.id [delete: cascade]
+
+//// ============================================
+//// GAMES
+//// ============================================
+
+Table games {
+  id uuid [pk, default: `gen_random_uuid()`]
+  player_id uuid [not null]
+  board_id uuid [note: 'null if board was deleted']
+  status text [not null, default: 'active', note: 'active | completed | abandoned']
+  ~timestamps
+
+  checks {
+    `status IN ('active', 'completed', 'abandoned')` [name: 'chk_game_status']
+  }
+}
+
+Ref: games.player_id > users.id [delete: cascade]
+Ref: games.board_id > boards.id [delete: set null]
+
+Table game_cells {
+  id uuid [pk, default: `gen_random_uuid()`]
+  game_id uuid [not null]
+  cell_id uuid [note: 'null if source cell was deleted']
+  content text [not null, note: 'snapshot at game creation']
+  position integer [not null]
+  is_marked boolean [not null, default: false]
+  ~timestamps
+
+  indexes {
+    (game_id, position) [unique, name: 'uq_game_cell_position']
+  }
+}
+
+Ref: game_cells.game_id > games.id [delete: cascade]
+Ref: game_cells.cell_id > cells.id [delete: set null]
