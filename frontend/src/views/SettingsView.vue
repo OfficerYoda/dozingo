@@ -1,66 +1,81 @@
 <template>
   <section>
-  <div class="grid container">
-    <article class="card col-6 md-12">
-      <div class="account-security-title">
-        <ShieldUser :size="30"/>
-        <h2 class="mb-0">Account Security</h2>
-      </div>
-
-      <span class="account-security-subtitle">Authentication</span>
-
-      <div class="highlighedcard">
-        <Smartphone :size="23"/>
-        <div class="info">
-          <span>2FA Security</span>
-          <small>Currently Disabled</small>
+    <div class="grid container">
+      <article class="card col-6 md-12">
+        <div class="account-security-title">
+          <ShieldUser :size="30" />
+          <h2 class="mb-0">Account Security</h2>
         </div>
-        <button>Enable</button>
-      </div>
 
-      <div class="highlighedcard">
-        <Key :size="23"/>
-        <div class="info">
-          <span>Last password change</span>
-          <small>3 Months ago</small>
+        <span class="account-security-subtitle">Authentication</span>
+
+        <div class="highlighedcard">
+          <Smartphone :size="23" />
+          <div class="account-security-info">
+            <span>2FA Security</span>
+            <small>Currently Disabled</small>
+          </div>
+          <button class="btn btn-primary">Enable</button>
         </div>
-        <button>Change</button>
-      </div>
-    </article>
 
-    <article class="card col-6 md-12">
-      <div class="display-title">
-        <Palette :size="30"/>
-        <h2 class="mb-0">Display</h2>
-      </div>
-
-      <div class="display-darkmode">
-        <div class="display-darkmode-info">
-          <span>Dark-Mode</span>
-          <small>Adjust for night study</small>
+        <div class="highlighedcard">
+          <Key :size="23" />
+          <div class="account-security-info">
+            <span>Last password change</span>
+            <small>3 Months ago</small>
+          </div>
+          <button class="btn btn-primary">Change</button>
         </div>
-        <input type="checkbox" id="my-toggle">
-      </div>
+      </article>
 
-    </article>
+      <article class="card col-6 md-12">
+        <div class="display-title">
+          <Palette :size="30" />
+          <h2 class="mb-0">Display</h2>
+        </div>
 
-    <article class="card deactivateaccount col-12">
-      <div class="deactivateaccount-title">
-        <h2 class="mb-0">Deactive Account</h2>
-        <small>Temporarily hide your profile and rankings from the playground.</small>
-      </div>
-      <button class="btn btn-danger">Deactivate</button>
-    </article>
-  </div>
+        <span class="account-security-subtitle">Appearance</span>
+
+        <div class="display-darkmode">
+          <div class="display-darkmode-info">
+            <span>Dark-Mode</span>
+            <small>Adjust for night study</small>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="btnToggle" name="btnToggle" />
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="display-fontsize">
+          <small class="display-fontsize-title">Font size adjustment</small>
+          <input class="sliderreal" type="range" min="1" max="5" value="3" step="1">
+          <div class="display-fontsize-texts">
+            <small>Small</small>
+            <small>Standart</small>
+            <small>Large</small>
+          </div>
+        </div>
+
+      </article>
+
+      <article class="card deactivateaccount col-12">
+        <div class="deactivateaccount-title">
+          <h2 class="mb-0">Deactive Account</h2>
+          <small>Temporarily hide your profile and rankings from the playground.</small>
+        </div>
+        <button class="btn btn-danger deactivateaccount-btn">Deactivate</button>
+      </article>
+    </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import { ShieldUser, Key, Smartphone, Palette } from 'lucide-vue-next'
+import { ShieldUser, Key, Smartphone, Palette } from 'lucide-vue-next';
+
 </script>
 
 <style scoped>
-
 .card {
   background-color: #F3EEFF
 }
@@ -79,7 +94,7 @@ import { ShieldUser, Key, Smartphone, Palette } from 'lucide-vue-next'
   gap: 12px;
 }
 
-.highlighedcard .info {
+.highlighedcard .account-security-info {
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -95,26 +110,40 @@ import { ShieldUser, Key, Smartphone, Palette } from 'lucide-vue-next'
   color: #874E00;
 }
 
-.info span {
+.account-security-info span {
   color: #2C2A51;
   font-size: 16px;
   font-weight: 550;
 }
 
-.info small {
+.account-security-info small {
   color: #75729E;
 }
 
-.account-security-title{
+.display-darkmode span {
+  color: #2C2A51;
+  font-size: 16px;
+  font-weight: 550;
+}
+
+.display-darkmode small {
+  color: #75729E;
+}
+
+.account-security-title {
   display: flex;
-    gap: 8px;
+  gap: 8px;
 }
 
 .account-security-title svg {
   color: #B41340;
 }
 
-.display-darkmode {
+.display-darkmode {
+  padding: 24px;
+  margin-top: 24px;
+  background-color: #FFFFFF;
+  border-radius: var(--radius-sm);
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -151,4 +180,104 @@ h2 {
   flex: 1;
 }
 
+.deactivateaccount-btn {
+  font-weight: 600;
+}
+
+/*--- Slider styling ---*/
+input[type=range] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  background-color: #ffffff00;
+}
+
+input[type=range]::-webkit-slider-runnable-track {
+  background-color: #DDD9FF;
+  border-radius: var(--radius-lg);
+  width: 100%;
+}
+
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  background: #75729E;
+  margin-top: -5px;
+  width: 20px;
+  height: 20px;
+  margin-bottom: -5px;
+  border-radius: 50%;
+}
+
+.display-fontsize-texts {
+  display: flex;
+  justify-content: space-between;
+}
+
+.display-fontsize-texts small {
+  color: #75729E;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.display-fontsize {
+  margin-top: 24px;
+}
+
+.display-fontsize-title {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.sliderreal {
+  padding-top: 16px;
+}
+
+
+
+
+
+/* Das ist testing ground */
+.toggle {
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 34px;
+}
+
+.toggle input {
+  display: none;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #DDD9FF;
+  transition: 0.4s;
+  border-radius: 34px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 26px;
+  width: 26px;
+  left: 4px;
+  bottom: 4px;
+  background-color: #FFF;
+  transition: 0.4s;
+  border-radius: 50%;
+}
+
+input:checked+.slider {
+  background-color: #75729E;
+}
+
+input:checked+.slider:before {
+  transform: translateX(26px);
+}
 </style>
