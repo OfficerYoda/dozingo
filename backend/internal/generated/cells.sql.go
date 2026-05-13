@@ -12,18 +12,19 @@ import (
 )
 
 const createCell = `-- name: CreateCell :one
-INSERT INTO cells (board_id, content)
-VALUES ($1, $2)
+INSERT INTO cells (board_id, content, value)
+VALUES ($1, $2, $3)
 RETURNING id, board_id, content, created_at, updated_at, value, author_id
 `
 
 type CreateCellParams struct {
 	BoardID pgtype.UUID `json:"board_id"`
 	Content string      `json:"content"`
+	Value   int32       `json:"value"`
 }
 
 func (q *Queries) CreateCell(ctx context.Context, arg CreateCellParams) (Cell, error) {
-	row := q.db.QueryRow(ctx, createCell, arg.BoardID, arg.Content)
+	row := q.db.QueryRow(ctx, createCell, arg.BoardID, arg.Content, arg.Value)
 	var i Cell
 	err := row.Scan(
 		&i.ID,

@@ -3,8 +3,8 @@ SELECT * FROM cells
 WHERE board_id = $1;
 
 -- name: CreateCell :one
-INSERT INTO cells (board_id, content)
-VALUES ($1, $2)
+INSERT INTO cells (board_id, content, value)
+VALUES ($1, $2, $3)
 RETURNING *;
 
 -- name: UpdateCell :one

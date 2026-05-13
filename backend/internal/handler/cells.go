@@ -32,6 +32,7 @@ type CreateCellInput struct {
 	BoardID string `path:"board_id" format:"uuid"`
 	Body    struct {
 		Content string `json:"content" format:"text" required:"true" maxLength:"200"`
+		Value   *int32 `json:"value" format:"integer"`
 	}
 }
 
@@ -133,9 +134,15 @@ func createCell(ctx context.Context, queries *generated.Queries, input CreateCel
 		return nil, huma.Error400BadRequest("invalid board_id", err)
 	}
 
+	var value int32 = 1
+	if input.Body.Value != nil {
+		value = *input.Body.Value
+	}
+
 	board, err := queries.CreateCell(ctx, generated.CreateCellParams{
 		BoardID: boardID,
 		Content: input.Body.Content,
+		Value:   value,
 	})
 	if err != nil {
 		return nil, huma.Error500InternalServerError("failed to create cell", err)
