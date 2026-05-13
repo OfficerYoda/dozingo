@@ -14,17 +14,16 @@ import (
 /// ===== Input/Output types =====
 
 type BoardOutput struct {
-	ID         string `json:"id" format:"uuid"`
-	Title      string `json:"title" format:"text"`
-	Size       int32  `json:"size" format:"integer"`
-	AuthorID   string `json:"author_id" format:"uuid"`
-	LecturerID string `json:"lecturer_id" format:"uuid"`
+	ID          string `json:"id" format:"uuid"`
+	Title       string `json:"title" format:"text"`
+	Description string `json:"description" format:"text"`
+	Size        int32  `json:"size" format:"integer"`
+	AuthorID    string `json:"author_id" format:"uuid"`
 }
 
 type GetBoardsInput struct {
-	AuthorID   string `query:"author_id"`
-	LecturerID string `query:"lecturer_id"`
-	Size       int32  `query:"size"`
+	AuthorID string `query:"author_id"`
+	Size     int32  `query:"size"`
 }
 
 type GetBoardsOutput struct {
@@ -41,10 +40,10 @@ type GetBoardByIDOutput struct {
 
 type CreateBoardInput struct {
 	Body struct {
-		Title      string `json:"title" format:"text" required:"true" maxLength:"200"`
-		Size       int32  `json:"size" format:"integer" required:"true" maxLength:"200"`
-		AuthorID   string `json:"author_id" format:"uuid" required:"true"`
-		LecturerID string `json:"lecturer_id" format:"uuid" required:"false"`
+		Title       string `json:"title" format:"text" required:"true" maxLength:"200"`
+		Description string `json:"description" format:"text" maxLength:"500"`
+		Size        int32  `json:"size" format:"integer" required:"true" maxLength:"200"`
+		AuthorID    string `json:"author_id" format:"uuid" required:"true"`
 	}
 }
 
@@ -146,16 +145,14 @@ func createBoard(ctx context.Context, queries *generated.Queries, input CreateBo
 	if err != nil {
 		return nil, huma.Error400BadRequest("invalid author_id", err)
 	}
-	lecturerID, err := uuidFromString(input.Body.LecturerID)
-	if err != nil {
-		return nil, huma.Error400BadRequest("invalid lecturer_id", err)
-	}
+
+	description := pgTextFromString(input.Body.Description)
 
 	board, err := queries.CreateBoard(ctx, generated.CreateBoardParams{
-		Title:      input.Body.Title,
-		Size:       input.Body.Size,
-		AuthorID:   authorID,
-		LecturerID: lecturerID,
+		Title:       input.Body.Title,
+		Description: description,
+		Size:        input.Body.Size,
+		AuthorID:    authorID,
 	})
 	if err != nil {
 		return nil, huma.Error500InternalServerError("failed to create board", err)
@@ -194,12 +191,6 @@ func queryBoardsFiltered(ctx context.Context, input GetBoardsInput, pool *pgxpoo
 		i++
 	}
 
-	if input.LecturerID != "" {
-		query += fmt.Sprintf(" AND lecturer_id = $%d", i)
-		args = append(args, input.LecturerID)
-		i++
-	}
-
 	if input.Size != 0 {
 		query += fmt.Sprintf(" AND size = $%d", i)
 		args = append(args, input.Size)
@@ -214,10 +205,10 @@ func queryBoardsFiltered(ctx context.Context, input GetBoardsInput, pool *pgxpoo
 
 func boardToOutput(board generated.Board) BoardOutput {
 	return BoardOutput{
-		ID:         board.ID.String(),
-		Title:      board.Title,
-		Size:       board.Size,
-		AuthorID:   board.AuthorID.String(),
-		LecturerID: board.LecturerID.String(),
+		ID:          board.ID.String(),
+		Title:       board.Title,
+		Description: board.Description.String,
+		Size:        board.Size,
+		AuthorID:    board.AuthorID.String(),
 	}
 }
