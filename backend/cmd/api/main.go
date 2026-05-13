@@ -73,6 +73,7 @@ func registerRoutes(router *chi.Mux, pool *pgxpool.Pool) {
 	handler.RegisterCells(apiGroup, pool)
 	handler.RegisterVotes(apiGroup, pool)
 	handler.RegisterGames(apiGroup, pool)
+	handler.RegisterGameCells(apiGroup, pool)
 }
 
 // startServer begins listening on the given port and blocks until the server exits.
