@@ -7,7 +7,7 @@ SELECT * FROM boards
 WHERE id = $1;
 
 -- name: CreateBoard :one
-INSERT INTO boards (title, size, author_id, lecturer_id)
+INSERT INTO boards (title, size, author_id, description)
 VALUES ($1, $2, $3, $4)
 RETURNING *;
 

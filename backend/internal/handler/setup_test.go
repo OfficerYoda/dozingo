@@ -58,10 +58,15 @@ func TestMain(m *testing.M) {
 
 	RegisterHealth(apiGroup)
 	RegisterUsers(apiGroup, testPool)
-	RegisterLecturers(apiGroup, testPool)
 	RegisterBoards(apiGroup, testPool)
 	RegisterCells(apiGroup, testPool)
 	RegisterVotes(apiGroup, testPool)
+	RegisterGames(apiGroup, testPool)
+	RegisterGameCells(apiGroup, testPool)
+
+	// Clean tables before running tests to ensure a fresh state
+	_, _ = testPool.Exec(context.Background(),
+		"TRUNCATE TABLE game_cells, games, votes, cells, boards, users RESTART IDENTITY CASCADE")
 
 	code := m.Run()
 
@@ -73,7 +78,7 @@ func TestMain(m *testing.M) {
 func cleanupTables(t *testing.T) {
 	t.Helper()
 	_, err := testPool.Exec(context.Background(),
-		"TRUNCATE TABLE votes, cells, boards, lecturers, users RESTART IDENTITY CASCADE")
+		"TRUNCATE TABLE game_cells, games, votes, cells, boards, users RESTART IDENTITY CASCADE")
 	if err != nil {
 		t.Fatalf("failed to clean up tables: %v", err)
 	}
@@ -145,12 +150,13 @@ func createTestUser(t *testing.T, username, email string) string {
 	return resp["id"].(string)
 }
 
-// createTestLecturer creates a lecturer via the API and returns its ID.
-func createTestLecturer(t *testing.T, name, slug string) string {
+// createTestBoard creates a board via the API and returns its ID.
+func createTestBoard(t *testing.T, title string, size int, authorID string) string {
 	t.Helper()
-	w := doRequest(http.MethodPost, "/api/lecturers", map[string]string{
-		"name": name,
-		"slug": slug,
+	w := doRequest(http.MethodPost, "/api/boards", map[string]any{
+		"title":     title,
+		"size":      size,
+		"author_id": authorID,
 	})
 	assertStatus(t, w, http.StatusOK)
 	var resp map[string]any
@@ -158,15 +164,37 @@ func createTestLecturer(t *testing.T, name, slug string) string {
 	return resp["id"].(string)
 }
 
-// createTestBoard creates a board via the API and returns its ID.
-func createTestBoard(t *testing.T, title string, size int, authorID, lecturerID string) string {
+// createTestBoardWithDescription creates a board with a description via the API and returns its ID.
+func createTestBoardWithDescription(t *testing.T, title, description string, size int, authorID string) string {
 	t.Helper()
 	w := doRequest(http.MethodPost, "/api/boards", map[string]any{
 		"title":       title,
+		"description": description,
 		"size":        size,
 		"author_id":   authorID,
-		"lecturer_id": lecturerID,
 	})
+	assertStatus(t, w, http.StatusOK)
+	var resp map[string]any
+	decodeJSON(t, w, &resp)
+	return resp["id"].(string)
+}
+
+// createTestCell creates a cell on a board via the API and returns its ID.
+func createTestCell(t *testing.T, boardID, content string) string {
+	t.Helper()
+	w := doRequest(http.MethodPost, fmt.Sprintf("/api/boards/%s/cells", boardID), map[string]any{
+		"content": content,
+	})
+	assertStatus(t, w, http.StatusOK)
+	var resp map[string]any
+	decodeJSON(t, w, &resp)
+	return resp["id"].(string)
+}
+
+// createTestGame creates a game via the API and returns its ID.
+func createTestGame(t *testing.T, playerID, boardID string) string {
+	t.Helper()
+	w := doRequest(http.MethodPost, fmt.Sprintf("/api/boards/%s/games?player_id=%s", boardID, playerID), nil)
 	assertStatus(t, w, http.StatusOK)
 	var resp map[string]any
 	decodeJSON(t, w, &resp)

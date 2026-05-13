@@ -6,12 +6,11 @@ import (
 	"testing"
 )
 
-// setupBoardForVotes creates a user, lecturer, and board, returning the user ID and board ID.
+// setupBoardForVotes creates a user and board, returning the user ID and board ID.
 func setupBoardForVotes(t *testing.T) (userID, boardID string) {
 	t.Helper()
 	userID = createTestUser(t, "voteuser", "voteuser@example.com")
-	lecturerID := createTestLecturer(t, "Vote Lecturer", "vote-lecturer")
-	boardID = createTestBoard(t, "Vote Board", 5, userID, lecturerID)
+	boardID = createTestBoard(t, "Vote Board", 5, userID)
 	return userID, boardID
 }
 

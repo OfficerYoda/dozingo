@@ -1,0 +1,285 @@
+package handler
+
+import (
+	"fmt"
+	"net/http"
+	"testing"
+)
+
+// setupForGameCells creates a user, board, cell, and game, returning relevant IDs.
+func setupForGameCells(t *testing.T) (userID, boardID, cellID, gameID string) {
+	t.Helper()
+	userID = createTestUser(t, "gamecelluser", "gamecelluser@example.com")
+	boardID = createTestBoard(t, "GameCell Board", 5, userID)
+	cellID = createTestCell(t, boardID, "Source Cell")
+	gameID = createTestGame(t, userID, boardID)
+	return
+}
+
+func TestCreateGameCells(t *testing.T) {
+	t.Cleanup(func() { cleanupTables(t) })
+	_, boardID, cellID, gameID := setupForGameCells(t)
+
+	// Create a second cell
+	cellID2 := createTestCell(t, boardID, "Source Cell 2")
+
+	body := []map[string]any{
+		{"cell_id": cellID, "content": "Cell Content 1", "position": 0},
+		{"cell_id": cellID2, "content": "Cell Content 2", "position": 1},
+	}
+
+	w := doRequest(http.MethodPost, fmt.Sprintf("/api/games/%s/cells", gameID), body)
+	assertStatus(t, w, http.StatusOK)
+
+	var resp []map[string]any
+	decodeJSON(t, w, &resp)
+
+	if len(resp) != 2 {
+		t.Errorf("expected 2 game cells, got %d", len(resp))
+		return
+	}
+
+	// Verify cells are ordered by position
+	if pos, ok := resp[0]["position"].(float64); !ok || int(pos) != 0 {
+		t.Errorf("expected first cell position = 0, got %v", resp[0]["position"])
+	}
+	if pos, ok := resp[1]["position"].(float64); !ok || int(pos) != 1 {
+		t.Errorf("expected second cell position = 1, got %v", resp[1]["position"])
+	}
+
+	assertJSONField(t, resp[0], "content", "Cell Content 1")
+	assertJSONField(t, resp[1], "content", "Cell Content 2")
+	assertJSONField(t, resp[0], "game_id", gameID)
+}
+
+func TestCreateGameCells_FullBoard(t *testing.T) {
+	t.Cleanup(func() { cleanupTables(t) })
+	_, boardID, _, gameID := setupForGameCells(t)
+
+	// Create 9 cells for a 3x3 board worth of game cells
+	cells := make([]map[string]any, 9)
+	for i := 0; i < 9; i++ {
+		cellID := createTestCell(t, boardID, fmt.Sprintf("Cell %d", i))
+		cells[i] = map[string]any{
+			"cell_id":  cellID,
+			"content":  fmt.Sprintf("Game Cell %d", i),
+			"position": i,
+		}
+	}
+
+	w := doRequest(http.MethodPost, fmt.Sprintf("/api/games/%s/cells", gameID), cells)
+	assertStatus(t, w, http.StatusOK)
+
+	var resp []map[string]any
+	decodeJSON(t, w, &resp)
+
+	if len(resp) != 9 {
+		t.Errorf("expected 9 game cells, got %d", len(resp))
+	}
+}
+
+func TestGetGameCellsByGameID(t *testing.T) {
+	t.Cleanup(func() { cleanupTables(t) })
+	_, _, cellID, gameID := setupForGameCells(t)
+
+	// Create game cells
+	body := []map[string]any{
+		{"cell_id": cellID, "content": "Cell A", "position": 0},
+		{"cell_id": cellID, "content": "Cell B", "position": 1},
+		{"cell_id": cellID, "content": "Cell C", "position": 2},
+	}
+	doRequest(http.MethodPost, fmt.Sprintf("/api/games/%s/cells", gameID), body)
+
+	w := doRequest(http.MethodGet, fmt.Sprintf("/api/games/%s/cells", gameID), nil)
+	assertStatus(t, w, http.StatusOK)
+
+	var resp []map[string]any
+	decodeJSON(t, w, &resp)
+
+	if len(resp) != 3 {
+		t.Errorf("expected 3 game cells, got %d", len(resp))
+		return
+	}
+
+	// Should be ordered by position
+	for i, cell := range resp {
+		if pos, ok := cell["position"].(float64); !ok || int(pos) != i {
+			t.Errorf("expected position %d, got %v", i, cell["position"])
+		}
+	}
+}
+
+func TestGetGameCellsByGameID_Empty(t *testing.T) {
+	t.Cleanup(func() { cleanupTables(t) })
+	_, _, _, gameID := setupForGameCells(t)
+
+	w := doRequest(http.MethodGet, fmt.Sprintf("/api/games/%s/cells", gameID), nil)
+	assertStatus(t, w, http.StatusOK)
+
+	var resp []map[string]any
+	decodeJSON(t, w, &resp)
+
+	if len(resp) != 0 {
+		t.Errorf("expected 0 game cells, got %d", len(resp))
+	}
+}
+
+func TestUpdateGameCellMark_MarkTrue(t *testing.T) {
+	t.Cleanup(func() { cleanupTables(t) })
+	_, _, cellID, gameID := setupForGameCells(t)
+
+	// Create a game cell
+	body := []map[string]any{
+		{"cell_id": cellID, "content": "Markable Cell", "position": 0},
+	}
+	createResp := doRequest(http.MethodPost, fmt.Sprintf("/api/games/%s/cells", gameID), body)
+	assertStatus(t, createResp, http.StatusOK)
+
+	var created []map[string]any
+	decodeJSON(t, createResp, &created)
+	gameCellID := created[0]["id"].(string)
+
+	// Mark the cell
+	w := doRequest(http.MethodPut, fmt.Sprintf("/api/games/%s/cells/%s", gameID, gameCellID),
+		map[string]any{"is_marked": true},
+	)
+	assertStatus(t, w, http.StatusOK)
+
+	var resp map[string]any
+	decodeJSON(t, w, &resp)
+
+	assertJSONField(t, resp, "id", gameCellID)
+	if marked, ok := resp["is_marked"].(bool); !ok || !marked {
+		t.Errorf("expected is_marked = true, got %v", resp["is_marked"])
+	}
+}
+
+func TestUpdateGameCellMark_MarkFalse(t *testing.T) {
+	t.Cleanup(func() { cleanupTables(t) })
+	_, _, cellID, gameID := setupForGameCells(t)
+
+	// Create a game cell
+	body := []map[string]any{
+		{"cell_id": cellID, "content": "Toggle Cell", "position": 0},
+	}
+	createResp := doRequest(http.MethodPost, fmt.Sprintf("/api/games/%s/cells", gameID), body)
+	assertStatus(t, createResp, http.StatusOK)
+
+	var created []map[string]any
+	decodeJSON(t, createResp, &created)
+	gameCellID := created[0]["id"].(string)
+
+	// Mark it true first
+	doRequest(http.MethodPut, fmt.Sprintf("/api/games/%s/cells/%s", gameID, gameCellID),
+		map[string]any{"is_marked": true},
+	)
+
+	// Now unmark it
+	w := doRequest(http.MethodPut, fmt.Sprintf("/api/games/%s/cells/%s", gameID, gameCellID),
+		map[string]any{"is_marked": false},
+	)
+	assertStatus(t, w, http.StatusOK)
+
+	var resp map[string]any
+	decodeJSON(t, w, &resp)
+
+	if marked, ok := resp["is_marked"].(bool); !ok || marked {
+		t.Errorf("expected is_marked = false, got %v", resp["is_marked"])
+	}
+}
+
+func TestUpdateGameCellMark_NotFound(t *testing.T) {
+	t.Cleanup(func() { cleanupTables(t) })
+	_, _, _, gameID := setupForGameCells(t)
+
+	w := doRequest(http.MethodPut,
+		fmt.Sprintf("/api/games/%s/cells/00000000-0000-0000-0000-000000000000", gameID),
+		map[string]any{"is_marked": true},
+	)
+	assertStatus(t, w, http.StatusNotFound)
+}
+
+func TestUpdateGameCellMark_WrongGame(t *testing.T) {
+	t.Cleanup(func() { cleanupTables(t) })
+	userID, boardID, cellID, gameID := setupForGameCells(t)
+
+	// Create a game cell on game1
+	body := []map[string]any{
+		{"cell_id": cellID, "content": "Cell", "position": 0},
+	}
+	createResp := doRequest(http.MethodPost, fmt.Sprintf("/api/games/%s/cells", gameID), body)
+	assertStatus(t, createResp, http.StatusOK)
+
+	var created []map[string]any
+	decodeJSON(t, createResp, &created)
+	gameCellID := created[0]["id"].(string)
+
+	// Create a second game
+	game2ID := createTestGame(t, userID, boardID)
+
+	// Try to mark cell from game1 using game2's path
+	w := doRequest(http.MethodPut, fmt.Sprintf("/api/games/%s/cells/%s", game2ID, gameCellID),
+		map[string]any{"is_marked": true},
+	)
+	assertStatus(t, w, http.StatusNotFound)
+}
+
+func TestGetGameCellsByGameID_InvalidGameID(t *testing.T) {
+	w := doRequest(http.MethodGet, "/api/games/not-a-uuid/cells", nil)
+	assertStatus(t, w, http.StatusUnprocessableEntity)
+}
+
+func TestCreateGameCells_IsMarkedDefaultsFalse(t *testing.T) {
+	t.Cleanup(func() { cleanupTables(t) })
+	_, _, cellID, gameID := setupForGameCells(t)
+
+	body := []map[string]any{
+		{"cell_id": cellID, "content": "New Cell", "position": 0},
+	}
+
+	w := doRequest(http.MethodPost, fmt.Sprintf("/api/games/%s/cells", gameID), body)
+	assertStatus(t, w, http.StatusOK)
+
+	var resp []map[string]any
+	decodeJSON(t, w, &resp)
+
+	if len(resp) != 1 {
+		t.Fatalf("expected 1 game cell, got %d", len(resp))
+	}
+
+	if marked, ok := resp[0]["is_marked"].(bool); !ok || marked {
+		t.Errorf("expected is_marked = false by default, got %v", resp[0]["is_marked"])
+	}
+}
+
+func TestGetGameCellsByGameID_CellIDNullable(t *testing.T) {
+	t.Cleanup(func() { cleanupTables(t) })
+	_, boardID, cellID, gameID := setupForGameCells(t)
+
+	// Create game cells with a cell reference
+	body := []map[string]any{
+		{"cell_id": cellID, "content": "Linked Cell", "position": 0},
+	}
+	doRequest(http.MethodPost, fmt.Sprintf("/api/games/%s/cells", gameID), body)
+
+	// Delete the source cell (should SET NULL on game_cells.cell_id)
+	doRequest(http.MethodDelete, fmt.Sprintf("/api/boards/%s/cells/%s", boardID, cellID), nil)
+
+	// Fetch game cells — cell_id should now be null
+	w := doRequest(http.MethodGet, fmt.Sprintf("/api/games/%s/cells", gameID), nil)
+	assertStatus(t, w, http.StatusOK)
+
+	var resp []map[string]any
+	decodeJSON(t, w, &resp)
+
+	if len(resp) != 1 {
+		t.Fatalf("expected 1 game cell, got %d", len(resp))
+	}
+
+	if resp[0]["cell_id"] != nil {
+		t.Errorf("expected cell_id = null after source cell deletion, got %v", resp[0]["cell_id"])
+	}
+
+	// Content should still be preserved (snapshot)
+	assertJSONField(t, resp[0], "content", "Linked Cell")
+}
