@@ -53,7 +53,7 @@
             <small>Adjust for night study</small>
           </div>
           <label class="toggle">
-            <input type="checkbox" id="btnToggle" name="btnToggle" />
+            <input type="checkbox" id="btnToggle" name="btnToggle" v-model="isChecked" @change="changeDarkMode"/>
             <span class="slider"></span>
           </label>
         </div>
@@ -67,7 +67,8 @@
             <button href="" className="btn btn-secondary dropdown-button">Color-Theme</button>
             <ul class="dropdown-menu">
               <li>Rot-Grün</li>
-              <li>Was weiß ich</li>
+              <li>Blau-Gelb</li>
+              <li>Graustufen</li>
             </ul>
           </div>
         </div>
@@ -96,7 +97,18 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue';
 import { ShieldUser, Key, Smartphone, Palette } from 'lucide-vue-next';
+
+const isChecked = ref(document.documentElement.getAttribute('data-theme') === 'dark')
+
+function changeDarkMode() {
+  if (isChecked.value) {
+    document.documentElement.setAttribute('data-theme', 'dark');
+  } else {
+    document.documentElement.removeAttribute('data-theme');
+  }
+}
 
 </script>
 
