@@ -9,13 +9,13 @@ import (
 )
 
 type Board struct {
-	ID         pgtype.UUID        `json:"id"`
-	Title      string             `json:"title"`
-	Size       int32              `json:"size"`
-	AuthorID   pgtype.UUID        `json:"author_id"`
-	LecturerID pgtype.UUID        `json:"lecturer_id"`
-	CreatedAt  pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
+	ID          pgtype.UUID        `json:"id"`
+	Title       string             `json:"title"`
+	Size        int32              `json:"size"`
+	AuthorID    pgtype.UUID        `json:"author_id"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	Description pgtype.Text        `json:"description"`
 }
 
 type Cell struct {
@@ -24,12 +24,26 @@ type Cell struct {
 	Content   string             `json:"content"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	Value     int32              `json:"value"`
+	AuthorID  pgtype.UUID        `json:"author_id"`
 }
 
-type Lecturer struct {
+type Game struct {
 	ID        pgtype.UUID        `json:"id"`
-	Name      string             `json:"name"`
-	Slug      string             `json:"slug"`
+	PlayerID  pgtype.UUID        `json:"player_id"`
+	BoardID   pgtype.UUID        `json:"board_id"`
+	Status    string             `json:"status"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
+type GameCell struct {
+	ID        pgtype.UUID        `json:"id"`
+	GameID    pgtype.UUID        `json:"game_id"`
+	CellID    pgtype.UUID        `json:"cell_id"`
+	Content   string             `json:"content"`
+	Position  int32              `json:"position"`
+	IsMarked  bool               `json:"is_marked"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }

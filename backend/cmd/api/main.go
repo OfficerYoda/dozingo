@@ -65,14 +65,15 @@ func createRouter(cfg *config.Config) *chi.Mux {
 
 // registerRoutes sets up the Huma API and registers all handler groups.
 func registerRoutes(router *chi.Mux, pool *pgxpool.Pool) {
-	api := humachi.New(router, huma.DefaultConfig("Dozingo API", "0.1.0"))
+	api := humachi.New(router, huma.DefaultConfig("Dozingo API", "0.2.0"))
 	apiGroup := huma.NewGroup(api, "/api")
 
 	handler.RegisterHealth(apiGroup)
-	handler.RegisterLecturers(apiGroup, pool)
 	handler.RegisterBoards(apiGroup, pool)
 	handler.RegisterCells(apiGroup, pool)
 	handler.RegisterVotes(apiGroup, pool)
+	handler.RegisterGames(apiGroup, pool)
+	handler.RegisterGameCells(apiGroup, pool)
 }
 
 // startServer begins listening on the given port and blocks until the server exits.

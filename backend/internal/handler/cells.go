@@ -13,9 +13,11 @@ import (
 /// ===== Input/Output types =====
 
 type CellOutput struct {
-	ID      string `json:"id" format:"uuid"`
-	BoardID string `json:"board_id" format:"uuid"`
-	Content string `json:"content" format:"text"`
+	ID       string  `json:"id" format:"uuid"`
+	BoardID  string  `json:"board_id" format:"uuid"`
+	Content  string  `json:"content" format:"text"`
+	AuthorID *string `json:"author_id" format:"uuid"`
+	Value    int32   `json:"value"`
 }
 
 type GetCellsByBoardIDInput struct {
@@ -30,6 +32,7 @@ type CreateCellInput struct {
 	BoardID string `path:"board_id" format:"uuid"`
 	Body    struct {
 		Content string `json:"content" format:"text" required:"true" maxLength:"200"`
+		Value   *int32 `json:"value,omitempty"`
 	}
 }
 
@@ -41,7 +44,8 @@ type UpdateCellInput struct {
 	BoardID string `path:"board_id" format:"uuid"`
 	CellID  string `path:"cell_id" format:"uuid"`
 	Body    struct {
-		Content string `json:"content" format:"text" required:"true" maxLength:"200"`
+		Content *string `json:"content,omitempty" maxLength:"200"`
+		Value   *int    `json:"value,omitempty"`
 	}
 }
 
@@ -130,9 +134,15 @@ func createCell(ctx context.Context, queries *generated.Queries, input CreateCel
 		return nil, huma.Error400BadRequest("invalid board_id", err)
 	}
 
+	var value int32 = 1
+	if input.Body.Value != nil {
+		value = *input.Body.Value
+	}
+
 	board, err := queries.CreateCell(ctx, generated.CreateCellParams{
 		BoardID: boardID,
 		Content: input.Body.Content,
+		Value:   value,
 	})
 	if err != nil {
 		return nil, huma.Error500InternalServerError("failed to create cell", err)
@@ -151,10 +161,21 @@ func updateCell(ctx context.Context, queries *generated.Queries, input UpdateCel
 		return nil, huma.Error400BadRequest("invalid cell_id", err)
 	}
 
+	var content string
+	if input.Body.Content != nil {
+		content = *input.Body.Content
+	}
+
+	var value int32
+	if input.Body.Value != nil {
+		value = int32(*input.Body.Value)
+	}
+
 	cell, err := queries.UpdateCell(ctx, generated.UpdateCellParams{
 		ID:      cellID,
 		BoardID: boardID,
-		Content: input.Body.Content,
+		Content: content,
+		Value:   value,
 	})
 	if err != nil {
 		if err == pgx.ErrNoRows {
@@ -193,9 +214,16 @@ func deleteCell(ctx context.Context, queries *generated.Queries, input DeleteCel
 /// ===== Helper =====
 
 func cellToOutput(cell generated.Cell) CellOutput {
+	var authorID *string
+	if cell.AuthorID.Valid {
+		s := cell.AuthorID.String()
+		authorID = &s
+	}
 	return CellOutput{
-		ID:      cell.ID.String(),
-		BoardID: cell.BoardID.String(),
-		Content: cell.Content,
+		ID:       cell.ID.String(),
+		BoardID:  cell.BoardID.String(),
+		Content:  cell.Content,
+		AuthorID: authorID,
+		Value:    cell.Value,
 	}
 }

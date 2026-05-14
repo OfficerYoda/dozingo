@@ -56,21 +56,21 @@ func seed(pool *pgxpool.Pool) error {
 		return err
 	}
 
-	lecturerIDs, err := seedLecturers(ctx, q)
+	boardIDs, err := seedBoards(ctx, q, userIDs)
 	if err != nil {
 		return err
 	}
 
-	boardIDs, err := seedBoards(ctx, q, userIDs, lecturerIDs)
+	cellIDs, err := seedCells(ctx, q, boardIDs)
 	if err != nil {
-		return err
-	}
-
-	if err := seedCells(ctx, q, boardIDs); err != nil {
 		return err
 	}
 
 	if err := seedVotes(ctx, q, userIDs, boardIDs); err != nil {
+		return err
+	}
+
+	if err := seedGames(ctx, q, userIDs, boardIDs, cellIDs); err != nil {
 		return err
 	}
 
@@ -84,7 +84,7 @@ func seed(pool *pgxpool.Pool) error {
 // truncateAll removes all data from tables in the correct order (respecting foreign keys).
 func truncateAll(ctx context.Context, tx pgx.Tx) error {
 	log.Println("Truncating all tables...")
-	_, err := tx.Exec(ctx, "TRUNCATE votes, cells, boards, user_authentications, lecturers, users CASCADE")
+	_, err := tx.Exec(ctx, "TRUNCATE game_cells, games, votes, cells, boards, user_authentications, users CASCADE")
 	if err != nil {
 		return fmt.Errorf("truncating tables: %w", err)
 	}
@@ -109,34 +109,16 @@ func seedUsers(ctx context.Context, q *generated.Queries) ([]pgtype.UUID, error)
 	return ids, nil
 }
 
-func seedLecturers(ctx context.Context, q *generated.Queries) ([]pgtype.UUID, error) {
-	log.Printf("Seeding %d lecturers...", len(lecturers))
-
-	ids := make([]pgtype.UUID, 0, len(lecturers))
-	for _, l := range lecturers {
-		lecturer, err := q.CreateLecturer(ctx, generated.CreateLecturerParams{
-			Name: l.Name,
-			Slug: l.Slug,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("creating lecturer %q: %w", l.Name, err)
-		}
-		ids = append(ids, lecturer.ID)
-	}
-
-	return ids, nil
-}
-
-func seedBoards(ctx context.Context, q *generated.Queries, userIDs, lecturerIDs []pgtype.UUID) ([]pgtype.UUID, error) {
+func seedBoards(ctx context.Context, q *generated.Queries, userIDs []pgtype.UUID) ([]pgtype.UUID, error) {
 	log.Printf("Seeding %d boards...", len(boards))
 
 	ids := make([]pgtype.UUID, 0, len(boards))
 	for _, b := range boards {
 		board, err := q.CreateBoard(ctx, generated.CreateBoardParams{
-			Title:      b.Title,
-			Size:       b.Size,
-			AuthorID:   userIDs[b.AuthorIdx],
-			LecturerID: lecturerIDs[b.LecturerIdx],
+			Title:       b.Title,
+			Description: pgtype.Text{String: b.Description, Valid: b.Description != ""},
+			Size:        b.Size,
+			AuthorID:    userIDs[b.AuthorIdx],
 		})
 		if err != nil {
 			return nil, fmt.Errorf("creating board %q: %w", b.Title, err)
@@ -147,28 +129,35 @@ func seedBoards(ctx context.Context, q *generated.Queries, userIDs, lecturerIDs 
 	return ids, nil
 }
 
-func seedCells(ctx context.Context, q *generated.Queries, boardIDs []pgtype.UUID) error {
+// seedCells creates cells for each board and returns a map of boardIdx -> []cellID.
+func seedCells(ctx context.Context, q *generated.Queries, boardIDs []pgtype.UUID) (map[int][]pgtype.UUID, error) {
+	cellIDsByBoard := make(map[int][]pgtype.UUID)
 	totalCells := 0
+
 	for i, b := range boards {
 		phrases, ok := cellPhrases[i]
 		if !ok {
-			return fmt.Errorf("no cell phrases defined for board %d (%q)", i, b.Title)
+			return nil, fmt.Errorf("no cell phrases defined for board %d (%q)", i, b.Title)
 		}
 
+		cellIDs := make([]pgtype.UUID, 0, len(phrases))
 		for _, phrase := range phrases {
-			_, err := q.CreateCell(ctx, generated.CreateCellParams{
+			cell, err := q.CreateCell(ctx, generated.CreateCellParams{
 				BoardID: boardIDs[i],
 				Content: phrase,
+				Value:   1,
 			})
 			if err != nil {
-				return fmt.Errorf("creating cell for board %q: %w", b.Title, err)
+				return nil, fmt.Errorf("creating cell for board %q: %w", b.Title, err)
 			}
+			cellIDs = append(cellIDs, cell.ID)
 			totalCells++
 		}
+		cellIDsByBoard[i] = cellIDs
 	}
 
 	log.Printf("Seeded %d cells across %d boards", totalCells, len(boards))
-	return nil
+	return cellIDsByBoard, nil
 }
 
 func seedVotes(ctx context.Context, q *generated.Queries, userIDs, boardIDs []pgtype.UUID) error {
@@ -186,4 +175,97 @@ func seedVotes(ctx context.Context, q *generated.Queries, userIDs, boardIDs []pg
 	}
 
 	return nil
+}
+
+func seedGames(ctx context.Context, q *generated.Queries, userIDs, boardIDs []pgtype.UUID, cellIDsByBoard map[int][]pgtype.UUID) error {
+	log.Printf("Seeding %d games...", len(games))
+
+	for gameIdx, g := range games {
+		game, err := q.CreateGame(ctx, generated.CreateGameParams{
+			PlayerID: userIDs[g.PlayerIdx],
+			BoardID:  boardIDs[g.BoardIdx],
+		})
+		if err != nil {
+			return fmt.Errorf("creating game %d: %w", gameIdx, err)
+		}
+
+		// Update status if not "active" (default)
+		if g.Status != "active" {
+			_, err = q.UpdateGameStatus(ctx, generated.UpdateGameStatusParams{
+				Status:   g.Status,
+				ID:       game.ID,
+				PlayerID: userIDs[g.PlayerIdx],
+			})
+			if err != nil {
+				return fmt.Errorf("updating game %d status to %q: %w", gameIdx, g.Status, err)
+			}
+		}
+
+		// Seed game cells
+		cells, ok := gameCells[gameIdx]
+		if !ok {
+			continue
+		}
+
+		boardCellIDs := cellIDsByBoard[g.BoardIdx]
+
+		params := make([]generated.CreateGameCellsParams, 0, len(cells))
+		for i, gc := range cells {
+			// Use the corresponding cell ID from the board if available
+			var cellID pgtype.UUID
+			if i < len(boardCellIDs) {
+				cellID = boardCellIDs[i]
+			}
+
+			params = append(params, generated.CreateGameCellsParams{
+				GameID:   game.ID,
+				CellID:   cellID,
+				Content:  gc.Content,
+				Position: gc.Position,
+			})
+		}
+
+		_, err = q.CreateGameCells(ctx, params)
+		if err != nil {
+			return fmt.Errorf("creating game cells for game %d: %w", gameIdx, err)
+		}
+
+		// Mark cells that should be marked
+		// We need to fetch them first since CopyFrom doesn't return IDs
+		gameCellRows, err := q.GetGameCellsByGameID(ctx, game.ID)
+		if err != nil {
+			return fmt.Errorf("fetching game cells for game %d: %w", gameIdx, err)
+		}
+
+		for _, row := range gameCellRows {
+			// Find matching cell data by position
+			for _, gc := range cells {
+				if gc.Position == row.Position && gc.IsMarked {
+					_, err = q.UpdateGameCellMark(ctx, generated.UpdateGameCellMarkParams{
+						IsMarked: true,
+						ID:       row.ID,
+						GameID:   game.ID,
+					})
+					if err != nil {
+						return fmt.Errorf("marking game cell at position %d for game %d: %w", gc.Position, gameIdx, err)
+					}
+					break
+				}
+			}
+		}
+
+		log.Printf("  Game %d: %d cells seeded (%d marked)", gameIdx, len(cells), countMarked(cells))
+	}
+
+	return nil
+}
+
+func countMarked(cells []gameCellData) int {
+	count := 0
+	for _, c := range cells {
+		if c.IsMarked {
+			count++
+		}
+	}
+	return count
 }

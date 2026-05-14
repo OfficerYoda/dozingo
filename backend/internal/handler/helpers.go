@@ -15,3 +15,7 @@ func uuidFromString(s string) (pgtype.UUID, error) {
 	}
 	return id, nil
 }
+
+func pgTextFromString(s string) pgtype.Text {
+	return pgtype.Text{String: s, Valid: s != ""}
+}

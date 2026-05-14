@@ -13,7 +13,7 @@ import (
 /// ===== Input/Output types =====
 
 type UserOutput struct {
-	ID       string `json:"id" format:"uuid"`
+	ID       string `json:"id" format:"uuid"` // TODO hide this from the frontend and add extra checks like in DeleteGame
 	Username string `json:"username" format:"text" maxLength:"200"`
 	Email    string `json:"email" format:"text" maxLength:"200"`
 }

@@ -6,19 +6,18 @@ import (
 	"testing"
 )
 
-// setupBoardForCells creates a user, lecturer, and board, returning the board ID.
+// setupBoardForCells creates a user and board, returning the board ID.
 func setupBoardForCells(t *testing.T) string {
 	t.Helper()
 	userID := createTestUser(t, "cellauthor", "cellauthor@example.com")
-	lecturerID := createTestLecturer(t, "Cell Lecturer", "cell-lecturer")
-	return createTestBoard(t, "Cell Board", 5, userID, lecturerID)
+	return createTestBoard(t, "Cell Board", 5, userID)
 }
 
 func TestCreateCell(t *testing.T) {
 	t.Cleanup(func() { cleanupTables(t) })
 	boardID := setupBoardForCells(t)
 
-	w := doRequest(http.MethodPost, fmt.Sprintf("/api/boards/%s/cells", boardID), map[string]string{
+	w := doRequest(http.MethodPost, fmt.Sprintf("/api/boards/%s/cells", boardID), map[string]any{
 		"content": "Free Space",
 	})
 	assertStatus(t, w, http.StatusOK)
@@ -34,15 +33,55 @@ func TestCreateCell(t *testing.T) {
 	}
 }
 
+func TestCreateCell_DefaultValue(t *testing.T) {
+	t.Cleanup(func() { cleanupTables(t) })
+	boardID := setupBoardForCells(t)
+
+	// Create cell without specifying value — should default to 1
+	w := doRequest(http.MethodPost, fmt.Sprintf("/api/boards/%s/cells", boardID), map[string]any{
+		"content": "Default Value Cell",
+	})
+	assertStatus(t, w, http.StatusOK)
+
+	var resp map[string]any
+	decodeJSON(t, w, &resp)
+
+	assertJSONField(t, resp, "content", "Default Value Cell")
+	// Value should be 1 (default)
+	if val, ok := resp["value"].(float64); !ok || int(val) != 1 {
+		t.Errorf("expected value = 1, got %v", resp["value"])
+	}
+}
+
+func TestCreateCell_ExplicitValue(t *testing.T) {
+	t.Cleanup(func() { cleanupTables(t) })
+	boardID := setupBoardForCells(t)
+
+	// Create cell with explicit value
+	w := doRequest(http.MethodPost, fmt.Sprintf("/api/boards/%s/cells", boardID), map[string]any{
+		"content": "High Value Cell",
+		"value":   3,
+	})
+	assertStatus(t, w, http.StatusOK)
+
+	var resp map[string]any
+	decodeJSON(t, w, &resp)
+
+	assertJSONField(t, resp, "content", "High Value Cell")
+	if val, ok := resp["value"].(float64); !ok || int(val) != 3 {
+		t.Errorf("expected value = 3, got %v", resp["value"])
+	}
+}
+
 func TestGetCellsByBoardID(t *testing.T) {
 	t.Cleanup(func() { cleanupTables(t) })
 	boardID := setupBoardForCells(t)
 
 	// Create two cells
-	doRequest(http.MethodPost, fmt.Sprintf("/api/boards/%s/cells", boardID), map[string]string{
+	doRequest(http.MethodPost, fmt.Sprintf("/api/boards/%s/cells", boardID), map[string]any{
 		"content": "Cell A",
 	})
-	doRequest(http.MethodPost, fmt.Sprintf("/api/boards/%s/cells", boardID), map[string]string{
+	doRequest(http.MethodPost, fmt.Sprintf("/api/boards/%s/cells", boardID), map[string]any{
 		"content": "Cell B",
 	})
 
@@ -82,7 +121,7 @@ func TestUpdateCell(t *testing.T) {
 	boardID := setupBoardForCells(t)
 
 	// Create a cell
-	createResp := doRequest(http.MethodPost, fmt.Sprintf("/api/boards/%s/cells", boardID), map[string]string{
+	createResp := doRequest(http.MethodPost, fmt.Sprintf("/api/boards/%s/cells", boardID), map[string]any{
 		"content": "Original",
 	})
 	assertStatus(t, createResp, http.StatusOK)
@@ -92,7 +131,7 @@ func TestUpdateCell(t *testing.T) {
 	cellID := created["id"].(string)
 
 	// Update the cell
-	w := doRequest(http.MethodPut, fmt.Sprintf("/api/boards/%s/cells/%s", boardID, cellID), map[string]string{
+	w := doRequest(http.MethodPut, fmt.Sprintf("/api/boards/%s/cells/%s", boardID, cellID), map[string]any{
 		"content": "Updated",
 	})
 	assertStatus(t, w, http.StatusOK)
@@ -105,11 +144,40 @@ func TestUpdateCell(t *testing.T) {
 	assertJSONField(t, resp, "board_id", boardID)
 }
 
+func TestUpdateCell_Value(t *testing.T) {
+	t.Cleanup(func() { cleanupTables(t) })
+	boardID := setupBoardForCells(t)
+
+	// Create a cell with value 1
+	createResp := doRequest(http.MethodPost, fmt.Sprintf("/api/boards/%s/cells", boardID), map[string]any{
+		"content": "Cell",
+		"value":   1,
+	})
+	assertStatus(t, createResp, http.StatusOK)
+
+	var created map[string]any
+	decodeJSON(t, createResp, &created)
+	cellID := created["id"].(string)
+
+	// Update the cell value
+	w := doRequest(http.MethodPut, fmt.Sprintf("/api/boards/%s/cells/%s", boardID, cellID), map[string]any{
+		"value": 5,
+	})
+	assertStatus(t, w, http.StatusOK)
+
+	var resp map[string]any
+	decodeJSON(t, w, &resp)
+
+	if val, ok := resp["value"].(float64); !ok || int(val) != 5 {
+		t.Errorf("expected value = 5, got %v", resp["value"])
+	}
+}
+
 func TestUpdateCell_NotFound(t *testing.T) {
 	t.Cleanup(func() { cleanupTables(t) })
 	boardID := setupBoardForCells(t)
 
-	w := doRequest(http.MethodPut, fmt.Sprintf("/api/boards/%s/cells/00000000-0000-0000-0000-000000000000", boardID), map[string]string{
+	w := doRequest(http.MethodPut, fmt.Sprintf("/api/boards/%s/cells/00000000-0000-0000-0000-000000000000", boardID), map[string]any{
 		"content": "Nope",
 	})
 	assertStatus(t, w, http.StatusNotFound)
@@ -120,7 +188,7 @@ func TestDeleteCell(t *testing.T) {
 	boardID := setupBoardForCells(t)
 
 	// Create a cell
-	createResp := doRequest(http.MethodPost, fmt.Sprintf("/api/boards/%s/cells", boardID), map[string]string{
+	createResp := doRequest(http.MethodPost, fmt.Sprintf("/api/boards/%s/cells", boardID), map[string]any{
 		"content": "Delete Me",
 	})
 	assertStatus(t, createResp, http.StatusOK)
@@ -158,12 +226,11 @@ func TestUpdateCell_WrongBoard(t *testing.T) {
 
 	// Create two boards with cells
 	userID := createTestUser(t, "wrongboardauthor", "wrongboard@example.com")
-	lecturerID := createTestLecturer(t, "WrongBoard Lecturer", "wrongboard-lecturer")
-	board1 := createTestBoard(t, "Board 1", 5, userID, lecturerID)
-	board2 := createTestBoard(t, "Board 2", 5, userID, lecturerID)
+	board1 := createTestBoard(t, "Board 1", 5, userID)
+	board2 := createTestBoard(t, "Board 2", 5, userID)
 
 	// Create cell on board1
-	createResp := doRequest(http.MethodPost, fmt.Sprintf("/api/boards/%s/cells", board1), map[string]string{
+	createResp := doRequest(http.MethodPost, fmt.Sprintf("/api/boards/%s/cells", board1), map[string]any{
 		"content": "Board1 Cell",
 	})
 	assertStatus(t, createResp, http.StatusOK)
@@ -172,7 +239,7 @@ func TestUpdateCell_WrongBoard(t *testing.T) {
 	cellID := created["id"].(string)
 
 	// Try to update cell using board2's path -- should fail
-	w := doRequest(http.MethodPut, fmt.Sprintf("/api/boards/%s/cells/%s", board2, cellID), map[string]string{
+	w := doRequest(http.MethodPut, fmt.Sprintf("/api/boards/%s/cells/%s", board2, cellID), map[string]any{
 		"content": "Moved",
 	})
 	assertStatus(t, w, http.StatusNotFound)
@@ -182,12 +249,11 @@ func TestDeleteCell_WrongBoard(t *testing.T) {
 	t.Cleanup(func() { cleanupTables(t) })
 
 	userID := createTestUser(t, "wrongdelauthor", "wrongdel@example.com")
-	lecturerID := createTestLecturer(t, "WrongDel Lecturer", "wrongdel-lecturer")
-	board1 := createTestBoard(t, "Board 1", 5, userID, lecturerID)
-	board2 := createTestBoard(t, "Board 2", 5, userID, lecturerID)
+	board1 := createTestBoard(t, "Board 1", 5, userID)
+	board2 := createTestBoard(t, "Board 2", 5, userID)
 
 	// Create cell on board1
-	createResp := doRequest(http.MethodPost, fmt.Sprintf("/api/boards/%s/cells", board1), map[string]string{
+	createResp := doRequest(http.MethodPost, fmt.Sprintf("/api/boards/%s/cells", board1), map[string]any{
 		"content": "Board1 Cell",
 	})
 	assertStatus(t, createResp, http.StatusOK)
