@@ -83,7 +83,11 @@ func registerUser(ctx context.Context, pool *pgxpool.Pool, input RegisterInput) 
 		slog.Error("failed to create transaction", "error", err)
 		return nil, huma.Error500InternalServerError("internal error")
 	}
-	defer tx.Rollback(ctx)
+	defer func() {
+		if err := tx.Rollback(ctx); err != nil {
+			slog.Error("failed to rollback transaction", "error", err)
+		}
+	}()
 
 	queries := generated.New(tx)
 

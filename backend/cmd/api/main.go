@@ -12,6 +12,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/officeryoda/dozingo/internal/config"
+	"github.com/officeryoda/dozingo/internal/generated"
 	"github.com/officeryoda/dozingo/internal/handler"
 )
 
@@ -26,6 +27,9 @@ func main() {
 		log.Fatalf("failed to connect to database: %v", err)
 	}
 	defer pool.Close()
+
+	// Periodically remove expired sessions
+	handler.StartSessionCleanup(context.Background(), generated.New(pool))
 
 	router := createRouter(cfg)
 	registerRoutes(router, pool)
