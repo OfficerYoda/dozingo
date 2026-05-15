@@ -28,7 +28,7 @@ RETURNING *;
 -- Used on register: prompote an anon session to a user-bound one
 UPDATE sessions
 SET user_id = $2
-WHERE tokenp = $1
+WHERE token = $1
 RETURNING *;
 
 -- name: DeleteSessionByToken :exec
@@ -42,12 +42,3 @@ WHERE user_id = $1;
 -- name: DeleteExpiredSessions :exec
 DELETE FROM sessions
 WHERE expires_at < now();
-
-feat: add session-based game support for anonymous players
-
-- Add session_id column to games and support session-based authorization
-- Create new ListGamesBySession query to retrieve games by session
-- Update CreateGame to accept session_id parameter
-- Refactor UpdateGameStatus to authorize by either player_id (logged-in) or session_id (anonymous)
-- Add Session model and comprehensive session management queries (CRUD, token validation, expiration)
-- Generate corresponding Go code from SQL queries
