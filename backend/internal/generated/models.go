@@ -35,6 +35,7 @@ type Game struct {
 	Status    string             `json:"status"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	SessionID pgtype.UUID        `json:"session_id"`
 }
 
 type GameCell struct {
@@ -44,6 +45,15 @@ type GameCell struct {
 	Content   string             `json:"content"`
 	Position  int32              `json:"position"`
 	IsMarked  bool               `json:"is_marked"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
+type Session struct {
+	ID        pgtype.UUID        `json:"id"`
+	UserID    pgtype.UUID        `json:"user_id"`
+	Token     string             `json:"token"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }
