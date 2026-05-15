@@ -44,6 +44,20 @@ Table user_authentications {
 
 Ref: user_authentications.user_id > users.id [delete: cascade]
 
+Table sessions {
+  id uuid [pk, default: `gen_random_uuid()`]
+  user_id uuid [note: 'null for anonymous sessions']
+  token text [unique, not null]
+  expires_at timestamptz [not null]
+  ~timestamps
+
+  indexes {
+      expires_at
+  }
+}
+
+Ref: sessions.user_id > users.id [delete: cascade]
+
 //// ============================================
 //// BOARDS & CELLS
 //// ============================================
@@ -103,7 +117,8 @@ Ref: votes.board_id > boards.id [delete: cascade]
 
 Table games {
   id uuid [pk, default: `gen_random_uuid()`]
-  player_id uuid [not null]
+  player_id uuid [note: 'null for anonymous players; set on login/signup']
+  session_id uuid [note: 'null when session expired']
   board_id uuid [note: 'null if board was deleted']
   status text [not null, default: 'active', note: 'active | completed | abandoned']
   ~timestamps
@@ -113,7 +128,8 @@ Table games {
   }
 }
 
-Ref: games.player_id > users.id [delete: cascade]
+Ref: games.player_id > users.id [delete: set null]
+Ref: games.session_id > sessions.id [delete: set null]
 Ref: games.board_id > boards.id [delete: set null]
 
 Table game_cells {
