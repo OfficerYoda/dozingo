@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -24,12 +24,13 @@ import (
 func main() {
 	cfg, err := config.Load()
 	if err != nil {
-		log.Fatalf("failed to load config: %v", err)
+		slog.Warn("failed to load config", "error", err)
 	}
 
 	pool, err := connectDB(cfg.DatabaseURL)
 	if err != nil {
-		log.Fatalf("failed to connect to database: %v", err)
+		slog.Error("failed to connect to database", "error", err)
+		panic(err)
 	}
 	defer pool.Close()
 
@@ -62,7 +63,7 @@ func connectDB(databaseURL string) (*pgxpool.Pool, error) {
 		return nil, fmt.Errorf("pinging database: %w", err)
 	}
 
-	log.Println("Connected to database")
+	slog.Info("Connected to database")
 	return pool, nil
 }
 
@@ -104,12 +105,12 @@ func createServer(port int, handler http.Handler) *http.Server {
 	addr := fmt.Sprintf(":%d", port)
 	srv := &http.Server{Handler: handler, Addr: addr}
 
-	log.Printf("Server created on %s", addr)
+	slog.Info("Server created", "addr", addr)
 	return srv
 }
 
 func startServer(srv *http.Server) {
 	if err := srv.ListenAndServe(); err != nil {
-		log.Fatalf("server failed: %v", err)
+		slog.Error("server failed", "error", err)
 	}
 }

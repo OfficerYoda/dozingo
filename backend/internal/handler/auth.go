@@ -196,10 +196,10 @@ func logoutUser(ctx context.Context, queries *generated.Queries) (*struct{}, err
 	}
 
 	if err := queries.DeleteSessionByToken(ctx, session.Token); err != nil {
-		slog.Error("failed to delete session on logout", "error", err)
+		slog.Warn("failed to delete session on logout", "error", err)
 	}
 	if err := middleware.ClearSessionTokenCookieCtx(ctx); err != nil {
-		slog.Error("failed to clear session cookie on logout", "error", err)
+		slog.Warn("failed to clear session cookie on logout", "error", err)
 	}
 	return &struct{}{}, nil
 }

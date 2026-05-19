@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -39,17 +39,20 @@ func TestMain(m *testing.M) {
 
 	dbURL := os.Getenv("TEST_DATABASE_URL")
 	if dbURL == "" {
-		log.Fatal("TEST_DATABASE_URL is not set. Ensure .env is configured and Docker postgres is running.")
+		slog.Error("TEST_DATABASE_URL is not set. Ensure .env is configured and Docker postgres is running.")
+		os.Exit(1)
 	}
 
 	var err error
 	testPool, err = pgxpool.New(context.Background(), dbURL)
 	if err != nil {
-		log.Fatalf("failed to create test pool: %v", err)
+		slog.Error("failed to create test pool", "error", err)
+		os.Exit(1)
 	}
 
 	if err := testPool.Ping(context.Background()); err != nil {
-		log.Fatalf("failed to ping test database: %v", err)
+		slog.Error("failed to ping test database", "error", err)
+		os.Exit(1)
 	}
 
 	// Set up the router with all handlers registered

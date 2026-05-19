@@ -45,7 +45,7 @@ var (
 func init() {
 	cfg, err = config.Load()
 	if err != nil {
-		slog.Error("failed to load config", "error", err)
+		slog.Warn("failed to load config", "error", err)
 	}
 }
 
