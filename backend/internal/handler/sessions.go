@@ -13,7 +13,7 @@ func StartSessionCleanup(ctx context.Context, queries *generated.Queries) {
 		// Run once at startup
 		deleteExpiredSessions(ctx, queries)
 
-		ticker := time.NewTicker(24 * time.Hour)
+		ticker := time.NewTicker(1 * time.Hour)
 		defer ticker.Stop()
 
 		for {
