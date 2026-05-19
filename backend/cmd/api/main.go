@@ -34,8 +34,7 @@ func main() {
 
 	router := createRouter(cfg)
 	registerRoutes(router, pool)
-	formattedPort := fmt.Sprintf(":%d", cfg.Port)
-	startServer(formattedPort, router)
+	startServer(cfg.Port, router)
 }
 
 // connectDB creates a connection pool to PostgreSQL and verifies the connection.
@@ -88,10 +87,10 @@ func registerRoutes(router *chi.Mux, pool *pgxpool.Pool) {
 }
 
 // startServer begins listening on the given port and blocks until the server exits.
-func startServer(port string, handler http.Handler) {
-	addr := fmt.Sprintf(":%s", port)
+func startServer(port int, handler http.Handler) {
+	addr := fmt.Sprintf(":%d", port)
 	log.Printf("Server starting on %s", addr)
-	log.Printf("API docs available at http://localhost:%s/docs", port)
+	log.Printf("API docs available at http://localhost:%d/docs", port)
 	if err := http.ListenAndServe(addr, handler); err != nil {
 		log.Fatalf("server failed: %v", err)
 	}
