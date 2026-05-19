@@ -7,10 +7,12 @@ import (
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
+	"github.com/jackc/pgx"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/officeryoda/dozingo/internal/auth"
 	"github.com/officeryoda/dozingo/internal/generated"
+	"github.com/officeryoda/dozingo/internal/middleware"
 )
 
 /// ===== Dummy hash for timing attack prevention =====
@@ -29,8 +31,9 @@ func init() {
 
 type AuthOutput struct {
 	Body struct {
-		Username string  `json:"username" format:"text" maxLength:"200"`
-		Email    *string `json:"email" format:"text" maxLength:"200"`
+		ID       string  `json:"id" format:"uuid"`
+		Username string  `json:"username" format:"text"`
+		Email    *string `json:"email" format:"text"`
 	}
 }
 
@@ -78,18 +81,18 @@ func RegisterAuth(api huma.API, pool *pgxpool.Pool) {
 /// ===== Handlers =====
 
 func registerUser(ctx context.Context, pool *pgxpool.Pool, input RegisterInput) (*AuthOutput, error) {
-	tx, err := pool.Begin(ctx)
+	transaction, err := pool.Begin(ctx)
 	if err != nil {
 		slog.Error("failed to create transaction", "error", err)
-		return nil, huma.Error500InternalServerError("internal error")
+		return nil, huma.Error500InternalServerError("internal server error")
 	}
 	defer func() {
-		if err := tx.Rollback(ctx); err != nil {
+		if err := transaction.Rollback(ctx); err != nil && !errors.Is(err, pgx.ErrTxClosed) {
 			slog.Error("failed to rollback transaction", "error", err)
 		}
 	}()
 
-	queries := generated.New(tx)
+	queries := generated.New(transaction)
 
 	user, err := queries.CreateUser(ctx, generated.CreateUserParams{
 		Username: input.Body.Username,
@@ -102,13 +105,13 @@ func registerUser(ctx context.Context, pool *pgxpool.Pool, input RegisterInput) 
 			return nil, huma.Error409Conflict("username or email already taken")
 		}
 		slog.Error("failed to create user", "error", err)
-		return nil, huma.Error500InternalServerError("internal error")
+		return nil, huma.Error500InternalServerError("internal server error")
 	}
 
 	passwordHash, err := auth.HashPassword(input.Body.Password)
 	if err != nil {
 		slog.Error("failed to hash password", "error", err)
-		return nil, huma.Error500InternalServerError("internal error")
+		return nil, huma.Error500InternalServerError("internal server error")
 	}
 
 	_, err = queries.UpsertUserPassword(ctx, generated.UpsertUserPasswordParams{
@@ -117,16 +120,32 @@ func registerUser(ctx context.Context, pool *pgxpool.Pool, input RegisterInput) 
 	})
 	if err != nil {
 		slog.Error("failed to create user password", "error", err)
-		return nil, huma.Error500InternalServerError("internal error")
+		return nil, huma.Error500InternalServerError("internal server error")
 	}
 
-	err = tx.Commit(ctx)
+	session, err := middleware.RequireSessionCtx(ctx, queries)
+	if err != nil {
+		slog.Error("failed to require session", "error", err)
+		return nil, huma.Error500InternalServerError("internal server error")
+	}
+
+	_, err = queries.AttachUserToSession(ctx, generated.AttachUserToSessionParams{
+		Token:  session.Token,
+		UserID: user.ID,
+	})
+	if err != nil {
+		slog.Error("failed to attach user to session", "error", err)
+		return nil, huma.Error500InternalServerError("internal server error")
+	}
+
+	err = transaction.Commit(ctx)
 	if err != nil {
 		slog.Error("failed to commit transaction", "error", err)
-		return nil, huma.Error500InternalServerError("internal error")
+		return nil, huma.Error500InternalServerError("internal server error")
 	}
 
 	output := &AuthOutput{}
+	output.Body.ID = user.ID.String()
 	output.Body.Username = user.Username
 	output.Body.Email = stringFromPgText(user.Email)
 	return output, nil
@@ -135,9 +154,12 @@ func registerUser(ctx context.Context, pool *pgxpool.Pool, input RegisterInput) 
 func loginUser(ctx context.Context, queries *generated.Queries, input LoginInput) (*AuthOutput, error) {
 	user, err := queries.GetUserForPasswordLogin(ctx, input.Body.Username)
 	if err != nil {
-		// Check password against dummy hash to prevent timing attacks
-		_ = auth.CheckPassword(input.Body.Password, dummyPasswordHash)
-		return nil, huma.Error401Unauthorized("invalid credentials")
+		if errors.Is(err, pgx.ErrNoRows) {
+			_ = auth.CheckPassword(input.Body.Password, dummyPasswordHash)
+			return nil, huma.Error401Unauthorized("invalid credentials")
+		}
+		slog.Error("db error", "error", err)
+		return nil, huma.Error500InternalServerError("internal server error")
 	}
 
 	err = auth.CheckPassword(input.Body.Password, user.PasswordHash)
@@ -145,7 +167,23 @@ func loginUser(ctx context.Context, queries *generated.Queries, input LoginInput
 		return nil, huma.Error401Unauthorized("invalid credentials")
 	}
 
+	session, err := middleware.RequireSessionCtx(ctx, queries)
+	if err != nil {
+		slog.Error("failed to require session", "error", err)
+		return nil, huma.Error500InternalServerError("internal server error")
+	}
+
+	_, err = queries.AttachUserToSession(ctx, generated.AttachUserToSessionParams{
+		Token:  session.Token,
+		UserID: user.ID,
+	})
+	if err != nil {
+		slog.Error("failed to attach user to session", "error", err)
+		return nil, huma.Error500InternalServerError("internal server error")
+	}
+
 	output := &AuthOutput{}
+	output.Body.ID = user.ID.String()
 	output.Body.Username = user.Username
 	output.Body.Email = stringFromPgText(user.Email)
 	return output, nil
