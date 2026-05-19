@@ -15,18 +15,6 @@ import (
 	"github.com/officeryoda/dozingo/internal/middleware"
 )
 
-/// ===== Dummy hash for timing attack prevention =====
-
-var dummyPasswordHash string
-
-func init() {
-	h, err := auth.HashPassword("dummy-password")
-	if err != nil {
-		panic("failed to generate dummy hash")
-	}
-	dummyPasswordHash = h
-}
-
 /// ===== Input/Output types =====
 
 type AuthOutput struct {
@@ -176,7 +164,7 @@ func loginUser(ctx context.Context, queries *generated.Queries, input LoginInput
 	user, err := queries.GetUserForPasswordLogin(ctx, input.Body.Username)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			_ = auth.CheckPassword(input.Body.Password, dummyPasswordHash)
+			auth.CheckPasswordAgainstDummy(input.Body.Password)
 			return nil, huma.Error401Unauthorized("invalid credentials")
 		}
 		slog.Error("db error", "error", err)
