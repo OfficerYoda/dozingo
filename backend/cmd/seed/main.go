@@ -63,7 +63,8 @@ func seed(pool *pgxpool.Pool) error {
 		return err
 	}
 
-	if _, err := seedSessions(ctx, q, userIDs); err != nil {
+	sessionIDs, err := seedSessions(ctx, q, userIDs)
+	if err != nil {
 		return err
 	}
 
@@ -81,7 +82,7 @@ func seed(pool *pgxpool.Pool) error {
 		return err
 	}
 
-	if err := seedGames(ctx, q, userIDs, boardIDs, cellIDs); err != nil {
+	if err := seedGames(ctx, q, userIDs, sessionIDs, boardIDs, cellIDs); err != nil {
 		return err
 	}
 
@@ -247,25 +248,41 @@ func seedVotes(ctx context.Context, q *generated.Queries, userIDs, boardIDs []pg
 	return nil
 }
 
-func seedGames(ctx context.Context, q *generated.Queries, userIDs, boardIDs []pgtype.UUID, cellIDsByBoard map[int][]pgtype.UUID) error {
+func seedGames(ctx context.Context, q *generated.Queries, userIDs, sessionIDs, boardIDs []pgtype.UUID, cellIDsByBoard map[int][]pgtype.UUID) error {
 	log.Printf("Seeding %d games...", len(games))
 
 	for gameIdx, g := range games {
+		var playerID, sessionID pgtype.UUID
+		if g.PlayerIdx >= 0 {
+			playerID = userIDs[g.PlayerIdx]
+		}
+		if g.SessionIdx >= 0 {
+			sessionID = sessionIDs[g.SessionIdx]
+		}
+
 		game, err := q.CreateGame(ctx, generated.CreateGameParams{
-			PlayerID: userIDs[g.PlayerIdx],
-			BoardID:  boardIDs[g.BoardIdx],
+			PlayerID:  playerID,
+			SessionID: sessionID,
+			BoardID:   boardIDs[g.BoardIdx],
 		})
 		if err != nil {
 			return fmt.Errorf("creating game %d: %w", gameIdx, err)
 		}
 
-		// Update status if not "active" (default)
+		// Update status if not "active" (default). Authorisation is by
+		// player_id when the game has one, or by session_id otherwise --
+		// matches the runtime behaviour of UpdateGameStatus.
 		if g.Status != "active" {
-			_, err = q.UpdateGameStatus(ctx, generated.UpdateGameStatusParams{
-				Status:   g.Status,
-				ID:       game.ID,
-				PlayerID: userIDs[g.PlayerIdx],
-			})
+			updateParams := generated.UpdateGameStatusParams{
+				Status: g.Status,
+				ID:     game.ID,
+			}
+			if g.PlayerIdx >= 0 {
+				updateParams.PlayerID = userIDs[g.PlayerIdx]
+			} else {
+				updateParams.SessionID = sessionIDs[g.SessionIdx]
+			}
+			_, err = q.UpdateGameStatus(ctx, updateParams)
 			if err != nil {
 				return fmt.Errorf("updating game %d status to %q: %w", gameIdx, g.Status, err)
 			}
