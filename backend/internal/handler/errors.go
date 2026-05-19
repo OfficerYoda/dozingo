@@ -15,10 +15,10 @@ import (
 // stay in lockstep.
 func notFoundOr500(err error, notFoundMsg, opMsg string) error {
 	if errors.Is(err, pgx.ErrNoRows) {
-		return huma.Error404NotFound(notFoundMsg, err)
+		return huma.Error404NotFound(notFoundMsg)
 	}
 	slog.Error(opMsg, "error", err)
-	return huma.Error500InternalServerError(opMsg, err)
+	return huma.Error500InternalServerError(opMsg)
 }
 
 // internalError logs and returns a 500 for non-NotFound DB errors. Use when
@@ -26,7 +26,7 @@ func notFoundOr500(err error, notFoundMsg, opMsg string) error {
 // bulk inserts) and a 404 would be incorrect.
 func internalError(err error, opMsg string) error {
 	slog.Error(opMsg, "error", err)
-	return huma.Error500InternalServerError(opMsg, err)
+	return huma.Error500InternalServerError(opMsg)
 }
 
 // mapSlice returns a new slice with fn applied to every element of in.
