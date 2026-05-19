@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -62,6 +63,10 @@ func seed(pool *pgxpool.Pool) error {
 		return err
 	}
 
+	if _, err := seedSessions(ctx, q, userIDs); err != nil {
+		return err
+	}
+
 	boardIDs, err := seedBoards(ctx, q, userIDs)
 	if err != nil {
 		return err
@@ -90,7 +95,7 @@ func seed(pool *pgxpool.Pool) error {
 // truncateAll removes all data from tables in the correct order (respecting foreign keys).
 func truncateAll(ctx context.Context, tx pgx.Tx) error {
 	log.Println("Truncating all tables...")
-	_, err := tx.Exec(ctx, "TRUNCATE game_cells, games, votes, cells, boards, user_passwords, user_authentications, users CASCADE")
+	_, err := tx.Exec(ctx, "TRUNCATE game_cells, games, votes, cells, boards, sessions, user_passwords, user_authentications, users CASCADE")
 	if err != nil {
 		return fmt.Errorf("truncating tables: %w", err)
 	}
@@ -141,6 +146,37 @@ func seedPasswords(ctx context.Context, q *generated.Queries, userIDs []pgtype.U
 	}
 
 	return nil
+}
+
+// seedSessions inserts the predefined `sessions` rows. Anonymous sessions
+// (UserIdx == -1) are stored with a NULL user_id. Returns the inserted session
+// IDs in the order of the `sessions` slice so callers can reference them later
+// (e.g. for seeding anonymous games).
+func seedSessions(ctx context.Context, q *generated.Queries, userIDs []pgtype.UUID) ([]pgtype.UUID, error) {
+	log.Printf("Seeding %d sessions...", len(sessions))
+
+	ids := make([]pgtype.UUID, 0, len(sessions))
+	for _, s := range sessions {
+		var userID pgtype.UUID
+		if s.UserIdx >= 0 {
+			userID = userIDs[s.UserIdx]
+		}
+
+		sess, err := q.CreateSession(ctx, generated.CreateSessionParams{
+			UserID: userID,
+			Token:  s.Token,
+			ExpiresAt: pgtype.Timestamptz{
+				Time:  time.Now().Add(time.Duration(s.ExpiresInHours) * time.Hour),
+				Valid: true,
+			},
+		})
+		if err != nil {
+			return nil, fmt.Errorf("creating session %q: %w", s.Token, err)
+		}
+		ids = append(ids, sess.ID)
+	}
+
+	return ids, nil
 }
 
 func seedBoards(ctx context.Context, q *generated.Queries, userIDs []pgtype.UUID) ([]pgtype.UUID, error) {

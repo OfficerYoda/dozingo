@@ -1,5 +1,19 @@
 package main
 
+// Seed credentials (for local dev only):
+//   maxmustermann      / password123
+//   lena.schmidt       / securePass!
+//   timoWerner42       / timoSecret42
+//   ghostUser01        / ghostpass        (no email)
+//   anon_student       / anonpass         (no email)
+//
+// Seed session tokens (for local dev only):
+//   seed-anon-fresh-token-0001      (anonymous, ~30d valid)
+//   seed-anon-near-expiry-0002      (anonymous, <7d -> triggers extension)
+//   seed-anon-expired-0003          (anonymous, expired -> cleanup target)
+//   seed-user-max-token-0010        (bound to maxmustermann)
+//   seed-user-ghost-token-0011      (bound to ghostUser01)
+
 // userData holds username and email pairs for seeding users.
 type userData struct {
 	Username string
@@ -818,6 +832,32 @@ var passwords = []passwordData{
 	{UserIdx: 0, Password: "password123"},
 	{UserIdx: 1, Password: "securePass!"},
 	{UserIdx: 2, Password: "timoSecret42"},
-	{UserIdx: 10, Password: "ghostpass"},  // user with no email
-	{UserIdx: 11, Password: "anonpass"},   // user with no email
+	{UserIdx: 10, Password: "ghostpass"}, // user with no email
+	{UserIdx: 11, Password: "anonpass"},  // user with no email
+}
+
+// sessionData holds a session row to seed.
+// UserIdx == -1 means an anonymous session (user_id NULL).
+// ExpiresInHours is relative to now(); use a negative value to seed a row
+// that is already expired (handy for verifying the cleanup job).
+type sessionData struct {
+	UserIdx        int
+	Token          string
+	ExpiresInHours int
+}
+
+// sessions defines a small set of sessions to seed for local development.
+// The tokens are intentionally predictable so they can be pasted directly into
+// a `Cookie: session_token=...` header for manual testing.
+var sessions = []sessionData{
+	// Anonymous, fresh
+	{UserIdx: -1, Token: "seed-anon-fresh-token-0001", ExpiresInHours: 30 * 24},
+	// Anonymous, close to expiry (< 7d -> triggers auto-extension on next request)
+	{UserIdx: -1, Token: "seed-anon-near-expiry-0002", ExpiresInHours: 6 * 24},
+	// Anonymous, already expired (cleanup-job target)
+	{UserIdx: -1, Token: "seed-anon-expired-0003", ExpiresInHours: -2},
+	// User-bound, fresh -- maxmustermann (password "password123")
+	{UserIdx: 0, Token: "seed-user-max-token-0010", ExpiresInHours: 30 * 24},
+	// User-bound, fresh -- ghostUser01 (password "ghostpass", no email)
+	{UserIdx: 10, Token: "seed-user-ghost-token-0011", ExpiresInHours: 30 * 24},
 }
