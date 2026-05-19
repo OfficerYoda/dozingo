@@ -15,11 +15,11 @@ import (
 /// ===== Input/Output types =====
 
 type BoardOutput struct {
-	BoardID     string `json:"board_id" format:"uuid"`
-	Title       string `json:"title" format:"text"`
-	Description string `json:"description" format:"text"`
-	Size        int32  `json:"size" format:"integer"`
-	AuthorID    string `json:"author_id" format:"uuid"`
+	BoardID     string  `json:"board_id" format:"uuid"`
+	Title       string  `json:"title" format:"text"`
+	Description *string `json:"description" format:"text"`
+	Size        int32   `json:"size" format:"integer"`
+	AuthorID    string  `json:"author_id" format:"uuid"`
 }
 
 type GetBoardsInput struct {
@@ -182,7 +182,7 @@ func boardToOutput(board generated.Board) BoardOutput {
 	return BoardOutput{
 		BoardID:     board.ID.String(),
 		Title:       board.Title,
-		Description: board.Description.String,
+		Description: stringFromPgText(board.Description),
 		Size:        board.Size,
 		AuthorID:    board.AuthorID.String(),
 	}
