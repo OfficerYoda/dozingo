@@ -9,11 +9,12 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humachi"
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
+	chimw "github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/officeryoda/dozingo/internal/config"
 	"github.com/officeryoda/dozingo/internal/generated"
 	"github.com/officeryoda/dozingo/internal/handler"
+	"github.com/officeryoda/dozingo/internal/middleware"
 )
 
 func main() {
@@ -54,8 +55,8 @@ func connectDB(databaseURL string) (*pgxpool.Pool, error) {
 // createRouter creates a Chi router with standard middleware and a root health page.
 func createRouter(cfg *config.Config) *chi.Mux {
 	router := chi.NewMux()
-	router.Use(middleware.Logger)
-	router.Use(middleware.Recoverer)
+	router.Use(chimw.Logger)
+	router.Use(chimw.Recoverer)
 
 	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
@@ -69,7 +70,11 @@ func createRouter(cfg *config.Config) *chi.Mux {
 
 // registerRoutes sets up the Huma API and registers all handler groups.
 func registerRoutes(router *chi.Mux, pool *pgxpool.Pool) {
+	queries := generated.New(pool)
+
 	api := humachi.New(router, huma.DefaultConfig("Dozingo API", "0.2.0"))
+	api.UseMiddleware(middleware.SessionUser(api, queries))
+
 	apiGroup := huma.NewGroup(api, "/api")
 
 	handler.RegisterHealth(apiGroup)

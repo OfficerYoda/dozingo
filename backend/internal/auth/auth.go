@@ -1,6 +1,8 @@
 package auth
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"errors"
 
 	"golang.org/x/crypto/bcrypt"
@@ -38,4 +40,12 @@ func CheckPassword(password, hash string) error {
 	}
 
 	return nil
+}
+
+func GenerateSessionToken() string {
+	bytes := make([]byte, 32)
+	if _, err := rand.Read(bytes); err != nil {
+		return "" // rand.Read never returns an error
+	}
+	return base64.URLEncoding.EncodeToString(bytes)
 }

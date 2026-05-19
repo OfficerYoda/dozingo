@@ -11,6 +11,44 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const getSessionUserByToken = `-- name: GetSessionUserByToken :one
+SELECT 
+  s.id AS session_id,
+  s.user_id,
+  s.token,
+  s.expires_at,
+  u.username,
+  u.email
+FROM sessions s
+LEFT JOIN users u ON u.id = s.user_id
+WHERE s.token = $1
+  AND s.expires_at > now()
+`
+
+type GetSessionUserByTokenRow struct {
+	SessionID pgtype.UUID        `json:"session_id"`
+	UserID    pgtype.UUID        `json:"user_id"`
+	Token     string             `json:"token"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
+	Username  pgtype.Text        `json:"username"`
+	Email     pgtype.Text        `json:"email"`
+}
+
+// user_id may be NULL for anon sessions
+func (q *Queries) GetSessionUserByToken(ctx context.Context, token string) (GetSessionUserByTokenRow, error) {
+	row := q.db.QueryRow(ctx, getSessionUserByToken, token)
+	var i GetSessionUserByTokenRow
+	err := row.Scan(
+		&i.SessionID,
+		&i.UserID,
+		&i.Token,
+		&i.ExpiresAt,
+		&i.Username,
+		&i.Email,
+	)
+	return i, err
+}
+
 const getUserForPasswordLogin = `-- name: GetUserForPasswordLogin :one
 SELECT u.id, u.username, u.email, up.password_hash
 FROM users u

@@ -23,7 +23,7 @@ type AttachUserToSessionParams struct {
 	UserID pgtype.UUID `json:"user_id"`
 }
 
-// Used on register: prompote an anon session to a user-bound one
+// Used on login: prompote an anon session to a user-bound one
 func (q *Queries) AttachUserToSession(ctx context.Context, arg AttachUserToSessionParams) (Session, error) {
 	row := q.db.QueryRow(ctx, attachUserToSession, arg.Token, arg.UserID)
 	var i Session
@@ -116,47 +116,6 @@ func (q *Queries) ExtendSessionByToken(ctx context.Context, arg ExtendSessionByT
 		&i.ExpiresAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-	)
-	return i, err
-}
-
-const getSessionByToken = `-- name: GetSessionByToken :one
-SELECT 
-  s.id AS session_id,
-  s.user_id,
-  s.token,
-  s.expires_at,
-  u.id AS user_id,
-  u.username,
-  u.email
-FROM sessions s
-LEFT JOIN users u ON u.id = s.user_id
-WHERE s.token = $1
-  AND s.expires_at > now()
-`
-
-type GetSessionByTokenRow struct {
-	SessionID pgtype.UUID        `json:"session_id"`
-	UserID    pgtype.UUID        `json:"user_id"`
-	Token     string             `json:"token"`
-	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
-	UserID_2  pgtype.UUID        `json:"user_id_2"`
-	Username  pgtype.Text        `json:"username"`
-	Email     pgtype.Text        `json:"email"`
-}
-
-// user_id may be NULL for anon sessions
-func (q *Queries) GetSessionByToken(ctx context.Context, token string) (GetSessionByTokenRow, error) {
-	row := q.db.QueryRow(ctx, getSessionByToken, token)
-	var i GetSessionByTokenRow
-	err := row.Scan(
-		&i.SessionID,
-		&i.UserID,
-		&i.Token,
-		&i.ExpiresAt,
-		&i.UserID_2,
-		&i.Username,
-		&i.Email,
 	)
 	return i, err
 }
