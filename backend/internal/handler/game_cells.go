@@ -2,11 +2,9 @@ package handler
 
 import (
 	"context"
-	"errors"
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/officeryoda/dozingo/internal/generated"
 )
@@ -101,16 +99,10 @@ func getGameCellsByGameID(ctx context.Context, queries *generated.Queries, input
 
 	cells, err := queries.GetGameCellsByGameID(ctx, gameID)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("internal server error", err)
+		return nil, internalError(err, "failed to get game cells")
 	}
 
-	out := &GetGameCellsByGameIDOutput{}
-	out.Body = make([]GameCellOutput, 0)
-	for _, c := range cells {
-		out.Body = append(out.Body, gameCellToOutput(c))
-	}
-
-	return out, nil
+	return &GetGameCellsByGameIDOutput{Body: mapSlice(cells, gameCellToOutput)}, nil
 }
 
 func createGameCells(ctx context.Context, queries *generated.Queries, input CreateGameCellsInput) (*CreateGameCellsOutput, error) {
@@ -135,22 +127,16 @@ func createGameCells(ctx context.Context, queries *generated.Queries, input Crea
 
 	_, err = queries.CreateGameCells(ctx, params)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("failed to create game cells", err)
+		return nil, internalError(err, "failed to create game cells")
 	}
 
 	// Fetch the newly created cells to return them
 	cells, err := queries.GetGameCellsByGameID(ctx, gameID)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("failed to fetch game cells", err)
+		return nil, internalError(err, "failed to fetch game cells")
 	}
 
-	out := &CreateGameCellsOutput{}
-	out.Body = make([]GameCellOutput, 0)
-	for _, c := range cells {
-		out.Body = append(out.Body, gameCellToOutput(c))
-	}
-
-	return out, nil
+	return &CreateGameCellsOutput{Body: mapSlice(cells, gameCellToOutput)}, nil
 }
 
 func updateGameCellMark(ctx context.Context, queries *generated.Queries, input UpdateGameCellMarkInput) (*UpdateGameCellMarkOutput, error) {
@@ -169,10 +155,7 @@ func updateGameCellMark(ctx context.Context, queries *generated.Queries, input U
 		GameID:   gameID,
 	})
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, huma.Error404NotFound("game cell not found", err)
-		}
-		return nil, huma.Error500InternalServerError("failed to update game cell", err)
+		return nil, notFoundOr500(err, "game cell not found", "failed to update game cell")
 	}
 
 	return &UpdateGameCellMarkOutput{Body: gameCellToOutput(cell)}, nil

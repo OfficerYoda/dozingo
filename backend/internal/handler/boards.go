@@ -2,7 +2,6 @@ package handler
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -61,8 +60,6 @@ type DeleteBoardInput struct {
 func RegisterBoards(api huma.API, pool *pgxpool.Pool) {
 	queries := generated.New(pool)
 
-	_ = queries
-
 	huma.Register(api, huma.Operation{
 		OperationID: "get-boards",
 		Method:      http.MethodGet,
@@ -109,22 +106,16 @@ func RegisterBoards(api huma.API, pool *pgxpool.Pool) {
 func getBoards(ctx context.Context, pool *pgxpool.Pool, input GetBoardsInput) (*GetBoardsOutput, error) {
 	rows, err := queryBoardsFiltered(ctx, input, pool)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("failed to query boards", err)
+		return nil, internalError(err, "failed to query boards")
 	}
 	defer rows.Close()
 
 	boards, err := pgx.CollectRows(rows, pgx.RowToStructByName[generated.Board])
 	if err != nil {
-		return nil, huma.Error500InternalServerError("failed to scan boards", err)
+		return nil, internalError(err, "failed to scan boards")
 	}
 
-	out := &GetBoardsOutput{}
-	out.Body = make([]BoardOutput, 0)
-	for _, b := range boards {
-		out.Body = append(out.Body, boardToOutput(b))
-	}
-
-	return out, nil
+	return &GetBoardsOutput{Body: mapSlice(boards, boardToOutput)}, nil
 }
 
 func getBoardByID(ctx context.Context, queries *generated.Queries, input GetBoardByIDInput) (*GetBoardByIDOutput, error) {
@@ -135,7 +126,7 @@ func getBoardByID(ctx context.Context, queries *generated.Queries, input GetBoar
 
 	board, err := queries.GetBoardByID(ctx, id)
 	if err != nil {
-		return nil, huma.Error404NotFound("board not found", err)
+		return nil, notFoundOr500(err, "board not found", "failed to get board")
 	}
 
 	return &GetBoardByIDOutput{Body: boardToOutput(board)}, nil
@@ -156,7 +147,7 @@ func createBoard(ctx context.Context, queries *generated.Queries, input CreateBo
 		AuthorID:    authorID,
 	})
 	if err != nil {
-		return nil, huma.Error500InternalServerError("failed to create board", err)
+		return nil, internalError(err, "failed to create board")
 	}
 
 	return &CreateBoardOutput{Body: boardToOutput(board)}, nil
@@ -170,10 +161,7 @@ func deleteBoard(ctx context.Context, queries *generated.Queries, input DeleteBo
 
 	_, err = queries.DeleteBoard(ctx, id)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, huma.Error404NotFound("board not found", err)
-		}
-		return nil, huma.Error500InternalServerError("failed to delete board", err)
+		return nil, notFoundOr500(err, "board not found", "failed to delete board")
 	}
 
 	return &struct{}{}, nil

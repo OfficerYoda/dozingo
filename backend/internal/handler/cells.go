@@ -2,11 +2,9 @@ package handler
 
 import (
 	"context"
-	"errors"
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/officeryoda/dozingo/internal/generated"
@@ -65,8 +63,6 @@ type DeleteCellInput struct {
 func RegisterCells(api huma.API, pool *pgxpool.Pool) {
 	queries := generated.New(pool)
 
-	_ = queries
-
 	huma.Register(api, huma.Operation{
 		OperationID: "get-cells-by-board-id",
 		Method:      http.MethodGet,
@@ -118,16 +114,10 @@ func getCellsByBoardID(ctx context.Context, queries *generated.Queries, input Ge
 
 	cells, err := queries.GetCellsByBoardID(ctx, boardID)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("internal server error", err)
+		return nil, internalError(err, "failed to get cells")
 	}
 
-	out := &GetCellsByBoardIDOutput{}
-	out.Body = make([]CellOutput, 0)
-	for _, c := range cells {
-		out.Body = append(out.Body, cellToOutput(c))
-	}
-
-	return out, nil
+	return &GetCellsByBoardIDOutput{Body: mapSlice(cells, cellToOutput)}, nil
 }
 
 func createCell(ctx context.Context, queries *generated.Queries, input CreateCellInput) (*CreateCellOutput, error) {
@@ -147,7 +137,7 @@ func createCell(ctx context.Context, queries *generated.Queries, input CreateCel
 		Value:   value,
 	})
 	if err != nil {
-		return nil, huma.Error500InternalServerError("failed to create cell", err)
+		return nil, internalError(err, "failed to create cell")
 	}
 
 	return &CreateCellOutput{Body: cellToOutput(board)}, nil
@@ -182,10 +172,7 @@ func updateCell(ctx context.Context, queries *generated.Queries, input UpdateCel
 		Value:   value,
 	})
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, huma.Error404NotFound("cell not found on this board", err)
-		}
-		return nil, huma.Error500InternalServerError("failed to update cell", err)
+		return nil, notFoundOr500(err, "cell not found on this board", "failed to update cell")
 	}
 
 	return &UpdateCellOutput{Body: cellToOutput(cell)}, nil
@@ -206,10 +193,7 @@ func deleteCell(ctx context.Context, queries *generated.Queries, input DeleteCel
 		BoardID: boardID,
 	})
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, huma.Error404NotFound("cell not found on this board", err)
-		}
-		return nil, huma.Error500InternalServerError("failed to delete cell", err)
+		return nil, notFoundOr500(err, "cell not found on this board", "failed to delete cell")
 	}
 
 	return &struct{}{}, nil

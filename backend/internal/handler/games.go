@@ -2,11 +2,9 @@ package handler
 
 import (
 	"context"
-	"errors"
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/officeryoda/dozingo/internal/generated"
 )
@@ -143,12 +141,12 @@ func getGameByID(ctx context.Context, queries *generated.Queries, input GetGameB
 		return nil, huma.Error400BadRequest("invalid game_id", err)
 	}
 
-	cells, err := queries.GetGameByID(ctx, id)
+	game, err := queries.GetGameByID(ctx, id)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("internal server error", err)
+		return nil, notFoundOr500(err, "game not found", "failed to get game")
 	}
 
-	return &GetGameByIDOutput{Body: gameToOutput(cells)}, nil
+	return &GetGameByIDOutput{Body: gameToOutput(game)}, nil
 }
 
 func listGamesByPlayer(ctx context.Context, queries *generated.Queries, input ListGamesByPlayerInput) (*ListGamesByPlayerOutput, error) {
@@ -159,16 +157,10 @@ func listGamesByPlayer(ctx context.Context, queries *generated.Queries, input Li
 
 	games, err := queries.ListGamesByPlayer(ctx, playerID)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("internal server error", err)
+		return nil, internalError(err, "failed to list games by player")
 	}
 
-	out := &ListGamesByPlayerOutput{}
-	out.Body = make([]GameOutput, 0)
-	for i := range games {
-		out.Body = append(out.Body, gameToOutput(games[i]))
-	}
-
-	return out, nil
+	return &ListGamesByPlayerOutput{Body: mapSlice(games, gameToOutput)}, nil
 }
 
 func listGamesByBoard(ctx context.Context, queries *generated.Queries, input ListGamesByBoardInput) (*ListGamesByBoardOutput, error) {
@@ -179,16 +171,10 @@ func listGamesByBoard(ctx context.Context, queries *generated.Queries, input Lis
 
 	games, err := queries.ListGamesByBoard(ctx, boardID)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("internal server error", err)
+		return nil, internalError(err, "failed to list games by board")
 	}
 
-	out := &ListGamesByBoardOutput{}
-	out.Body = make([]GameOutput, 0)
-	for i := range games {
-		out.Body = append(out.Body, gameToOutput(games[i]))
-	}
-
-	return out, nil
+	return &ListGamesByBoardOutput{Body: mapSlice(games, gameToOutput)}, nil
 }
 
 func createGame(ctx context.Context, queries *generated.Queries, input CreateGameInput) (*CreateGameOutput, error) {
@@ -207,7 +193,7 @@ func createGame(ctx context.Context, queries *generated.Queries, input CreateGam
 		BoardID:  boardID,
 	})
 	if err != nil {
-		return nil, huma.Error500InternalServerError("failed to create game", err)
+		return nil, internalError(err, "failed to create game")
 	}
 
 	return &CreateGameOutput{Body: gameToOutput(game)}, nil
@@ -229,10 +215,7 @@ func updateGame(ctx context.Context, queries *generated.Queries, input UpdateGam
 		Status:   input.Body.Status,
 	})
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, huma.Error404NotFound("game not found", err)
-		}
-		return nil, huma.Error500InternalServerError("failed to update game", err)
+		return nil, notFoundOr500(err, "game not found", "failed to update game")
 	}
 
 	return &UpdateGameStatusOutput{Body: gameToOutput(game)}, nil
@@ -246,10 +229,7 @@ func deleteGame(ctx context.Context, queries *generated.Queries, input DeleteGam
 
 	_, err = queries.DeleteGame(ctx, gameID)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, huma.Error404NotFound("game not found", err)
-		}
-		return nil, huma.Error500InternalServerError("failed to delete game", err)
+		return nil, notFoundOr500(err, "game not found", "failed to delete game")
 	}
 
 	return &struct{}{}, nil

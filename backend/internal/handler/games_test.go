@@ -55,7 +55,7 @@ func TestGetGameByID_NotFound(t *testing.T) {
 	t.Cleanup(func() { cleanupTables(t) })
 
 	w := doRequest(http.MethodGet, "/api/games/00000000-0000-0000-0000-000000000000", nil)
-	assertStatus(t, w, http.StatusInternalServerError)
+	assertStatus(t, w, http.StatusNotFound)
 }
 
 func TestListGamesByPlayer(t *testing.T) {

@@ -2,11 +2,9 @@ package handler
 
 import (
 	"context"
-	"errors"
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/officeryoda/dozingo/internal/generated"
 )
@@ -54,8 +52,6 @@ type DeleteVoteInput struct {
 
 func RegisterVotes(api huma.API, pool *pgxpool.Pool) {
 	queries := generated.New(pool)
-
-	_ = queries
 
 	huma.Register(api, huma.Operation{
 		OperationID: "get-votes-by-board-id",
@@ -107,7 +103,7 @@ func getVotesByBoardID(ctx context.Context, queries *generated.Queries, input Ge
 		BoardID: boardID,
 	})
 	if err != nil {
-		return nil, huma.Error500InternalServerError("internal server error", err)
+		return nil, internalError(err, "failed to get votes")
 	}
 
 	out := &GetVotesByBoardIDOutput{}
@@ -139,7 +135,7 @@ func upsertVote(ctx context.Context, queries *generated.Queries, input UpsertVot
 		VoteValue: input.Body.VoteValue,
 	})
 	if err != nil {
-		return nil, huma.Error500InternalServerError("failed to upsert vote", err)
+		return nil, internalError(err, "failed to upsert vote")
 	}
 
 	return &UpsertVoteOutput{Body: voteToOutput(board)}, nil
@@ -160,10 +156,7 @@ func deleteVote(ctx context.Context, queries *generated.Queries, input DeleteVot
 		BoardID: boardID,
 	})
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, huma.Error404NotFound("vote not found on this board", err)
-		}
-		return nil, huma.Error500InternalServerError("failed to delete vote", err)
+		return nil, notFoundOr500(err, "vote not found on this board", "failed to delete vote")
 	}
 
 	return &struct{}{}, nil
