@@ -16,6 +16,10 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
+	"github.com/officeryoda/dozingo/internal/auth"
+	"github.com/officeryoda/dozingo/internal/generated"
+	"github.com/officeryoda/dozingo/internal/middleware"
+	"golang.org/x/crypto/bcrypt"
 )
 
 var (
@@ -25,6 +29,9 @@ var (
 
 // TestMain sets up the test database connection and router once for all tests.
 func TestMain(m *testing.M) {
+	// Use minimal bcrypt cost in tests for faster execution
+	auth.PasswordCost = bcrypt.MinCost
+
 	// Try loading .env from project root (relative to this package: internal/handler/)
 	_ = godotenv.Load("../../.env")
 
@@ -54,19 +61,27 @@ func TestMain(m *testing.M) {
 	// Set up the router with all handlers registered
 	testRouter = chi.NewMux()
 	api := humachi.New(testRouter, huma.DefaultConfig("Dozingo Test API", "0.1.0"))
+
+	// SessionUser middleware is required by /auth/* and any handler calling
+	// RequireSessionCtx. Tests run over plain HTTP via httptest, so disable
+	// the Secure cookie flag to let cookies round-trip.
+	middleware.SetCookieSecureForTesting(false)
+	queries := generated.New(testPool)
+	api.UseMiddleware(middleware.SessionUser(api, queries))
+
 	apiGroup := huma.NewGroup(api, "/api")
 
 	RegisterHealth(apiGroup)
-	RegisterUsers(apiGroup, testPool)
 	RegisterBoards(apiGroup, testPool)
 	RegisterCells(apiGroup, testPool)
 	RegisterVotes(apiGroup, testPool)
 	RegisterGames(apiGroup, testPool)
 	RegisterGameCells(apiGroup, testPool)
+	RegisterAuth(apiGroup, testPool)
 
 	// Clean tables before running tests to ensure a fresh state
 	_, _ = testPool.Exec(context.Background(),
-		"TRUNCATE TABLE game_cells, games, votes, cells, boards, users RESTART IDENTITY CASCADE")
+		"TRUNCATE TABLE game_cells, games, votes, cells, boards, sessions, user_passwords, users RESTART IDENTITY CASCADE")
 
 	code := m.Run()
 
@@ -78,7 +93,7 @@ func TestMain(m *testing.M) {
 func cleanupTables(t *testing.T) {
 	t.Helper()
 	_, err := testPool.Exec(context.Background(),
-		"TRUNCATE TABLE game_cells, games, votes, cells, boards, users RESTART IDENTITY CASCADE")
+		"TRUNCATE TABLE game_cells, games, votes, cells, boards, sessions, user_passwords, users RESTART IDENTITY CASCADE")
 	if err != nil {
 		t.Fatalf("failed to clean up tables: %v", err)
 	}
@@ -86,6 +101,11 @@ func cleanupTables(t *testing.T) {
 
 // doRequest performs an HTTP request against the test router and returns the response.
 func doRequest(method, path string, body any) *httptest.ResponseRecorder {
+	return doRequestWithCookies(method, path, body, nil)
+}
+
+// doRequestWithCookies performs an HTTP request with the given cookies attached.
+func doRequestWithCookies(method, path string, body any, cookies []*http.Cookie) *httptest.ResponseRecorder {
 	var req *http.Request
 	if body != nil {
 		b, err := json.Marshal(body)
@@ -97,10 +117,27 @@ func doRequest(method, path string, body any) *httptest.ResponseRecorder {
 	} else {
 		req = httptest.NewRequest(method, path, nil)
 	}
+	for _, c := range cookies {
+		req.AddCookie(c)
+	}
 
 	w := httptest.NewRecorder()
 	testRouter.ServeHTTP(w, req)
 	return w
+}
+
+// extractSessionCookie looks for a Set-Cookie header carrying session_token
+// and returns it. Returns nil if the response did not set or clear that
+// cookie. The cookie's MaxAge / Expires fields determine whether it was set
+// or cleared (MaxAge < 0 means cleared).
+func extractSessionCookie(w *httptest.ResponseRecorder) *http.Cookie {
+	resp := http.Response{Header: w.Header()}
+	for _, c := range resp.Cookies() {
+		if c.Name == "session_token" {
+			return c
+		}
+	}
+	return nil
 }
 
 // decodeJSON decodes a JSON response body into the given target.
@@ -137,17 +174,28 @@ func assertJSONField(t *testing.T, data map[string]any, key string, expected str
 	}
 }
 
-// createTestUser creates a user via the API and returns its ID.
+// createTestUser creates a user via the auth register API and returns its ID.
 func createTestUser(t *testing.T, username, email string) string {
 	t.Helper()
-	w := doRequest(http.MethodPost, "/api/users", map[string]string{
+
+	body := map[string]any{
 		"username": username,
-		"email":    email,
-	})
+		"password": "testpassword123",
+	}
+	if email != "" {
+		body["email"] = email
+	}
+
+	w := doRequest(http.MethodPost, "/api/auth/register", body)
 	assertStatus(t, w, http.StatusOK)
-	var resp map[string]any
-	decodeJSON(t, w, &resp)
-	return resp["id"].(string)
+
+	// Look up the user ID from the database since the auth endpoint doesn't return it
+	queries := generated.New(testPool)
+	user, err := queries.GetUserByUsername(context.Background(), username)
+	if err != nil {
+		t.Fatalf("failed to look up user %q after registration: %v", username, err)
+	}
+	return user.ID.String()
 }
 
 // createTestBoard creates a board via the API and returns its ID.

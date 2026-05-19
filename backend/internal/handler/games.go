@@ -257,14 +257,9 @@ func deleteGame(ctx context.Context, queries *generated.Queries, input DeleteGam
 /// ===== Helper =====
 
 func gameToOutput(game generated.Game) GameOutput {
-	var boardID *string
-	if game.BoardID.Valid {
-		s := game.BoardID.String()
-		boardID = &s
-	}
 	return GameOutput{
 		ID:       game.ID.String(),
-		BoardID:  boardID,
+		BoardID:  stringFromPgUUID(game.BoardID),
 		PlayerID: game.PlayerID.String(),
 		Status:   game.Status,
 	}

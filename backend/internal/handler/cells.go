@@ -214,16 +214,11 @@ func deleteCell(ctx context.Context, queries *generated.Queries, input DeleteCel
 /// ===== Helper =====
 
 func cellToOutput(cell generated.Cell) CellOutput {
-	var authorID *string
-	if cell.AuthorID.Valid {
-		s := cell.AuthorID.String()
-		authorID = &s
-	}
 	return CellOutput{
 		ID:       cell.ID.String(),
 		BoardID:  cell.BoardID.String(),
 		Content:  cell.Content,
-		AuthorID: authorID,
+		AuthorID: stringFromPgUUID(cell.AuthorID),
 		Value:    cell.Value,
 	}
 }

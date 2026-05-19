@@ -180,15 +180,10 @@ func updateGameCellMark(ctx context.Context, queries *generated.Queries, input U
 /// ===== Helper =====
 
 func gameCellToOutput(cell generated.GameCell) GameCellOutput {
-	var cellID *string
-	if cell.CellID.Valid {
-		s := cell.CellID.String()
-		cellID = &s
-	}
 	return GameCellOutput{
 		ID:       cell.ID.String(),
 		GameID:   cell.GameID.String(),
-		CellID:   cellID,
+		CellID:   stringFromPgUUID(cell.CellID),
 		Content:  cell.Content,
 		Position: cell.Position,
 		IsMarked: cell.IsMarked,

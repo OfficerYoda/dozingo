@@ -9,10 +9,12 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humachi"
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
+	chimw "github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/officeryoda/dozingo/internal/config"
+	"github.com/officeryoda/dozingo/internal/generated"
 	"github.com/officeryoda/dozingo/internal/handler"
+	"github.com/officeryoda/dozingo/internal/middleware"
 )
 
 func main() {
@@ -26,6 +28,9 @@ func main() {
 		log.Fatalf("failed to connect to database: %v", err)
 	}
 	defer pool.Close()
+
+	// Periodically remove expired sessions
+	handler.StartSessionCleanup(context.Background(), generated.New(pool))
 
 	router := createRouter(cfg)
 	registerRoutes(router, pool)
@@ -50,12 +55,12 @@ func connectDB(databaseURL string) (*pgxpool.Pool, error) {
 // createRouter creates a Chi router with standard middleware and a root health page.
 func createRouter(cfg *config.Config) *chi.Mux {
 	router := chi.NewMux()
-	router.Use(middleware.Logger)
-	router.Use(middleware.Recoverer)
+	router.Use(chimw.Logger)
+	router.Use(chimw.Recoverer)
 
 	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
-		if _, err := fmt.Fprintf(w, "Dozingo API is running\nDocs: http://localhost:%s/docs", cfg.Port); err != nil {
+		if _, err := fmt.Fprintf(w, "Dozingo API is running\nDocs: http://localhost:%d/docs", cfg.Port); err != nil {
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		}
 	})
@@ -65,7 +70,11 @@ func createRouter(cfg *config.Config) *chi.Mux {
 
 // registerRoutes sets up the Huma API and registers all handler groups.
 func registerRoutes(router *chi.Mux, pool *pgxpool.Pool) {
+	queries := generated.New(pool)
+
 	api := humachi.New(router, huma.DefaultConfig("Dozingo API", "0.2.0"))
+	api.UseMiddleware(middleware.SessionUser(api, queries))
+
 	apiGroup := huma.NewGroup(api, "/api")
 
 	handler.RegisterHealth(apiGroup)
@@ -74,13 +83,14 @@ func registerRoutes(router *chi.Mux, pool *pgxpool.Pool) {
 	handler.RegisterVotes(apiGroup, pool)
 	handler.RegisterGames(apiGroup, pool)
 	handler.RegisterGameCells(apiGroup, pool)
+	handler.RegisterAuth(apiGroup, pool)
 }
 
 // startServer begins listening on the given port and blocks until the server exits.
-func startServer(port string, handler http.Handler) {
-	addr := fmt.Sprintf(":%s", port)
+func startServer(port int, handler http.Handler) {
+	addr := fmt.Sprintf(":%d", port)
 	log.Printf("Server starting on %s", addr)
-	log.Printf("API docs available at http://localhost:%s/docs", port)
+	log.Printf("API docs available at http://localhost:%d/docs", port)
 	if err := http.ListenAndServe(addr, handler); err != nil {
 		log.Fatalf("server failed: %v", err)
 	}

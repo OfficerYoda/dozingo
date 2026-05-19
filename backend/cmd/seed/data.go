@@ -1,5 +1,19 @@
 package main
 
+// Seed credentials (for local dev only):
+//   maxmustermann      / password123
+//   lena.schmidt       / securePass!
+//   timoWerner42       / timoSecret42
+//   ghostUser01        / ghostpass        (no email)
+//   anon_student       / anonpass         (no email)
+//
+// Seed session tokens (for local dev only):
+//   seed-anon-fresh-token-0001      (anonymous, ~30d valid)
+//   seed-anon-near-expiry-0002      (anonymous, <7d -> triggers extension)
+//   seed-anon-expired-0003          (anonymous, expired -> cleanup target)
+//   seed-user-max-token-0010        (bound to maxmustermann)
+//   seed-user-ghost-token-0011      (bound to ghostUser01)
+
 // userData holds username and email pairs for seeding users.
 type userData struct {
 	Username string
@@ -25,10 +39,17 @@ type voteData struct {
 
 // gameData holds a game to seed.
 // PlayerIdx and BoardIdx refer to indices in the users/boards slices.
+// PlayerIdx == -1 means the game is anonymous (no logged-in user) and is
+// authorised via the session referenced by SessionIdx instead.
+// SessionIdx == -1 means the game has no associated session (the classic
+// pre-session, user-only flow); when both are set, the game has both a
+// player_id and a session_id (a logged-in user playing from a session that
+// was minted while they were anonymous).
 type gameData struct {
-	PlayerIdx int
-	BoardIdx  int
-	Status    string // "active", "completed", or "abandoned"
+	PlayerIdx  int
+	SessionIdx int
+	BoardIdx   int
+	Status     string // "active", "completed", or "abandoned"
 }
 
 // gameCellData holds a game cell to seed.
@@ -52,6 +73,8 @@ var users = []userData{
 	{Username: "annaK99", Email: "anna.koch@stud.fu-berlin.de"},
 	{Username: "lukasBauer", Email: "lukas.bauer@stud.tu-darmstadt.de"},
 	{Username: "emiliaWolf", Email: "emilia.wolf@stud.uni-koeln.de"},
+	{Username: "ghostUser01", Email: ""},
+	{Username: "anon_student", Email: ""},
 }
 
 // boards defines 15 boards with mixed sizes (3-7), each linked to an author.
@@ -700,15 +723,26 @@ var votes = []voteData{
 // games defines game sessions. Each game is played by a user on a board.
 var games = []gameData{
 	// User 0 plays board 0 (Mathe 1 Bingo, size 3 -> 9 cells) - completed
-	{PlayerIdx: 0, BoardIdx: 0, Status: "completed"},
+	{PlayerIdx: 0, SessionIdx: -1, BoardIdx: 0, Status: "completed"},
 	// User 1 plays board 0 (Mathe 1 Bingo) - active
-	{PlayerIdx: 1, BoardIdx: 0, Status: "active"},
+	{PlayerIdx: 1, SessionIdx: -1, BoardIdx: 0, Status: "active"},
 	// User 2 plays board 3 (Theoretische Informatik, size 4 -> 16 cells) - active
-	{PlayerIdx: 2, BoardIdx: 3, Status: "active"},
+	{PlayerIdx: 2, SessionIdx: -1, BoardIdx: 3, Status: "active"},
 	// User 3 plays board 6 (Algorithmen und Datenstrukturen, size 5 -> 25 cells) - abandoned
-	{PlayerIdx: 3, BoardIdx: 6, Status: "abandoned"},
+	{PlayerIdx: 3, SessionIdx: -1, BoardIdx: 6, Status: "abandoned"},
 	// User 5 plays board 1 (Lineare Algebra Klassiker, size 3 -> 9 cells) - active
-	{PlayerIdx: 5, BoardIdx: 1, Status: "active"},
+	{PlayerIdx: 5, SessionIdx: -1, BoardIdx: 1, Status: "active"},
+
+	// Game 5: Anonymous (session 0 = "seed-anon-fresh-token-0001") plays board 0
+	// (Mathe 1 Bingo, size 3 -> 9 cells) - active
+	{PlayerIdx: -1, SessionIdx: 0, BoardIdx: 0, Status: "active"},
+	// Game 6: Anonymous (session 1 = "seed-anon-near-expiry-0002") plays board 3
+	// (Theoretische Informatik, size 4 -> 16 cells) - abandoned
+	{PlayerIdx: -1, SessionIdx: 1, BoardIdx: 3, Status: "abandoned"},
+	// Game 7: maxmustermann playing through his bound session
+	// (session 3 = "seed-user-max-token-0010"). Has both player_id and session_id.
+	// Board 8 (Datenbanken Vorlesung, size 5 -> 25 cells) - completed
+	{PlayerIdx: 0, SessionIdx: 3, BoardIdx: 8, Status: "completed"},
 }
 
 // gameCells defines the game_cells for each game index.
@@ -802,4 +836,108 @@ var gameCells = map[int][]gameCellData{
 		{Content: "Rang der Matrix unklar", Position: 7, IsMarked: false},
 		{Content: "'Das ist ein Spezialfall'", Position: 8, IsMarked: false},
 	},
+
+	// Game 5: Anonymous on board 0 (Mathe 1, size 3 -> 9 cells, active, a couple of marks)
+	5: {
+		{Content: "Prof sagt 'trivial'", Position: 0, IsMarked: true},
+		{Content: "Beweis wird übersprungen", Position: 1, IsMarked: false},
+		{Content: "'Das sieht man sofort'", Position: 2, IsMarked: false},
+		{Content: "Kreide bricht ab", Position: 3, IsMarked: true},
+		{Content: "Tafel ist voll, Prof wischt hektisch", Position: 4, IsMarked: false},
+		{Content: "Jemand fragt 'Kommt das in der Klausur?'", Position: 5, IsMarked: false},
+		{Content: "Prof rechnet sich an der Tafel vor", Position: 6, IsMarked: false},
+		{Content: "Epsilon-Delta taucht auf", Position: 7, IsMarked: false},
+		{Content: "'Übung für den Leser'", Position: 8, IsMarked: false},
+	},
+
+	// Game 6: Anonymous on board 3 (Theoretische Informatik, size 4 -> 16 cells, abandoned, a few marks)
+	6: {
+		{Content: "Turingmaschine wird gezeichnet", Position: 0, IsMarked: true},
+		{Content: "'Das ist unentscheidbar'", Position: 1, IsMarked: true},
+		{Content: "Regulärer Ausdruck wird kompliziert", Position: 2, IsMarked: false},
+		{Content: "Pumping Lemma Beweis", Position: 3, IsMarked: false},
+		{Content: "Prof sagt 'Nichtdeterminismus'", Position: 4, IsMarked: false},
+		{Content: "Automat hat zu viele Zustände", Position: 5, IsMarked: false},
+		{Content: "Jemand fragt 'Wozu braucht man das?'", Position: 6, IsMarked: true},
+		{Content: "Chomsky-Hierarchie an der Tafel", Position: 7, IsMarked: false},
+		{Content: "Prof vergisst Endzustand", Position: 8, IsMarked: false},
+		{Content: "'Das reduzieren wir auf das Halteproblem'", Position: 9, IsMarked: false},
+		{Content: "Komplexitätsklasse P vs NP", Position: 10, IsMarked: false},
+		{Content: "Beweis durch Widerspruch", Position: 11, IsMarked: false},
+		{Content: "Prof schreibt Produktionsregel falsch", Position: 12, IsMarked: false},
+		{Content: "Kellerautomat wird eingeführt", Position: 13, IsMarked: false},
+		{Content: "Jemand sagt 'Das ist doch wie Mathe'", Position: 14, IsMarked: false},
+		{Content: "Sprache wird nicht akzeptiert", Position: 15, IsMarked: false},
+	},
+
+	// Game 7: maxmustermann via bound session on board 8 (Datenbanken, size 5 -> 25 cells, completed, many marks)
+	7: {
+		{Content: "ER-Diagramm wird gezeichnet", Position: 0, IsMarked: true},
+		{Content: "'Normalisierung ist wichtig'", Position: 1, IsMarked: true},
+		{Content: "SQL-Query an der Tafel", Position: 2, IsMarked: true},
+		{Content: "Prof sagt 'Redundanz vermeiden'", Position: 3, IsMarked: false},
+		{Content: "JOIN wird erklärt", Position: 4, IsMarked: true},
+		{Content: "Primärschlüssel vergessen", Position: 5, IsMarked: true},
+		{Content: "'Das ist dritte Normalform'", Position: 6, IsMarked: false},
+		{Content: "NULL-Werte Diskussion", Position: 7, IsMarked: true},
+		{Content: "Prof zeigt SELECT * FROM", Position: 8, IsMarked: true},
+		{Content: "Transaktion wird erklärt", Position: 9, IsMarked: false},
+		{Content: "ACID-Eigenschaften aufgezählt", Position: 10, IsMarked: true},
+		{Content: "'In der Praxis nutzt man einen Index'", Position: 11, IsMarked: true},
+		{Content: "Prof schreibt fehlerhaftes SQL", Position: 12, IsMarked: false},
+		{Content: "Fremdschlüssel Beziehung", Position: 13, IsMarked: true},
+		{Content: "GROUP BY Beispiel", Position: 14, IsMarked: true},
+		{Content: "'Das ist ein Deadlock'", Position: 15, IsMarked: false},
+		{Content: "Jemand fragt nach NoSQL", Position: 16, IsMarked: true},
+		{Content: "Prof zeichnet B-Baum", Position: 17, IsMarked: false},
+		{Content: "Relationale Algebra Notation", Position: 18, IsMarked: true},
+		{Content: "'Denken Sie mengenorientiert'", Position: 19, IsMarked: false},
+		{Content: "Subquery wird verschachtelt", Position: 20, IsMarked: true},
+		{Content: "Prof erklärt Views", Position: 21, IsMarked: true},
+		{Content: "Trigger werden erwähnt", Position: 22, IsMarked: false},
+		{Content: "'Das optimiert der Query-Planner'", Position: 23, IsMarked: true},
+		{Content: "Kardinalitäten werden bestimmt", Position: 24, IsMarked: true},
+	},
+}
+
+// passwordData holds a password to seed for a user.
+// UserIdx refers to an index in the users slice.
+type passwordData struct {
+	UserIdx  int
+	Password string
+}
+
+// passwords defines which users get a password for local login.
+var passwords = []passwordData{
+	{UserIdx: 0, Password: "password123"},
+	{UserIdx: 1, Password: "securePass!"},
+	{UserIdx: 2, Password: "timoSecret42"},
+	{UserIdx: 10, Password: "ghostpass"}, // user with no email
+	{UserIdx: 11, Password: "anonpass"},  // user with no email
+}
+
+// sessionData holds a session row to seed.
+// UserIdx == -1 means an anonymous session (user_id NULL).
+// ExpiresInHours is relative to now(); use a negative value to seed a row
+// that is already expired (handy for verifying the cleanup job).
+type sessionData struct {
+	UserIdx        int
+	Token          string
+	ExpiresInHours int
+}
+
+// sessions defines a small set of sessions to seed for local development.
+// The tokens are intentionally predictable so they can be pasted directly into
+// a `Cookie: session_token=...` header for manual testing.
+var sessions = []sessionData{
+	// Anonymous, fresh
+	{UserIdx: -1, Token: "seed-anon-fresh-token-0001", ExpiresInHours: 30 * 24},
+	// Anonymous, close to expiry (< 7d -> triggers auto-extension on next request)
+	{UserIdx: -1, Token: "seed-anon-near-expiry-0002", ExpiresInHours: 6 * 24},
+	// Anonymous, already expired (cleanup-job target)
+	{UserIdx: -1, Token: "seed-anon-expired-0003", ExpiresInHours: -2},
+	// User-bound, fresh -- maxmustermann (password "password123")
+	{UserIdx: 0, Token: "seed-user-max-token-0010", ExpiresInHours: 30 * 24},
+	// User-bound, fresh -- ghostUser01 (password "ghostpass", no email)
+	{UserIdx: 10, Token: "seed-user-ghost-token-0011", ExpiresInHours: 30 * 24},
 }

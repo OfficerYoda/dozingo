@@ -4,10 +4,13 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/officeryoda/dozingo/internal/auth"
 	"github.com/officeryoda/dozingo/internal/config"
 	"github.com/officeryoda/dozingo/internal/generated"
 )
@@ -56,6 +59,15 @@ func seed(pool *pgxpool.Pool) error {
 		return err
 	}
 
+	if err := seedPasswords(ctx, q, userIDs); err != nil {
+		return err
+	}
+
+	sessionIDs, err := seedSessions(ctx, q, userIDs)
+	if err != nil {
+		return err
+	}
+
 	boardIDs, err := seedBoards(ctx, q, userIDs)
 	if err != nil {
 		return err
@@ -70,7 +82,7 @@ func seed(pool *pgxpool.Pool) error {
 		return err
 	}
 
-	if err := seedGames(ctx, q, userIDs, boardIDs, cellIDs); err != nil {
+	if err := seedGames(ctx, q, userIDs, sessionIDs, boardIDs, cellIDs); err != nil {
 		return err
 	}
 
@@ -84,7 +96,7 @@ func seed(pool *pgxpool.Pool) error {
 // truncateAll removes all data from tables in the correct order (respecting foreign keys).
 func truncateAll(ctx context.Context, tx pgx.Tx) error {
 	log.Println("Truncating all tables...")
-	_, err := tx.Exec(ctx, "TRUNCATE game_cells, games, votes, cells, boards, user_authentications, users CASCADE")
+	_, err := tx.Exec(ctx, "TRUNCATE game_cells, games, votes, cells, boards, sessions, user_passwords, user_authentications, users CASCADE")
 	if err != nil {
 		return fmt.Errorf("truncating tables: %w", err)
 	}
@@ -96,14 +108,73 @@ func seedUsers(ctx context.Context, q *generated.Queries) ([]pgtype.UUID, error)
 
 	ids := make([]pgtype.UUID, 0, len(users))
 	for _, u := range users {
+
+		var email pgtype.Text
+		if strings.TrimSpace(u.Email) != "" {
+			email = pgtype.Text{String: u.Email, Valid: true}
+		} else {
+			email = pgtype.Text{String: "", Valid: false}
+		}
 		user, err := q.CreateUser(ctx, generated.CreateUserParams{
 			Username: u.Username,
-			Email:    u.Email,
+			Email:    email,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("creating user %q: %w", u.Username, err)
 		}
 		ids = append(ids, user.ID)
+	}
+
+	return ids, nil
+}
+
+func seedPasswords(ctx context.Context, q *generated.Queries, userIDs []pgtype.UUID) error {
+	log.Printf("Seeding %d passwords...", len(passwords))
+
+	for _, p := range passwords {
+		hash, err := auth.HashPassword(p.Password)
+		if err != nil {
+			return fmt.Errorf("hashing password for user %d: %w", p.UserIdx, err)
+		}
+
+		_, err = q.UpsertUserPassword(ctx, generated.UpsertUserPasswordParams{
+			UserID:       userIDs[p.UserIdx],
+			PasswordHash: hash,
+		})
+		if err != nil {
+			return fmt.Errorf("creating password for user %d: %w", p.UserIdx, err)
+		}
+	}
+
+	return nil
+}
+
+// seedSessions inserts the predefined `sessions` rows. Anonymous sessions
+// (UserIdx == -1) are stored with a NULL user_id. Returns the inserted session
+// IDs in the order of the `sessions` slice so callers can reference them later
+// (e.g. for seeding anonymous games).
+func seedSessions(ctx context.Context, q *generated.Queries, userIDs []pgtype.UUID) ([]pgtype.UUID, error) {
+	log.Printf("Seeding %d sessions...", len(sessions))
+
+	ids := make([]pgtype.UUID, 0, len(sessions))
+	for _, s := range sessions {
+		var userID pgtype.UUID
+		if s.UserIdx >= 0 {
+			userID = userIDs[s.UserIdx]
+		}
+
+		sess, err := q.CreateSession(ctx, generated.CreateSessionParams{
+			UserID: userID,
+			Token:  s.Token,
+			ExpiresAt: pgtype.Timestamptz{
+				Time:  time.Now().Add(time.Duration(s.ExpiresInHours) * time.Hour),
+				Valid: true,
+			},
+		})
+		if err != nil {
+			return nil, fmt.Errorf("creating session %q: %w", s.Token, err)
+		}
+		ids = append(ids, sess.ID)
 	}
 
 	return ids, nil
@@ -177,25 +248,41 @@ func seedVotes(ctx context.Context, q *generated.Queries, userIDs, boardIDs []pg
 	return nil
 }
 
-func seedGames(ctx context.Context, q *generated.Queries, userIDs, boardIDs []pgtype.UUID, cellIDsByBoard map[int][]pgtype.UUID) error {
+func seedGames(ctx context.Context, q *generated.Queries, userIDs, sessionIDs, boardIDs []pgtype.UUID, cellIDsByBoard map[int][]pgtype.UUID) error {
 	log.Printf("Seeding %d games...", len(games))
 
 	for gameIdx, g := range games {
+		var playerID, sessionID pgtype.UUID
+		if g.PlayerIdx >= 0 {
+			playerID = userIDs[g.PlayerIdx]
+		}
+		if g.SessionIdx >= 0 {
+			sessionID = sessionIDs[g.SessionIdx]
+		}
+
 		game, err := q.CreateGame(ctx, generated.CreateGameParams{
-			PlayerID: userIDs[g.PlayerIdx],
-			BoardID:  boardIDs[g.BoardIdx],
+			PlayerID:  playerID,
+			SessionID: sessionID,
+			BoardID:   boardIDs[g.BoardIdx],
 		})
 		if err != nil {
 			return fmt.Errorf("creating game %d: %w", gameIdx, err)
 		}
 
-		// Update status if not "active" (default)
+		// Update status if not "active" (default). Authorisation is by
+		// player_id when the game has one, or by session_id otherwise --
+		// matches the runtime behaviour of UpdateGameStatus.
 		if g.Status != "active" {
-			_, err = q.UpdateGameStatus(ctx, generated.UpdateGameStatusParams{
-				Status:   g.Status,
-				ID:       game.ID,
-				PlayerID: userIDs[g.PlayerIdx],
-			})
+			updateParams := generated.UpdateGameStatusParams{
+				Status: g.Status,
+				ID:     game.ID,
+			}
+			if g.PlayerIdx >= 0 {
+				updateParams.PlayerID = userIDs[g.PlayerIdx]
+			} else {
+				updateParams.SessionID = sessionIDs[g.SessionIdx]
+			}
+			_, err = q.UpdateGameStatus(ctx, updateParams)
 			if err != nil {
 				return fmt.Errorf("updating game %d status to %q: %w", gameIdx, g.Status, err)
 			}

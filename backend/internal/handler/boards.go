@@ -146,11 +146,7 @@ func createBoard(ctx context.Context, queries *generated.Queries, input CreateBo
 		return nil, huma.Error400BadRequest("invalid author_id", err)
 	}
 
-	var descStr string
-	if input.Body.Description != nil {
-		descStr = *input.Body.Description
-	}
-	description := pgTextFromString(descStr)
+	description := pgTextFromString(input.Body.Description)
 
 	board, err := queries.CreateBoard(ctx, generated.CreateBoardParams{
 		Title:       input.Body.Title,

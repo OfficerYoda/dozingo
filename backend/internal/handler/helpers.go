@@ -1,12 +1,10 @@
 package handler
 
 import (
-	"regexp"
+	"strings"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
-
-var uuidRegex = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
 
 func uuidFromString(s string) (pgtype.UUID, error) {
 	var id pgtype.UUID
@@ -16,6 +14,26 @@ func uuidFromString(s string) (pgtype.UUID, error) {
 	return id, nil
 }
 
-func pgTextFromString(s string) pgtype.Text {
-	return pgtype.Text{String: s, Valid: s != ""}
+func pgTextFromString(s *string) pgtype.Text {
+	if s != nil && strings.TrimSpace(*s) != "" {
+		return pgtype.Text{String: *s, Valid: true}
+	} else {
+		return pgtype.Text{String: "", Valid: false}
+	}
+}
+
+func stringFromPgText(pgText pgtype.Text) *string {
+	if pgText.Valid {
+		s := pgText.String
+		return &s
+	}
+	return nil
+}
+
+func stringFromPgUUID(pgText pgtype.UUID) *string {
+	if pgText.Valid {
+		s := pgText.String()
+		return &s
+	}
+	return nil
 }
