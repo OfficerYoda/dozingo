@@ -8,8 +8,9 @@ import (
 )
 
 type Config struct {
-	DatabaseURL string `env:"DATABASE_URL,required"`
-	Port        string `env:"PORT" envDefault:"4242"`
+	DatabaseURL  string `env:"DATABASE_URL,required"`
+	Port         int    `env:"PORT" envDefault:"4242"`
+	SecureCookie bool   `env:"SECURE_COOKIE" envDefault:"true"`
 }
 
 func Load() (*Config, error) {

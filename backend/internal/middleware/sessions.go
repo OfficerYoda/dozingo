@@ -11,6 +11,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/officeryoda/dozingo/internal/auth"
+	"github.com/officeryoda/dozingo/internal/config"
 	"github.com/officeryoda/dozingo/internal/generated"
 )
 
@@ -34,6 +35,18 @@ const (
 type sessionSlot struct {
 	row    generated.GetSessionUserByTokenRow
 	filled bool
+}
+
+var (
+	cfg *config.Config
+	err error
+)
+
+func init() {
+	cfg, err = config.Load()
+	if err != nil {
+		slog.Error("failed to load config", "error", err)
+	}
 }
 
 // SessionUser is a read-only middleware. If the request carries a valid
@@ -167,7 +180,7 @@ func clearSessionTokenCookie(ctx huma.Context) {
 		Name:     cookieSessionToken,
 		Value:    "",
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   cfg.SecureCookie,
 		SameSite: http.SameSiteStrictMode,
 		Path:     "/",
 		MaxAge:   -1,

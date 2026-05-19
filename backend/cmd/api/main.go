@@ -34,7 +34,8 @@ func main() {
 
 	router := createRouter(cfg)
 	registerRoutes(router, pool)
-	startServer(cfg.Port, router)
+	formattedPort := fmt.Sprintf(":%d", cfg.Port)
+	startServer(formattedPort, router)
 }
 
 // connectDB creates a connection pool to PostgreSQL and verifies the connection.
@@ -60,7 +61,7 @@ func createRouter(cfg *config.Config) *chi.Mux {
 
 	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
-		if _, err := fmt.Fprintf(w, "Dozingo API is running\nDocs: http://localhost:%s/docs", cfg.Port); err != nil {
+		if _, err := fmt.Fprintf(w, "Dozingo API is running\nDocs: http://localhost:%d/docs", cfg.Port); err != nil {
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		}
 	})
