@@ -75,25 +75,3 @@ func TestStringFromPgUUID_Invalid(t *testing.T) {
 		t.Errorf("expected nil pointer, got %q", *got)
 	}
 }
-
-func TestUuidFromString_Valid(t *testing.T) {
-	got, err := uuidFromString("11111111-2222-3333-4444-555555555555")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if !got.Valid {
-		t.Fatal("expected Valid:true")
-	}
-}
-
-func TestUuidFromString_Invalid(t *testing.T) {
-	if _, err := uuidFromString("not-a-uuid"); err == nil {
-		t.Fatal("expected error for non-UUID input")
-	}
-}
-
-func TestUuidFromString_Empty(t *testing.T) {
-	if _, err := uuidFromString(""); err == nil {
-		t.Fatal("expected error for empty input")
-	}
-}

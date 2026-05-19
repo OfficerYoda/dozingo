@@ -161,10 +161,6 @@ func TestRegister_ReturnsID(t *testing.T) {
 	if !ok || id == "" {
 		t.Fatalf("expected non-empty id field, got %v", (*resp)["user_id"])
 	}
-	// Must be parseable as a UUID
-	if _, err := uuidFromString(id); err != nil {
-		t.Errorf("returned id %q is not a valid UUID: %v", id, err)
-	}
 }
 
 func TestRegister_SetsSessionCookie(t *testing.T) {

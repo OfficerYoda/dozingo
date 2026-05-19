@@ -204,7 +204,7 @@ func TestGetVotesByBoardID_InvalidBoardID(t *testing.T) {
 		fmt.Sprintf("/api/boards/not-a-uuid/vote?user_id=%s", userID),
 		nil,
 	)
-	assertStatus(t, w, http.StatusBadRequest)
+	assertStatus(t, w, http.StatusUnprocessableEntity)
 }
 
 func TestGetVotesByBoardID_InvalidUserID(t *testing.T) {

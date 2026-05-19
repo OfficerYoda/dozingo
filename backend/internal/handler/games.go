@@ -7,6 +7,7 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/officeryoda/dozingo/internal/generated"
+	"github.com/officeryoda/dozingo/internal/types"
 )
 
 /// ===== Input/Output types =====
@@ -19,7 +20,7 @@ type GameOutput struct {
 }
 
 type GetGameByIDInput struct {
-	GameID string `path:"game_id" format:"uuid"`
+	GameID types.UUIDParam `path:"game_id" format:"uuid"`
 }
 
 type GetGameByIDOutput struct {
@@ -27,7 +28,7 @@ type GetGameByIDOutput struct {
 }
 
 type ListGamesByPlayerInput struct {
-	PlayerID string `path:"player_id" format:"uuid"`
+	PlayerID types.UUIDParam `path:"player_id" format:"uuid"`
 }
 
 type ListGamesByPlayerOutput struct {
@@ -35,7 +36,7 @@ type ListGamesByPlayerOutput struct {
 }
 
 type ListGamesByBoardInput struct {
-	BoardID string `path:"board_id" format:"uuid"`
+	BoardID types.UUIDParam `path:"board_id" format:"uuid"`
 }
 
 type ListGamesByBoardOutput struct {
@@ -43,8 +44,8 @@ type ListGamesByBoardOutput struct {
 }
 
 type CreateGameInput struct {
-	PlayerID string `query:"player_id" format:"uuid"` // TODO eventually replace this when user auth is working
-	BoardID  string `path:"board_id" format:"uuid"`
+	PlayerID types.UUIDParam `query:"player_id" format:"uuid"` // TODO eventually replace this when user auth is working
+	BoardID  types.UUIDParam `path:"board_id" format:"uuid"`
 }
 
 type CreateGameOutput struct {
@@ -52,8 +53,8 @@ type CreateGameOutput struct {
 }
 
 type UpdateGameStatusInput struct {
-	GameID   string `path:"game_id" format:"uuid"`
-	PlayerID string `query:"player_id" format:"uuid"` // TODO eventually replace this when user auth is working
+	GameID   types.UUIDParam `path:"game_id" format:"uuid"`
+	PlayerID types.UUIDParam `query:"player_id" format:"uuid"` // TODO eventually replace this when user auth is working
 	Body     struct {
 		Status string `json:"status" format:"text" maxLength:"20" doc:"must be any of those: 'active', 'completed' or 'abandoned'"`
 	}
@@ -64,7 +65,7 @@ type UpdateGameStatusOutput struct {
 }
 
 type DeleteGameInput struct {
-	GameID string `path:"game_id" format:"uuid"`
+	GameID types.UUIDParam `path:"game_id" format:"uuid"`
 }
 
 /// ===== Register =====
@@ -136,12 +137,7 @@ func RegisterGames(api huma.API, pool *pgxpool.Pool) {
 /// ===== Handlers =====
 
 func getGameByID(ctx context.Context, queries *generated.Queries, input GetGameByIDInput) (*GetGameByIDOutput, error) {
-	id, err := uuidFromString(input.GameID)
-	if err != nil {
-		return nil, huma.Error400BadRequest("invalid game_id", err)
-	}
-
-	game, err := queries.GetGameByID(ctx, id)
+	game, err := queries.GetGameByID(ctx, input.GameID.Value)
 	if err != nil {
 		return nil, notFoundOr500(err, "game not found", "failed to get game")
 	}
@@ -150,12 +146,7 @@ func getGameByID(ctx context.Context, queries *generated.Queries, input GetGameB
 }
 
 func listGamesByPlayer(ctx context.Context, queries *generated.Queries, input ListGamesByPlayerInput) (*ListGamesByPlayerOutput, error) {
-	playerID, err := uuidFromString(input.PlayerID)
-	if err != nil {
-		return nil, huma.Error400BadRequest("invalid player_id", err)
-	}
-
-	games, err := queries.ListGamesByPlayer(ctx, playerID)
+	games, err := queries.ListGamesByPlayer(ctx, input.PlayerID.Value)
 	if err != nil {
 		return nil, internalError(err, "failed to list games by player")
 	}
@@ -164,12 +155,7 @@ func listGamesByPlayer(ctx context.Context, queries *generated.Queries, input Li
 }
 
 func listGamesByBoard(ctx context.Context, queries *generated.Queries, input ListGamesByBoardInput) (*ListGamesByBoardOutput, error) {
-	boardID, err := uuidFromString(input.BoardID)
-	if err != nil {
-		return nil, huma.Error400BadRequest("invalid board_id", err)
-	}
-
-	games, err := queries.ListGamesByBoard(ctx, boardID)
+	games, err := queries.ListGamesByBoard(ctx, input.BoardID.Value)
 	if err != nil {
 		return nil, internalError(err, "failed to list games by board")
 	}
@@ -178,19 +164,9 @@ func listGamesByBoard(ctx context.Context, queries *generated.Queries, input Lis
 }
 
 func createGame(ctx context.Context, queries *generated.Queries, input CreateGameInput) (*CreateGameOutput, error) {
-	playerID, err := uuidFromString(input.PlayerID)
-	if err != nil {
-		return nil, huma.Error400BadRequest("invalid player_id", err)
-	}
-
-	boardID, err := uuidFromString(input.BoardID)
-	if err != nil {
-		return nil, huma.Error400BadRequest("invalid board_id", err)
-	}
-
 	game, err := queries.CreateGame(ctx, generated.CreateGameParams{
-		PlayerID: playerID,
-		BoardID:  boardID,
+		PlayerID: input.PlayerID.Value,
+		BoardID:  input.BoardID.Value,
 	})
 	if err != nil {
 		return nil, internalError(err, "failed to create game")
@@ -200,18 +176,9 @@ func createGame(ctx context.Context, queries *generated.Queries, input CreateGam
 }
 
 func updateGame(ctx context.Context, queries *generated.Queries, input UpdateGameStatusInput) (*UpdateGameStatusOutput, error) {
-	gameID, err := uuidFromString(input.GameID)
-	if err != nil {
-		return nil, huma.Error400BadRequest("invalid game_id", err)
-	}
-	playerID, err := uuidFromString(input.PlayerID)
-	if err != nil {
-		return nil, huma.Error400BadRequest("invalid player_id", err)
-	}
-
 	game, err := queries.UpdateGameStatus(ctx, generated.UpdateGameStatusParams{
-		ID:       gameID,
-		PlayerID: playerID,
+		ID:       input.GameID.Value,
+		PlayerID: input.PlayerID.Value,
 		Status:   input.Body.Status,
 	})
 	if err != nil {
@@ -222,12 +189,7 @@ func updateGame(ctx context.Context, queries *generated.Queries, input UpdateGam
 }
 
 func deleteGame(ctx context.Context, queries *generated.Queries, input DeleteGameInput) (*struct{}, error) {
-	gameID, err := uuidFromString(input.GameID)
-	if err != nil {
-		return nil, huma.Error400BadRequest("invalid game_id", err)
-	}
-
-	_, err = queries.DeleteGame(ctx, gameID)
+	_, err := queries.DeleteGame(ctx, input.GameID.Value)
 	if err != nil {
 		return nil, notFoundOr500(err, "game not found", "failed to delete game")
 	}

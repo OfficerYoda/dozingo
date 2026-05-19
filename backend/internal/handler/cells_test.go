@@ -113,7 +113,7 @@ func TestGetCellsByBoardID_Empty(t *testing.T) {
 
 func TestGetCellsByBoardID_InvalidBoardID(t *testing.T) {
 	w := doRequest(http.MethodGet, "/api/boards/not-a-uuid/cells", nil)
-	assertStatus(t, w, http.StatusBadRequest)
+	assertStatus(t, w, http.StatusUnprocessableEntity)
 }
 
 func TestUpdateCell(t *testing.T) {
