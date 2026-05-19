@@ -64,7 +64,7 @@ func RegisterAuth(api huma.API, pool *pgxpool.Pool) {
 		Summary:     "Register new User",
 		Tags:        []string{"Auth"},
 	}, func(ctx context.Context, input *RegisterInput) (*AuthOutput, error) {
-		return registerUser(ctx, pool, *input)
+		return registerUser(ctx, pool, queries, *input)
 	})
 
 	huma.Register(api, huma.Operation{
@@ -100,7 +100,7 @@ func RegisterAuth(api huma.API, pool *pgxpool.Pool) {
 
 /// ===== Handlers =====
 
-func registerUser(ctx context.Context, pool *pgxpool.Pool, input RegisterInput) (*AuthOutput, error) {
+func registerUser(ctx context.Context, pool *pgxpool.Pool, queries *generated.Queries, input RegisterInput) (*AuthOutput, error) {
 	transaction, err := pool.Begin(ctx)
 	if err != nil {
 		slog.Error("failed to create transaction", "error", err)
@@ -112,9 +112,9 @@ func registerUser(ctx context.Context, pool *pgxpool.Pool, input RegisterInput) 
 		}
 	}()
 
-	queries := generated.New(transaction)
+	txQueries := generated.New(transaction)
 
-	user, err := queries.CreateUser(ctx, generated.CreateUserParams{
+	user, err := txQueries.CreateUser(ctx, generated.CreateUserParams{
 		Username: input.Body.Username,
 		Email:    pgTextFromString(input.Body.Email),
 	})
@@ -134,7 +134,7 @@ func registerUser(ctx context.Context, pool *pgxpool.Pool, input RegisterInput) 
 		return nil, huma.Error500InternalServerError("internal server error")
 	}
 
-	_, err = queries.UpsertUserPassword(ctx, generated.UpsertUserPasswordParams{
+	_, err = txQueries.UpsertUserPassword(ctx, generated.UpsertUserPasswordParams{
 		UserID:       user.ID,
 		PasswordHash: passwordHash,
 	})
@@ -143,6 +143,13 @@ func registerUser(ctx context.Context, pool *pgxpool.Pool, input RegisterInput) 
 		return nil, huma.Error500InternalServerError("internal server error")
 	}
 
+	if err := transaction.Commit(ctx); err != nil {
+		slog.Error("failed to commit transaction", "error", err)
+		return nil, huma.Error500InternalServerError("internal server error")
+	}
+
+	// Session stuff runs against the non transaction pool, after the user is created
+	// If anything below fails, the user still exists and can recover via login.
 	session, err := middleware.RequireSessionCtx(ctx, queries)
 	if err != nil {
 		slog.Error("failed to require session", "error", err)
@@ -155,12 +162,6 @@ func registerUser(ctx context.Context, pool *pgxpool.Pool, input RegisterInput) 
 	})
 	if err != nil {
 		slog.Error("failed to attach user to session", "error", err)
-		return nil, huma.Error500InternalServerError("internal server error")
-	}
-
-	err = transaction.Commit(ctx)
-	if err != nil {
-		slog.Error("failed to commit transaction", "error", err)
 		return nil, huma.Error500InternalServerError("internal server error")
 	}
 
