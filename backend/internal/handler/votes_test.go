@@ -10,12 +10,12 @@ import (
 func setupBoardForVotes(t *testing.T) (userID, boardID string) {
 	t.Helper()
 	userID = createTestUser(t, "voteuser", "voteuser@example.com")
-	boardID = createTestBoard(t, "Vote Board", 5, userID)
+	boardID = createTestBoard(t, "Vote Board", 5, userID, nil)
 	return userID, boardID
 }
 
 func TestUpsertVote_Create(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 	userID, boardID := setupBoardForVotes(t)
 
 	w := doRequest(http.MethodPut,
@@ -30,13 +30,13 @@ func TestUpsertVote_Create(t *testing.T) {
 	assertJSONField(t, resp, "user_id", userID)
 	assertJSONField(t, resp, "board_id", boardID)
 
-	if _, ok := resp["id"]; !ok {
+	if _, ok := resp["vote_id"]; !ok {
 		t.Error("expected 'id' field in response")
 	}
 }
 
 func TestUpsertVote_Update(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 	userID, boardID := setupBoardForVotes(t)
 
 	// Create initial upvote
@@ -60,14 +60,11 @@ func TestUpsertVote_Update(t *testing.T) {
 }
 
 func TestGetVotesByBoardID(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 	userID, boardID := setupBoardForVotes(t)
 
 	// Create an upvote
-	doRequest(http.MethodPut,
-		fmt.Sprintf("/api/boards/%s/vote?user_id=%s", boardID, userID),
-		map[string]any{"vote_value": 1},
-	)
+	createTestVote(t, boardID, userID, 1)
 
 	w := doRequest(http.MethodGet,
 		fmt.Sprintf("/api/boards/%s/vote?user_id=%s", boardID, userID),
@@ -94,7 +91,7 @@ func TestGetVotesByBoardID(t *testing.T) {
 }
 
 func TestGetVotesByBoardID_NoVotes(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 	userID, boardID := setupBoardForVotes(t)
 
 	w := doRequest(http.MethodGet,
@@ -121,20 +118,14 @@ func TestGetVotesByBoardID_NoVotes(t *testing.T) {
 }
 
 func TestGetVotesByBoardID_MultipleVoters(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 	user1, boardID := setupBoardForVotes(t)
 	user2 := createTestUser(t, "voter2", "voter2@example.com")
 
 	// user1 upvotes
-	doRequest(http.MethodPut,
-		fmt.Sprintf("/api/boards/%s/vote?user_id=%s", boardID, user1),
-		map[string]any{"vote_value": 1},
-	)
+	createTestVote(t, boardID, user1, 1)
 	// user2 downvotes
-	doRequest(http.MethodPut,
-		fmt.Sprintf("/api/boards/%s/vote?user_id=%s", boardID, user2),
-		map[string]any{"vote_value": -1},
-	)
+	createTestVote(t, boardID, user2, -1)
 
 	// Check aggregated results from user1's perspective
 	w := doRequest(http.MethodGet,
@@ -162,14 +153,11 @@ func TestGetVotesByBoardID_MultipleVoters(t *testing.T) {
 }
 
 func TestDeleteVote(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 	userID, boardID := setupBoardForVotes(t)
 
 	// Create a vote
-	doRequest(http.MethodPut,
-		fmt.Sprintf("/api/boards/%s/vote?user_id=%s", boardID, userID),
-		map[string]any{"vote_value": 1},
-	)
+	createTestVote(t, boardID, userID, 1)
 
 	// Delete the vote
 	w := doRequest(http.MethodDelete,
@@ -197,7 +185,7 @@ func TestDeleteVote(t *testing.T) {
 }
 
 func TestDeleteVote_NotFound(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 	userID, boardID := setupBoardForVotes(t)
 
 	// Try to delete a vote that doesn't exist
@@ -209,7 +197,7 @@ func TestDeleteVote_NotFound(t *testing.T) {
 }
 
 func TestGetVotesByBoardID_InvalidBoardID(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 	userID := createTestUser(t, "invalidvoteuser", "invalidvote@example.com")
 
 	w := doRequest(http.MethodGet,
@@ -220,7 +208,7 @@ func TestGetVotesByBoardID_InvalidBoardID(t *testing.T) {
 }
 
 func TestGetVotesByBoardID_InvalidUserID(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 	_, boardID := setupBoardForVotes(t)
 
 	w := doRequest(http.MethodGet,

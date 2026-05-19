@@ -10,14 +10,14 @@ import (
 func setupForGameCells(t *testing.T) (userID, boardID, cellID, gameID string) {
 	t.Helper()
 	userID = createTestUser(t, "gamecelluser", "gamecelluser@example.com")
-	boardID = createTestBoard(t, "GameCell Board", 5, userID)
+	boardID = createTestBoard(t, "GameCell Board", 5, userID, nil)
 	cellID = createTestCell(t, boardID, "Source Cell")
 	gameID = createTestGame(t, userID, boardID)
 	return
 }
 
 func TestCreateGameCells(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 	_, boardID, cellID, gameID := setupForGameCells(t)
 
 	// Create a second cell
@@ -53,7 +53,7 @@ func TestCreateGameCells(t *testing.T) {
 }
 
 func TestCreateGameCells_FullBoard(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 	_, boardID, _, gameID := setupForGameCells(t)
 
 	// Create 9 cells for a 3x3 board worth of game cells
@@ -79,7 +79,7 @@ func TestCreateGameCells_FullBoard(t *testing.T) {
 }
 
 func TestGetGameCellsByGameID(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 	_, _, cellID, gameID := setupForGameCells(t)
 
 	// Create game cells
@@ -110,7 +110,7 @@ func TestGetGameCellsByGameID(t *testing.T) {
 }
 
 func TestGetGameCellsByGameID_Empty(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 	_, _, _, gameID := setupForGameCells(t)
 
 	w := doRequest(http.MethodGet, fmt.Sprintf("/api/games/%s/cells", gameID), nil)
@@ -125,19 +125,10 @@ func TestGetGameCellsByGameID_Empty(t *testing.T) {
 }
 
 func TestUpdateGameCellMark_MarkTrue(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 	_, _, cellID, gameID := setupForGameCells(t)
 
-	// Create a game cell
-	body := []map[string]any{
-		{"cell_id": cellID, "content": "Markable Cell", "position": 0},
-	}
-	createResp := doRequest(http.MethodPost, fmt.Sprintf("/api/games/%s/cells", gameID), body)
-	assertStatus(t, createResp, http.StatusOK)
-
-	var created []map[string]any
-	decodeJSON(t, createResp, &created)
-	gameCellID := created[0]["id"].(string)
+	gameCellID := createTestGameCell(t, gameID, cellID, "Markable Cell", 0)
 
 	// Mark the cell
 	w := doRequest(http.MethodPut, fmt.Sprintf("/api/games/%s/cells/%s", gameID, gameCellID),
@@ -148,26 +139,17 @@ func TestUpdateGameCellMark_MarkTrue(t *testing.T) {
 	var resp map[string]any
 	decodeJSON(t, w, &resp)
 
-	assertJSONField(t, resp, "id", gameCellID)
+	assertJSONField(t, resp, "game_cell_id", gameCellID)
 	if marked, ok := resp["is_marked"].(bool); !ok || !marked {
 		t.Errorf("expected is_marked = true, got %v", resp["is_marked"])
 	}
 }
 
 func TestUpdateGameCellMark_MarkFalse(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 	_, _, cellID, gameID := setupForGameCells(t)
 
-	// Create a game cell
-	body := []map[string]any{
-		{"cell_id": cellID, "content": "Toggle Cell", "position": 0},
-	}
-	createResp := doRequest(http.MethodPost, fmt.Sprintf("/api/games/%s/cells", gameID), body)
-	assertStatus(t, createResp, http.StatusOK)
-
-	var created []map[string]any
-	decodeJSON(t, createResp, &created)
-	gameCellID := created[0]["id"].(string)
+	gameCellID := createTestGameCell(t, gameID, cellID, "Toggle Cell", 0)
 
 	// Mark it true first
 	doRequest(http.MethodPut, fmt.Sprintf("/api/games/%s/cells/%s", gameID, gameCellID),
@@ -189,7 +171,7 @@ func TestUpdateGameCellMark_MarkFalse(t *testing.T) {
 }
 
 func TestUpdateGameCellMark_NotFound(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 	_, _, _, gameID := setupForGameCells(t)
 
 	w := doRequest(http.MethodPut,
@@ -200,19 +182,10 @@ func TestUpdateGameCellMark_NotFound(t *testing.T) {
 }
 
 func TestUpdateGameCellMark_WrongGame(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 	userID, boardID, cellID, gameID := setupForGameCells(t)
 
-	// Create a game cell on game1
-	body := []map[string]any{
-		{"cell_id": cellID, "content": "Cell", "position": 0},
-	}
-	createResp := doRequest(http.MethodPost, fmt.Sprintf("/api/games/%s/cells", gameID), body)
-	assertStatus(t, createResp, http.StatusOK)
-
-	var created []map[string]any
-	decodeJSON(t, createResp, &created)
-	gameCellID := created[0]["id"].(string)
+	gameCellID := createTestGameCell(t, gameID, cellID, "Cell", 0)
 
 	// Create a second game
 	game2ID := createTestGame(t, userID, boardID)
@@ -230,7 +203,7 @@ func TestGetGameCellsByGameID_InvalidGameID(t *testing.T) {
 }
 
 func TestCreateGameCells_IsMarkedDefaultsFalse(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 	_, _, cellID, gameID := setupForGameCells(t)
 
 	body := []map[string]any{
@@ -253,7 +226,7 @@ func TestCreateGameCells_IsMarkedDefaultsFalse(t *testing.T) {
 }
 
 func TestGetGameCellsByGameID_CellIDNullable(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 	_, boardID, cellID, gameID := setupForGameCells(t)
 
 	// Create game cells with a cell reference

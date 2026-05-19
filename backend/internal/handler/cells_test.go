@@ -10,11 +10,11 @@ import (
 func setupBoardForCells(t *testing.T) string {
 	t.Helper()
 	userID := createTestUser(t, "cellauthor", "cellauthor@example.com")
-	return createTestBoard(t, "Cell Board", 5, userID)
+	return createTestBoard(t, "Cell Board", 5, userID, nil)
 }
 
 func TestCreateCell(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 	boardID := setupBoardForCells(t)
 
 	w := doRequest(http.MethodPost, fmt.Sprintf("/api/boards/%s/cells", boardID), map[string]any{
@@ -28,13 +28,13 @@ func TestCreateCell(t *testing.T) {
 	assertJSONField(t, resp, "content", "Free Space")
 	assertJSONField(t, resp, "board_id", boardID)
 
-	if _, ok := resp["id"]; !ok {
+	if _, ok := resp["cell_id"]; !ok {
 		t.Error("expected 'id' field in response")
 	}
 }
 
 func TestCreateCell_DefaultValue(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 	boardID := setupBoardForCells(t)
 
 	// Create cell without specifying value — should default to 1
@@ -54,7 +54,7 @@ func TestCreateCell_DefaultValue(t *testing.T) {
 }
 
 func TestCreateCell_ExplicitValue(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 	boardID := setupBoardForCells(t)
 
 	// Create cell with explicit value
@@ -74,7 +74,7 @@ func TestCreateCell_ExplicitValue(t *testing.T) {
 }
 
 func TestGetCellsByBoardID(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 	boardID := setupBoardForCells(t)
 
 	// Create two cells
@@ -97,7 +97,7 @@ func TestGetCellsByBoardID(t *testing.T) {
 }
 
 func TestGetCellsByBoardID_Empty(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 	boardID := setupBoardForCells(t)
 
 	w := doRequest(http.MethodGet, fmt.Sprintf("/api/boards/%s/cells", boardID), nil)
@@ -117,7 +117,7 @@ func TestGetCellsByBoardID_InvalidBoardID(t *testing.T) {
 }
 
 func TestUpdateCell(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 	boardID := setupBoardForCells(t)
 
 	// Create a cell
@@ -128,7 +128,7 @@ func TestUpdateCell(t *testing.T) {
 
 	var created map[string]any
 	decodeJSON(t, createResp, &created)
-	cellID := created["id"].(string)
+	cellID := created["cell_id"].(string)
 
 	// Update the cell
 	w := doRequest(http.MethodPut, fmt.Sprintf("/api/boards/%s/cells/%s", boardID, cellID), map[string]any{
@@ -139,13 +139,13 @@ func TestUpdateCell(t *testing.T) {
 	var resp map[string]any
 	decodeJSON(t, w, &resp)
 
-	assertJSONField(t, resp, "id", cellID)
+	assertJSONField(t, resp, "cell_id", cellID)
 	assertJSONField(t, resp, "content", "Updated")
 	assertJSONField(t, resp, "board_id", boardID)
 }
 
 func TestUpdateCell_Value(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 	boardID := setupBoardForCells(t)
 
 	// Create a cell with value 1
@@ -157,7 +157,7 @@ func TestUpdateCell_Value(t *testing.T) {
 
 	var created map[string]any
 	decodeJSON(t, createResp, &created)
-	cellID := created["id"].(string)
+	cellID := created["cell_id"].(string)
 
 	// Update the cell value
 	w := doRequest(http.MethodPut, fmt.Sprintf("/api/boards/%s/cells/%s", boardID, cellID), map[string]any{
@@ -174,7 +174,7 @@ func TestUpdateCell_Value(t *testing.T) {
 }
 
 func TestUpdateCell_NotFound(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 	boardID := setupBoardForCells(t)
 
 	w := doRequest(http.MethodPut, fmt.Sprintf("/api/boards/%s/cells/00000000-0000-0000-0000-000000000000", boardID), map[string]any{
@@ -184,7 +184,7 @@ func TestUpdateCell_NotFound(t *testing.T) {
 }
 
 func TestDeleteCell(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 	boardID := setupBoardForCells(t)
 
 	// Create a cell
@@ -195,7 +195,7 @@ func TestDeleteCell(t *testing.T) {
 
 	var created map[string]any
 	decodeJSON(t, createResp, &created)
-	cellID := created["id"].(string)
+	cellID := created["cell_id"].(string)
 
 	// Delete the cell
 	w := doRequest(http.MethodDelete, fmt.Sprintf("/api/boards/%s/cells/%s", boardID, cellID), nil)
@@ -214,7 +214,7 @@ func TestDeleteCell(t *testing.T) {
 }
 
 func TestDeleteCell_NotFound(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 	boardID := setupBoardForCells(t)
 
 	w := doRequest(http.MethodDelete, fmt.Sprintf("/api/boards/%s/cells/00000000-0000-0000-0000-000000000000", boardID), nil)
@@ -222,12 +222,12 @@ func TestDeleteCell_NotFound(t *testing.T) {
 }
 
 func TestUpdateCell_WrongBoard(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 
 	// Create two boards with cells
 	userID := createTestUser(t, "wrongboardauthor", "wrongboard@example.com")
-	board1 := createTestBoard(t, "Board 1", 5, userID)
-	board2 := createTestBoard(t, "Board 2", 5, userID)
+	board1 := createTestBoard(t, "Board 1", 5, userID, nil)
+	board2 := createTestBoard(t, "Board 2", 5, userID, nil)
 
 	// Create cell on board1
 	createResp := doRequest(http.MethodPost, fmt.Sprintf("/api/boards/%s/cells", board1), map[string]any{
@@ -236,7 +236,7 @@ func TestUpdateCell_WrongBoard(t *testing.T) {
 	assertStatus(t, createResp, http.StatusOK)
 	var created map[string]any
 	decodeJSON(t, createResp, &created)
-	cellID := created["id"].(string)
+	cellID := created["cell_id"].(string)
 
 	// Try to update cell using board2's path -- should fail
 	w := doRequest(http.MethodPut, fmt.Sprintf("/api/boards/%s/cells/%s", board2, cellID), map[string]any{
@@ -246,11 +246,11 @@ func TestUpdateCell_WrongBoard(t *testing.T) {
 }
 
 func TestDeleteCell_WrongBoard(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 
 	userID := createTestUser(t, "wrongdelauthor", "wrongdel@example.com")
-	board1 := createTestBoard(t, "Board 1", 5, userID)
-	board2 := createTestBoard(t, "Board 2", 5, userID)
+	board1 := createTestBoard(t, "Board 1", 5, userID, nil)
+	board2 := createTestBoard(t, "Board 2", 5, userID, nil)
 
 	// Create cell on board1
 	createResp := doRequest(http.MethodPost, fmt.Sprintf("/api/boards/%s/cells", board1), map[string]any{
@@ -259,7 +259,7 @@ func TestDeleteCell_WrongBoard(t *testing.T) {
 	assertStatus(t, createResp, http.StatusOK)
 	var created map[string]any
 	decodeJSON(t, createResp, &created)
-	cellID := created["id"].(string)
+	cellID := created["cell_id"].(string)
 
 	// Try to delete cell using board2's path -- should fail
 	w := doRequest(http.MethodDelete, fmt.Sprintf("/api/boards/%s/cells/%s", board2, cellID), nil)
