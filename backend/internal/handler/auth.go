@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
-	"github.com/jackc/pgx"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/officeryoda/dozingo/internal/auth"
@@ -75,6 +75,26 @@ func RegisterAuth(api huma.API, pool *pgxpool.Pool) {
 		Tags:        []string{"Auth"},
 	}, func(ctx context.Context, input *LoginInput) (*AuthOutput, error) {
 		return loginUser(ctx, queries, *input)
+	})
+
+	huma.Register(api, huma.Operation{
+		OperationID: "logout",
+		Method:      http.MethodPost,
+		Path:        "/auth/logout",
+		Summary:     "Logout from logged in User",
+		Tags:        []string{"Auth"},
+	}, func(ctx context.Context, input *struct{}) (*struct{}, error) {
+		return logoutUser(ctx, queries)
+	})
+
+	huma.Register(api, huma.Operation{
+		OperationID: "me",
+		Method:      http.MethodGet,
+		Path:        "/auth/me",
+		Summary:     "Information about the logged-in user",
+		Tags:        []string{"Auth"},
+	}, func(ctx context.Context, input *struct{}) (*AuthOutput, error) {
+		return getMe(ctx)
 	})
 }
 
@@ -186,5 +206,34 @@ func loginUser(ctx context.Context, queries *generated.Queries, input LoginInput
 	output.Body.ID = user.ID.String()
 	output.Body.Username = user.Username
 	output.Body.Email = stringFromPgText(user.Email)
+	return output, nil
+}
+
+func logoutUser(ctx context.Context, queries *generated.Queries) (*struct{}, error) {
+	session, ok := middleware.SessionUserFromContext(ctx)
+	if !ok || !session.UserID.Valid {
+		// nothing to log out on an anonymous user
+		return &struct{}{}, nil
+	}
+
+	if err := queries.DeleteSessionByToken(ctx, session.Token); err != nil {
+		slog.Error("failed to delete session on logout", "error", err)
+	}
+	if err := middleware.ClearSessionTokenCookieCtx(ctx); err != nil {
+		slog.Error("failed to clear session cookie on logout", "error", err)
+	}
+	return &struct{}{}, nil
+}
+
+func getMe(ctx context.Context) (*AuthOutput, error) {
+	session, ok := middleware.SessionUserFromContext(ctx)
+	if !ok || !session.UserID.Valid {
+		return nil, huma.Error401Unauthorized("not logged in")
+	}
+
+	output := &AuthOutput{}
+	output.Body.ID = session.UserID.String()
+	output.Body.Username = session.Username.String
+	output.Body.Email = stringFromPgText(session.Email)
 	return output, nil
 }

@@ -75,7 +75,7 @@ func SessionUser(api huma.API, queries *generated.Queries) func(huma.Context, fu
 		sessionUser, err := queries.GetSessionUserByToken(ctx.Context(), sessionToken)
 		if err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
-				clearSessionTokenCookie(ctx)
+				ClearSessionTokenCookie(ctx)
 				next(ctx)
 				return
 			}
@@ -167,7 +167,7 @@ func setSessionTokenCookie(ctx huma.Context, token string) {
 		Name:     cookieSessionToken,
 		Value:    token,
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   cfg.SecureCookie,
 		SameSite: http.SameSiteStrictMode,
 		Path:     "/",
 		Expires:  time.Now().Add(sessionTokenTTL),
@@ -175,7 +175,7 @@ func setSessionTokenCookie(ctx huma.Context, token string) {
 	ctx.AppendHeader("Set-Cookie", newCookie.String())
 }
 
-func clearSessionTokenCookie(ctx huma.Context) {
+func ClearSessionTokenCookie(ctx huma.Context) {
 	cookie := http.Cookie{
 		Name:     cookieSessionToken,
 		Value:    "",
@@ -186,6 +186,15 @@ func clearSessionTokenCookie(ctx huma.Context) {
 		MaxAge:   -1,
 	}
 	ctx.AppendHeader("Set-Cookie", cookie.String())
+}
+
+func ClearSessionTokenCookieCtx(ctx context.Context) error {
+	humaCtx, ok := humaContextFrom(ctx)
+	if !ok {
+		return errors.New("ClearSessionTokenCookieCtx called without SessionUser middleware")
+	}
+	ClearSessionTokenCookie(humaCtx)
+	return nil
 }
 
 func extendCloseToExpiredSessions(sessionUser *generated.GetSessionUserByTokenRow, queries *generated.Queries, ctx huma.Context) {
