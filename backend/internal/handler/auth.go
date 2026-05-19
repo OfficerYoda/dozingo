@@ -91,8 +91,7 @@ func RegisterAuth(api huma.API, pool *pgxpool.Pool) {
 func registerUser(ctx context.Context, pool *pgxpool.Pool, queries *generated.Queries, input RegisterInput) (*AuthOutput, error) {
 	transaction, err := pool.Begin(ctx)
 	if err != nil {
-		slog.Error("failed to create transaction", "error", err)
-		return nil, huma.Error500InternalServerError("failed to create transaction", err)
+		return nil, internalError(err, "failed to create transaction")
 	}
 	defer func() {
 		if err := transaction.Rollback(ctx); err != nil && !errors.Is(err, pgx.ErrTxClosed) {
@@ -112,14 +111,12 @@ func registerUser(ctx context.Context, pool *pgxpool.Pool, queries *generated.Qu
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
 			return nil, huma.Error409Conflict("username or email already taken")
 		}
-		slog.Error("failed to create user", "error", err)
-		return nil, huma.Error500InternalServerError("failed to create user", err)
+		return nil, internalError(err, "failed to create user")
 	}
 
 	passwordHash, err := auth.HashPassword(input.Body.Password)
 	if err != nil {
-		slog.Error("failed to hash password", "error", err)
-		return nil, huma.Error500InternalServerError("failed to hash password", err)
+		return nil, internalError(err, "failed to hash password")
 	}
 
 	_, err = txQueries.UpsertUserPassword(ctx, generated.UpsertUserPasswordParams{
@@ -127,21 +124,18 @@ func registerUser(ctx context.Context, pool *pgxpool.Pool, queries *generated.Qu
 		PasswordHash: passwordHash,
 	})
 	if err != nil {
-		slog.Error("failed to create user password", "error", err)
-		return nil, huma.Error500InternalServerError("failed to create user password", err)
+		return nil, internalError(err, "failed to create user password")
 	}
 
 	if err := transaction.Commit(ctx); err != nil {
-		slog.Error("failed to commit transaction", "error", err)
-		return nil, huma.Error500InternalServerError("failed to commit transaction", err)
+		return nil, internalError(err, "failed to commit transaction")
 	}
 
 	// Session stuff runs against the non transaction pool, after the user is created
 	// If anything below fails, the user still exists and can recover via login.
 	session, err := middleware.RequireSessionCtx(ctx, queries)
 	if err != nil {
-		slog.Error("failed to require session", "error", err)
-		return nil, huma.Error500InternalServerError("failed to require session", err)
+		return nil, internalError(err, "failed to require session")
 	}
 
 	_, err = queries.AttachUserToSession(ctx, generated.AttachUserToSessionParams{
@@ -149,8 +143,7 @@ func registerUser(ctx context.Context, pool *pgxpool.Pool, queries *generated.Qu
 		UserID: user.ID,
 	})
 	if err != nil {
-		slog.Error("failed to attach user to session", "error", err)
-		return nil, huma.Error500InternalServerError("failed to attach user to session", err)
+		return nil, internalError(err, "failed to attach user to session")
 	}
 
 	output := &AuthOutput{}
@@ -167,8 +160,7 @@ func loginUser(ctx context.Context, queries *generated.Queries, input LoginInput
 			auth.CheckPasswordAgainstDummy(input.Body.Password)
 			return nil, huma.Error401Unauthorized("invalid credentials")
 		}
-		slog.Error("db error", "error", err)
-		return nil, huma.Error500InternalServerError("failed to fetch user for login", err)
+		return nil, internalError(err, "failed to fetch user for login")
 	}
 
 	err = auth.CheckPassword(input.Body.Password, user.PasswordHash)
@@ -178,8 +170,7 @@ func loginUser(ctx context.Context, queries *generated.Queries, input LoginInput
 
 	session, err := middleware.RequireSessionCtx(ctx, queries)
 	if err != nil {
-		slog.Error("failed to require session", "error", err)
-		return nil, huma.Error500InternalServerError("failed to require session", err)
+		return nil, internalError(err, "failed to require session")
 	}
 
 	_, err = queries.AttachUserToSession(ctx, generated.AttachUserToSessionParams{
@@ -187,8 +178,7 @@ func loginUser(ctx context.Context, queries *generated.Queries, input LoginInput
 		UserID: user.ID,
 	})
 	if err != nil {
-		slog.Error("failed to attach user to session", "error", err)
-		return nil, huma.Error500InternalServerError("failed to attach user to session", err)
+		return nil, internalError(err, "failed to attach user to session")
 	}
 
 	output := &AuthOutput{}
