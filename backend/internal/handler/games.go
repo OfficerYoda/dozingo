@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -139,7 +140,7 @@ func RegisterGames(api huma.API, pool *pgxpool.Pool) {
 func getGameByID(ctx context.Context, queries *generated.Queries, input GetGameByIDInput) (*GetGameByIDOutput, error) {
 	id, err := uuidFromString(input.ID)
 	if err != nil {
-		return nil, huma.Error400BadRequest("invalid id", err)
+		return nil, huma.Error400BadRequest("invalid game_id", err)
 	}
 
 	cells, err := queries.GetGameByID(ctx, id)
@@ -153,7 +154,7 @@ func getGameByID(ctx context.Context, queries *generated.Queries, input GetGameB
 func listGamesByPlayer(ctx context.Context, queries *generated.Queries, input ListGamesByPlayerInput) (*ListGamesByPlayerOutput, error) {
 	playerID, err := uuidFromString(input.PlayerID)
 	if err != nil {
-		return nil, huma.Error400BadRequest("invalid input_id", err)
+		return nil, huma.Error400BadRequest("invalid player_id", err)
 	}
 
 	games, err := queries.ListGamesByPlayer(ctx, playerID)
@@ -228,7 +229,7 @@ func updateGame(ctx context.Context, queries *generated.Queries, input UpdateGam
 		Status:   input.Body.Status,
 	})
 	if err != nil {
-		if err == pgx.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, huma.Error404NotFound("game not found", err)
 		}
 		return nil, huma.Error500InternalServerError("failed to update game", err)
@@ -245,7 +246,7 @@ func deleteGame(ctx context.Context, queries *generated.Queries, input DeleteGam
 
 	_, err = queries.DeleteGame(ctx, gameID)
 	if err != nil {
-		if err == pgx.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, huma.Error404NotFound("game not found", err)
 		}
 		return nil, huma.Error500InternalServerError("failed to delete game", err)

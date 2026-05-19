@@ -9,9 +9,9 @@ RETURNING *;
 
 -- name: UpdateCell :one
 UPDATE cells
-SET content = COALESCE($1, content),
-    value = COALESCE($2, value)
-WHERE id = $3 AND board_id = $4
+SET content = COALESCE(sqlc.narg('content'), content),
+    value = COALESCE(sqlc.narg('value'), value)
+WHERE id = sqlc.arg('id') AND board_id = sqlc.arg('board_id')
 RETURNING *;
 
 -- name: DeleteCell :one

@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -16,7 +17,7 @@ type VoteOutput struct {
 	ID        string `json:"id" format:"uuid"`
 	UserID    string `json:"user_id" format:"uuid"`
 	BoardID   string `json:"board_id" format:"uuid"`
-	VoteValue string `json:"vote_value" format:"integer"`
+	VoteValue int32  `json:"vote_value" format:"integer"`
 }
 
 type GetVotesByBoardIDInput struct {
@@ -159,7 +160,7 @@ func deleteVote(ctx context.Context, queries *generated.Queries, input DeleteVot
 		BoardID: boardID,
 	})
 	if err != nil {
-		if err == pgx.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, huma.Error404NotFound("vote not found on this board", err)
 		}
 		return nil, huma.Error500InternalServerError("failed to delete vote", err)
@@ -175,6 +176,6 @@ func voteToOutput(vote generated.Vote) VoteOutput {
 		ID:        vote.ID.String(),
 		UserID:    vote.UserID.String(),
 		BoardID:   vote.BoardID.String(),
-		VoteValue: string(vote.VoteValue),
+		VoteValue: vote.VoteValue,
 	}
 }

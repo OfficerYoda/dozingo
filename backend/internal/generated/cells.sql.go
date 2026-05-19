@@ -106,8 +106,8 @@ RETURNING id, board_id, content, created_at, updated_at, value, author_id
 `
 
 type UpdateCellParams struct {
-	Content string      `json:"content"`
-	Value   int32       `json:"value"`
+	Content pgtype.Text `json:"content"`
+	Value   pgtype.Int4 `json:"value"`
 	ID      pgtype.UUID `json:"id"`
 	BoardID pgtype.UUID `json:"board_id"`
 }

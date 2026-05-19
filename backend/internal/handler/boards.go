@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -31,7 +32,7 @@ type GetBoardsOutput struct {
 }
 
 type GetBoardByIDInput struct {
-	ID string `path:"id" format:"uuid"`
+	ID string `path:"board_id" format:"uuid"`
 }
 
 type GetBoardByIDOutput struct {
@@ -52,7 +53,7 @@ type CreateBoardOutput struct {
 }
 
 type DeleteBoardInput struct {
-	ID string `path:"id" format:"uuid"`
+	ID string `path:"board_id" format:"uuid"`
 }
 
 /// ===== Register =====
@@ -75,7 +76,7 @@ func RegisterBoards(api huma.API, pool *pgxpool.Pool) {
 	huma.Register(api, huma.Operation{
 		OperationID: "get-board-by-id",
 		Method:      http.MethodGet,
-		Path:        "/boards/{id}",
+		Path:        "/boards/{board_id}",
 		Summary:     "Get a board by ID",
 		Tags:        []string{"Boards"},
 	}, func(ctx context.Context, input *GetBoardByIDInput) (*GetBoardByIDOutput, error) {
@@ -95,7 +96,7 @@ func RegisterBoards(api huma.API, pool *pgxpool.Pool) {
 	huma.Register(api, huma.Operation{
 		OperationID: "delete-board",
 		Method:      http.MethodDelete,
-		Path:        "/boards/{id}",
+		Path:        "/boards/{board_id}",
 		Summary:     "Delete a board",
 		Tags:        []string{"Boards"},
 	}, func(ctx context.Context, input *DeleteBoardInput) (*struct{}, error) {
@@ -129,7 +130,7 @@ func getBoards(ctx context.Context, pool *pgxpool.Pool, input GetBoardsInput) (*
 func getBoardByID(ctx context.Context, queries *generated.Queries, input GetBoardByIDInput) (*GetBoardByIDOutput, error) {
 	id, err := uuidFromString(input.ID)
 	if err != nil {
-		return nil, huma.Error400BadRequest("invalid id", err)
+		return nil, huma.Error400BadRequest("invalid board_id", err)
 	}
 
 	board, err := queries.GetBoardByID(ctx, id)
@@ -164,12 +165,12 @@ func createBoard(ctx context.Context, queries *generated.Queries, input CreateBo
 func deleteBoard(ctx context.Context, queries *generated.Queries, input DeleteBoardInput) (*struct{}, error) {
 	id, err := uuidFromString(input.ID)
 	if err != nil {
-		return nil, huma.Error400BadRequest("invalid id", err)
+		return nil, huma.Error400BadRequest("invalid board_id", err)
 	}
 
 	_, err = queries.DeleteBoard(ctx, id)
 	if err != nil {
-		if err == pgx.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, huma.Error404NotFound("board not found", err)
 		}
 		return nil, huma.Error500InternalServerError("failed to delete board", err)

@@ -92,7 +92,7 @@ func registerUser(ctx context.Context, pool *pgxpool.Pool, queries *generated.Qu
 	transaction, err := pool.Begin(ctx)
 	if err != nil {
 		slog.Error("failed to create transaction", "error", err)
-		return nil, huma.Error500InternalServerError("internal server error")
+		return nil, huma.Error500InternalServerError("failed to create transaction", err)
 	}
 	defer func() {
 		if err := transaction.Rollback(ctx); err != nil && !errors.Is(err, pgx.ErrTxClosed) {
@@ -113,13 +113,13 @@ func registerUser(ctx context.Context, pool *pgxpool.Pool, queries *generated.Qu
 			return nil, huma.Error409Conflict("username or email already taken")
 		}
 		slog.Error("failed to create user", "error", err)
-		return nil, huma.Error500InternalServerError("internal server error")
+		return nil, huma.Error500InternalServerError("failed to create user", err)
 	}
 
 	passwordHash, err := auth.HashPassword(input.Body.Password)
 	if err != nil {
 		slog.Error("failed to hash password", "error", err)
-		return nil, huma.Error500InternalServerError("internal server error")
+		return nil, huma.Error500InternalServerError("failed to hash password", err)
 	}
 
 	_, err = txQueries.UpsertUserPassword(ctx, generated.UpsertUserPasswordParams{
@@ -128,12 +128,12 @@ func registerUser(ctx context.Context, pool *pgxpool.Pool, queries *generated.Qu
 	})
 	if err != nil {
 		slog.Error("failed to create user password", "error", err)
-		return nil, huma.Error500InternalServerError("internal server error")
+		return nil, huma.Error500InternalServerError("failed to create user password", err)
 	}
 
 	if err := transaction.Commit(ctx); err != nil {
 		slog.Error("failed to commit transaction", "error", err)
-		return nil, huma.Error500InternalServerError("internal server error")
+		return nil, huma.Error500InternalServerError("failed to commit transaction", err)
 	}
 
 	// Session stuff runs against the non transaction pool, after the user is created
@@ -141,7 +141,7 @@ func registerUser(ctx context.Context, pool *pgxpool.Pool, queries *generated.Qu
 	session, err := middleware.RequireSessionCtx(ctx, queries)
 	if err != nil {
 		slog.Error("failed to require session", "error", err)
-		return nil, huma.Error500InternalServerError("internal server error")
+		return nil, huma.Error500InternalServerError("failed to require session", err)
 	}
 
 	_, err = queries.AttachUserToSession(ctx, generated.AttachUserToSessionParams{
@@ -150,7 +150,7 @@ func registerUser(ctx context.Context, pool *pgxpool.Pool, queries *generated.Qu
 	})
 	if err != nil {
 		slog.Error("failed to attach user to session", "error", err)
-		return nil, huma.Error500InternalServerError("internal server error")
+		return nil, huma.Error500InternalServerError("failed to attach user to session", err)
 	}
 
 	output := &AuthOutput{}
@@ -168,7 +168,7 @@ func loginUser(ctx context.Context, queries *generated.Queries, input LoginInput
 			return nil, huma.Error401Unauthorized("invalid credentials")
 		}
 		slog.Error("db error", "error", err)
-		return nil, huma.Error500InternalServerError("internal server error")
+		return nil, huma.Error500InternalServerError("failed to fetch user for login", err)
 	}
 
 	err = auth.CheckPassword(input.Body.Password, user.PasswordHash)
@@ -179,7 +179,7 @@ func loginUser(ctx context.Context, queries *generated.Queries, input LoginInput
 	session, err := middleware.RequireSessionCtx(ctx, queries)
 	if err != nil {
 		slog.Error("failed to require session", "error", err)
-		return nil, huma.Error500InternalServerError("internal server error")
+		return nil, huma.Error500InternalServerError("failed to require session", err)
 	}
 
 	_, err = queries.AttachUserToSession(ctx, generated.AttachUserToSessionParams{
@@ -188,7 +188,7 @@ func loginUser(ctx context.Context, queries *generated.Queries, input LoginInput
 	})
 	if err != nil {
 		slog.Error("failed to attach user to session", "error", err)
-		return nil, huma.Error500InternalServerError("internal server error")
+		return nil, huma.Error500InternalServerError("failed to attach user to session", err)
 	}
 
 	output := &AuthOutput{}

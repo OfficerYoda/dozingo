@@ -2,10 +2,12 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/officeryoda/dozingo/internal/generated"
 )
@@ -45,7 +47,7 @@ type UpdateCellInput struct {
 	CellID  string `path:"cell_id" format:"uuid"`
 	Body    struct {
 		Content *string `json:"content,omitempty" maxLength:"200"`
-		Value   *int    `json:"value,omitempty"`
+		Value   *int32  `json:"value,omitempty"`
 	}
 }
 
@@ -161,14 +163,16 @@ func updateCell(ctx context.Context, queries *generated.Queries, input UpdateCel
 		return nil, huma.Error400BadRequest("invalid cell_id", err)
 	}
 
-	var content string
+	// PATCH semantics: nil body fields mean "leave column untouched".
+	// The underlying SQL uses COALESCE(sqlc.narg(...), column).
+	var content pgtype.Text
 	if input.Body.Content != nil {
-		content = *input.Body.Content
+		content = pgtype.Text{String: *input.Body.Content, Valid: true}
 	}
 
-	var value int32
+	var value pgtype.Int4
 	if input.Body.Value != nil {
-		value = int32(*input.Body.Value)
+		value = pgtype.Int4{Int32: *input.Body.Value, Valid: true}
 	}
 
 	cell, err := queries.UpdateCell(ctx, generated.UpdateCellParams{
@@ -178,7 +182,7 @@ func updateCell(ctx context.Context, queries *generated.Queries, input UpdateCel
 		Value:   value,
 	})
 	if err != nil {
-		if err == pgx.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, huma.Error404NotFound("cell not found on this board", err)
 		}
 		return nil, huma.Error500InternalServerError("failed to update cell", err)
@@ -202,7 +206,7 @@ func deleteCell(ctx context.Context, queries *generated.Queries, input DeleteCel
 		BoardID: boardID,
 	})
 	if err != nil {
-		if err == pgx.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, huma.Error404NotFound("cell not found on this board", err)
 		}
 		return nil, huma.Error500InternalServerError("failed to delete cell", err)

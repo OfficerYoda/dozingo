@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -168,7 +169,7 @@ func updateGameCellMark(ctx context.Context, queries *generated.Queries, input U
 		GameID:   gameID,
 	})
 	if err != nil {
-		if err == pgx.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, huma.Error404NotFound("game cell not found", err)
 		}
 		return nil, huma.Error500InternalServerError("failed to update game cell", err)

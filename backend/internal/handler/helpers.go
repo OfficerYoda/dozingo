@@ -30,9 +30,9 @@ func stringFromPgText(pgText pgtype.Text) *string {
 	return nil
 }
 
-func stringFromPgUUID(pgText pgtype.UUID) *string {
-	if pgText.Valid {
-		s := pgText.String()
+func stringFromPgUUID(pgUUID pgtype.UUID) *string {
+	if pgUUID.Valid {
+		s := pgUUID.String()
 		return &s
 	}
 	return nil
