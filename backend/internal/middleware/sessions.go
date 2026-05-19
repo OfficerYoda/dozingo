@@ -49,6 +49,17 @@ func init() {
 	}
 }
 
+// SetCookieSecureForTesting overrides the Secure flag used when emitting
+// session cookies. Tests run over plain HTTP via httptest, which would drop
+// Secure cookies; this lets the test setup force-disable the flag without
+// touching real environment variables. Production code must never call this.
+func SetCookieSecureForTesting(secure bool) {
+	if cfg == nil {
+		cfg = &config.Config{}
+	}
+	cfg.SecureCookie = secure
+}
+
 // SessionUser is a read-only middleware. If the request carries a valid
 // session_token cookie, it loads the session, optionally extends it, and
 // stashes it in the request context. Requests without a cookie do not touch
