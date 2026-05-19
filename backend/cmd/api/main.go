@@ -19,7 +19,10 @@ import (
 	"github.com/officeryoda/dozingo/internal/generated"
 	"github.com/officeryoda/dozingo/internal/handler"
 	"github.com/officeryoda/dozingo/internal/middleware"
+	"github.com/officeryoda/dozingo/internal/worker"
 )
+
+const sessionCleanupInterval = 1 * time.Hour
 
 func main() {
 	cfg, err := config.Load()
@@ -38,7 +41,8 @@ func main() {
 	defer stop()
 
 	// Periodically remove expired sessions
-	handler.StartSessionCleanup(ctx, generated.New(pool))
+	cleaner := worker.NewSessionCleaner(generated.New(pool), sessionCleanupInterval)
+	go cleaner.Start(ctx)
 
 	router := createRouter(cfg)
 	registerRoutes(router, pool)

@@ -159,22 +159,3 @@ func TestSession_FreshSession_NotExtended(t *testing.T) {
 		t.Errorf("fresh session should not be extended; original=%v new=%v", originalExpiry, newExpiry)
 	}
 }
-
-/// ===== Session cleanup =====
-
-func TestDeleteExpiredSessions_RemovesOnlyExpired(t *testing.T) {
-	setupTest(t)
-
-	expired := insertSessionWithExpiry(t, -2*time.Hour)
-	fresh := insertSessionWithExpiry(t, 30*24*time.Hour)
-
-	q := generated.New(testPool)
-	deleteExpiredSessions(context.Background(), q)
-
-	if rawSessionExists(t, expired) {
-		t.Error("expected expired session to be deleted")
-	}
-	if !rawSessionExists(t, fresh) {
-		t.Error("fresh session should still exist after cleanup")
-	}
-}

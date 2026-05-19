@@ -1,4 +1,4 @@
-package handler
+package worker
 
 import (
 	"context"
@@ -8,18 +8,27 @@ import (
 	"github.com/officeryoda/dozingo/internal/generated"
 )
 
-func StartSessionCleanup(ctx context.Context, queries *generated.Queries) {
+type SessionCleaner struct {
+	queries  *generated.Queries
+	interval time.Duration
+}
+
+func NewSessionCleaner(queries *generated.Queries, interval time.Duration) *SessionCleaner {
+	return &SessionCleaner{queries: queries, interval: interval}
+}
+
+func (s *SessionCleaner) Start(ctx context.Context) {
 	go func() {
 		// Run once at startup
-		deleteExpiredSessions(ctx, queries)
+		deleteExpiredSessions(ctx, s.queries)
 
-		ticker := time.NewTicker(1 * time.Hour)
+		ticker := time.NewTicker(s.interval)
 		defer ticker.Stop()
 
 		for {
 			select {
 			case <-ticker.C:
-				deleteExpiredSessions(ctx, queries)
+				deleteExpiredSessions(ctx, s.queries)
 			case <-ctx.Done():
 				return
 			}
