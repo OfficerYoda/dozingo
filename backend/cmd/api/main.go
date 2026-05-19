@@ -5,6 +5,10 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humachi"
@@ -29,12 +33,22 @@ func main() {
 	}
 	defer pool.Close()
 
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
 	// Periodically remove expired sessions
-	handler.StartSessionCleanup(context.Background(), generated.New(pool))
+	handler.StartSessionCleanup(ctx, generated.New(pool))
 
 	router := createRouter(cfg)
 	registerRoutes(router, pool)
-	startServer(cfg.Port, router)
+	srv := createServer(cfg.Port, router)
+	go startServer(srv)
+
+	<-ctx.Done() // block until SIGTERM / Ctrl-C
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	_ = srv.Shutdown(shutdownCtx) // drain in-flight requests
 }
 
 // connectDB creates a connection pool to PostgreSQL and verifies the connection.
@@ -86,12 +100,16 @@ func registerRoutes(router *chi.Mux, pool *pgxpool.Pool) {
 	handler.RegisterAuth(apiGroup, pool)
 }
 
-// startServer begins listening on the given port and blocks until the server exits.
-func startServer(port int, handler http.Handler) {
+func createServer(port int, handler http.Handler) *http.Server {
 	addr := fmt.Sprintf(":%d", port)
-	log.Printf("Server starting on %s", addr)
-	log.Printf("API docs available at http://localhost:%d/docs", port)
-	if err := http.ListenAndServe(addr, handler); err != nil {
+	srv := &http.Server{Handler: handler, Addr: addr}
+
+	log.Printf("Server created on %s", addr)
+	return srv
+}
+
+func startServer(srv *http.Server) {
+	if err := srv.ListenAndServe(); err != nil {
 		log.Fatalf("server failed: %v", err)
 	}
 }
