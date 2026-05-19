@@ -12,7 +12,7 @@ import (
 /// ===== Input/Output types =====
 
 type VoteOutput struct {
-	ID        string `json:"id" format:"uuid"`
+	VoteID    string `json:"vote_id" format:"uuid"`
 	UserID    string `json:"user_id" format:"uuid"`
 	BoardID   string `json:"board_id" format:"uuid"`
 	VoteValue int32  `json:"vote_value" format:"integer"`
@@ -166,7 +166,7 @@ func deleteVote(ctx context.Context, queries *generated.Queries, input DeleteVot
 
 func voteToOutput(vote generated.Vote) VoteOutput {
 	return VoteOutput{
-		ID:        vote.ID.String(),
+		VoteID:    vote.ID.String(),
 		UserID:    vote.UserID.String(),
 		BoardID:   vote.BoardID.String(),
 		VoteValue: vote.VoteValue,

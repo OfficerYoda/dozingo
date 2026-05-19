@@ -12,12 +12,12 @@ import (
 /// ===== Input/Output types =====
 
 type GameCellOutput struct {
-	ID       string  `json:"id" format:"uuid"`
-	GameID   string  `json:"game_id" format:"uuid"`
-	CellID   *string `json:"cell_id" format:"uuid"`
-	Content  string  `json:"content" format:"text"`
-	Position int32   `json:"position" format:"integer"`
-	IsMarked bool    `json:"is_marked"`
+	GameCellID string  `json:"game_cell_id" format:"uuid"`
+	GameID     string  `json:"game_id" format:"uuid"`
+	CellID     *string `json:"cell_id" format:"uuid"`
+	Content    string  `json:"content" format:"text"`
+	Position   int32   `json:"position" format:"integer"`
+	IsMarked   bool    `json:"is_marked"`
 }
 
 type GetGameCellsByGameIDInput struct {
@@ -165,11 +165,11 @@ func updateGameCellMark(ctx context.Context, queries *generated.Queries, input U
 
 func gameCellToOutput(cell generated.GameCell) GameCellOutput {
 	return GameCellOutput{
-		ID:       cell.ID.String(),
-		GameID:   cell.GameID.String(),
-		CellID:   stringFromPgUUID(cell.CellID),
-		Content:  cell.Content,
-		Position: cell.Position,
-		IsMarked: cell.IsMarked,
+		GameCellID: cell.ID.String(),
+		GameID:     cell.GameID.String(),
+		CellID:     stringFromPgUUID(cell.CellID),
+		Content:    cell.Content,
+		Position:   cell.Position,
+		IsMarked:   cell.IsMarked,
 	}
 }

@@ -14,7 +14,7 @@ import (
 /// ===== Input/Output types =====
 
 type BoardOutput struct {
-	ID          string `json:"id" format:"uuid"`
+	BoardID     string `json:"board_id" format:"uuid"`
 	Title       string `json:"title" format:"text"`
 	Description string `json:"description" format:"text"`
 	Size        int32  `json:"size" format:"integer"`
@@ -31,7 +31,7 @@ type GetBoardsOutput struct {
 }
 
 type GetBoardByIDInput struct {
-	ID string `path:"board_id" format:"uuid"`
+	BoardID string `path:"board_id" format:"uuid"`
 }
 
 type GetBoardByIDOutput struct {
@@ -52,7 +52,7 @@ type CreateBoardOutput struct {
 }
 
 type DeleteBoardInput struct {
-	ID string `path:"board_id" format:"uuid"`
+	BoardID string `path:"board_id" format:"uuid"`
 }
 
 /// ===== Register =====
@@ -119,7 +119,7 @@ func getBoards(ctx context.Context, pool *pgxpool.Pool, input GetBoardsInput) (*
 }
 
 func getBoardByID(ctx context.Context, queries *generated.Queries, input GetBoardByIDInput) (*GetBoardByIDOutput, error) {
-	id, err := uuidFromString(input.ID)
+	id, err := uuidFromString(input.BoardID)
 	if err != nil {
 		return nil, huma.Error400BadRequest("invalid board_id", err)
 	}
@@ -154,7 +154,7 @@ func createBoard(ctx context.Context, queries *generated.Queries, input CreateBo
 }
 
 func deleteBoard(ctx context.Context, queries *generated.Queries, input DeleteBoardInput) (*struct{}, error) {
-	id, err := uuidFromString(input.ID)
+	id, err := uuidFromString(input.BoardID)
 	if err != nil {
 		return nil, huma.Error400BadRequest("invalid board_id", err)
 	}
@@ -194,7 +194,7 @@ func queryBoardsFiltered(ctx context.Context, input GetBoardsInput, pool *pgxpoo
 
 func boardToOutput(board generated.Board) BoardOutput {
 	return BoardOutput{
-		ID:          board.ID.String(),
+		BoardID:     board.ID.String(),
 		Title:       board.Title,
 		Description: board.Description.String,
 		Size:        board.Size,

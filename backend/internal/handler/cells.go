@@ -13,7 +13,7 @@ import (
 /// ===== Input/Output types =====
 
 type CellOutput struct {
-	ID       string  `json:"id" format:"uuid"`
+	CellID   string  `json:"cell_id" format:"uuid"`
 	BoardID  string  `json:"board_id" format:"uuid"`
 	Content  string  `json:"content" format:"text"`
 	AuthorID *string `json:"author_id" format:"uuid"`
@@ -203,7 +203,7 @@ func deleteCell(ctx context.Context, queries *generated.Queries, input DeleteCel
 
 func cellToOutput(cell generated.Cell) CellOutput {
 	return CellOutput{
-		ID:       cell.ID.String(),
+		CellID:   cell.ID.String(),
 		BoardID:  cell.BoardID.String(),
 		Content:  cell.Content,
 		AuthorID: stringFromPgUUID(cell.AuthorID),

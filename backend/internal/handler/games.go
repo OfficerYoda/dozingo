@@ -12,14 +12,14 @@ import (
 /// ===== Input/Output types =====
 
 type GameOutput struct {
-	ID       string  `json:"id" format:"uuid"`
+	GameID   string  `json:"game_id" format:"uuid"`
 	BoardID  *string `json:"board_id" format:"uuid"`
 	PlayerID string  `json:"player_id" format:"uuid"`
 	Status   string  `json:"status" format:"text"`
 }
 
 type GetGameByIDInput struct {
-	ID string `path:"game_id" format:"uuid"`
+	GameID string `path:"game_id" format:"uuid"`
 }
 
 type GetGameByIDOutput struct {
@@ -136,7 +136,7 @@ func RegisterGames(api huma.API, pool *pgxpool.Pool) {
 /// ===== Handlers =====
 
 func getGameByID(ctx context.Context, queries *generated.Queries, input GetGameByIDInput) (*GetGameByIDOutput, error) {
-	id, err := uuidFromString(input.ID)
+	id, err := uuidFromString(input.GameID)
 	if err != nil {
 		return nil, huma.Error400BadRequest("invalid game_id", err)
 	}
@@ -239,7 +239,7 @@ func deleteGame(ctx context.Context, queries *generated.Queries, input DeleteGam
 
 func gameToOutput(game generated.Game) GameOutput {
 	return GameOutput{
-		ID:       game.ID.String(),
+		GameID:   game.ID.String(),
 		BoardID:  stringFromPgUUID(game.BoardID),
 		PlayerID: game.PlayerID.String(),
 		Status:   game.Status,

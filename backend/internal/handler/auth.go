@@ -19,7 +19,7 @@ import (
 
 type AuthOutput struct {
 	Body struct {
-		ID       string  `json:"id" format:"uuid"`
+		UserID   string  `json:"user_id" format:"uuid"`
 		Username string  `json:"username" format:"text"`
 		Email    *string `json:"email" format:"text"`
 	}
@@ -147,7 +147,7 @@ func registerUser(ctx context.Context, pool *pgxpool.Pool, queries *generated.Qu
 	}
 
 	output := &AuthOutput{}
-	output.Body.ID = user.ID.String()
+	output.Body.UserID = user.ID.String()
 	output.Body.Username = user.Username
 	output.Body.Email = stringFromPgText(user.Email)
 	return output, nil
@@ -182,7 +182,7 @@ func loginUser(ctx context.Context, queries *generated.Queries, input LoginInput
 	}
 
 	output := &AuthOutput{}
-	output.Body.ID = user.ID.String()
+	output.Body.UserID = user.ID.String()
 	output.Body.Username = user.Username
 	output.Body.Email = stringFromPgText(user.Email)
 	return output, nil
@@ -211,7 +211,7 @@ func getMe(ctx context.Context) (*AuthOutput, error) {
 	}
 
 	output := &AuthOutput{}
-	output.Body.ID = session.UserID.String()
+	output.Body.UserID = session.UserID.String()
 	output.Body.Username = session.Username.String
 	output.Body.Email = stringFromPgText(session.Email)
 	return output, nil
