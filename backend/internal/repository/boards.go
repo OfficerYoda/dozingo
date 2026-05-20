@@ -2,12 +2,10 @@ package repository
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/officeryoda/dozingo/internal/domain"
 	"github.com/officeryoda/dozingo/internal/generated"
@@ -15,8 +13,8 @@ import (
 
 // Boards is the persistence repository for the boards aggregate.
 type Boards struct {
-	q  *generated.Queries
-	db generated.DBTX
+	queries *generated.Queries
+	db      generated.DBTX
 }
 
 // BoardListFilter narrows the result of List. Zero-valued fields are ignored.
@@ -86,7 +84,7 @@ func (r *Boards) List(ctx context.Context, f BoardListFilter) ([]generated.Board
 
 // Get returns the board with the given id, or domain.ErrNotFound.
 func (r *Boards) Get(ctx context.Context, id pgtype.UUID) (generated.Board, error) {
-	board, err := r.q.GetBoardByID(ctx, id)
+	board, err := r.queries.GetBoardByID(ctx, id)
 	if err != nil {
 		return generated.Board{}, translatePgErr(err)
 	}
@@ -96,7 +94,7 @@ func (r *Boards) Get(ctx context.Context, id pgtype.UUID) (generated.Board, erro
 // Create inserts a board and returns the persisted row. A unique-constraint
 // violation is reported as domain.ErrConflict.
 func (r *Boards) Create(ctx context.Context, in CreateBoardInput) (generated.Board, error) {
-	board, err := r.q.CreateBoard(ctx, generated.CreateBoardParams{
+	board, err := r.queries.CreateBoard(ctx, generated.CreateBoardParams{
 		Title:       in.Title,
 		Description: pgTextFromString(in.Description),
 		Size:        in.Size,
@@ -111,30 +109,9 @@ func (r *Boards) Create(ctx context.Context, in CreateBoardInput) (generated.Boa
 // Delete removes the board with the given id and returns the deleted row.
 // Returns domain.ErrNotFound if no row matched.
 func (r *Boards) Delete(ctx context.Context, id pgtype.UUID) (generated.Board, error) {
-	board, err := r.q.DeleteBoard(ctx, id)
+	board, err := r.queries.DeleteBoard(ctx, id)
 	if err != nil {
 		return generated.Board{}, translatePgErr(err)
 	}
 	return board, nil
-}
-
-// translatePgErr maps pgx/pgconn errors to domain sentinels. Anything we don't
-// recognize is returned unchanged so it surfaces as a 500 in the handler.
-func translatePgErr(err error) error {
-	if err == nil {
-		return nil
-	}
-	if errors.Is(err, pgx.ErrNoRows) {
-		return fmt.Errorf("%w", domain.ErrNotFound)
-	}
-	var pgErr *pgconn.PgError
-	if errors.As(err, &pgErr) {
-		switch pgErr.Code {
-		case "23505": // unique_violation
-			return fmt.Errorf("%s: %w", pgErr.ConstraintName, domain.ErrConflict)
-		case "23503": // foreign_key_violation
-			return fmt.Errorf("%s: %w", pgErr.ConstraintName, domain.ErrInvalid)
-		}
-	}
-	return err
 }
