@@ -12,6 +12,7 @@ type Repos struct {
 	Passwords *UserPasswords
 	Sessions  *Sessions
 	Users     *Users
+	Votes     *Votes
 }
 
 // New returns a Repos bundle backed by the given pool.
@@ -28,5 +29,6 @@ func NewWithDBTX(db generated.DBTX) Repos {
 		Passwords: &UserPasswords{queries: queries},
 		Sessions:  &Sessions{queries: queries},
 		Users:     &Users{queries: queries},
+		Votes:     &Votes{queries: queries},
 	}
 }

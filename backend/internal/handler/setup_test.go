@@ -77,10 +77,10 @@ func TestMain(m *testing.M) {
 	txRunner := repository.NewTxRunner(testPool)
 	NewBoardsHandler(service.NewBoards(repos.Boards)).Register(apiGroup)
 	NewCellsHandler(service.NewCells(repos.Cells)).Register(apiGroup)
+	NewVotesHandler(service.NewVotes(repos.Votes)).Register(apiGroup)
 	NewAuthHandler(service.NewAuth(repos, txRunner, queries)).Register(apiGroup)
 
 	// Legacy registrars (to be migrated).
-	RegisterVotes(apiGroup, testPool)
 	RegisterGames(apiGroup, testPool)
 	RegisterGameCells(apiGroup, testPool)
 
