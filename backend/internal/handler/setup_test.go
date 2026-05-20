@@ -21,6 +21,8 @@ import (
 	"github.com/officeryoda/dozingo/internal/auth"
 	"github.com/officeryoda/dozingo/internal/generated"
 	"github.com/officeryoda/dozingo/internal/middleware"
+	"github.com/officeryoda/dozingo/internal/repository"
+	"github.com/officeryoda/dozingo/internal/service"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -69,7 +71,12 @@ func TestMain(m *testing.M) {
 	apiGroup := huma.NewGroup(api, "/api")
 
 	RegisterHealth(apiGroup)
-	RegisterBoards(apiGroup, testPool)
+
+	// New layering: repositories -> services -> handlers.
+	repos := repository.New(testPool)
+	NewBoardsHandler(service.NewBoards(repos.Boards)).Register(apiGroup)
+
+	// Legacy registrars (to be migrated).
 	RegisterCells(apiGroup, testPool)
 	RegisterVotes(apiGroup, testPool)
 	RegisterGames(apiGroup, testPool)

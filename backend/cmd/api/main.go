@@ -19,6 +19,8 @@ import (
 	"github.com/officeryoda/dozingo/internal/generated"
 	"github.com/officeryoda/dozingo/internal/handler"
 	"github.com/officeryoda/dozingo/internal/middleware"
+	"github.com/officeryoda/dozingo/internal/repository"
+	"github.com/officeryoda/dozingo/internal/service"
 	"github.com/officeryoda/dozingo/internal/worker"
 )
 
@@ -96,8 +98,14 @@ func registerRoutes(router *chi.Mux, pool *pgxpool.Pool) {
 
 	apiGroup := huma.NewGroup(api, "/api")
 
+	// New layering
+	repos := repository.New(pool)
+	boardsSvc := service.NewBoards(repos.Boards)
+
+	handler.NewBoardsHandler(boardsSvc).Register(apiGroup)
+
+	// Legacy registrars (to be migrated).
 	handler.RegisterHealth(apiGroup)
-	handler.RegisterBoards(apiGroup, pool)
 	handler.RegisterCells(apiGroup, pool)
 	handler.RegisterVotes(apiGroup, pool)
 	handler.RegisterGames(apiGroup, pool)

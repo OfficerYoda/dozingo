@@ -6,7 +6,29 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/jackc/pgx/v5"
+	"github.com/officeryoda/dozingo/internal/domain"
 )
+
+func toHumaErr(err error, notFoundMsg, opMsg string) error {
+	switch {
+	case errors.Is(err, domain.ErrNotFound):
+		if notFoundMsg == "" {
+			notFoundMsg = err.Error()
+		}
+		return huma.Error404NotFound(notFoundMsg)
+	case errors.Is(err, domain.ErrConflict):
+		return huma.Error409Conflict(err.Error())
+	case errors.Is(err, domain.ErrUnauthorized):
+		return huma.Error401Unauthorized(err.Error())
+	case errors.Is(err, domain.ErrForbidden):
+		return huma.Error403Forbidden(err.Error())
+	case errors.Is(err, domain.ErrInvalid):
+		return huma.Error400BadRequest(err.Error())
+	}
+
+	slog.Error(opMsg, "error", err)
+	return huma.Error500InternalServerError(opMsg)
+}
 
 // notFoundOr500 translates a database error into the appropriate huma error.
 // pgx.ErrNoRows becomes a 404 with notFoundMsg; anything else is logged via
