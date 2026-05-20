@@ -7,7 +7,10 @@ import (
 
 // Repos is the bundle of all repositories wired to a single DBTX
 type Repos struct {
-	Boards *Boards
+	Boards    *Boards
+	Users     *Users
+	Passwords *UserPasswords
+	Sessions  *Sessions
 }
 
 // New returns a Repos bundle backed by the given pool.
@@ -17,8 +20,11 @@ func New(pool *pgxpool.Pool) Repos {
 
 // NewWithDBTX returns a Repos bundle backed by an arbitrary DBTX.
 func NewWithDBTX(db generated.DBTX) Repos {
-	q := generated.New(db)
+	queries := generated.New(db)
 	return Repos{
-		Boards: &Boards{q: q, db: db},
+		Boards:    &Boards{queries: queries, db: db},
+		Users:     &Users{queries: queries},
+		Passwords: &UserPasswords{queries: queries},
+		Sessions:  &Sessions{queries: queries},
 	}
 }

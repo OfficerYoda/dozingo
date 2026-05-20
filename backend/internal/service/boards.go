@@ -9,7 +9,7 @@ import (
 )
 
 type Boards interface {
-	List(ctx context.Context, f repository.BoardListFilter) ([]generated.Board, error)
+	List(ctx context.Context, filter repository.BoardListFilter) ([]generated.Board, error)
 	Get(ctx context.Context, id pgtype.UUID) (generated.Board, error)
 	Create(ctx context.Context, in repository.CreateBoardInput) (generated.Board, error)
 	Delete(ctx context.Context, id pgtype.UUID) error
@@ -23,8 +23,8 @@ func NewBoards(repo *repository.Boards) Boards {
 	return &boards{repo: repo}
 }
 
-func (s *boards) List(ctx context.Context, f repository.BoardListFilter) ([]generated.Board, error) {
-	return s.repo.List(ctx, f)
+func (s *boards) List(ctx context.Context, filter repository.BoardListFilter) ([]generated.Board, error) {
+	return s.repo.List(ctx, filter)
 }
 
 func (s *boards) Get(ctx context.Context, id pgtype.UUID) (generated.Board, error) {
