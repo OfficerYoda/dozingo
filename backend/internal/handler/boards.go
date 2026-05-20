@@ -9,16 +9,17 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/officeryoda/dozingo/internal/generated"
+	"github.com/officeryoda/dozingo/internal/types"
 )
 
 /// ===== Input/Output types =====
 
 type BoardOutput struct {
-	ID          string `json:"id" format:"uuid"`
-	Title       string `json:"title" format:"text"`
-	Description string `json:"description" format:"text"`
-	Size        int32  `json:"size" format:"integer"`
-	AuthorID    string `json:"author_id" format:"uuid"`
+	BoardID     string  `json:"board_id" format:"uuid"`
+	Title       string  `json:"title" format:"text"`
+	Description *string `json:"description" format:"text"`
+	Size        int32   `json:"size" format:"integer"`
+	AuthorID    string  `json:"author_id" format:"uuid"`
 }
 
 type GetBoardsInput struct {
@@ -31,7 +32,7 @@ type GetBoardsOutput struct {
 }
 
 type GetBoardByIDInput struct {
-	ID string `path:"id" format:"uuid"`
+	BoardID types.UUIDParam `path:"board_id" format:"uuid"`
 }
 
 type GetBoardByIDOutput struct {
@@ -40,10 +41,10 @@ type GetBoardByIDOutput struct {
 
 type CreateBoardInput struct {
 	Body struct {
-		Title       string  `json:"title" format:"text" required:"true" maxLength:"200"`
-		Description *string `json:"description,omitempty" format:"text" maxLength:"500"`
-		Size        int32   `json:"size" format:"integer" required:"true" maxLength:"200"`
-		AuthorID    string  `json:"author_id" format:"uuid" required:"true"`
+		Title       string          `json:"title" format:"text" required:"true" maxLength:"200"`
+		Description *string         `json:"description,omitempty" format:"text" maxLength:"500"`
+		Size        int32           `json:"size" format:"integer" required:"true" maxLength:"200"`
+		AuthorID    types.UUIDParam `json:"author_id" format:"uuid" required:"true"`
 	}
 }
 
@@ -52,15 +53,13 @@ type CreateBoardOutput struct {
 }
 
 type DeleteBoardInput struct {
-	ID string `path:"id" format:"uuid"`
+	BoardID types.UUIDParam `path:"board_id" format:"uuid"`
 }
 
 /// ===== Register =====
 
 func RegisterBoards(api huma.API, pool *pgxpool.Pool) {
 	queries := generated.New(pool)
-
-	_ = queries
 
 	huma.Register(api, huma.Operation{
 		OperationID: "get-boards",
@@ -75,7 +74,7 @@ func RegisterBoards(api huma.API, pool *pgxpool.Pool) {
 	huma.Register(api, huma.Operation{
 		OperationID: "get-board-by-id",
 		Method:      http.MethodGet,
-		Path:        "/boards/{id}",
+		Path:        "/boards/{board_id}",
 		Summary:     "Get a board by ID",
 		Tags:        []string{"Boards"},
 	}, func(ctx context.Context, input *GetBoardByIDInput) (*GetBoardByIDOutput, error) {
@@ -95,7 +94,7 @@ func RegisterBoards(api huma.API, pool *pgxpool.Pool) {
 	huma.Register(api, huma.Operation{
 		OperationID: "delete-board",
 		Method:      http.MethodDelete,
-		Path:        "/boards/{id}",
+		Path:        "/boards/{board_id}",
 		Summary:     "Delete a board",
 		Tags:        []string{"Boards"},
 	}, func(ctx context.Context, input *DeleteBoardInput) (*struct{}, error) {
@@ -108,71 +107,47 @@ func RegisterBoards(api huma.API, pool *pgxpool.Pool) {
 func getBoards(ctx context.Context, pool *pgxpool.Pool, input GetBoardsInput) (*GetBoardsOutput, error) {
 	rows, err := queryBoardsFiltered(ctx, input, pool)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("failed to query boards", err)
+		return nil, internalError(err, "failed to query boards")
 	}
 	defer rows.Close()
 
 	boards, err := pgx.CollectRows(rows, pgx.RowToStructByName[generated.Board])
 	if err != nil {
-		return nil, huma.Error500InternalServerError("failed to scan boards", err)
+		return nil, internalError(err, "failed to scan boards")
 	}
 
-	out := &GetBoardsOutput{}
-	out.Body = make([]BoardOutput, 0)
-	for _, b := range boards {
-		out.Body = append(out.Body, boardToOutput(b))
-	}
-
-	return out, nil
+	return &GetBoardsOutput{Body: mapSlice(boards, boardToOutput)}, nil
 }
 
 func getBoardByID(ctx context.Context, queries *generated.Queries, input GetBoardByIDInput) (*GetBoardByIDOutput, error) {
-	id, err := uuidFromString(input.ID)
+	board, err := queries.GetBoardByID(ctx, input.BoardID.Value)
 	if err != nil {
-		return nil, huma.Error400BadRequest("invalid id", err)
-	}
-
-	board, err := queries.GetBoardByID(ctx, id)
-	if err != nil {
-		return nil, huma.Error404NotFound("board not found", err)
+		return nil, notFoundOr500(err, "board not found", "failed to get board")
 	}
 
 	return &GetBoardByIDOutput{Body: boardToOutput(board)}, nil
 }
 
 func createBoard(ctx context.Context, queries *generated.Queries, input CreateBoardInput) (*CreateBoardOutput, error) {
-	authorID, err := uuidFromString(input.Body.AuthorID)
-	if err != nil {
-		return nil, huma.Error400BadRequest("invalid author_id", err)
-	}
-
 	description := pgTextFromString(input.Body.Description)
 
 	board, err := queries.CreateBoard(ctx, generated.CreateBoardParams{
 		Title:       input.Body.Title,
 		Description: description,
 		Size:        input.Body.Size,
-		AuthorID:    authorID,
+		AuthorID:    input.Body.AuthorID.Value,
 	})
 	if err != nil {
-		return nil, huma.Error500InternalServerError("failed to create board", err)
+		return nil, internalError(err, "failed to create board")
 	}
 
 	return &CreateBoardOutput{Body: boardToOutput(board)}, nil
 }
 
 func deleteBoard(ctx context.Context, queries *generated.Queries, input DeleteBoardInput) (*struct{}, error) {
-	id, err := uuidFromString(input.ID)
+	_, err := queries.DeleteBoard(ctx, input.BoardID.Value)
 	if err != nil {
-		return nil, huma.Error400BadRequest("invalid id", err)
-	}
-
-	_, err = queries.DeleteBoard(ctx, id)
-	if err != nil {
-		if err == pgx.ErrNoRows {
-			return nil, huma.Error404NotFound("board not found", err)
-		}
-		return nil, huma.Error500InternalServerError("failed to delete board", err)
+		return nil, notFoundOr500(err, "board not found", "failed to delete board")
 	}
 
 	return &struct{}{}, nil
@@ -205,9 +180,9 @@ func queryBoardsFiltered(ctx context.Context, input GetBoardsInput, pool *pgxpoo
 
 func boardToOutput(board generated.Board) BoardOutput {
 	return BoardOutput{
-		ID:          board.ID.String(),
+		BoardID:     board.ID.String(),
 		Title:       board.Title,
-		Description: board.Description.String,
+		Description: stringFromPgText(board.Description),
 		Size:        board.Size,
 		AuthorID:    board.AuthorID.String(),
 	}

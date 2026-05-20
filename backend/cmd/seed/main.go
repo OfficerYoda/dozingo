@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -18,25 +18,29 @@ import (
 func main() {
 	cfg, err := config.Load()
 	if err != nil {
-		log.Fatalf("failed to load config: %v", err)
+		slog.Error("failed to load config", "error", err)
+		panic(err)
 	}
 
 	pool, err := pgxpool.New(context.Background(), cfg.DatabaseURL)
 	if err != nil {
-		log.Fatalf("failed to connect to database: %v", err)
+		slog.Error("failed to connect to database", "error", err)
+		panic(err)
 	}
 	defer pool.Close()
 
 	if err := pool.Ping(context.Background()); err != nil {
-		log.Fatalf("failed to ping database: %v", err)
+		slog.Error("failed to ping database", "error", err)
+		panic(err)
 	}
-	log.Println("Connected to database")
+	slog.Info("Connected to database")
 
 	if err := seed(pool); err != nil {
-		log.Fatalf("seeding failed: %v", err)
+		slog.Error("seeding failed", "error", err)
+		panic(err)
 	}
 
-	log.Println("Seeding completed successfully")
+	slog.Info("Seeding completed successfully")
 }
 
 func seed(pool *pgxpool.Pool) error {
@@ -95,7 +99,7 @@ func seed(pool *pgxpool.Pool) error {
 
 // truncateAll removes all data from tables in the correct order (respecting foreign keys).
 func truncateAll(ctx context.Context, tx pgx.Tx) error {
-	log.Println("Truncating all tables...")
+	slog.Info("Truncating all tables")
 	_, err := tx.Exec(ctx, "TRUNCATE game_cells, games, votes, cells, boards, sessions, user_passwords, user_authentications, users CASCADE")
 	if err != nil {
 		return fmt.Errorf("truncating tables: %w", err)
@@ -104,7 +108,7 @@ func truncateAll(ctx context.Context, tx pgx.Tx) error {
 }
 
 func seedUsers(ctx context.Context, q *generated.Queries) ([]pgtype.UUID, error) {
-	log.Printf("Seeding %d users...", len(users))
+	slog.Info("Seeding users", "count", len(users))
 
 	ids := make([]pgtype.UUID, 0, len(users))
 	for _, u := range users {
@@ -129,7 +133,7 @@ func seedUsers(ctx context.Context, q *generated.Queries) ([]pgtype.UUID, error)
 }
 
 func seedPasswords(ctx context.Context, q *generated.Queries, userIDs []pgtype.UUID) error {
-	log.Printf("Seeding %d passwords...", len(passwords))
+	slog.Info("Seeding passwords", "count", len(passwords))
 
 	for _, p := range passwords {
 		hash, err := auth.HashPassword(p.Password)
@@ -154,7 +158,7 @@ func seedPasswords(ctx context.Context, q *generated.Queries, userIDs []pgtype.U
 // IDs in the order of the `sessions` slice so callers can reference them later
 // (e.g. for seeding anonymous games).
 func seedSessions(ctx context.Context, q *generated.Queries, userIDs []pgtype.UUID) ([]pgtype.UUID, error) {
-	log.Printf("Seeding %d sessions...", len(sessions))
+	slog.Info("Seeding sessions", "count", len(sessions))
 
 	ids := make([]pgtype.UUID, 0, len(sessions))
 	for _, s := range sessions {
@@ -181,7 +185,7 @@ func seedSessions(ctx context.Context, q *generated.Queries, userIDs []pgtype.UU
 }
 
 func seedBoards(ctx context.Context, q *generated.Queries, userIDs []pgtype.UUID) ([]pgtype.UUID, error) {
-	log.Printf("Seeding %d boards...", len(boards))
+	slog.Info("Seeding boards", "count", len(boards))
 
 	ids := make([]pgtype.UUID, 0, len(boards))
 	for _, b := range boards {
@@ -227,12 +231,12 @@ func seedCells(ctx context.Context, q *generated.Queries, boardIDs []pgtype.UUID
 		cellIDsByBoard[i] = cellIDs
 	}
 
-	log.Printf("Seeded %d cells across %d boards", totalCells, len(boards))
+	slog.Info("Seeded cells", "total_cells", totalCells, "board_count", len(boards))
 	return cellIDsByBoard, nil
 }
 
 func seedVotes(ctx context.Context, q *generated.Queries, userIDs, boardIDs []pgtype.UUID) error {
-	log.Printf("Seeding %d votes...", len(votes))
+	slog.Info("Seeding votes", "count", len(votes))
 
 	for _, v := range votes {
 		_, err := q.UpsertVote(ctx, generated.UpsertVoteParams{
@@ -249,7 +253,7 @@ func seedVotes(ctx context.Context, q *generated.Queries, userIDs, boardIDs []pg
 }
 
 func seedGames(ctx context.Context, q *generated.Queries, userIDs, sessionIDs, boardIDs []pgtype.UUID, cellIDsByBoard map[int][]pgtype.UUID) error {
-	log.Printf("Seeding %d games...", len(games))
+	slog.Info("Seeding games", "count", len(games))
 
 	for gameIdx, g := range games {
 		var playerID, sessionID pgtype.UUID
@@ -341,7 +345,7 @@ func seedGames(ctx context.Context, q *generated.Queries, userIDs, sessionIDs, b
 			}
 		}
 
-		log.Printf("  Game %d: %d cells seeded (%d marked)", gameIdx, len(cells), countMarked(cells))
+		slog.Info("Game cells seeded", "game_idx", gameIdx, "cell_count", len(cells), "marked_count", countMarked(cells))
 	}
 
 	return nil

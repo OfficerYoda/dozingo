@@ -5,15 +5,16 @@ import (
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/officeryoda/dozingo/internal/generated"
+	"github.com/officeryoda/dozingo/internal/types"
 )
 
 /// ===== Input/Output types =====
 
 type CellOutput struct {
-	ID       string  `json:"id" format:"uuid"`
+	CellID   string  `json:"cell_id" format:"uuid"`
 	BoardID  string  `json:"board_id" format:"uuid"`
 	Content  string  `json:"content" format:"text"`
 	AuthorID *string `json:"author_id" format:"uuid"`
@@ -21,7 +22,7 @@ type CellOutput struct {
 }
 
 type GetCellsByBoardIDInput struct {
-	BoardID string `path:"board_id"`
+	BoardID types.UUIDParam `path:"board_id"`
 }
 
 type GetCellsByBoardIDOutput struct {
@@ -29,7 +30,7 @@ type GetCellsByBoardIDOutput struct {
 }
 
 type CreateCellInput struct {
-	BoardID string `path:"board_id" format:"uuid"`
+	BoardID types.UUIDParam `path:"board_id" format:"uuid"`
 	Body    struct {
 		Content string `json:"content" format:"text" required:"true" maxLength:"200"`
 		Value   *int32 `json:"value,omitempty"`
@@ -41,11 +42,11 @@ type CreateCellOutput struct {
 }
 
 type UpdateCellInput struct {
-	BoardID string `path:"board_id" format:"uuid"`
-	CellID  string `path:"cell_id" format:"uuid"`
+	BoardID types.UUIDParam `path:"board_id" format:"uuid"`
+	CellID  types.UUIDParam `path:"cell_id" format:"uuid"`
 	Body    struct {
 		Content *string `json:"content,omitempty" maxLength:"200"`
-		Value   *int    `json:"value,omitempty"`
+		Value   *int32  `json:"value,omitempty"`
 	}
 }
 
@@ -54,16 +55,14 @@ type UpdateCellOutput struct {
 }
 
 type DeleteCellInput struct {
-	BoardID string `path:"board_id" format:"uuid"`
-	CellID  string `path:"cell_id" format:"uuid"`
+	BoardID types.UUIDParam `path:"board_id" format:"uuid"`
+	CellID  types.UUIDParam `path:"cell_id" format:"uuid"`
 }
 
 /// ===== Register =====
 
 func RegisterCells(api huma.API, pool *pgxpool.Pool) {
 	queries := generated.New(pool)
-
-	_ = queries
 
 	huma.Register(api, huma.Operation{
 		OperationID: "get-cells-by-board-id",
@@ -109,103 +108,63 @@ func RegisterCells(api huma.API, pool *pgxpool.Pool) {
 /// ===== Handlers =====
 
 func getCellsByBoardID(ctx context.Context, queries *generated.Queries, input GetCellsByBoardIDInput) (*GetCellsByBoardIDOutput, error) {
-	boardID, err := uuidFromString(input.BoardID)
+	cells, err := queries.GetCellsByBoardID(ctx, input.BoardID.Value)
 	if err != nil {
-		return nil, huma.Error400BadRequest("invalid board_id", err)
+		return nil, internalError(err, "failed to get cells")
 	}
 
-	cells, err := queries.GetCellsByBoardID(ctx, boardID)
-	if err != nil {
-		return nil, huma.Error500InternalServerError("internal server error", err)
-	}
-
-	out := &GetCellsByBoardIDOutput{}
-	out.Body = make([]CellOutput, 0)
-	for _, c := range cells {
-		out.Body = append(out.Body, cellToOutput(c))
-	}
-
-	return out, nil
+	return &GetCellsByBoardIDOutput{Body: mapSlice(cells, cellToOutput)}, nil
 }
 
 func createCell(ctx context.Context, queries *generated.Queries, input CreateCellInput) (*CreateCellOutput, error) {
-	boardID, err := uuidFromString(input.BoardID)
-	if err != nil {
-		return nil, huma.Error400BadRequest("invalid board_id", err)
-	}
-
 	var value int32 = 1
 	if input.Body.Value != nil {
 		value = *input.Body.Value
 	}
 
 	board, err := queries.CreateCell(ctx, generated.CreateCellParams{
-		BoardID: boardID,
+		BoardID: input.BoardID.Value,
 		Content: input.Body.Content,
 		Value:   value,
 	})
 	if err != nil {
-		return nil, huma.Error500InternalServerError("failed to create cell", err)
+		return nil, internalError(err, "failed to create cell")
 	}
 
 	return &CreateCellOutput{Body: cellToOutput(board)}, nil
 }
 
 func updateCell(ctx context.Context, queries *generated.Queries, input UpdateCellInput) (*UpdateCellOutput, error) {
-	boardID, err := uuidFromString(input.BoardID)
-	if err != nil {
-		return nil, huma.Error400BadRequest("invalid board_id", err)
-	}
-	cellID, err := uuidFromString(input.CellID)
-	if err != nil {
-		return nil, huma.Error400BadRequest("invalid cell_id", err)
-	}
-
-	var content string
+	var content pgtype.Text
 	if input.Body.Content != nil {
-		content = *input.Body.Content
+		content = pgtype.Text{String: *input.Body.Content, Valid: true}
 	}
 
-	var value int32
+	var value pgtype.Int4
 	if input.Body.Value != nil {
-		value = int32(*input.Body.Value)
+		value = pgtype.Int4{Int32: *input.Body.Value, Valid: true}
 	}
 
 	cell, err := queries.UpdateCell(ctx, generated.UpdateCellParams{
-		ID:      cellID,
-		BoardID: boardID,
+		ID:      input.CellID.Value,
+		BoardID: input.BoardID.Value,
 		Content: content,
 		Value:   value,
 	})
 	if err != nil {
-		if err == pgx.ErrNoRows {
-			return nil, huma.Error404NotFound("cell not found on this board", err)
-		}
-		return nil, huma.Error500InternalServerError("failed to update cell", err)
+		return nil, notFoundOr500(err, "cell not found on this board", "failed to update cell")
 	}
 
 	return &UpdateCellOutput{Body: cellToOutput(cell)}, nil
 }
 
 func deleteCell(ctx context.Context, queries *generated.Queries, input DeleteCellInput) (*struct{}, error) {
-	boardID, err := uuidFromString(input.BoardID)
-	if err != nil {
-		return nil, huma.Error400BadRequest("invalid board_id", err)
-	}
-	cellID, err := uuidFromString(input.CellID)
-	if err != nil {
-		return nil, huma.Error400BadRequest("invalid cell_id", err)
-	}
-
-	_, err = queries.DeleteCell(ctx, generated.DeleteCellParams{
-		ID:      cellID,
-		BoardID: boardID,
+	_, err := queries.DeleteCell(ctx, generated.DeleteCellParams{
+		ID:      input.CellID.Value,
+		BoardID: input.BoardID.Value,
 	})
 	if err != nil {
-		if err == pgx.ErrNoRows {
-			return nil, huma.Error404NotFound("cell not found on this board", err)
-		}
-		return nil, huma.Error500InternalServerError("failed to delete cell", err)
+		return nil, notFoundOr500(err, "cell not found on this board", "failed to delete cell")
 	}
 
 	return &struct{}{}, nil
@@ -215,7 +174,7 @@ func deleteCell(ctx context.Context, queries *generated.Queries, input DeleteCel
 
 func cellToOutput(cell generated.Cell) CellOutput {
 	return CellOutput{
-		ID:       cell.ID.String(),
+		CellID:   cell.ID.String(),
 		BoardID:  cell.BoardID.String(),
 		Content:  cell.Content,
 		AuthorID: stringFromPgUUID(cell.AuthorID),

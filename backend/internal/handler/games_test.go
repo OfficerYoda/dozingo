@@ -10,12 +10,12 @@ import (
 func setupForGames(t *testing.T) (userID, boardID string) {
 	t.Helper()
 	userID = createTestUser(t, "gameuser", "gameuser@example.com")
-	boardID = createTestBoard(t, "Game Board", 5, userID)
+	boardID = createTestBoard(t, "Game Board", 5, userID, nil)
 	return userID, boardID
 }
 
 func TestCreateGame(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 	userID, boardID := setupForGames(t)
 
 	w := doRequest(http.MethodPost,
@@ -29,13 +29,13 @@ func TestCreateGame(t *testing.T) {
 	assertJSONField(t, resp, "board_id", boardID)
 	assertJSONField(t, resp, "status", "active")
 
-	if _, ok := resp["id"]; !ok {
+	if _, ok := resp["game_id"]; !ok {
 		t.Error("expected 'id' field in response")
 	}
 }
 
 func TestGetGameByID(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 	userID, boardID := setupForGames(t)
 	gameID := createTestGame(t, userID, boardID)
 
@@ -45,21 +45,21 @@ func TestGetGameByID(t *testing.T) {
 	var resp map[string]any
 	decodeJSON(t, w, &resp)
 
-	assertJSONField(t, resp, "id", gameID)
+	assertJSONField(t, resp, "game_id", gameID)
 	assertJSONField(t, resp, "player_id", userID)
 	assertJSONField(t, resp, "board_id", boardID)
 	assertJSONField(t, resp, "status", "active")
 }
 
 func TestGetGameByID_NotFound(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 
 	w := doRequest(http.MethodGet, "/api/games/00000000-0000-0000-0000-000000000000", nil)
-	assertStatus(t, w, http.StatusInternalServerError)
+	assertStatus(t, w, http.StatusNotFound)
 }
 
 func TestListGamesByPlayer(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 	userID, boardID := setupForGames(t)
 
 	createTestGame(t, userID, boardID)
@@ -77,7 +77,7 @@ func TestListGamesByPlayer(t *testing.T) {
 }
 
 func TestListGamesByPlayer_Empty(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 	userID := createTestUser(t, "nogameuser", "nogame@example.com")
 
 	w := doRequest(http.MethodGet, fmt.Sprintf("/api/users/%s/games", userID), nil)
@@ -92,7 +92,7 @@ func TestListGamesByPlayer_Empty(t *testing.T) {
 }
 
 func TestListGamesByBoard(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 	user1, boardID := setupForGames(t)
 	user2 := createTestUser(t, "gameuser2", "gameuser2@example.com")
 
@@ -111,9 +111,9 @@ func TestListGamesByBoard(t *testing.T) {
 }
 
 func TestListGamesByBoard_Empty(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 	userID := createTestUser(t, "emptyboarduser", "emptyboard@example.com")
-	boardID := createTestBoard(t, "Empty Board", 5, userID)
+	boardID := createTestBoard(t, "Empty Board", 5, userID, nil)
 
 	w := doRequest(http.MethodGet, fmt.Sprintf("/api/boards/%s/games", boardID), nil)
 	assertStatus(t, w, http.StatusOK)
@@ -127,7 +127,7 @@ func TestListGamesByBoard_Empty(t *testing.T) {
 }
 
 func TestUpdateGameStatus(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 	userID, boardID := setupForGames(t)
 	gameID := createTestGame(t, userID, boardID)
 
@@ -140,12 +140,12 @@ func TestUpdateGameStatus(t *testing.T) {
 	var resp map[string]any
 	decodeJSON(t, w, &resp)
 
-	assertJSONField(t, resp, "id", gameID)
+	assertJSONField(t, resp, "game_id", gameID)
 	assertJSONField(t, resp, "status", "completed")
 }
 
 func TestUpdateGameStatus_Abandoned(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 	userID, boardID := setupForGames(t)
 	gameID := createTestGame(t, userID, boardID)
 
@@ -162,7 +162,7 @@ func TestUpdateGameStatus_Abandoned(t *testing.T) {
 }
 
 func TestUpdateGameStatus_NotFound(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 	userID := createTestUser(t, "ghostplayer", "ghost@example.com")
 
 	w := doRequest(http.MethodPut,
@@ -173,7 +173,7 @@ func TestUpdateGameStatus_NotFound(t *testing.T) {
 }
 
 func TestUpdateGameStatus_WrongPlayer(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 	user1, boardID := setupForGames(t)
 	user2 := createTestUser(t, "otherplayer", "other@example.com")
 	gameID := createTestGame(t, user1, boardID)
@@ -187,7 +187,7 @@ func TestUpdateGameStatus_WrongPlayer(t *testing.T) {
 }
 
 func TestDeleteGame(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 	userID, boardID := setupForGames(t)
 	gameID := createTestGame(t, userID, boardID)
 
@@ -204,14 +204,14 @@ func TestDeleteGame(t *testing.T) {
 }
 
 func TestDeleteGame_NotFound(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 
 	w := doRequest(http.MethodDelete, "/api/games/00000000-0000-0000-0000-000000000000", nil)
 	assertStatus(t, w, http.StatusNotFound)
 }
 
 func TestCreateGame_MultipleOnSameBoard(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 	userID, boardID := setupForGames(t)
 
 	// A player can have multiple games on the same board
@@ -224,7 +224,7 @@ func TestCreateGame_MultipleOnSameBoard(t *testing.T) {
 }
 
 func TestDeleteGame_CascadesGameCells(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 	userID, boardID := setupForGames(t)
 	cellID := createTestCell(t, boardID, "Test Cell")
 	gameID := createTestGame(t, userID, boardID)

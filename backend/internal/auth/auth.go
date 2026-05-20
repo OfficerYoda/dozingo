@@ -14,7 +14,17 @@ var PasswordCost = bcrypt.DefaultCost
 var (
 	ErrPasswordTooLong    = errors.New("password exceeds maximum length")
 	ErrInvalidCredentials = errors.New("invalid credentials")
+	dummyPasswordHash     string
 )
+
+func init() {
+	// Dummy hash for timing attack prevention
+	hash, err := HashPassword("dummy-password")
+	if err != nil {
+		panic("failed to generate dummy hash")
+	}
+	dummyPasswordHash = hash
+}
 
 func HashPassword(password string) (string, error) {
 	// bcrypt has a 72 byte limit, anything beyond is silently truncated
@@ -48,4 +58,8 @@ func GenerateSessionToken() string {
 		return "" // rand.Read never returns an error
 	}
 	return base64.URLEncoding.EncodeToString(bytes)
+}
+
+func CheckPasswordAgainstDummy(password string) {
+	_ = CheckPassword(password, dummyPasswordHash)
 }

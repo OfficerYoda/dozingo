@@ -3,8 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humachi"
@@ -15,26 +19,41 @@ import (
 	"github.com/officeryoda/dozingo/internal/generated"
 	"github.com/officeryoda/dozingo/internal/handler"
 	"github.com/officeryoda/dozingo/internal/middleware"
+	"github.com/officeryoda/dozingo/internal/worker"
 )
+
+const sessionCleanupInterval = 1 * time.Hour
 
 func main() {
 	cfg, err := config.Load()
 	if err != nil {
-		log.Fatalf("failed to load config: %v", err)
+		slog.Warn("failed to load config", "error", err)
 	}
 
 	pool, err := connectDB(cfg.DatabaseURL)
 	if err != nil {
-		log.Fatalf("failed to connect to database: %v", err)
+		slog.Error("failed to connect to database", "error", err)
+		panic(err)
 	}
 	defer pool.Close()
 
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
 	// Periodically remove expired sessions
-	handler.StartSessionCleanup(context.Background(), generated.New(pool))
+	cleaner := worker.NewSessionCleaner(generated.New(pool), sessionCleanupInterval)
+	go cleaner.Start(ctx)
 
 	router := createRouter(cfg)
 	registerRoutes(router, pool)
-	startServer(cfg.Port, router)
+	srv := createServer(cfg.Port, router)
+	go startServer(srv)
+
+	<-ctx.Done() // block until SIGTERM / Ctrl-C
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	_ = srv.Shutdown(shutdownCtx) // drain in-flight requests
 }
 
 // connectDB creates a connection pool to PostgreSQL and verifies the connection.
@@ -48,7 +67,7 @@ func connectDB(databaseURL string) (*pgxpool.Pool, error) {
 		return nil, fmt.Errorf("pinging database: %w", err)
 	}
 
-	log.Println("Connected to database")
+	slog.Info("Connected to database")
 	return pool, nil
 }
 
@@ -86,12 +105,17 @@ func registerRoutes(router *chi.Mux, pool *pgxpool.Pool) {
 	handler.RegisterAuth(apiGroup, pool)
 }
 
-// startServer begins listening on the given port and blocks until the server exits.
-func startServer(port int, handler http.Handler) {
+func createServer(port int, handler http.Handler) *http.Server {
 	addr := fmt.Sprintf(":%d", port)
-	log.Printf("Server starting on %s", addr)
-	log.Printf("API docs available at http://localhost:%d/docs", port)
-	if err := http.ListenAndServe(addr, handler); err != nil {
-		log.Fatalf("server failed: %v", err)
+	srv := &http.Server{Handler: handler, Addr: addr}
+
+	url := fmt.Sprintf("http://localhost%s", addr)
+	slog.Info("Server created", "url", url)
+	return srv
+}
+
+func startServer(srv *http.Server) {
+	if err := srv.ListenAndServe(); err != nil {
+		slog.Error("server failed", "error", err)
 	}
 }

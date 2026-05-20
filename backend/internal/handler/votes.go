@@ -5,23 +5,23 @@ import (
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/officeryoda/dozingo/internal/generated"
+	"github.com/officeryoda/dozingo/internal/types"
 )
 
 /// ===== Input/Output types =====
 
 type VoteOutput struct {
-	ID        string `json:"id" format:"uuid"`
+	VoteID    string `json:"vote_id" format:"uuid"`
 	UserID    string `json:"user_id" format:"uuid"`
 	BoardID   string `json:"board_id" format:"uuid"`
-	VoteValue string `json:"vote_value" format:"integer"`
+	VoteValue int32  `json:"vote_value" format:"integer"`
 }
 
 type GetVotesByBoardIDInput struct {
-	UserID  string `query:"user_id" format:"uuid"` // TODO eventually replace this when user auth is working
-	BoardID string `path:"board_id"`
+	UserID  types.UUIDParam `query:"user_id" format:"uuid"` // TODO eventually replace this when user auth is working
+	BoardID types.UUIDParam `path:"board_id"`
 }
 
 type GetVotesByBoardIDOutput struct {
@@ -33,8 +33,8 @@ type GetVotesByBoardIDOutput struct {
 }
 
 type UpsertVoteInput struct {
-	UserID  string `query:"user_id" format:"uuid" required:"true"` // TODO eventually replace this when user auth is working
-	BoardID string `path:"board_id" format:"uuid"`
+	UserID  types.UUIDParam `query:"user_id" format:"uuid" required:"true"` // TODO eventually replace this when user auth is working
+	BoardID types.UUIDParam `path:"board_id" format:"uuid"`
 	Body    struct {
 		VoteValue int32 `json:"vote_value" format:"integer" required:"true" minimum:"-1" maximum:"1"`
 	}
@@ -45,16 +45,14 @@ type UpsertVoteOutput struct {
 }
 
 type DeleteVoteInput struct {
-	UserID  string `query:"user_id" format:"uuid" required:"true"` // TODO eventually replace this when user auth is working
-	BoardID string `path:"board_id" format:"uuid"`
+	UserID  types.UUIDParam `query:"user_id" format:"uuid" required:"true"` // TODO eventually replace this when user auth is working
+	BoardID types.UUIDParam `path:"board_id" format:"uuid"`
 }
 
 /// ===== Register =====
 
 func RegisterVotes(api huma.API, pool *pgxpool.Pool) {
 	queries := generated.New(pool)
-
-	_ = queries
 
 	huma.Register(api, huma.Operation{
 		OperationID: "get-votes-by-board-id",
@@ -91,22 +89,12 @@ func RegisterVotes(api huma.API, pool *pgxpool.Pool) {
 /// ===== Handlers =====
 
 func getVotesByBoardID(ctx context.Context, queries *generated.Queries, input GetVotesByBoardIDInput) (*GetVotesByBoardIDOutput, error) {
-	userID, err := uuidFromString(input.UserID)
-	if err != nil {
-		// invalid user ID is allowed here;
-		userID, _ = uuidFromString("00000000-0000-0000-0000-000000000000")
-	}
-	boardID, err := uuidFromString(input.BoardID)
-	if err != nil {
-		return nil, huma.Error400BadRequest("invalid board_id", err)
-	}
-
 	votes, err := queries.GetVotesByBoardID(ctx, generated.GetVotesByBoardIDParams{
-		UserID:  userID,
-		BoardID: boardID,
+		UserID:  input.UserID.Value,
+		BoardID: input.BoardID.Value,
 	})
 	if err != nil {
-		return nil, huma.Error500InternalServerError("internal server error", err)
+		return nil, internalError(err, "failed to get votes")
 	}
 
 	out := &GetVotesByBoardIDOutput{}
@@ -123,46 +111,25 @@ func getVotesByBoardID(ctx context.Context, queries *generated.Queries, input Ge
 }
 
 func upsertVote(ctx context.Context, queries *generated.Queries, input UpsertVoteInput) (*UpsertVoteOutput, error) {
-	userID, err := uuidFromString(input.UserID)
-	if err != nil {
-		return nil, huma.Error400BadRequest("invalid user_id", err)
-	}
-	boardID, err := uuidFromString(input.BoardID)
-	if err != nil {
-		return nil, huma.Error400BadRequest("invalid board_id", err)
-	}
-
 	board, err := queries.UpsertVote(ctx, generated.UpsertVoteParams{
-		UserID:    userID,
-		BoardID:   boardID,
+		UserID:    input.UserID.Value,
+		BoardID:   input.BoardID.Value,
 		VoteValue: input.Body.VoteValue,
 	})
 	if err != nil {
-		return nil, huma.Error500InternalServerError("failed to upsert vote", err)
+		return nil, internalError(err, "failed to upsert vote")
 	}
 
 	return &UpsertVoteOutput{Body: voteToOutput(board)}, nil
 }
 
 func deleteVote(ctx context.Context, queries *generated.Queries, input DeleteVoteInput) (*struct{}, error) {
-	userID, err := uuidFromString(input.UserID)
-	if err != nil {
-		return nil, huma.Error400BadRequest("invalid user_id", err)
-	}
-	boardID, err := uuidFromString(input.BoardID)
-	if err != nil {
-		return nil, huma.Error400BadRequest("invalid board_id", err)
-	}
-
-	_, err = queries.DeleteVote(ctx, generated.DeleteVoteParams{
-		UserID:  userID,
-		BoardID: boardID,
+	_, err := queries.DeleteVote(ctx, generated.DeleteVoteParams{
+		UserID:  input.UserID.Value,
+		BoardID: input.BoardID.Value,
 	})
 	if err != nil {
-		if err == pgx.ErrNoRows {
-			return nil, huma.Error404NotFound("vote not found on this board", err)
-		}
-		return nil, huma.Error500InternalServerError("failed to delete vote", err)
+		return nil, notFoundOr500(err, "vote not found on this board", "failed to delete vote")
 	}
 
 	return &struct{}{}, nil
@@ -172,9 +139,9 @@ func deleteVote(ctx context.Context, queries *generated.Queries, input DeleteVot
 
 func voteToOutput(vote generated.Vote) VoteOutput {
 	return VoteOutput{
-		ID:        vote.ID.String(),
+		VoteID:    vote.ID.String(),
 		UserID:    vote.UserID.String(),
 		BoardID:   vote.BoardID.String(),
-		VoteValue: string(vote.VoteValue),
+		VoteValue: vote.VoteValue,
 	}
 }

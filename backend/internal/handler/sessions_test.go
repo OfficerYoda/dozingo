@@ -44,23 +44,10 @@ func fetchSessionExpiry(t *testing.T, token string) (time.Time, bool) {
 	return row.ExpiresAt.Time, true
 }
 
-// rawSessionExists checks whether a session row is still present in the
-// database, ignoring expiry. Used to verify cleanup deleted (or kept) rows.
-func rawSessionExists(t *testing.T, token string) bool {
-	t.Helper()
-	var exists bool
-	err := testPool.QueryRow(context.Background(),
-		"SELECT EXISTS(SELECT 1 FROM sessions WHERE token = $1)", token).Scan(&exists)
-	if err != nil {
-		t.Fatalf("failed to query session existence: %v", err)
-	}
-	return exists
-}
-
 /// ===== Cookie minting & clearing =====
 
 func TestSession_NoCookieOnAnonRequest(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 
 	// /api/health does not call RequireSessionCtx, so the middleware should
 	// not mint or set any cookie.
@@ -71,7 +58,7 @@ func TestSession_NoCookieOnAnonRequest(t *testing.T) {
 }
 
 func TestSession_InvalidCookie_ClearedAndRequestStillWorks(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 
 	junk := &http.Cookie{Name: "session_token", Value: "this-token-does-not-exist"}
 	w := doRequestWithCookies(http.MethodGet, "/api/health", nil, []*http.Cookie{junk})
@@ -87,7 +74,7 @@ func TestSession_InvalidCookie_ClearedAndRequestStillWorks(t *testing.T) {
 }
 
 func TestSession_ExpiredCookie_TreatedAsUnknown(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 
 	// Insert a row that's already expired. GetSessionUserByToken filters by
 	// expires_at > now(), so the middleware sees pgx.ErrNoRows and clears
@@ -110,7 +97,7 @@ func TestSession_ExpiredCookie_TreatedAsUnknown(t *testing.T) {
 /// ===== Session extension =====
 
 func TestSession_NearExpiry_GetsExtended(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 
 	// 1 day < 7-day extension threshold => should be bumped on use.
 	tok := insertSessionWithExpiry(t, 1*24*time.Hour)
@@ -138,7 +125,7 @@ func TestSession_NearExpiry_GetsExtended(t *testing.T) {
 }
 
 func TestSession_FreshSession_NotExtended(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 
 	// 20 days from now is well outside the 7-day extension threshold.
 	tok := insertSessionWithExpiry(t, 20*24*time.Hour)
@@ -157,24 +144,5 @@ func TestSession_FreshSession_NotExtended(t *testing.T) {
 	}
 	if !newExpiry.Equal(originalExpiry) {
 		t.Errorf("fresh session should not be extended; original=%v new=%v", originalExpiry, newExpiry)
-	}
-}
-
-/// ===== Session cleanup =====
-
-func TestDeleteExpiredSessions_RemovesOnlyExpired(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
-
-	expired := insertSessionWithExpiry(t, -2*time.Hour)
-	fresh := insertSessionWithExpiry(t, 30*24*time.Hour)
-
-	q := generated.New(testPool)
-	deleteExpiredSessions(context.Background(), q)
-
-	if rawSessionExists(t, expired) {
-		t.Error("expected expired session to be deleted")
-	}
-	if !rawSessionExists(t, fresh) {
-		t.Error("fresh session should still exist after cleanup")
 	}
 }

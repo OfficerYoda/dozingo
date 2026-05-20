@@ -5,22 +5,22 @@ import (
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/officeryoda/dozingo/internal/generated"
+	"github.com/officeryoda/dozingo/internal/types"
 )
 
 /// ===== Input/Output types =====
 
 type GameOutput struct {
-	ID       string  `json:"id" format:"uuid"`
+	GameID   string  `json:"game_id" format:"uuid"`
 	BoardID  *string `json:"board_id" format:"uuid"`
 	PlayerID string  `json:"player_id" format:"uuid"`
 	Status   string  `json:"status" format:"text"`
 }
 
 type GetGameByIDInput struct {
-	ID string `path:"game_id" format:"uuid"`
+	GameID types.UUIDParam `path:"game_id" format:"uuid"`
 }
 
 type GetGameByIDOutput struct {
@@ -28,7 +28,7 @@ type GetGameByIDOutput struct {
 }
 
 type ListGamesByPlayerInput struct {
-	PlayerID string `path:"player_id" format:"uuid"`
+	PlayerID types.UUIDParam `path:"player_id" format:"uuid"`
 }
 
 type ListGamesByPlayerOutput struct {
@@ -36,7 +36,7 @@ type ListGamesByPlayerOutput struct {
 }
 
 type ListGamesByBoardInput struct {
-	BoardID string `path:"board_id" format:"uuid"`
+	BoardID types.UUIDParam `path:"board_id" format:"uuid"`
 }
 
 type ListGamesByBoardOutput struct {
@@ -44,8 +44,8 @@ type ListGamesByBoardOutput struct {
 }
 
 type CreateGameInput struct {
-	PlayerID string `query:"player_id" format:"uuid"` // TODO eventually replace this when user auth is working
-	BoardID  string `path:"board_id" format:"uuid"`
+	PlayerID types.UUIDParam `query:"player_id" format:"uuid"` // TODO eventually replace this when user auth is working
+	BoardID  types.UUIDParam `path:"board_id" format:"uuid"`
 }
 
 type CreateGameOutput struct {
@@ -53,8 +53,8 @@ type CreateGameOutput struct {
 }
 
 type UpdateGameStatusInput struct {
-	GameID   string `path:"game_id" format:"uuid"`
-	PlayerID string `query:"player_id" format:"uuid"` // TODO eventually replace this when user auth is working
+	GameID   types.UUIDParam `path:"game_id" format:"uuid"`
+	PlayerID types.UUIDParam `query:"player_id" format:"uuid"` // TODO eventually replace this when user auth is working
 	Body     struct {
 		Status string `json:"status" format:"text" maxLength:"20" doc:"must be any of those: 'active', 'completed' or 'abandoned'"`
 	}
@@ -65,7 +65,7 @@ type UpdateGameStatusOutput struct {
 }
 
 type DeleteGameInput struct {
-	GameID string `path:"game_id" format:"uuid"`
+	GameID types.UUIDParam `path:"game_id" format:"uuid"`
 }
 
 /// ===== Register =====
@@ -137,118 +137,61 @@ func RegisterGames(api huma.API, pool *pgxpool.Pool) {
 /// ===== Handlers =====
 
 func getGameByID(ctx context.Context, queries *generated.Queries, input GetGameByIDInput) (*GetGameByIDOutput, error) {
-	id, err := uuidFromString(input.ID)
+	game, err := queries.GetGameByID(ctx, input.GameID.Value)
 	if err != nil {
-		return nil, huma.Error400BadRequest("invalid id", err)
+		return nil, notFoundOr500(err, "game not found", "failed to get game")
 	}
 
-	cells, err := queries.GetGameByID(ctx, id)
-	if err != nil {
-		return nil, huma.Error500InternalServerError("internal server error", err)
-	}
-
-	return &GetGameByIDOutput{Body: gameToOutput(cells)}, nil
+	return &GetGameByIDOutput{Body: gameToOutput(game)}, nil
 }
 
 func listGamesByPlayer(ctx context.Context, queries *generated.Queries, input ListGamesByPlayerInput) (*ListGamesByPlayerOutput, error) {
-	playerID, err := uuidFromString(input.PlayerID)
+	games, err := queries.ListGamesByPlayer(ctx, input.PlayerID.Value)
 	if err != nil {
-		return nil, huma.Error400BadRequest("invalid input_id", err)
+		return nil, internalError(err, "failed to list games by player")
 	}
 
-	games, err := queries.ListGamesByPlayer(ctx, playerID)
-	if err != nil {
-		return nil, huma.Error500InternalServerError("internal server error", err)
-	}
-
-	out := &ListGamesByPlayerOutput{}
-	out.Body = make([]GameOutput, 0)
-	for i := range games {
-		out.Body = append(out.Body, gameToOutput(games[i]))
-	}
-
-	return out, nil
+	return &ListGamesByPlayerOutput{Body: mapSlice(games, gameToOutput)}, nil
 }
 
 func listGamesByBoard(ctx context.Context, queries *generated.Queries, input ListGamesByBoardInput) (*ListGamesByBoardOutput, error) {
-	boardID, err := uuidFromString(input.BoardID)
+	games, err := queries.ListGamesByBoard(ctx, input.BoardID.Value)
 	if err != nil {
-		return nil, huma.Error400BadRequest("invalid board_id", err)
+		return nil, internalError(err, "failed to list games by board")
 	}
 
-	games, err := queries.ListGamesByBoard(ctx, boardID)
-	if err != nil {
-		return nil, huma.Error500InternalServerError("internal server error", err)
-	}
-
-	out := &ListGamesByBoardOutput{}
-	out.Body = make([]GameOutput, 0)
-	for i := range games {
-		out.Body = append(out.Body, gameToOutput(games[i]))
-	}
-
-	return out, nil
+	return &ListGamesByBoardOutput{Body: mapSlice(games, gameToOutput)}, nil
 }
 
 func createGame(ctx context.Context, queries *generated.Queries, input CreateGameInput) (*CreateGameOutput, error) {
-	playerID, err := uuidFromString(input.PlayerID)
-	if err != nil {
-		return nil, huma.Error400BadRequest("invalid player_id", err)
-	}
-
-	boardID, err := uuidFromString(input.BoardID)
-	if err != nil {
-		return nil, huma.Error400BadRequest("invalid board_id", err)
-	}
-
 	game, err := queries.CreateGame(ctx, generated.CreateGameParams{
-		PlayerID: playerID,
-		BoardID:  boardID,
+		PlayerID: input.PlayerID.Value,
+		BoardID:  input.BoardID.Value,
 	})
 	if err != nil {
-		return nil, huma.Error500InternalServerError("failed to create game", err)
+		return nil, internalError(err, "failed to create game")
 	}
 
 	return &CreateGameOutput{Body: gameToOutput(game)}, nil
 }
 
 func updateGame(ctx context.Context, queries *generated.Queries, input UpdateGameStatusInput) (*UpdateGameStatusOutput, error) {
-	gameID, err := uuidFromString(input.GameID)
-	if err != nil {
-		return nil, huma.Error400BadRequest("invalid game_id", err)
-	}
-	playerID, err := uuidFromString(input.PlayerID)
-	if err != nil {
-		return nil, huma.Error400BadRequest("invalid player_id", err)
-	}
-
 	game, err := queries.UpdateGameStatus(ctx, generated.UpdateGameStatusParams{
-		ID:       gameID,
-		PlayerID: playerID,
+		ID:       input.GameID.Value,
+		PlayerID: input.PlayerID.Value,
 		Status:   input.Body.Status,
 	})
 	if err != nil {
-		if err == pgx.ErrNoRows {
-			return nil, huma.Error404NotFound("game not found", err)
-		}
-		return nil, huma.Error500InternalServerError("failed to update game", err)
+		return nil, notFoundOr500(err, "game not found", "failed to update game")
 	}
 
 	return &UpdateGameStatusOutput{Body: gameToOutput(game)}, nil
 }
 
 func deleteGame(ctx context.Context, queries *generated.Queries, input DeleteGameInput) (*struct{}, error) {
-	gameID, err := uuidFromString(input.GameID)
+	_, err := queries.DeleteGame(ctx, input.GameID.Value)
 	if err != nil {
-		return nil, huma.Error400BadRequest("invalid game_id", err)
-	}
-
-	_, err = queries.DeleteGame(ctx, gameID)
-	if err != nil {
-		if err == pgx.ErrNoRows {
-			return nil, huma.Error404NotFound("game not found", err)
-		}
-		return nil, huma.Error500InternalServerError("failed to delete game", err)
+		return nil, notFoundOr500(err, "game not found", "failed to delete game")
 	}
 
 	return &struct{}{}, nil
@@ -258,7 +201,7 @@ func deleteGame(ctx context.Context, queries *generated.Queries, input DeleteGam
 
 func gameToOutput(game generated.Game) GameOutput {
 	return GameOutput{
-		ID:       game.ID.String(),
+		GameID:   game.ID.String(),
 		BoardID:  stringFromPgUUID(game.BoardID),
 		PlayerID: game.PlayerID.String(),
 		Status:   game.Status,

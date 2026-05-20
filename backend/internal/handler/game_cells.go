@@ -5,24 +5,24 @@ import (
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/officeryoda/dozingo/internal/generated"
+	"github.com/officeryoda/dozingo/internal/types"
 )
 
 /// ===== Input/Output types =====
 
 type GameCellOutput struct {
-	ID       string  `json:"id" format:"uuid"`
-	GameID   string  `json:"game_id" format:"uuid"`
-	CellID   *string `json:"cell_id" format:"uuid"`
-	Content  string  `json:"content" format:"text"`
-	Position int32   `json:"position" format:"integer"`
-	IsMarked bool    `json:"is_marked"`
+	GameCellID string  `json:"game_cell_id" format:"uuid"`
+	GameID     string  `json:"game_id" format:"uuid"`
+	CellID     *string `json:"cell_id" format:"uuid"`
+	Content    string  `json:"content" format:"text"`
+	Position   int32   `json:"position" format:"integer"`
+	IsMarked   bool    `json:"is_marked"`
 }
 
 type GetGameCellsByGameIDInput struct {
-	GameID string `path:"game_id" format:"uuid"`
+	GameID types.UUIDParam `path:"game_id" format:"uuid"`
 }
 
 type GetGameCellsByGameIDOutput struct {
@@ -30,11 +30,11 @@ type GetGameCellsByGameIDOutput struct {
 }
 
 type CreateGameCellsInput struct {
-	GameID string `path:"game_id" format:"uuid"`
+	GameID types.UUIDParam `path:"game_id" format:"uuid"`
 	Body   []struct {
-		CellID   string `json:"cell_id" format:"uuid"`
-		Content  string `json:"content" format:"text" required:"true" maxLength:"200"`
-		Position int32  `json:"position" format:"integer" required:"true"`
+		CellID   types.UUIDParam `json:"cell_id" format:"uuid"`
+		Content  string          `json:"content" format:"text" required:"true" maxLength:"200"`
+		Position int32           `json:"position" format:"integer" required:"true"`
 	}
 }
 
@@ -43,8 +43,8 @@ type CreateGameCellsOutput struct {
 }
 
 type UpdateGameCellMarkInput struct {
-	GameID     string `path:"game_id" format:"uuid"`
-	GameCellID string `path:"game_cell_id" format:"uuid"`
+	GameID     types.UUIDParam `path:"game_id" format:"uuid"`
+	GameCellID types.UUIDParam `path:"game_cell_id" format:"uuid"`
 	Body       struct {
 		IsMarked bool `json:"is_marked" required:"true"`
 	}
@@ -93,85 +93,47 @@ func RegisterGameCells(api huma.API, pool *pgxpool.Pool) {
 /// ===== Handlers =====
 
 func getGameCellsByGameID(ctx context.Context, queries *generated.Queries, input GetGameCellsByGameIDInput) (*GetGameCellsByGameIDOutput, error) {
-	gameID, err := uuidFromString(input.GameID)
+	cells, err := queries.GetGameCellsByGameID(ctx, input.GameID.Value)
 	if err != nil {
-		return nil, huma.Error400BadRequest("invalid game_id", err)
+		return nil, internalError(err, "failed to get game cells")
 	}
 
-	cells, err := queries.GetGameCellsByGameID(ctx, gameID)
-	if err != nil {
-		return nil, huma.Error500InternalServerError("internal server error", err)
-	}
-
-	out := &GetGameCellsByGameIDOutput{}
-	out.Body = make([]GameCellOutput, 0)
-	for _, c := range cells {
-		out.Body = append(out.Body, gameCellToOutput(c))
-	}
-
-	return out, nil
+	return &GetGameCellsByGameIDOutput{Body: mapSlice(cells, gameCellToOutput)}, nil
 }
 
 func createGameCells(ctx context.Context, queries *generated.Queries, input CreateGameCellsInput) (*CreateGameCellsOutput, error) {
-	gameID, err := uuidFromString(input.GameID)
-	if err != nil {
-		return nil, huma.Error400BadRequest("invalid game_id", err)
-	}
-
 	params := make([]generated.CreateGameCellsParams, 0, len(input.Body))
 	for _, c := range input.Body {
-		cellID, err := uuidFromString(c.CellID)
-		if err != nil {
-			return nil, huma.Error400BadRequest("invalid cell_id", err)
-		}
 		params = append(params, generated.CreateGameCellsParams{
-			GameID:   gameID,
-			CellID:   cellID,
+			GameID:   input.GameID.Value,
+			CellID:   c.CellID.Value,
 			Content:  c.Content,
 			Position: c.Position,
 		})
 	}
 
-	_, err = queries.CreateGameCells(ctx, params)
+	_, err := queries.CreateGameCells(ctx, params)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("failed to create game cells", err)
+		return nil, internalError(err, "failed to create game cells")
 	}
 
 	// Fetch the newly created cells to return them
-	cells, err := queries.GetGameCellsByGameID(ctx, gameID)
+	cells, err := queries.GetGameCellsByGameID(ctx, input.GameID.Value)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("failed to fetch game cells", err)
+		return nil, internalError(err, "failed to fetch game cells")
 	}
 
-	out := &CreateGameCellsOutput{}
-	out.Body = make([]GameCellOutput, 0)
-	for _, c := range cells {
-		out.Body = append(out.Body, gameCellToOutput(c))
-	}
-
-	return out, nil
+	return &CreateGameCellsOutput{Body: mapSlice(cells, gameCellToOutput)}, nil
 }
 
 func updateGameCellMark(ctx context.Context, queries *generated.Queries, input UpdateGameCellMarkInput) (*UpdateGameCellMarkOutput, error) {
-	gameID, err := uuidFromString(input.GameID)
-	if err != nil {
-		return nil, huma.Error400BadRequest("invalid game_id", err)
-	}
-	gameCellID, err := uuidFromString(input.GameCellID)
-	if err != nil {
-		return nil, huma.Error400BadRequest("invalid game_cell_id", err)
-	}
-
 	cell, err := queries.UpdateGameCellMark(ctx, generated.UpdateGameCellMarkParams{
 		IsMarked: input.Body.IsMarked,
-		ID:       gameCellID,
-		GameID:   gameID,
+		ID:       input.GameCellID.Value,
+		GameID:   input.GameID.Value,
 	})
 	if err != nil {
-		if err == pgx.ErrNoRows {
-			return nil, huma.Error404NotFound("game cell not found", err)
-		}
-		return nil, huma.Error500InternalServerError("failed to update game cell", err)
+		return nil, notFoundOr500(err, "game cell not found", "failed to update game cell")
 	}
 
 	return &UpdateGameCellMarkOutput{Body: gameCellToOutput(cell)}, nil
@@ -181,11 +143,11 @@ func updateGameCellMark(ctx context.Context, queries *generated.Queries, input U
 
 func gameCellToOutput(cell generated.GameCell) GameCellOutput {
 	return GameCellOutput{
-		ID:       cell.ID.String(),
-		GameID:   cell.GameID.String(),
-		CellID:   stringFromPgUUID(cell.CellID),
-		Content:  cell.Content,
-		Position: cell.Position,
-		IsMarked: cell.IsMarked,
+		GameCellID: cell.ID.String(),
+		GameID:     cell.GameID.String(),
+		CellID:     stringFromPgUUID(cell.CellID),
+		Content:    cell.Content,
+		Position:   cell.Position,
+		IsMarked:   cell.IsMarked,
 	}
 }

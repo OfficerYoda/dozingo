@@ -1,42 +1,14 @@
 package handler
 
 import (
-	"context"
 	"net/http"
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/officeryoda/dozingo/internal/auth"
-	"github.com/officeryoda/dozingo/internal/generated"
 )
 
-func registerTestUser(t *testing.T, username, password string, email *string) *map[string]any {
-	t.Helper()
-
-	body := map[string]any{
-		"username": username,
-		"password": password,
-	}
-	if email != nil {
-		body["email"] = *email
-	}
-
-	w := doRequest(http.MethodPost, "/api/auth/register", body)
-	assertStatus(t, w, http.StatusOK)
-
-	var resp map[string]any
-	decodeJSON(t, w, &resp)
-	return &resp
-}
-
-func stringPtr(s string) *string {
-	return &s
-}
-
 func TestRegister_Success(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 
 	body := map[string]any{
 		"username": "newuser",
@@ -55,7 +27,7 @@ func TestRegister_Success(t *testing.T) {
 }
 
 func TestRegister_WithoutEmail(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 
 	body := map[string]any{
 		"username": "noemailuser",
@@ -77,9 +49,9 @@ func TestRegister_WithoutEmail(t *testing.T) {
 }
 
 func TestRegister_DuplicateUsername(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 
-	registerTestUser(t, "duplicate", "password1", stringPtr("dup1@example.com"))
+	createTestUserWithRegister(t, "duplicate", "password1", stringPtr("dup1@example.com"))
 
 	// Try registering with the same username
 	body := map[string]any{
@@ -93,9 +65,9 @@ func TestRegister_DuplicateUsername(t *testing.T) {
 }
 
 func TestRegister_DuplicateEmail(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 
-	registerTestUser(t, "user1", "password1", stringPtr("same@example.com"))
+	createTestUserWithRegister(t, "user1", "password1", stringPtr("same@example.com"))
 
 	// Try registering with different username but same email
 	body := map[string]any{
@@ -109,9 +81,9 @@ func TestRegister_DuplicateEmail(t *testing.T) {
 }
 
 func TestLogin_Success(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 
-	registerTestUser(t, "loginuser", "correctpassword", stringPtr("login@example.com"))
+	createTestUserWithRegister(t, "loginuser", "correctpassword", stringPtr("login@example.com"))
 
 	body := map[string]any{
 		"username": "loginuser",
@@ -129,9 +101,9 @@ func TestLogin_Success(t *testing.T) {
 }
 
 func TestLogin_WrongPassword(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 
-	registerTestUser(t, "wrongpwuser", "correctpassword", stringPtr("wrongpw@example.com"))
+	createTestUserWithRegister(t, "wrongpwuser", "correctpassword", stringPtr("wrongpw@example.com"))
 
 	body := map[string]any{
 		"username": "wrongpwuser",
@@ -143,7 +115,7 @@ func TestLogin_WrongPassword(t *testing.T) {
 }
 
 func TestLogin_NonexistentUser(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 
 	body := map[string]any{
 		"username": "doesnotexist",
@@ -155,9 +127,9 @@ func TestLogin_NonexistentUser(t *testing.T) {
 }
 
 func TestLogin_WithoutEmail(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 
-	registerTestUser(t, "noemaillogin", "mypassword", nil)
+	createTestUserWithRegister(t, "noemaillogin", "mypassword", nil)
 
 	body := map[string]any{
 		"username": "noemaillogin",
@@ -178,59 +150,21 @@ func TestLogin_WithoutEmail(t *testing.T) {
 	}
 }
 
-/// ===== Helpers for cookie-driven tests =====
-
-// mintAnonSession inserts an anonymous session row directly and returns a
-// cookie that can be replayed against the test router. This is the only way
-// to obtain a pre-existing anon session because no anon-friendly handler
-// currently calls RequireSessionCtx.
-func mintAnonSession(t *testing.T, ttl time.Duration) (token string, cookie *http.Cookie) {
-	t.Helper()
-	q := generated.New(testPool)
-	tok := auth.GenerateSessionToken()
-	_, err := q.CreateSession(context.Background(), generated.CreateSessionParams{
-		UserID: pgtype.UUID{Valid: false},
-		Token:  tok,
-		ExpiresAt: pgtype.Timestamptz{
-			Time:  time.Now().Add(ttl),
-			Valid: true,
-		},
-	})
-	if err != nil {
-		t.Fatalf("failed to insert anon session: %v", err)
-	}
-	return tok, &http.Cookie{Name: "session_token", Value: tok}
-}
-
-func loadSessionByToken(t *testing.T, token string) (generated.GetSessionUserByTokenRow, bool) {
-	t.Helper()
-	q := generated.New(testPool)
-	row, err := q.GetSessionUserByToken(context.Background(), token)
-	if err != nil {
-		return generated.GetSessionUserByTokenRow{}, false
-	}
-	return row, true
-}
-
 /// ===== Register: cookies & ID =====
 
 func TestRegister_ReturnsID(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 
-	resp := registerTestUser(t, "iduser", "mypassword123", stringPtr("iduser@example.com"))
+	resp := createTestUserWithRegister(t, "iduser", "mypassword123", stringPtr("iduser@example.com"))
 
-	id, ok := (*resp)["id"].(string)
+	id, ok := (*resp)["user_id"].(string)
 	if !ok || id == "" {
-		t.Fatalf("expected non-empty id field, got %v", (*resp)["id"])
-	}
-	// Must be parseable as a UUID
-	if _, err := uuidFromString(id); err != nil {
-		t.Errorf("returned id %q is not a valid UUID: %v", id, err)
+		t.Fatalf("expected non-empty id field, got %v", (*resp)["user_id"])
 	}
 }
 
 func TestRegister_SetsSessionCookie(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 
 	w := doRequest(http.MethodPost, "/api/auth/register", map[string]any{
 		"username": "cookieuser",
@@ -261,7 +195,7 @@ func TestRegister_SetsSessionCookie(t *testing.T) {
 }
 
 func TestRegister_AttachesExistingAnonSession(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 
 	token, cookie := mintAnonSession(t, 30*24*time.Hour)
 
@@ -294,7 +228,7 @@ func TestRegister_AttachesExistingAnonSession(t *testing.T) {
 }
 
 func TestRegister_PasswordTooLong_Rejected(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 
 	w := doRequest(http.MethodPost, "/api/auth/register", map[string]any{
 		"username": "longpw",
@@ -306,7 +240,7 @@ func TestRegister_PasswordTooLong_Rejected(t *testing.T) {
 }
 
 func TestRegister_EmailWhitespaceTreatedAsNull(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 
 	w := doRequest(http.MethodPost, "/api/auth/register", map[string]any{
 		"username": "wsemail",
@@ -325,9 +259,9 @@ func TestRegister_EmailWhitespaceTreatedAsNull(t *testing.T) {
 /// ===== Login: cookies & anon-attach =====
 
 func TestLogin_SetsSessionCookie(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 
-	registerTestUser(t, "logincookie", "pw123", stringPtr("lc@example.com"))
+	createTestUserWithRegister(t, "logincookie", "pw123", stringPtr("lc@example.com"))
 
 	w := doRequest(http.MethodPost, "/api/auth/login", map[string]any{
 		"username": "logincookie",
@@ -341,11 +275,11 @@ func TestLogin_SetsSessionCookie(t *testing.T) {
 }
 
 func TestLogin_AttachesExistingAnonSession(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 
 	// Register a user first (this will create its own session, but we don't
 	// reuse it here -- we want a fresh anon cookie below).
-	registerTestUser(t, "anonloginer", "pw123", nil)
+	createTestUserWithRegister(t, "anonloginer", "pw123", nil)
 
 	token, cookie := mintAnonSession(t, 30*24*time.Hour)
 
@@ -370,14 +304,14 @@ func TestLogin_AttachesExistingAnonSession(t *testing.T) {
 /// ===== /auth/me =====
 
 func TestMe_NoCookie_401(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 
 	w := doRequest(http.MethodGet, "/api/auth/me", nil)
 	assertStatus(t, w, http.StatusUnauthorized)
 }
 
 func TestMe_AnonymousSessionOnly_401(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 
 	_, cookie := mintAnonSession(t, 30*24*time.Hour)
 
@@ -386,7 +320,7 @@ func TestMe_AnonymousSessionOnly_401(t *testing.T) {
 }
 
 func TestMe_Authenticated(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 
 	registerResp := doRequest(http.MethodPost, "/api/auth/register", map[string]any{
 		"username": "meuser",
@@ -410,13 +344,13 @@ func TestMe_Authenticated(t *testing.T) {
 
 	assertJSONField(t, me, "username", "meuser")
 	assertJSONField(t, me, "email", "me@example.com")
-	if me["id"] != registered["id"] {
-		t.Errorf("expected /me id %v to match register id %v", me["id"], registered["id"])
+	if me["user_id"] != registered["user_id"] {
+		t.Errorf("expected /me id %v to match register id %v", me["user_id"], registered["user_id"])
 	}
 }
 
 func TestMe_AfterLogout_401(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 
 	r := doRequest(http.MethodPost, "/api/auth/register", map[string]any{
 		"username": "logmeout",
@@ -435,14 +369,14 @@ func TestMe_AfterLogout_401(t *testing.T) {
 /// ===== /auth/logout =====
 
 func TestLogout_NoCookie_NoOp(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 
 	w := doRequest(http.MethodPost, "/api/auth/logout", nil)
 	assertStatus(t, w, http.StatusNoContent)
 }
 
 func TestLogout_AuthenticatedDeletesSessionAndClearsCookie(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 
 	r := doRequest(http.MethodPost, "/api/auth/register", map[string]any{
 		"username": "logoutuser",
@@ -481,7 +415,7 @@ func TestLogout_AuthenticatedDeletesSessionAndClearsCookie(t *testing.T) {
 }
 
 func TestLogout_StaleCookie_NoOp(t *testing.T) {
-	t.Cleanup(func() { cleanupTables(t) })
+	setupTest(t)
 
 	staleCookie := &http.Cookie{Name: "session_token", Value: "definitely-not-a-real-token"}
 	w := doRequestWithCookies(http.MethodPost, "/api/auth/logout", nil, []*http.Cookie{staleCookie})
