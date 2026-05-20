@@ -108,7 +108,7 @@ RETURNING id, board_id, content, created_at, updated_at, value, author_id
 type UpdateCellParams struct {
 	Content pgtype.Text `json:"content"`
 	Value   pgtype.Int4 `json:"value"`
-	ID      pgtype.UUID `json:"id"`
+	CellID  pgtype.UUID `json:"cell_id"`
 	BoardID pgtype.UUID `json:"board_id"`
 }
 
@@ -116,7 +116,7 @@ func (q *Queries) UpdateCell(ctx context.Context, arg UpdateCellParams) (Cell, e
 	row := q.db.QueryRow(ctx, updateCell,
 		arg.Content,
 		arg.Value,
-		arg.ID,
+		arg.CellID,
 		arg.BoardID,
 	)
 	var i Cell

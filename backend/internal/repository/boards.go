@@ -11,26 +11,16 @@ import (
 	"github.com/officeryoda/dozingo/internal/generated"
 )
 
-// Boards is the persistence repository for the boards aggregate.
 type Boards struct {
 	queries *generated.Queries
 	db      generated.DBTX
 }
 
-// BoardListFilter narrows the result of List. Zero-valued fields are ignored.
-//
-// AuthorID accepts the raw query-string form (a UUID or empty string) so the
-// repository, not the handler, owns parsing. An invalid UUID results in
-// domain.ErrInvalid.
 type BoardListFilter struct {
 	AuthorID string
 	Size     int32
 }
 
-// CreateBoardInput is the repository-level input for creating a board.
-//
-// Description is *string so the caller can express "no value provided" without
-// leaking pgtype into the service layer.
 type CreateBoardInput struct {
 	Title       string
 	Description *string
@@ -38,12 +28,6 @@ type CreateBoardInput struct {
 	AuthorID    pgtype.UUID
 }
 
-// List returns boards matching the given filters, ordered by created_at desc.
-//
-// This used to be a hand-rolled SQL builder living inside the HTTP handler.
-// It now lives at the persistence seam where it belongs; an even cleaner
-// follow-up is to express the filtered query in db/queries/boards.sql so
-// sqlc generates it for us.
 func (r *Boards) List(ctx context.Context, f BoardListFilter) ([]generated.Board, error) {
 	var (
 		query strings.Builder
@@ -82,7 +66,6 @@ func (r *Boards) List(ctx context.Context, f BoardListFilter) ([]generated.Board
 	return boards, nil
 }
 
-// Get returns the board with the given id, or domain.ErrNotFound.
 func (r *Boards) Get(ctx context.Context, id pgtype.UUID) (generated.Board, error) {
 	board, err := r.queries.GetBoardByID(ctx, id)
 	if err != nil {
@@ -91,8 +74,6 @@ func (r *Boards) Get(ctx context.Context, id pgtype.UUID) (generated.Board, erro
 	return board, nil
 }
 
-// Create inserts a board and returns the persisted row. A unique-constraint
-// violation is reported as domain.ErrConflict.
 func (r *Boards) Create(ctx context.Context, in CreateBoardInput) (generated.Board, error) {
 	board, err := r.queries.CreateBoard(ctx, generated.CreateBoardParams{
 		Title:       in.Title,
@@ -106,8 +87,6 @@ func (r *Boards) Create(ctx context.Context, in CreateBoardInput) (generated.Boa
 	return board, nil
 }
 
-// Delete removes the board with the given id and returns the deleted row.
-// Returns domain.ErrNotFound if no row matched.
 func (r *Boards) Delete(ctx context.Context, id pgtype.UUID) (generated.Board, error) {
 	board, err := r.queries.DeleteBoard(ctx, id)
 	if err != nil {

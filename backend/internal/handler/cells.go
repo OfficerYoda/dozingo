@@ -146,7 +146,7 @@ func updateCell(ctx context.Context, queries *generated.Queries, input UpdateCel
 	}
 
 	cell, err := queries.UpdateCell(ctx, generated.UpdateCellParams{
-		ID:      input.CellID.Value,
+		CellID:  input.CellID.Value,
 		BoardID: input.BoardID.Value,
 		Content: content,
 		Value:   value,

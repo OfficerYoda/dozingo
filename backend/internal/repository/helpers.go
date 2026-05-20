@@ -12,7 +12,6 @@ import (
 	"github.com/officeryoda/dozingo/internal/domain"
 )
 
-// pgTextFromString converts a *string into pgtype.Text.
 func pgTextFromString(str *string) pgtype.Text {
 	if str != nil && strings.TrimSpace(*str) != "" {
 		return pgtype.Text{String: *str, Valid: true}
@@ -20,7 +19,6 @@ func pgTextFromString(str *string) pgtype.Text {
 	return pgtype.Text{Valid: false}
 }
 
-// stringFromPgText converts a pgtype.Text to *string, returning nil on NULL.
 func stringFromPgText(text pgtype.Text) *string {
 	if !text.Valid {
 		return nil
@@ -29,7 +27,6 @@ func stringFromPgText(text pgtype.Text) *string {
 	return &s
 }
 
-// stringFromPgUUID converts a pgtype.UUID to *string, returning nil on NULL.
 func stringFromPgUUID(uuid pgtype.UUID) *string {
 	if !uuid.Valid {
 		return nil
@@ -38,13 +35,19 @@ func stringFromPgUUID(uuid pgtype.UUID) *string {
 	return &s
 }
 
-// pgTimestamptzFromTime converts a time.Time into pgtype.Timestamptz
 func pgTimestamptzFromTime(time time.Time) pgtype.Timestamptz {
 	return pgtype.Timestamptz{
 		Time:             time,
 		InfinityModifier: pgtype.Finite,
 		Valid:            true,
 	}
+}
+
+func pgInt4FromInt32(v *int32) pgtype.Int4 {
+	if v == nil {
+		return pgtype.Int4{Valid: false}
+	}
+	return pgtype.Int4{Int32: *v, Valid: true}
 }
 
 // translatePgErr maps pgx/pgconn errors to domain sentinels. Anything we don't
