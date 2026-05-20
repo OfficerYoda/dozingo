@@ -100,9 +100,12 @@ func registerRoutes(router *chi.Mux, pool *pgxpool.Pool) {
 
 	// New layering
 	repos := repository.New(pool)
+	txRunner := repository.NewTxRunner(pool)
 	boardsSvc := service.NewBoards(repos.Boards)
+	authSvc := service.NewAuth(repos, txRunner, queries)
 
 	handler.NewBoardsHandler(boardsSvc).Register(apiGroup)
+	handler.NewAuthHandler(authSvc).Register(apiGroup)
 
 	// Legacy registrars (to be migrated).
 	handler.RegisterHealth(apiGroup)
@@ -110,7 +113,6 @@ func registerRoutes(router *chi.Mux, pool *pgxpool.Pool) {
 	handler.RegisterVotes(apiGroup, pool)
 	handler.RegisterGames(apiGroup, pool)
 	handler.RegisterGameCells(apiGroup, pool)
-	handler.RegisterAuth(apiGroup, pool)
 }
 
 func createServer(port int, handler http.Handler) *http.Server {

@@ -11,12 +11,6 @@ type Users struct {
 	queries *generated.Queries
 }
 
-type RegisterInput struct {
-	Username string
-	Password string
-	Email    *string
-}
-
 func (r *Users) GetForPasswordLogin(ctx context.Context, username string) (generated.GetUserForPasswordLoginRow, error) {
 	user, err := r.queries.GetUserForPasswordLogin(ctx, username)
 	if err != nil {
@@ -25,7 +19,7 @@ func (r *Users) GetForPasswordLogin(ctx context.Context, username string) (gener
 	return user, nil
 }
 
-func (r *Users) GetById(ctx context.Context, userID pgtype.UUID) (generated.User, error) {
+func (r *Users) GetByID(ctx context.Context, userID pgtype.UUID) (generated.User, error) {
 	user, err := r.queries.GetUserByID(ctx, userID)
 	if err != nil {
 		return generated.User{}, translatePgErr(err)

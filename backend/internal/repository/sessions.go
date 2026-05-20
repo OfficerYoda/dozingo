@@ -41,6 +41,17 @@ func (r *Sessions) Extend(ctx context.Context, token string, expiresAt time.Time
 	return session, nil
 }
 
+func (r *Sessions) AttachUser(ctx context.Context, token string, userID pgtype.UUID) (generated.Session, error) {
+	session, err := r.queries.AttachUserToSession(ctx, generated.AttachUserToSessionParams{
+		Token:  token,
+		UserID: userID,
+	})
+	if err != nil {
+		return generated.Session{}, translatePgErr(err)
+	}
+	return session, nil
+}
+
 func (r *Sessions) Delete(ctx context.Context, token string) error {
 	err := r.queries.DeleteSessionByToken(ctx, token)
 	if err != nil {
