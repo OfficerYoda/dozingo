@@ -26,6 +26,7 @@ function closeMenu(){
           <ul>
             <li><RouterLink to="/" class="sidebar-buttons upper-buttons"><Home :size="20" />Home</RouterLink></li>
             <li><RouterLink to="/about" class="sidebar-buttons upper-buttons"><LayoutGrid :size="20"/>About</RouterLink></li>
+            <li><RouterLink to="/cardeditor" class="sidebar-buttons upper-buttons"><SquarePen :size="20"/>Card Editor</RouterLink></li>
             <li><RouterLink to="/components" class="sidebar-buttons upper-buttons"><Computer :size="20"/>Components(only for dev)</RouterLink></li>
           </ul>
         </nav>
@@ -66,7 +67,7 @@ function closeMenu(){
 </template>
 
 <script setup lang="ts">
-import { Home, LayoutGrid, Settings, LogOut, UserCircle, Menu , Computer} from 'lucide-vue-next'
+import { Home, LayoutGrid, Settings, LogOut, UserCircle, Menu , Computer, SquarePen} from 'lucide-vue-next'
 </script>
 
 <style scoped>
