@@ -109,7 +109,8 @@ func createServer(port int, handler http.Handler) *http.Server {
 	addr := fmt.Sprintf(":%d", port)
 	srv := &http.Server{Handler: handler, Addr: addr}
 
-	slog.Info("Server created", "addr", addr)
+	url := fmt.Sprintf("http://localhost%s", addr)
+	slog.Info("Server created", "url", url)
 	return srv
 }
 

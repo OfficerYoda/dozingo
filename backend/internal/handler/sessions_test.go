@@ -44,19 +44,6 @@ func fetchSessionExpiry(t *testing.T, token string) (time.Time, bool) {
 	return row.ExpiresAt.Time, true
 }
 
-// rawSessionExists checks whether a session row is still present in the
-// database, ignoring expiry. Used to verify cleanup deleted (or kept) rows.
-func rawSessionExists(t *testing.T, token string) bool {
-	t.Helper()
-	var exists bool
-	err := testPool.QueryRow(context.Background(),
-		"SELECT EXISTS(SELECT 1 FROM sessions WHERE token = $1)", token).Scan(&exists)
-	if err != nil {
-		t.Fatalf("failed to query session existence: %v", err)
-	}
-	return exists
-}
-
 /// ===== Cookie minting & clearing =====
 
 func TestSession_NoCookieOnAnonRequest(t *testing.T) {
