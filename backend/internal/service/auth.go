@@ -2,9 +2,12 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"log/slog"
 
 	authpkg "github.com/officeryoda/dozingo/internal/auth"
+	"github.com/officeryoda/dozingo/internal/domain"
 	"github.com/officeryoda/dozingo/internal/generated"
 	"github.com/officeryoda/dozingo/internal/middleware"
 	"github.com/officeryoda/dozingo/internal/repository"
@@ -13,7 +16,7 @@ import (
 type Auth interface {
 	Register(ctx context.Context, in RegisterInput) (generated.User, error)
 	Login(ctx context.Context, in LoginInput) (generated.User, error)
-	Logout(ctx context.Context, session generated.GetSessionUserByTokenRow) (generated.User, error)
+	Logout(ctx context.Context) error
 	Me(ctx context.Context, session generated.GetSessionUserByTokenRow) (generated.User, error)
 }
 
@@ -65,17 +68,59 @@ func (s *auth) Register(ctx context.Context, in RegisterInput) (generated.User, 
 
 // Login implements [Auth].
 func (s *auth) Login(ctx context.Context, in LoginInput) (generated.User, error) {
-	panic("unimplemented")
+	user, err := s.users.GetForPasswordLogin(ctx, in.Username)
+	if err != nil {
+		if errors.Is(err, domain.ErrNotFound) {
+			authpkg.CheckPasswordAgainstDummy(in.Password)
+			return generated.User{}, domain.ErrUnauthorized
+		}
+		return generated.User{}, fmt.Errorf("user retrieval for login: %w", err)
+	}
+
+	err = authpkg.CheckPassword(in.Password, user.PasswordHash)
+	if err != nil {
+		return generated.User{}, domain.ErrUnauthorized
+	}
+
+	vanillaUser := generated.User{
+		ID:       user.ID,
+		Username: user.Username,
+		Email:    user.Email,
+	}
+	err = s.attatchUserToSession(ctx, vanillaUser)
+	if err != nil {
+		return generated.User{}, fmt.Errorf("attach user to session: %w", err)
+	}
+
+	return vanillaUser, nil
 }
 
 // Logout implements [Auth].
-func (s *auth) Logout(ctx context.Context, session generated.GetSessionUserByTokenRow) (generated.User, error) {
-	panic("unimplemented")
+func (s *auth) Logout(ctx context.Context) error {
+	sessionUser, ok := middleware.SessionUserFromContext(ctx)
+	if !ok || !sessionUser.UserID.Valid {
+		return nil
+	}
+
+	err := s.sessions.Delete(ctx, sessionUser.Token)
+	if err != nil {
+		return fmt.Errorf("delete session token: %w", err)
+	}
+
+	if err := middleware.ClearSessionTokenCookieCtx(ctx); err != nil {
+		slog.Warn("failed to clear session cookie on logout", "error", err)
+	}
+
+	return nil
 }
 
 // Me implements [Auth].
 func (s *auth) Me(ctx context.Context, session generated.GetSessionUserByTokenRow) (generated.User, error) {
-	panic("unimplemented")
+	return generated.User{
+		ID:       session.UserID,
+		Username: session.Username.String,
+		Email:    session.Email,
+	}, nil
 }
 
 func (s *auth) generateUser(ctx context.Context, in RegisterInput) (generated.User, error) {
