@@ -6,6 +6,7 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/officeryoda/dozingo/internal/generated"
+	"github.com/officeryoda/dozingo/internal/pgmap"
 	"github.com/officeryoda/dozingo/internal/repository"
 	"github.com/officeryoda/dozingo/internal/service"
 	"github.com/officeryoda/dozingo/internal/types"
@@ -186,7 +187,7 @@ func (h *GamesHandler) delete(ctx context.Context, in *DeleteGameInput) (*struct
 func gameToOutput(game generated.Game) GameOutput {
 	return GameOutput{
 		GameID:   game.ID.String(),
-		BoardID:  stringFromPgUUID(game.BoardID),
+		BoardID:  pgmap.StringFromPgUUID(game.BoardID),
 		PlayerID: game.PlayerID.String(),
 		Status:   game.Status,
 	}

@@ -6,6 +6,7 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/officeryoda/dozingo/internal/generated"
+	"github.com/officeryoda/dozingo/internal/pgmap"
 	"github.com/officeryoda/dozingo/internal/repository"
 	"github.com/officeryoda/dozingo/internal/service"
 	"github.com/officeryoda/dozingo/internal/types"
@@ -142,7 +143,7 @@ func boardToOutput(board generated.Board) BoardOutput {
 	return BoardOutput{
 		BoardID:     board.ID.String(),
 		Title:       board.Title,
-		Description: stringFromPgText(board.Description),
+		Description: pgmap.StringFromPgText(board.Description),
 		Size:        board.Size,
 		AuthorID:    board.AuthorID.String(),
 	}

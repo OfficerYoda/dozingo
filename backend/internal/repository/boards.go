@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/officeryoda/dozingo/internal/domain"
 	"github.com/officeryoda/dozingo/internal/generated"
+	"github.com/officeryoda/dozingo/internal/pgmap"
 )
 
 type Boards struct {
@@ -69,7 +70,7 @@ func (r *Boards) List(ctx context.Context, f BoardListFilter) ([]generated.Board
 func (r *Boards) Get(ctx context.Context, id pgtype.UUID) (generated.Board, error) {
 	board, err := r.queries.GetBoardByID(ctx, id)
 	if err != nil {
-		return generated.Board{}, translatePgErr(err)
+		return generated.Board{}, pgmap.TranslatePgErr(err)
 	}
 	return board, nil
 }
@@ -77,12 +78,12 @@ func (r *Boards) Get(ctx context.Context, id pgtype.UUID) (generated.Board, erro
 func (r *Boards) Create(ctx context.Context, in CreateBoardInput) (generated.Board, error) {
 	board, err := r.queries.CreateBoard(ctx, generated.CreateBoardParams{
 		Title:       in.Title,
-		Description: pgTextFromString(in.Description),
+		Description: pgmap.PgTextFromString(in.Description),
 		Size:        in.Size,
 		AuthorID:    in.AuthorID,
 	})
 	if err != nil {
-		return generated.Board{}, translatePgErr(err)
+		return generated.Board{}, pgmap.TranslatePgErr(err)
 	}
 	return board, nil
 }
@@ -90,7 +91,7 @@ func (r *Boards) Create(ctx context.Context, in CreateBoardInput) (generated.Boa
 func (r *Boards) Delete(ctx context.Context, id pgtype.UUID) (generated.Board, error) {
 	board, err := r.queries.DeleteBoard(ctx, id)
 	if err != nil {
-		return generated.Board{}, translatePgErr(err)
+		return generated.Board{}, pgmap.TranslatePgErr(err)
 	}
 	return board, nil
 }

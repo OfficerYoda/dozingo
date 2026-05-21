@@ -5,6 +5,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/officeryoda/dozingo/internal/generated"
+	"github.com/officeryoda/dozingo/internal/pgmap"
 )
 
 type Games struct {
@@ -25,7 +26,7 @@ type UpdateGameStatusInput struct {
 func (r *Games) Get(ctx context.Context, id pgtype.UUID) (generated.Game, error) {
 	game, err := r.queries.GetGameByID(ctx, id)
 	if err != nil {
-		return generated.Game{}, translatePgErr(err)
+		return generated.Game{}, pgmap.TranslatePgErr(err)
 	}
 	return game, nil
 }
@@ -33,7 +34,7 @@ func (r *Games) Get(ctx context.Context, id pgtype.UUID) (generated.Game, error)
 func (r *Games) ListByPlayer(ctx context.Context, playerID pgtype.UUID) ([]generated.Game, error) {
 	games, err := r.queries.ListGamesByPlayer(ctx, playerID)
 	if err != nil {
-		return []generated.Game{}, translatePgErr(err)
+		return []generated.Game{}, pgmap.TranslatePgErr(err)
 	}
 	return games, nil
 }
@@ -41,7 +42,7 @@ func (r *Games) ListByPlayer(ctx context.Context, playerID pgtype.UUID) ([]gener
 func (r *Games) ListByBoard(ctx context.Context, boardID pgtype.UUID) ([]generated.Game, error) {
 	games, err := r.queries.ListGamesByBoard(ctx, boardID)
 	if err != nil {
-		return []generated.Game{}, translatePgErr(err)
+		return []generated.Game{}, pgmap.TranslatePgErr(err)
 	}
 	return games, nil
 }
@@ -52,7 +53,7 @@ func (r *Games) Create(ctx context.Context, in CreateGameInput) (generated.Game,
 		BoardID:  in.BoardID,
 	})
 	if err != nil {
-		return generated.Game{}, translatePgErr(err)
+		return generated.Game{}, pgmap.TranslatePgErr(err)
 	}
 	return game, nil
 }
@@ -64,7 +65,7 @@ func (r *Games) UpdateStatus(ctx context.Context, in UpdateGameStatusInput) (gen
 		Status:   in.Status,
 	})
 	if err != nil {
-		return generated.Game{}, translatePgErr(err)
+		return generated.Game{}, pgmap.TranslatePgErr(err)
 	}
 	return game, nil
 }
@@ -72,7 +73,7 @@ func (r *Games) UpdateStatus(ctx context.Context, in UpdateGameStatusInput) (gen
 func (r *Games) Delete(ctx context.Context, id pgtype.UUID) (generated.Game, error) {
 	game, err := r.queries.DeleteGame(ctx, id)
 	if err != nil {
-		return generated.Game{}, translatePgErr(err)
+		return generated.Game{}, pgmap.TranslatePgErr(err)
 	}
 	return game, nil
 }

@@ -6,6 +6,7 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/officeryoda/dozingo/internal/generated"
+	"github.com/officeryoda/dozingo/internal/pgmap"
 	"github.com/officeryoda/dozingo/internal/repository"
 	"github.com/officeryoda/dozingo/internal/service"
 	"github.com/officeryoda/dozingo/internal/types"
@@ -135,7 +136,7 @@ func gameCellToOutput(cell generated.GameCell) GameCellOutput {
 	return GameCellOutput{
 		GameCellID: cell.ID.String(),
 		GameID:     cell.GameID.String(),
-		CellID:     stringFromPgUUID(cell.CellID),
+		CellID:     pgmap.StringFromPgUUID(cell.CellID),
 		Content:    cell.Content,
 		Position:   cell.Position,
 		IsMarked:   cell.IsMarked,

@@ -7,6 +7,7 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/officeryoda/dozingo/internal/generated"
 	"github.com/officeryoda/dozingo/internal/middleware"
+	"github.com/officeryoda/dozingo/internal/pgmap"
 	"github.com/officeryoda/dozingo/internal/service"
 )
 
@@ -127,6 +128,6 @@ func userToOutput(user generated.User) authOutputBody {
 	return authOutputBody{
 		UserID:   user.ID.String(),
 		Username: user.Username,
-		Email:    stringFromPgText(user.Email),
+		Email:    pgmap.StringFromPgText(user.Email),
 	}
 }

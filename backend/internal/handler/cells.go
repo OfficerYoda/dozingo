@@ -6,6 +6,7 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/officeryoda/dozingo/internal/generated"
+	"github.com/officeryoda/dozingo/internal/pgmap"
 	"github.com/officeryoda/dozingo/internal/repository"
 	"github.com/officeryoda/dozingo/internal/service"
 	"github.com/officeryoda/dozingo/internal/types"
@@ -148,7 +149,7 @@ func cellToOutput(cell generated.Cell) CellOutput {
 		CellID:   cell.ID.String(),
 		BoardID:  cell.BoardID.String(),
 		Content:  cell.Content,
-		AuthorID: stringFromPgUUID(cell.AuthorID),
+		AuthorID: pgmap.StringFromPgUUID(cell.AuthorID),
 		Value:    cell.Value,
 	}
 }

@@ -5,6 +5,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/officeryoda/dozingo/internal/generated"
+	"github.com/officeryoda/dozingo/internal/pgmap"
 )
 
 type Cells struct {
@@ -27,7 +28,7 @@ type UpdateCellInput struct {
 func (r *Cells) ListByBoardID(ctx context.Context, boardID pgtype.UUID) ([]generated.Cell, error) {
 	cells, err := r.queries.GetCellsByBoardID(ctx, boardID)
 	if err != nil {
-		return []generated.Cell{}, translatePgErr(err)
+		return []generated.Cell{}, pgmap.TranslatePgErr(err)
 	}
 	return cells, nil
 }
@@ -43,7 +44,7 @@ func (r *Cells) Create(ctx context.Context, in CreateCellInput) (generated.Cell,
 		Value:   value,
 	})
 	if err != nil {
-		return generated.Cell{}, translatePgErr(err)
+		return generated.Cell{}, pgmap.TranslatePgErr(err)
 	}
 	return cell, nil
 }
@@ -52,11 +53,11 @@ func (r *Cells) Update(ctx context.Context, in UpdateCellInput) (generated.Cell,
 	cell, err := r.queries.UpdateCell(ctx, generated.UpdateCellParams{
 		CellID:  in.CellID,
 		BoardID: in.BoardID,
-		Content: pgTextFromString(in.Content),
-		Value:   pgInt4FromInt32(in.Value),
+		Content: pgmap.PgTextFromString(in.Content),
+		Value:   pgmap.PgInt4FromInt32(in.Value),
 	})
 	if err != nil {
-		return generated.Cell{}, translatePgErr(err)
+		return generated.Cell{}, pgmap.TranslatePgErr(err)
 	}
 	return cell, nil
 }
@@ -67,7 +68,7 @@ func (r *Cells) Delete(ctx context.Context, cellID, boardID pgtype.UUID) (genera
 		BoardID: boardID,
 	})
 	if err != nil {
-		return generated.Cell{}, translatePgErr(err)
+		return generated.Cell{}, pgmap.TranslatePgErr(err)
 	}
 	return cell, nil
 }

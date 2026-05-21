@@ -5,6 +5,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/officeryoda/dozingo/internal/generated"
+	"github.com/officeryoda/dozingo/internal/pgmap"
 )
 
 type GameCells struct {
@@ -31,7 +32,7 @@ type UpdateGameCellMarkInput struct {
 func (r *GameCells) ListByGameID(ctx context.Context, gameID pgtype.UUID) ([]generated.GameCell, error) {
 	cells, err := r.queries.GetGameCellsByGameID(ctx, gameID)
 	if err != nil {
-		return []generated.GameCell{}, translatePgErr(err)
+		return []generated.GameCell{}, pgmap.TranslatePgErr(err)
 	}
 	return cells, nil
 }
@@ -48,12 +49,12 @@ func (r *GameCells) Create(ctx context.Context, in CreateGameCellsInput) ([]gene
 	}
 
 	if _, err := r.queries.CreateGameCells(ctx, params); err != nil {
-		return []generated.GameCell{}, translatePgErr(err)
+		return []generated.GameCell{}, pgmap.TranslatePgErr(err)
 	}
 
 	cells, err := r.queries.GetGameCellsByGameID(ctx, in.GameID)
 	if err != nil {
-		return []generated.GameCell{}, translatePgErr(err)
+		return []generated.GameCell{}, pgmap.TranslatePgErr(err)
 	}
 	return cells, nil
 }
@@ -65,7 +66,7 @@ func (r *GameCells) UpdateMark(ctx context.Context, in UpdateGameCellMarkInput) 
 		GameID:   in.GameID,
 	})
 	if err != nil {
-		return generated.GameCell{}, translatePgErr(err)
+		return generated.GameCell{}, pgmap.TranslatePgErr(err)
 	}
 	return cell, nil
 }
