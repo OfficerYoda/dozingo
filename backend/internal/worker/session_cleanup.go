@@ -37,7 +37,7 @@ func (s *SessionCleaner) Start(ctx context.Context) {
 }
 
 func deleteExpiredSessions(ctx context.Context, queries *generated.Queries) {
-	err := queries.DeleteExpiredSessions(ctx)
+	err := queries.DeleteExpiredSessions(ctx) // TODO replace this with a repository call
 	if err != nil {
 		slog.Error("failed to clean up expired sessions", "error", err)
 	}

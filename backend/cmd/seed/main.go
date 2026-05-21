@@ -300,7 +300,10 @@ func seedGames(ctx context.Context, q *generated.Queries, userIDs, sessionIDs, b
 
 		boardCellIDs := cellIDsByBoard[g.BoardIdx]
 
-		params := make([]generated.CreateGameCellsParams, 0, len(cells))
+		gameIDs := make([]pgtype.UUID, 0, len(cells))
+		cellIDs := make([]pgtype.UUID, 0, len(cells))
+		contents := make([]string, 0, len(cells))
+		positions := make([]int32, 0, len(cells))
 		for i, gc := range cells {
 			// Use the corresponding cell ID from the board if available
 			var cellID pgtype.UUID
@@ -308,15 +311,18 @@ func seedGames(ctx context.Context, q *generated.Queries, userIDs, sessionIDs, b
 				cellID = boardCellIDs[i]
 			}
 
-			params = append(params, generated.CreateGameCellsParams{
-				GameID:   game.ID,
-				CellID:   cellID,
-				Content:  gc.Content,
-				Position: gc.Position,
-			})
+			gameIDs = append(gameIDs, game.ID)
+			cellIDs = append(cellIDs, cellID)
+			contents = append(contents, gc.Content)
+			positions = append(positions, gc.Position)
 		}
 
-		_, err = q.CreateGameCells(ctx, params)
+		_, err = q.CreateGameCells(ctx, generated.CreateGameCellsParams{
+			GameIds:   gameIDs,
+			CellIds:   cellIDs,
+			Contents:  contents,
+			Positions: positions,
+		})
 		if err != nil {
 			return fmt.Errorf("creating game cells for game %d: %w", gameIdx, err)
 		}

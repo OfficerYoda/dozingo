@@ -11,11 +11,55 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const createGameCells = `-- name: CreateGameCells :many
+INSERT INTO game_cells (game_id, cell_id, content, position)
+SELECT
+    unnest($1::uuid[]),
+    unnest($2::uuid[]),
+    unnest($3::text[]),
+    unnest($4::int[])
+RETURNING id, game_id, cell_id, content, position, is_marked, created_at, updated_at
+`
+
 type CreateGameCellsParams struct {
-	GameID   pgtype.UUID `json:"game_id"`
-	CellID   pgtype.UUID `json:"cell_id"`
-	Content  string      `json:"content"`
-	Position int32       `json:"position"`
+	GameIds   []pgtype.UUID `json:"game_ids"`
+	CellIds   []pgtype.UUID `json:"cell_ids"`
+	Contents  []string      `json:"contents"`
+	Positions []int32       `json:"positions"`
+}
+
+func (q *Queries) CreateGameCells(ctx context.Context, arg CreateGameCellsParams) ([]GameCell, error) {
+	rows, err := q.db.Query(ctx, createGameCells,
+		arg.GameIds,
+		arg.CellIds,
+		arg.Contents,
+		arg.Positions,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GameCell{}
+	for rows.Next() {
+		var i GameCell
+		if err := rows.Scan(
+			&i.ID,
+			&i.GameID,
+			&i.CellID,
+			&i.Content,
+			&i.Position,
+			&i.IsMarked,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getGameCellsByGameID = `-- name: GetGameCellsByGameID :many

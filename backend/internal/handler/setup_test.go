@@ -74,14 +74,13 @@ func TestMain(m *testing.M) {
 
 	// New layering: repositories -> services -> handlers.
 	repos := repository.New(testPool)
+	txRunner := repository.NewTxRunner(testPool)
 	NewBoardsHandler(service.NewBoards(repos.Boards)).Register(apiGroup)
-
-	// Legacy registrars (to be migrated).
-	RegisterCells(apiGroup, testPool)
-	RegisterVotes(apiGroup, testPool)
-	RegisterGames(apiGroup, testPool)
-	RegisterGameCells(apiGroup, testPool)
-	RegisterAuth(apiGroup, testPool)
+	NewCellsHandler(service.NewCells(repos.Cells)).Register(apiGroup)
+	NewGameCellsHandler(service.NewGameCells(repos.GameCells)).Register(apiGroup)
+	NewGamesHandler(service.NewGames(repos.Games)).Register(apiGroup)
+	NewVotesHandler(service.NewVotes(repos.Votes)).Register(apiGroup)
+	NewAuthHandler(service.NewAuth(repos, txRunner, queries)).Register(apiGroup)
 
 	// Clean tables before running tests to ensure a fresh state
 	truncateAllTables()

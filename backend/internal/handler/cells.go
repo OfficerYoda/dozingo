@@ -5,9 +5,10 @@ import (
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
-	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/officeryoda/dozingo/internal/generated"
+	"github.com/officeryoda/dozingo/internal/pgmap"
+	"github.com/officeryoda/dozingo/internal/repository"
+	"github.com/officeryoda/dozingo/internal/service"
 	"github.com/officeryoda/dozingo/internal/types"
 )
 
@@ -59,20 +60,24 @@ type DeleteCellInput struct {
 	CellID  types.UUIDParam `path:"cell_id" format:"uuid"`
 }
 
-/// ===== Register =====
+/// ===== Handler =====
 
-func RegisterCells(api huma.API, pool *pgxpool.Pool) {
-	queries := generated.New(pool)
+type CellsHandler struct {
+	svc *service.Cells
+}
 
+func NewCellsHandler(svc *service.Cells) *CellsHandler {
+	return &CellsHandler{svc: svc}
+}
+
+func (h *CellsHandler) Register(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID: "get-cells-by-board-id",
 		Method:      http.MethodGet,
 		Path:        "/boards/{board_id}/cells",
 		Summary:     "Get all cells for a Board",
 		Tags:        []string{"Cells"},
-	}, func(ctx context.Context, input *GetCellsByBoardIDInput) (*GetCellsByBoardIDOutput, error) {
-		return getCellsByBoardID(ctx, queries, *input)
-	})
+	}, h.list)
 
 	huma.Register(api, huma.Operation{
 		OperationID: "create-cell",
@@ -80,9 +85,7 @@ func RegisterCells(api huma.API, pool *pgxpool.Pool) {
 		Path:        "/boards/{board_id}/cells",
 		Summary:     "Create a cell",
 		Tags:        []string{"Cells"},
-	}, func(ctx context.Context, input *CreateCellInput) (*CreateCellOutput, error) {
-		return createCell(ctx, queries, *input)
-	})
+	}, h.create)
 
 	huma.Register(api, huma.Operation{
 		OperationID: "update-cell",
@@ -90,9 +93,7 @@ func RegisterCells(api huma.API, pool *pgxpool.Pool) {
 		Path:        "/boards/{board_id}/cells/{cell_id}",
 		Summary:     "Update a cell",
 		Tags:        []string{"Cells"},
-	}, func(ctx context.Context, input *UpdateCellInput) (*UpdateCellOutput, error) {
-		return updateCell(ctx, queries, *input)
-	})
+	}, h.update)
 
 	huma.Register(api, huma.Operation{
 		OperationID: "delete-cell",
@@ -100,84 +101,55 @@ func RegisterCells(api huma.API, pool *pgxpool.Pool) {
 		Path:        "/boards/{board_id}/cells/{cell_id}",
 		Summary:     "Delete a cell",
 		Tags:        []string{"Cells"},
-	}, func(ctx context.Context, input *DeleteCellInput) (*struct{}, error) {
-		return deleteCell(ctx, queries, *input)
-	})
+	}, h.delete)
 }
 
-/// ===== Handlers =====
-
-func getCellsByBoardID(ctx context.Context, queries *generated.Queries, input GetCellsByBoardIDInput) (*GetCellsByBoardIDOutput, error) {
-	cells, err := queries.GetCellsByBoardID(ctx, input.BoardID.Value)
+func (h *CellsHandler) list(ctx context.Context, in *GetCellsByBoardIDInput) (*GetCellsByBoardIDOutput, error) {
+	cells, err := h.svc.ListByBoardID(ctx, in.BoardID.Value)
 	if err != nil {
-		return nil, internalError(err, "failed to get cells")
+		return nil, toHumaErr(err, "", "failed to list cells")
 	}
-
 	return &GetCellsByBoardIDOutput{Body: mapSlice(cells, cellToOutput)}, nil
 }
 
-func createCell(ctx context.Context, queries *generated.Queries, input CreateCellInput) (*CreateCellOutput, error) {
-	var value int32 = 1
-	if input.Body.Value != nil {
-		value = *input.Body.Value
-	}
-
-	board, err := queries.CreateCell(ctx, generated.CreateCellParams{
-		BoardID: input.BoardID.Value,
-		Content: input.Body.Content,
-		Value:   value,
+func (h *CellsHandler) create(ctx context.Context, in *CreateCellInput) (*CreateCellOutput, error) {
+	cell, err := h.svc.Create(ctx, service.CreateCellInput{
+		BoardID: in.BoardID.Value,
+		Content: in.Body.Content,
+		Value:   in.Body.Value,
 	})
 	if err != nil {
-		return nil, internalError(err, "failed to create cell")
+		return nil, toHumaErr(err, "", "failed to create cell")
 	}
-
-	return &CreateCellOutput{Body: cellToOutput(board)}, nil
+	return &CreateCellOutput{Body: cellToOutput(cell)}, nil
 }
 
-func updateCell(ctx context.Context, queries *generated.Queries, input UpdateCellInput) (*UpdateCellOutput, error) {
-	var content pgtype.Text
-	if input.Body.Content != nil {
-		content = pgtype.Text{String: *input.Body.Content, Valid: true}
-	}
-
-	var value pgtype.Int4
-	if input.Body.Value != nil {
-		value = pgtype.Int4{Int32: *input.Body.Value, Valid: true}
-	}
-
-	cell, err := queries.UpdateCell(ctx, generated.UpdateCellParams{
-		ID:      input.CellID.Value,
-		BoardID: input.BoardID.Value,
-		Content: content,
-		Value:   value,
+func (h *CellsHandler) update(ctx context.Context, in *UpdateCellInput) (*UpdateCellOutput, error) {
+	cell, err := h.svc.Update(ctx, repository.UpdateCellInput{
+		CellID:  in.CellID.Value,
+		BoardID: in.BoardID.Value,
+		Content: in.Body.Content,
+		Value:   in.Body.Value,
 	})
 	if err != nil {
-		return nil, notFoundOr500(err, "cell not found on this board", "failed to update cell")
+		return nil, toHumaErr(err, "cell not found on this board", "failed to update cell")
 	}
-
 	return &UpdateCellOutput{Body: cellToOutput(cell)}, nil
 }
 
-func deleteCell(ctx context.Context, queries *generated.Queries, input DeleteCellInput) (*struct{}, error) {
-	_, err := queries.DeleteCell(ctx, generated.DeleteCellParams{
-		ID:      input.CellID.Value,
-		BoardID: input.BoardID.Value,
-	})
-	if err != nil {
-		return nil, notFoundOr500(err, "cell not found on this board", "failed to delete cell")
+func (h *CellsHandler) delete(ctx context.Context, in *DeleteCellInput) (*struct{}, error) {
+	if err := h.svc.Delete(ctx, in.CellID.Value, in.BoardID.Value); err != nil {
+		return nil, toHumaErr(err, "cell not found on this board", "failed to delete cell")
 	}
-
 	return &struct{}{}, nil
 }
-
-/// ===== Helper =====
 
 func cellToOutput(cell generated.Cell) CellOutput {
 	return CellOutput{
 		CellID:   cell.ID.String(),
 		BoardID:  cell.BoardID.String(),
 		Content:  cell.Content,
-		AuthorID: stringFromPgUUID(cell.AuthorID),
+		AuthorID: pgmap.StringFromPgUUID(cell.AuthorID),
 		Value:    cell.Value,
 	}
 }

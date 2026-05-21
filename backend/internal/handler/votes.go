@@ -5,8 +5,9 @@ import (
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/officeryoda/dozingo/internal/generated"
+	"github.com/officeryoda/dozingo/internal/repository"
+	"github.com/officeryoda/dozingo/internal/service"
 	"github.com/officeryoda/dozingo/internal/types"
 )
 
@@ -49,20 +50,24 @@ type DeleteVoteInput struct {
 	BoardID types.UUIDParam `path:"board_id" format:"uuid"`
 }
 
-/// ===== Register =====
+/// ===== Handler =====
 
-func RegisterVotes(api huma.API, pool *pgxpool.Pool) {
-	queries := generated.New(pool)
+type VotesHandler struct {
+	svc *service.Votes
+}
 
+func NewVotesHandler(svc *service.Votes) *VotesHandler {
+	return &VotesHandler{svc: svc}
+}
+
+func (h *VotesHandler) Register(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID: "get-votes-by-board-id",
 		Method:      http.MethodGet,
 		Path:        "/boards/{board_id}/vote",
 		Summary:     "Get all votes for a Board",
 		Tags:        []string{"Votes"},
-	}, func(ctx context.Context, input *GetVotesByBoardIDInput) (*GetVotesByBoardIDOutput, error) {
-		return getVotesByBoardID(ctx, queries, *input)
-	})
+	}, h.get)
 
 	huma.Register(api, huma.Operation{
 		OperationID: "upsert-vote",
@@ -71,9 +76,7 @@ func RegisterVotes(api huma.API, pool *pgxpool.Pool) {
 		Summary:     "Upsert a vote",
 		Description: "Update or Create a vote",
 		Tags:        []string{"Votes"},
-	}, func(ctx context.Context, input *UpsertVoteInput) (*UpsertVoteOutput, error) {
-		return upsertVote(ctx, queries, *input)
-	})
+	}, h.upsert)
 
 	huma.Register(api, huma.Operation{
 		OperationID: "delete-vote",
@@ -81,26 +84,21 @@ func RegisterVotes(api huma.API, pool *pgxpool.Pool) {
 		Path:        "/boards/{board_id}/vote",
 		Summary:     "Delete a vote",
 		Tags:        []string{"Votes"},
-	}, func(ctx context.Context, input *DeleteVoteInput) (*struct{}, error) {
-		return deleteVote(ctx, queries, *input)
-	})
+	}, h.delete)
 }
 
-/// ===== Handlers =====
-
-func getVotesByBoardID(ctx context.Context, queries *generated.Queries, input GetVotesByBoardIDInput) (*GetVotesByBoardIDOutput, error) {
-	votes, err := queries.GetVotesByBoardID(ctx, generated.GetVotesByBoardIDParams{
-		UserID:  input.UserID.Value,
-		BoardID: input.BoardID.Value,
+func (h *VotesHandler) get(ctx context.Context, in *GetVotesByBoardIDInput) (*GetVotesByBoardIDOutput, error) {
+	votes, err := h.svc.GetAggregateByBoardID(ctx, repository.GetVotesAggregateInput{
+		BoardID: in.BoardID.Value,
+		UserID:  in.UserID.Value,
 	})
 	if err != nil {
-		return nil, internalError(err, "failed to get votes")
+		return nil, toHumaErr(err, "", "failed to get votes")
 	}
 
 	out := &GetVotesByBoardIDOutput{}
 	out.Body.Score = votes.Score
 	out.Body.VoteCount = votes.VoteCount
-	// only return a user vote value when the user actually voted
 	var userVotePtr *int32
 	if votes.UserVote != 0 {
 		userVotePtr = &votes.UserVote
@@ -110,32 +108,27 @@ func getVotesByBoardID(ctx context.Context, queries *generated.Queries, input Ge
 	return out, nil
 }
 
-func upsertVote(ctx context.Context, queries *generated.Queries, input UpsertVoteInput) (*UpsertVoteOutput, error) {
-	board, err := queries.UpsertVote(ctx, generated.UpsertVoteParams{
-		UserID:    input.UserID.Value,
-		BoardID:   input.BoardID.Value,
-		VoteValue: input.Body.VoteValue,
+func (h *VotesHandler) upsert(ctx context.Context, in *UpsertVoteInput) (*UpsertVoteOutput, error) {
+	vote, err := h.svc.Upsert(ctx, repository.UpsertVoteInput{
+		UserID:    in.UserID.Value,
+		BoardID:   in.BoardID.Value,
+		VoteValue: in.Body.VoteValue,
 	})
 	if err != nil {
-		return nil, internalError(err, "failed to upsert vote")
+		return nil, toHumaErr(err, "", "failed to upsert vote")
 	}
-
-	return &UpsertVoteOutput{Body: voteToOutput(board)}, nil
+	return &UpsertVoteOutput{Body: voteToOutput(vote)}, nil
 }
 
-func deleteVote(ctx context.Context, queries *generated.Queries, input DeleteVoteInput) (*struct{}, error) {
-	_, err := queries.DeleteVote(ctx, generated.DeleteVoteParams{
-		UserID:  input.UserID.Value,
-		BoardID: input.BoardID.Value,
-	})
-	if err != nil {
-		return nil, notFoundOr500(err, "vote not found on this board", "failed to delete vote")
+func (h *VotesHandler) delete(ctx context.Context, in *DeleteVoteInput) (*struct{}, error) {
+	if err := h.svc.Delete(ctx, repository.DeleteVoteInput{
+		UserID:  in.UserID.Value,
+		BoardID: in.BoardID.Value,
+	}); err != nil {
+		return nil, toHumaErr(err, "vote not found on this board", "failed to delete vote")
 	}
-
 	return &struct{}{}, nil
 }
-
-/// ===== Helper =====
 
 func voteToOutput(vote generated.Vote) VoteOutput {
 	return VoteOutput{

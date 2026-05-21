@@ -11,7 +11,7 @@ RETURNING *;
 UPDATE cells
 SET content = COALESCE(sqlc.narg('content'), content),
     value = COALESCE(sqlc.narg('value'), value)
-WHERE id = sqlc.arg('id') AND board_id = sqlc.arg('board_id')
+WHERE id = sqlc.arg('cell_id') AND board_id = sqlc.arg('board_id')
 RETURNING *;
 
 -- name: DeleteCell :one

@@ -5,8 +5,10 @@ import (
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/officeryoda/dozingo/internal/generated"
+	"github.com/officeryoda/dozingo/internal/pgmap"
+	"github.com/officeryoda/dozingo/internal/repository"
+	"github.com/officeryoda/dozingo/internal/service"
 	"github.com/officeryoda/dozingo/internal/types"
 )
 
@@ -54,20 +56,24 @@ type UpdateGameCellMarkOutput struct {
 	Body GameCellOutput
 }
 
-/// ===== Register =====
+/// ===== Handler =====
 
-func RegisterGameCells(api huma.API, pool *pgxpool.Pool) {
-	queries := generated.New(pool)
+type GameCellsHandler struct {
+	svc *service.GameCells
+}
 
+func NewGameCellsHandler(svc *service.GameCells) *GameCellsHandler {
+	return &GameCellsHandler{svc: svc}
+}
+
+func (h *GameCellsHandler) Register(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID: "get-game-cells-by-game-id",
 		Method:      http.MethodGet,
 		Path:        "/games/{game_id}/cells",
 		Summary:     "Get all cells for a game",
 		Tags:        []string{"Game Cells"},
-	}, func(ctx context.Context, input *GetGameCellsByGameIDInput) (*GetGameCellsByGameIDOutput, error) {
-		return getGameCellsByGameID(ctx, queries, *input)
-	})
+	}, h.list)
 
 	huma.Register(api, huma.Operation{
 		OperationID: "create-game-cells",
@@ -75,9 +81,7 @@ func RegisterGameCells(api huma.API, pool *pgxpool.Pool) {
 		Path:        "/games/{game_id}/cells",
 		Summary:     "Bulk create game cells",
 		Tags:        []string{"Game Cells"},
-	}, func(ctx context.Context, input *CreateGameCellsInput) (*CreateGameCellsOutput, error) {
-		return createGameCells(ctx, queries, *input)
-	})
+	}, h.create)
 
 	huma.Register(api, huma.Operation{
 		OperationID: "update-game-cell-mark",
@@ -85,67 +89,54 @@ func RegisterGameCells(api huma.API, pool *pgxpool.Pool) {
 		Path:        "/games/{game_id}/cells/{game_cell_id}",
 		Summary:     "Update game cell mark",
 		Tags:        []string{"Game Cells"},
-	}, func(ctx context.Context, input *UpdateGameCellMarkInput) (*UpdateGameCellMarkOutput, error) {
-		return updateGameCellMark(ctx, queries, *input)
-	})
+	}, h.updateMark)
 }
 
-/// ===== Handlers =====
-
-func getGameCellsByGameID(ctx context.Context, queries *generated.Queries, input GetGameCellsByGameIDInput) (*GetGameCellsByGameIDOutput, error) {
-	cells, err := queries.GetGameCellsByGameID(ctx, input.GameID.Value)
+func (h *GameCellsHandler) list(ctx context.Context, in *GetGameCellsByGameIDInput) (*GetGameCellsByGameIDOutput, error) {
+	cells, err := h.svc.ListByGameID(ctx, in.GameID.Value)
 	if err != nil {
-		return nil, internalError(err, "failed to get game cells")
+		return nil, toHumaErr(err, "", "failed to get game cells")
 	}
-
 	return &GetGameCellsByGameIDOutput{Body: mapSlice(cells, gameCellToOutput)}, nil
 }
 
-func createGameCells(ctx context.Context, queries *generated.Queries, input CreateGameCellsInput) (*CreateGameCellsOutput, error) {
-	params := make([]generated.CreateGameCellsParams, 0, len(input.Body))
-	for _, c := range input.Body {
-		params = append(params, generated.CreateGameCellsParams{
-			GameID:   input.GameID.Value,
+func (h *GameCellsHandler) create(ctx context.Context, in *CreateGameCellsInput) (*CreateGameCellsOutput, error) {
+	items := make([]repository.CreateGameCellItem, 0, len(in.Body))
+	for _, c := range in.Body {
+		items = append(items, repository.CreateGameCellItem{
 			CellID:   c.CellID.Value,
 			Content:  c.Content,
 			Position: c.Position,
 		})
 	}
 
-	_, err := queries.CreateGameCells(ctx, params)
+	cells, err := h.svc.Create(ctx, repository.CreateGameCellsInput{
+		GameID: in.GameID.Value,
+		Items:  items,
+	})
 	if err != nil {
-		return nil, internalError(err, "failed to create game cells")
+		return nil, toHumaErr(err, "", "failed to create game cells")
 	}
-
-	// Fetch the newly created cells to return them
-	cells, err := queries.GetGameCellsByGameID(ctx, input.GameID.Value)
-	if err != nil {
-		return nil, internalError(err, "failed to fetch game cells")
-	}
-
 	return &CreateGameCellsOutput{Body: mapSlice(cells, gameCellToOutput)}, nil
 }
 
-func updateGameCellMark(ctx context.Context, queries *generated.Queries, input UpdateGameCellMarkInput) (*UpdateGameCellMarkOutput, error) {
-	cell, err := queries.UpdateGameCellMark(ctx, generated.UpdateGameCellMarkParams{
-		IsMarked: input.Body.IsMarked,
-		ID:       input.GameCellID.Value,
-		GameID:   input.GameID.Value,
+func (h *GameCellsHandler) updateMark(ctx context.Context, in *UpdateGameCellMarkInput) (*UpdateGameCellMarkOutput, error) {
+	cell, err := h.svc.UpdateMark(ctx, repository.UpdateGameCellMarkInput{
+		GameCellID: in.GameCellID.Value,
+		GameID:     in.GameID.Value,
+		IsMarked:   in.Body.IsMarked,
 	})
 	if err != nil {
-		return nil, notFoundOr500(err, "game cell not found", "failed to update game cell")
+		return nil, toHumaErr(err, "game cell not found", "failed to update game cell")
 	}
-
 	return &UpdateGameCellMarkOutput{Body: gameCellToOutput(cell)}, nil
 }
-
-/// ===== Helper =====
 
 func gameCellToOutput(cell generated.GameCell) GameCellOutput {
 	return GameCellOutput{
 		GameCellID: cell.ID.String(),
 		GameID:     cell.GameID.String(),
-		CellID:     stringFromPgUUID(cell.CellID),
+		CellID:     pgmap.StringFromPgUUID(cell.CellID),
 		Content:    cell.Content,
 		Position:   cell.Position,
 		IsMarked:   cell.IsMarked,
