@@ -25,7 +25,7 @@ function closeMenu(){
         <nav>
           <ul>
             <li><RouterLink to="/" class="sidebar-buttons upper-buttons"><Home :size="20" />{{ $t('nav.home') }}</RouterLink></li>
-            <li><RouterLink to="/cardeditor" class="sidebar-buttons upper-buttons"><SquarePen :size="20"/>Card Editor</RouterLink></li>
+            <li><RouterLink to="/cardeditor" class="sidebar-buttons upper-buttons"><SquarePen :size="20"/>{{ $t('nav.cardEditor') }}</RouterLink></li>
             <li><RouterLink to="/components" class="sidebar-buttons upper-buttons"><Computer :size="20"/>Components(only for dev)</RouterLink></li>
           </ul>
         </nav>
@@ -65,9 +65,9 @@ function closeMenu(){
         <RouterView />
       </main>
 
-      <footer>
-        &#169 DOZINGO - Alle Rechte vorbehalten
-      </footer>
+        <footer>
+          {{ $t('footer.copyright') }}
+        </footer>
 
       <div class="disable-layer" id="disable-layer" @click="closeMenu"></div>
     </div>

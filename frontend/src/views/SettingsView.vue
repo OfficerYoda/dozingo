@@ -4,33 +4,33 @@
       <article class="card col-6 md-12">
         <div class="account-security-title">
           <ShieldUser :size="30" />
-          <h2 class="mb-0">Account Security</h2>
+          <h2 class="mb-0">{{ $t('settings.security.title') }}</h2>
         </div>
 
-        <span class="account-security-subtitle">Authentication</span>
+        <span class="account-security-subtitle">{{ $t('settings.security.subtitle') }}</span>
 
         <div class="highlighedcard">
           <Smartphone :size="23" />
           <div class="account-security-info">
-            <span>2FA Security</span>
-            <small>Currently Disabled</small>
+            <span>{{ $t('settings.security.twoFa') }}</span>
+            <small>{{ $t('settings.security.disabled') }}</small>
           </div>
-          <button class="btn btn-primary">Enable</button>
+          <button class="btn btn-primary">{{ $t('settings.security.enable') }}</button>
         </div>
 
         <div class="highlighedcard">
           <Key :size="23" />
           <div class="account-security-info">
-            <span>Last password change</span>
+            <span>{{ $t('settings.security.lastPasswordChange') }}</span>
             <small>3 Months ago</small>
           </div>
-          <button class="btn btn-primary">Change</button>
+          <button class="btn btn-primary">{{ $t('settings.security.change') }}</button>
         </div>
 
         <div class="display-darkmode">
           <div class="display-darkmode-info">
-            <span>Login-Notifiaction</span>
-            <small>Get notification for each login</small>
+            <span>{{ $t('settings.security.loginNotification') }}</span>
+            <small>{{ $t('settings.security.loginNotificationDesc') }}</small>
           </div>
           <label class="toggle">
             <input type="checkbox" id="btnToggle" name="btnToggle" />
@@ -42,44 +42,44 @@
       <article class="card col-6 md-12">
         <div class="display-title">
           <Palette :size="30" />
-          <h2 class="mb-0">Display</h2>
+          <h2 class="mb-0">{{ $t('settings.display.title') }}</h2>
         </div>
 
-        <span class="account-security-subtitle">Appearance</span>
+        <span class="account-security-subtitle">{{ $t('settings.display.subtitle') }}</span>
 
         <div class="display-darkmode">
           <div class="display-darkmode-info">
-            <span>Dark-Mode</span>
-            <small>Adjust for night study</small>
+            <span>{{ $t('settings.display.darkMode') }}</span>
+            <small>{{ $t('settings.display.darkModeDesc') }}</small>
           </div>
           <label class="toggle">
-            <input type="checkbox" id="btnToggle" name="btnToggle" v-model="isChecked" @change="changeDarkMode"/>
+            <input type="checkbox" id="btnDarkToggle" name="btnDarkToggle" v-model="isChecked" @change="changeDarkMode"/>
             <span class="slider"></span>
           </label>
         </div>
 
         <div class="display-darkmode">
           <div class="display-darkmode-info">
-            <span>Color-Correction</span>
-            <small>Adapt the colors correction</small>
+            <span>{{ $t('settings.display.colorCorrection') }}</span>
+            <small>{{ $t('settings.display.colorCorrectionDesc') }}</small>
           </div>
           <div class="dropdown">
-            <button href="" className="btn btn-secondary dropdown-button">Color-Theme</button>
+            <button class="btn btn-secondary dropdown-button">{{ $t('settings.display.colorTheme') }}</button>
             <ul class="dropdown-menu">
-              <li>Rot-Grün</li>
-              <li>Blau-Gelb</li>
-              <li>Graustufen</li>
+              <li>{{ $t('settings.display.colorFilters.redGreen') }}</li>
+              <li>{{ $t('settings.display.colorFilters.blueYellow') }}</li>
+              <li>{{ $t('settings.display.colorFilters.grayscale') }}</li>
             </ul>
           </div>
         </div>
 
         <div class="display-fontsize">
-          <small class="display-fontsize-title">Font size adjustment</small>
+          <small class="display-fontsize-title">{{ $t('settings.display.fontSize') }}</small>
           <input class="sliderreal" type="range" min="1" max="5" value="3" step="1">
           <div class="display-fontsize-texts">
-            <small>Small</small>
-            <small>Standart</small>
-            <small>Large</small>
+            <small>{{ $t('settings.display.small') }}</small>
+            <small>{{ $t('settings.display.standard') }}</small>
+            <small>{{ $t('settings.display.large') }}</small>
           </div>
         </div>
 
@@ -87,10 +87,10 @@
 
       <article class="card deactivateaccount col-12">
         <div class="deactivateaccount-title">
-          <h2 class="mb-0">Deactive Account</h2>
-          <small>Temporarily hide your profile and rankings from the playground.</small>
+          <h2 class="mb-0">{{ $t('settings.account.deactivate') }}</h2>
+          <small>{{ $t('settings.account.deactivateDesc') }}</small>
         </div>
-        <button class="btn btn-danger deactivateaccount-btn">Deactivate</button>
+        <button class="btn btn-danger deactivateaccount-btn">{{ $t('settings.account.deactivateBtn') }}</button>
       </article>
     </div>
   </section>
@@ -98,7 +98,10 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { ShieldUser, Key, Smartphone, Palette } from 'lucide-vue-next';
+
+useI18n()
 
 const isChecked = ref(document.documentElement.getAttribute('data-theme') === 'dark')
 
@@ -269,7 +272,6 @@ input[type=range]::-webkit-slider-thumb {
 .sliderreal {
   padding-top: 16px;
 }
-
 
 
 

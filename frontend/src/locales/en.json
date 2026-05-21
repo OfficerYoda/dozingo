@@ -4,7 +4,11 @@
     "about": "About",
     "settings": "Settings",
     "profile": "Profile",
-    "signOut": "Sign Out"
+    "signOut": "Sign Out",
+    "cardEditor": "Card Editor"
+  },
+  "footer": {
+    "copyright": "© DOZINGO - All rights reserved"
   },
   "settings": {
     "title": "Settings",
@@ -12,15 +16,26 @@
       "title": "Account Security",
       "subtitle": "Authentication",
       "twoFa": "2FA Security",
+      "disabled": "Currently Disabled",
       "enable": "Enable",
       "lastPasswordChange": "Last password change",
-      "change": "Change"
+      "change": "Change",
+      "loginNotification": "Login Notification",
+      "loginNotificationDesc": "Get notified for each login"
     },
     "display": {
       "title": "Display",
       "subtitle": "Appearance",
       "darkMode": "Dark Mode",
       "darkModeDesc": "Adjust for night study",
+      "colorCorrection": "Color Correction",
+      "colorCorrectionDesc": "Adjust colors for visual impairments",
+      "colorTheme": "Color Theme",
+      "colorFilters": {
+        "redGreen": "Red-Green",
+        "blueYellow": "Blue-Yellow",
+        "grayscale": "Grayscale"
+      },
       "fontSize": "Font size adjustment",
       "small": "Small",
       "standard": "Standard",
@@ -28,7 +43,28 @@
     },
     "account": {
       "deactivate": "Deactivate Account",
-      "deactivateDesc": "Temporarily hide your profile and rankings from the playground."
+      "deactivateDesc": "Temporarily hide your profile and rankings from the playground.",
+      "deactivateBtn": "Deactivate"
+    }
+  },
+  "cardEditor": {
+    "title": "Create a new board",
+    "sessionTitle": "Session title",
+    "titlePlaceholder": "e.g. Introduction to Game Theory",
+    "layoutSelection": "Layout selection",
+    "description": "Description",
+    "descriptionPlaceholder": "Briefly describe the theme of this bingo session",
+    "entries": "Session entries",
+    "addRow": "Add entry",
+    "termColumn": "Quote / Term",
+    "rarityColumn": "Rarity",
+    "termPlaceholder": "Enter quote or term",
+    "save": "Save board to your templates",
+    "rarity": {
+      "common": "Common",
+      "uncommon": "Rare",
+      "rare": "Epic",
+      "legendary": "Legendary"
     }
   }
 }

@@ -4,17 +4,17 @@
       <article class="card">
         <div class="card-header mb-3">
           <FilePlus :size="27" />
-          <h2 class="mb-0">Create a new board</h2>
+          <h2 class="mb-0">{{ $t('cardEditor.title') }}</h2>
         </div>
 
         <div class="form-top mb-3">
           <div class="form-title">
-            <h3>Session title</h3>
-            <input type="text" class="form-input title-input" placeholder="e.g. Introduction to Game Theory">
+            <h3>{{ $t('cardEditor.sessionTitle') }}</h3>
+            <input type="text" class="form-input title-input" :placeholder="$t('cardEditor.titlePlaceholder')">
           </div>
 
           <div class="form-boardsize">
-            <h3>Layout selection</h3>
+            <h3>{{ $t('cardEditor.layoutSelection') }}</h3>
             <div role="radiogroup" class="layout-options">
               <button :class="['btn', selectedSize === '3x3' ? 'btn-primary' : 'btn-secondary']" @click="selectedSize = '3x3'">3x3</button>
               <button :class="['btn', selectedSize === '4x4' ? 'btn-primary' : 'btn-secondary']" @click="selectedSize = '4x4'">4x4</button>
@@ -24,28 +24,28 @@
         </div>
 
         <div class="form-description mb-3">
-          <h3>Description</h3>
+          <h3>{{ $t('cardEditor.description') }}</h3>
           <input type="text" class="form-input description-input"
-            placeholder="Briefly describe the theme of this bingo session">
+            :placeholder="$t('cardEditor.descriptionPlaceholder')">
         </div>
 
         <div class="form-entries mb-3">
           <div class="entries-header mb-3">
             <div>
-              <h3 class="mb-0">Session entries</h3>
+              <h3 class="mb-0">{{ $t('cardEditor.entries') }}</h3>
               <small class="entry-count-hint">8 entries added. You need 17 more for a 5x5 layout.</small>
             </div>
             <button class="btn btn-secondary add-entry-btn" @click="addRow">
               <CirclePlus :size="20" />
-              <p class="mb-0">Add new row</p>
+              <p class="mb-0">{{ $t('cardEditor.addRow') }}</p>
             </button>
           </div>
 
           <table class="entries-table">
             <thead>
               <tr class="table-header">
-                <th class="col-term">Quote / Term</th>
-                <th class="col-rarity">Rarity</th>
+                <th class="col-term">{{ $t('cardEditor.termColumn') }}</th>
+                <th class="col-rarity">{{ $t('cardEditor.rarityColumn') }}</th>
                 <th class="col-delete"></th>
               </tr>
             </thead>
@@ -53,14 +53,14 @@
             <tbody>
               <tr v-for="(entry, index) in entries" :key="index">
                 <td class="td-term">
-                  <input type="text" class="entry-term-input" v-model="entry.term" placeholder="Enter quote or term" />
+                  <input type="text" class="entry-term-input" v-model="entry.term" :placeholder="$t('cardEditor.termPlaceholder')" />
                 </td>
                 <td class="td-rarity">
                   <select class="entry-select" v-model="entry.rarity">
-                    <option value="common">Common</option>
-                    <option value="uncommon">Rare</option>
-                    <option value="rare">Epic</option>
-                    <option value="legendary">Legendary</option>
+                    <option value="common">{{ $t('cardEditor.rarity.common') }}</option>
+                    <option value="uncommon">{{ $t('cardEditor.rarity.uncommon') }}</option>
+                    <option value="rare">{{ $t('cardEditor.rarity.rare') }}</option>
+                    <option value="legendary">{{ $t('cardEditor.rarity.legendary') }}</option>
                   </select>
                 </td>
                 <td class="td-delete">
@@ -74,7 +74,7 @@
         </div>
 
         <div class="save-btn-row">
-          <button class="btn btn-primary">Save board to your templates</button>
+          <button class="btn btn-primary">{{ $t('cardEditor.save') }}</button>
         </div>
       </article>
     </div>
@@ -83,7 +83,10 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { FilePlus, CirclePlus, Trash2 } from 'lucide-vue-next';
+
+useI18n()
 
 interface Entry {
   term: string
