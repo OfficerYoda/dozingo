@@ -30,14 +30,51 @@
         </div>
 
         <div class="thirdrow">
+          <div class="headerthirdrow">
           <div>
           <h3 class="mb-0">Session entries</h3>
           <small class="additional-info-cells">8 entries added. You need 17 more for a 5x5 layout.</small>
           </div>
-          <button class="btn btn-secondary add-row-button">
+          <button class="btn btn-secondary add-row-button" @click="addRow">
             <CirclePlus :size="20" />
             <p class="mb-0">Add new row</p>
           </button>
+          </div>
+
+          <table class="entries-table">
+            <thead>
+              <tr>
+                <th>Quote / Term</th>
+                <th>Rarity</th>
+                <th></th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <tr v-for="(entry, index) in entries" :key="index">
+                <td>
+                  <input
+                    type="text"
+                    class="inputfield entry-input"
+                    v-model="entry.term"
+                    placeholder="Enter quote or term"
+                  />
+                </td>
+                <td>
+                  <select class="inputfield entry-select" v-model="entry.rarity">
+                    <option value="common">Common</option>
+                    <option value="uncommon">Uncommon</option>
+                    <option value="rare">Rare</option>
+                  </select>
+                </td>
+                <td>
+                  <button class="btn-icon" @click="removeRow(index)">
+                    <Trash2 :size="16" />
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </article>
     </div>
@@ -45,8 +82,23 @@
 </template>
 
 <script setup lang="ts">
-import { } from 'lucide-vue-next';
-import { FilePlus, CirclePlus } from 'lucide-vue-next';
+import { ref } from 'vue';
+import { FilePlus, CirclePlus, Trash2 } from 'lucide-vue-next';
+
+interface Entry {
+  term: string
+  rarity: string
+}
+
+const entries = ref<Entry[]>([{ term: '', rarity: 'common' },{ term: '', rarity: 'common' },{ term: '', rarity: 'common' }])
+
+function addRow() {
+  entries.value.push({ term: '', rarity: 'common' })
+}
+
+function removeRow(index: number) {
+  entries.value.splice(index, 1)
+}
 </script>
 
 <style scoped>
@@ -119,7 +171,7 @@ h3 {
   align-items: center;
 }
 
-.thirdrow {
+.headerthirdrow {
   display: flex;
   justify-content: space-between;
 }
