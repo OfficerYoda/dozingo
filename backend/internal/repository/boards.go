@@ -40,7 +40,7 @@ func (r *Boards) List(ctx context.Context, f BoardListFilter) ([]generated.Board
 	if f.AuthorID != "" {
 		var authorUUID pgtype.UUID
 		if err := authorUUID.Scan(f.AuthorID); err != nil {
-			return nil, fmt.Errorf("invalid author_id: %w", domain.ErrInvalid)
+			return nil, fmt.Errorf("invalid author_id: %w", domain.ErrBadInput)
 		}
 		fmt.Fprintf(&query, " AND author_id = $%d", i)
 		args = append(args, authorUUID)

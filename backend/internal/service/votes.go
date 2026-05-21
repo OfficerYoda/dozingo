@@ -27,7 +27,7 @@ func (s *Votes) Upsert(ctx context.Context, in repository.UpsertVoteInput) (gene
 	}
 
 	if in.VoteValue != -1 && in.VoteValue != 1 {
-		return generated.Vote{}, domain.ErrUnprocessableEntity
+		return generated.Vote{}, fmt.Errorf("invalid vote_value: %w", domain.ErrUnprocessableEntity)
 	}
 	// TODO(authz): once handlers pass the session, verify in.UserID matches
 	// the authenticated user.
