@@ -2,12 +2,12 @@
   <section>
     <div class="container">
       <article className="card">
-        <div class="header">
+        <div class="header mb-3">
           <FilePlus :size="27" />
           <h2 class="mb-0">Create a new board</h2>
         </div>
 
-        <div class="firstrow">
+        <div class="firstrow mb-3">
           <div class="title">
             <h3>Session title</h3>
             <input type="text" class="inputfield inputfield-title" placeholder="e.g. Intoduction to Game Theory">
@@ -23,15 +23,16 @@
           </div>
         </div>
 
-        <div class="secondrow">
+        <div class="secondrow mb-3">
           <h3>Description</h3>
-          <input type="text" class="inputfield describtion-input" placeholder="Briefly describe the theme of this bingo session">
+          <input type="text" class="inputfield describtion-input"
+            placeholder="Briefly describe the theme of this bingo session">
         </div>
 
         <div class="thirdrow">
           <h3>Session entries</h3>
           <small>8 entries added. You need 17 more for a 5x5 layout.</small>
-          <button>
+          <button class="btn btn-secondary add-row-button">
             <CirclePlus :size="20" />
             <p>Add new row</p>
           </button>
@@ -54,6 +55,20 @@ import { FilePlus, CirclePlus } from 'lucide-vue-next';
   gap: 10px;
 }
 
+h2 {
+  color: #2C2A51;
+}
+
+.header svg {
+  color: #2C2A51;
+}
+
+h3 {
+  color: #5A5781;
+  font-weight: 300;
+  font-size: 1.25rem;
+}
+
 .firstrow {
   display: flex;
   flex-direction: row;
@@ -62,24 +77,26 @@ import { FilePlus, CirclePlus } from 'lucide-vue-next';
 
 .layout-options {
   display: flex;
-  gap: 8px;
+  gap: 10px;
 }
 
 .layout-options .btn {
   flex: 1;
 }
 
-
 .title {
-    width: 50%;
+  width: 50%;
+  padding-right: 5px;
 }
 
 .boardsize {
   width: 50%;
+  padding-left: 5px;
 }
 
-.inputfield-title{
+.inputfield-title {
   width: 100%;
+  height: 40px;
 }
 
 .inputfield {
@@ -93,10 +110,13 @@ import { FilePlus, CirclePlus } from 'lucide-vue-next';
   height: 80px;
 }
 
-input::-webkit-input-placeholder { 
-  position:absolute;
+.add-row-button {
+  
+}
+
+input::-webkit-input-placeholder {
+  position: absolute;
   left: 5px;
   top: 5px;
 }
-
 </style>
