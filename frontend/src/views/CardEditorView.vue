@@ -46,7 +46,7 @@
               <tr class="table-header">
                 <th class="col-term">Quote / Term</th>
                 <th class="col-rarity">Rarity</th>
-                <th class="col-delete">Delete</th>
+                <th class="col-delete"></th>
               </tr>
             </thead>
 
@@ -60,7 +60,7 @@
                     <option value="common">Common</option>
                     <option value="uncommon">Rare</option>
                     <option value="rare">Epic</option>
-                    <option value="rare">Legendary</option>
+                    <option value="legendary">Legendary</option>
                   </select>
                 </td>
                 <td class="td-delete">
