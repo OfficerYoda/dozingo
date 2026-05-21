@@ -30,11 +30,13 @@
         </div>
 
         <div class="thirdrow">
-          <h3>Session entries</h3>
-          <small>8 entries added. You need 17 more for a 5x5 layout.</small>
+          <div>
+          <h3 class="mb-0">Session entries</h3>
+          <small class="additional-info-cells">8 entries added. You need 17 more for a 5x5 layout.</small>
+          </div>
           <button class="btn btn-secondary add-row-button">
             <CirclePlus :size="20" />
-            <p>Add new row</p>
+            <p class="mb-0">Add new row</p>
           </button>
         </div>
       </article>
@@ -111,12 +113,25 @@ h3 {
 }
 
 .add-row-button {
-  
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  align-items: center;
+}
+
+.thirdrow {
+  display: flex;
+  justify-content: space-between;
 }
 
 input::-webkit-input-placeholder {
   position: absolute;
   left: 5px;
   top: 5px;
+}
+
+.additional-info-cells {
+  color: var(--color-accent-red);
+  font-weight: 500;
 }
 </style>
