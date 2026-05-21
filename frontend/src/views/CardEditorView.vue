@@ -41,18 +41,18 @@
           </button>
           </div>
 
-          <table class="entries-table">
+          <table class="entries-table tableheader">
             <thead>
-              <tr>
-                <th>Quote / Term</th>
-                <th>Rarity</th>
-                <th></th>
+              <tr >
+                <th class="table-quote">Quote / Term</th>
+                <th class="table-rarity">Rarity</th>
+                <th class="table-delete">Löschen</th>
               </tr>
             </thead>
 
             <tbody>
               <tr v-for="(entry, index) in entries" :key="index">
-                <td>
+                <td class="table-td-input">
                   <input
                     type="text"
                     class="inputfield entry-input"
@@ -60,14 +60,14 @@
                     placeholder="Enter quote or term"
                   />
                 </td>
-                <td>
+                <td class="table-td-select">
                   <select class="inputfield entry-select" v-model="entry.rarity">
                     <option value="common">Common</option>
                     <option value="uncommon">Uncommon</option>
                     <option value="rare">Rare</option>
                   </select>
                 </td>
-                <td>
+                <td class="table-td-button">
                   <button class="btn-icon" @click="removeRow(index)">
                     <Trash2 :size="16" />
                   </button>
@@ -107,6 +107,56 @@ function removeRow(index: number) {
   flex-direction: row;
   align-items: center;
   gap: 10px;
+}
+
+.entry-input {
+  width: 100%;
+}
+
+.entry-select {
+  width: 100%;
+}
+
+.table-quote{
+  width: 60%;
+}
+
+.table-rarity {
+  width: 20%;
+}
+
+.table-delete {
+  width: 5%;
+  text-align: center;
+}
+
+.table-td-button {
+  text-align: center;
+}
+
+.table-td-input {
+  padding-right: 5px;
+}
+
+
+.table-td-select {
+  padding-left: 5px;
+}
+
+.tableheader {
+  background-color:#E3DFFF;
+
+  border: 1px solid #6B7280;
+  border-radius: var(--radius-sm);
+
+}
+
+
+
+.entries-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
 }
 
 h2 {
