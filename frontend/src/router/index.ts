@@ -1,7 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
 import HomeView from '@/views/HomeView.vue'
-import AboutView from '@/views/AboutView.vue'
 import SettingsView from '@/views/SettingsView.vue'
 import ProfileView from '@/views/ProfileView.vue'
 import ComponentsView from '@/views/ComponentsView.vue'
@@ -9,7 +8,6 @@ import CardEditorView from '@/views/CardEditorView.vue'
 
 const routes = [
   { path: '/', name: 'home', component: HomeView },
-  { path: '/about', name: 'about', component: AboutView },
   { path: '/settings', name: 'settings', component: SettingsView },
   { path: '/profile', name: 'profile', component: ProfileView },
   { path: '/components', name: 'components', component: ComponentsView },
