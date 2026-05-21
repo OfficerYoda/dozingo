@@ -15,7 +15,7 @@ type Cells struct {
 type CreateCellInput struct {
 	BoardID pgtype.UUID
 	Content string
-	Value   *int32
+	Value   int32
 }
 
 type UpdateCellInput struct {
@@ -34,14 +34,10 @@ func (r *Cells) ListByBoardID(ctx context.Context, boardID pgtype.UUID) ([]gener
 }
 
 func (r *Cells) Create(ctx context.Context, in CreateCellInput) (generated.Cell, error) {
-	var value int32
-	if in.Value != nil {
-		value = *in.Value
-	}
 	cell, err := r.queries.CreateCell(ctx, generated.CreateCellParams{
 		BoardID: in.BoardID,
 		Content: in.Content,
-		Value:   value,
+		Value:   in.Value,
 	})
 	if err != nil {
 		return generated.Cell{}, pgmap.TranslatePgErr(err)

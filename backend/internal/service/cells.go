@@ -16,18 +16,29 @@ func NewCells(repo *repository.Cells) *Cells {
 	return &Cells{repo: repo}
 }
 
+type CreateCellInput struct {
+	BoardID pgtype.UUID
+	Content string
+	Value   *int32
+}
+
 func (s *Cells) ListByBoardID(ctx context.Context, boardID pgtype.UUID) ([]generated.Cell, error) {
 	return s.repo.ListByBoardID(ctx, boardID)
 }
 
-func (s *Cells) Create(ctx context.Context, in repository.CreateCellInput) (generated.Cell, error) {
+func (s *Cells) Create(ctx context.Context, in CreateCellInput) (generated.Cell, error) {
 	// TODO(authz): once handlers pass the session, verify the caller owns
 	// the board before creating cells on it.
-	if in.Value == nil {
+	value := in.Value
+	if value == nil {
 		def := int32(1)
-		in.Value = &def
+		value = &def
 	}
-	return s.repo.Create(ctx, in)
+	return s.repo.Create(ctx, repository.CreateCellInput{
+		BoardID: in.BoardID,
+		Content: in.Content,
+		Value:   *value,
+	})
 }
 
 func (s *Cells) Update(ctx context.Context, in repository.UpdateCellInput) (generated.Cell, error) {
