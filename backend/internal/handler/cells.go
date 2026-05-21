@@ -113,7 +113,7 @@ func (h *CellsHandler) list(ctx context.Context, in *GetCellsByBoardIDInput) (*G
 }
 
 func (h *CellsHandler) create(ctx context.Context, in *CreateCellInput) (*CreateCellOutput, error) {
-	cell, err := h.svc.Create(ctx, repository.CreateCellInput{
+	cell, err := h.svc.Create(ctx, service.CreateCellInput{
 		BoardID: in.BoardID.Value,
 		Content: in.Body.Content,
 		Value:   in.Body.Value,

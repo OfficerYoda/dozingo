@@ -23,6 +23,8 @@ func toHumaErr(err error, notFoundMsg, opMsg string) error {
 		return huma.Error403Forbidden(err.Error())
 	case errors.Is(err, domain.ErrInvalid):
 		return huma.Error400BadRequest(err.Error())
+	case errors.Is(err, domain.ErrUnprocessableEntity):
+		return huma.Error422UnprocessableEntity(err.Error())
 	}
 
 	slog.Error(opMsg, "error", err)

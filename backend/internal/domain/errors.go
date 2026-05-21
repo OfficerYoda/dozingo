@@ -17,4 +17,7 @@ var (
 
 	// ErrInvalid indicates the input failed a domain rule beyond schema validation.
 	ErrInvalid = errors.New("invalid")
+
+	// ErrUnprocessableEntity indicates the input field could be parsed but fails validation.
+	ErrUnprocessableEntity = errors.New("unprocessable entity")
 )

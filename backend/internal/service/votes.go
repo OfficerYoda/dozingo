@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 
+	"github.com/officeryoda/dozingo/internal/domain"
 	"github.com/officeryoda/dozingo/internal/generated"
 	"github.com/officeryoda/dozingo/internal/repository"
 )
@@ -20,6 +21,9 @@ func (s *Votes) GetAggregateByBoardID(ctx context.Context, in repository.GetVote
 }
 
 func (s *Votes) Upsert(ctx context.Context, in repository.UpsertVoteInput) (generated.Vote, error) {
+	if in.VoteValue != -1 && in.VoteValue != 1 {
+		return generated.Vote{}, domain.ErrUnprocessableEntity
+	}
 	// TODO(authz): once handlers pass the session, verify in.UserID matches
 	// the authenticated user.
 	return s.repo.Upsert(ctx, in)
