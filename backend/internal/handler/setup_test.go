@@ -29,7 +29,55 @@ import (
 var (
 	testPool   *pgxpool.Pool
 	testRouter *chi.Mux
+
+	// userCookies maps a registered user's ID to the session_token cookie
+	// the auth/register response set for them. Test factories use this to
+	// replay the user's session on subsequent requests so handlers that read
+	// the caller from middleware.SessionUserFromContext see the right user.
+	// Cleared in cleanupTables alongside the sessions table truncation.
+	userCookies = map[string]*http.Cookie{}
 )
+
+// cookiesFor returns the session cookie associated with userID, or nil if no
+// cookie was captured (e.g. the user was created outside the auth API).
+func cookiesFor(userID string) []*http.Cookie {
+	if c, ok := userCookies[userID]; ok && c != nil {
+		return []*http.Cookie{c}
+	}
+	return nil
+}
+
+// cookiesForBoard looks up the board's author and returns their session
+// cookie, so test factories that operate on a board (cells, etc.) can act as
+// the author without callers having to thread the author ID through.
+func cookiesForBoard(t *testing.T, boardID string) []*http.Cookie {
+	t.Helper()
+	q := generated.New(testPool)
+	id := pgtype.UUID{}
+	if err := id.Scan(boardID); err != nil {
+		t.Fatalf("invalid board id %q: %v", boardID, err)
+	}
+	board, err := q.GetBoardByID(context.Background(), id)
+	if err != nil {
+		t.Fatalf("failed to load board %s for cookie lookup: %v", boardID, err)
+	}
+	return cookiesFor(board.AuthorID.String())
+}
+
+// cookiesForGame looks up the game's player and returns their session cookie.
+func cookiesForGame(t *testing.T, gameID string) []*http.Cookie {
+	t.Helper()
+	q := generated.New(testPool)
+	id := pgtype.UUID{}
+	if err := id.Scan(gameID); err != nil {
+		t.Fatalf("invalid game id %q: %v", gameID, err)
+	}
+	game, err := q.GetGameByID(context.Background(), id)
+	if err != nil {
+		t.Fatalf("failed to load game %s for cookie lookup: %v", gameID, err)
+	}
+	return cookiesFor(game.PlayerID.String())
+}
 
 // TestMain sets up the test database connection and router once for all tests.
 func TestMain(m *testing.M) {
@@ -119,6 +167,11 @@ func cleanupTables(t *testing.T) {
 		"TRUNCATE TABLE game_cells, games, votes, cells, boards, sessions, user_passwords, users RESTART IDENTITY CASCADE")
 	if err != nil {
 		t.Fatalf("failed to clean up tables: %v", err)
+	}
+	// Cookies reference session rows we just truncated; drop the cache so
+	// the next test can't reuse a now-invalid token.
+	for k := range userCookies {
+		delete(userCookies, k)
 	}
 }
 
@@ -210,7 +263,9 @@ func stringPtr(s string) *string {
 /// ===== Factories: users & sessions =====
 
 // createTestUser creates a user via the auth register API and returns its ID.
-// Pass an empty string for email to omit it from the request.
+// Pass an empty string for email to omit it from the request. The session
+// cookie returned by /auth/register is captured into userCookies so other
+// factories (and tests) can replay it via cookiesFor.
 func createTestUser(t *testing.T, username, email string) string {
 	t.Helper()
 
@@ -231,12 +286,17 @@ func createTestUser(t *testing.T, username, email string) string {
 	if err != nil {
 		t.Fatalf("failed to look up user %q after registration: %v", username, err)
 	}
-	return user.ID.String()
+	userID := user.ID.String()
+	if c := extractSessionCookie(w); c != nil {
+		userCookies[userID] = c
+	}
+	return userID
 }
 
 // createTestUserWithRegister registers a user via the auth API and returns the
 // full response body (so callers can inspect cookies / id / email handling).
-// Pass nil for email to omit it from the request.
+// Pass nil for email to omit it from the request. The session cookie set by
+// /auth/register is also cached in userCookies for later replay.
 func createTestUserWithRegister(t *testing.T, username, password string, email *string) *map[string]any {
 	t.Helper()
 
@@ -253,6 +313,12 @@ func createTestUserWithRegister(t *testing.T, username, password string, email *
 
 	var resp map[string]any
 	decodeJSON(t, w, &resp)
+
+	if c := extractSessionCookie(w); c != nil {
+		if id, ok := resp["user_id"].(string); ok && id != "" {
+			userCookies[id] = c
+		}
+	}
 	return &resp
 }
 
@@ -304,7 +370,7 @@ func createTestBoard(t *testing.T, title string, size int, authorID string, desc
 	if description != nil {
 		body["description"] = *description
 	}
-	w := doRequest(http.MethodPost, "/api/boards", body)
+	w := doRequestWithCookies(http.MethodPost, "/api/boards", body, cookiesFor(authorID))
 	assertStatus(t, w, http.StatusOK)
 	var resp map[string]any
 	decodeJSON(t, w, &resp)
@@ -312,21 +378,24 @@ func createTestBoard(t *testing.T, title string, size int, authorID string, desc
 }
 
 // createTestCell creates a cell on a board via the API and returns its ID.
+// Acts as the board's author.
 func createTestCell(t *testing.T, boardID, content string) string {
 	t.Helper()
-	w := doRequest(http.MethodPost, fmt.Sprintf("/api/boards/%s/cells", boardID), map[string]any{
+	w := doRequestWithCookies(http.MethodPost, fmt.Sprintf("/api/boards/%s/cells", boardID), map[string]any{
 		"content": content,
-	})
+	}, cookiesForBoard(t, boardID))
 	assertStatus(t, w, http.StatusOK)
 	var resp map[string]any
 	decodeJSON(t, w, &resp)
 	return resp["cell_id"].(string)
 }
 
-// createTestGame creates a game via the API and returns its ID.
+// createTestGame creates a game via the API and returns its ID. The caller is
+// authenticated as playerID via the captured session cookie; the server reads
+// the player from the session, not from a query param.
 func createTestGame(t *testing.T, playerID, boardID string) string {
 	t.Helper()
-	w := doRequest(http.MethodPost, fmt.Sprintf("/api/boards/%s/games?player_id=%s", boardID, playerID), nil)
+	w := doRequestWithCookies(http.MethodPost, fmt.Sprintf("/api/boards/%s/games", boardID), nil, cookiesFor(playerID))
 	assertStatus(t, w, http.StatusOK)
 	var resp map[string]any
 	decodeJSON(t, w, &resp)
@@ -334,12 +403,13 @@ func createTestGame(t *testing.T, playerID, boardID string) string {
 }
 
 // createTestVote upserts a vote on a board for a user and returns the response
-// body. Most callers can ignore the return value.
+// body. The caller is authenticated as userID via the captured session cookie.
 func createTestVote(t *testing.T, boardID, userID string, value int) map[string]any {
 	t.Helper()
-	w := doRequest(http.MethodPut,
-		fmt.Sprintf("/api/boards/%s/vote?user_id=%s", boardID, userID),
+	w := doRequestWithCookies(http.MethodPut,
+		fmt.Sprintf("/api/boards/%s/vote", boardID),
 		map[string]any{"vote_value": value},
+		cookiesFor(userID),
 	)
 	assertStatus(t, w, http.StatusOK)
 	var resp map[string]any
@@ -349,12 +419,13 @@ func createTestVote(t *testing.T, boardID, userID string, value int) map[string]
 
 // createTestGameCell creates a single game cell on a game and returns its ID.
 // Use createTestGameCells for bulk creation when you need multiple cells.
+// Acts as the game's player.
 func createTestGameCell(t *testing.T, gameID, cellID, content string, position int) string {
 	t.Helper()
 	body := []map[string]any{
 		{"cell_id": cellID, "content": content, "position": position},
 	}
-	w := doRequest(http.MethodPost, fmt.Sprintf("/api/games/%s/cells", gameID), body)
+	w := doRequestWithCookies(http.MethodPost, fmt.Sprintf("/api/games/%s/cells", gameID), body, cookiesForGame(t, gameID))
 	assertStatus(t, w, http.StatusOK)
 	var resp []map[string]any
 	decodeJSON(t, w, &resp)
