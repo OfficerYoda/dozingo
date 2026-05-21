@@ -38,25 +38,28 @@ func (r *GameCells) ListByGameID(ctx context.Context, gameID pgtype.UUID) ([]gen
 }
 
 func (r *GameCells) Create(ctx context.Context, in CreateGameCellsInput) ([]generated.GameCell, error) {
-	params := make([]generated.CreateGameCellsParams, 0, len(in.Items))
+	gameIDs := make([]pgtype.UUID, 0, len(in.Items))
+	cellIDs := make([]pgtype.UUID, 0, len(in.Items))
+	contents := make([]string, 0, len(in.Items))
+	positions := make([]int32, 0, len(in.Items))
 	for _, item := range in.Items {
-		params = append(params, generated.CreateGameCellsParams{
-			GameID:   in.GameID,
-			CellID:   item.CellID,
-			Content:  item.Content,
-			Position: item.Position,
-		})
+		gameIDs = append(gameIDs, in.GameID)
+		cellIDs = append(cellIDs, item.CellID)
+		contents = append(contents, item.Content)
+		positions = append(positions, item.Position)
 	}
 
-	if _, err := r.queries.CreateGameCells(ctx, params); err != nil {
-		return []generated.GameCell{}, pgmap.TranslatePgErr(err)
-	}
-
-	cells, err := r.queries.GetGameCellsByGameID(ctx, in.GameID)
+	gameCells, err := r.queries.CreateGameCells(ctx, generated.CreateGameCellsParams{
+		GameIds:   gameIDs,
+		CellIds:   cellIDs,
+		Contents:  contents,
+		Positions: positions,
+	})
 	if err != nil {
 		return []generated.GameCell{}, pgmap.TranslatePgErr(err)
 	}
-	return cells, nil
+
+	return gameCells, nil
 }
 
 func (r *GameCells) UpdateMark(ctx context.Context, in UpdateGameCellMarkInput) (generated.GameCell, error) {

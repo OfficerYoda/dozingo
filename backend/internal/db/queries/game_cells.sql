@@ -3,8 +3,14 @@ SELECT * FROM game_cells
 WHERE game_id = $1
 ORDER BY position;
 
--- name: CreateGameCells :copyfrom
-INSERT INTO game_cells (game_id, cell_id, content, position) VALUES ($1, $2, $3, $4);
+-- name: CreateGameCells :many
+INSERT INTO game_cells (game_id, cell_id, content, position)
+SELECT
+    unnest(@game_ids::uuid[]),
+    unnest(@cell_ids::uuid[]),
+    unnest(@contents::text[]),
+    unnest(@positions::int[])
+RETURNING *;
 
 -- name: UpdateGameCellMark :one
 UPDATE game_cells
