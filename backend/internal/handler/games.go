@@ -6,6 +6,7 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/officeryoda/dozingo/internal/generated"
+	"github.com/officeryoda/dozingo/internal/middleware"
 	"github.com/officeryoda/dozingo/internal/pgmap"
 	"github.com/officeryoda/dozingo/internal/repository"
 	"github.com/officeryoda/dozingo/internal/service"
@@ -46,8 +47,7 @@ type ListGamesByBoardOutput struct {
 }
 
 type CreateGameInput struct {
-	PlayerID types.UUIDParam `query:"player_id" format:"uuid"` // TODO eventually replace this when user auth is working
-	BoardID  types.UUIDParam `path:"board_id" format:"uuid"`
+	BoardID types.UUIDParam `path:"board_id" format:"uuid"`
 }
 
 type CreateGameOutput struct {
@@ -55,9 +55,8 @@ type CreateGameOutput struct {
 }
 
 type UpdateGameStatusInput struct {
-	GameID   types.UUIDParam `path:"game_id" format:"uuid"`
-	PlayerID types.UUIDParam `query:"player_id" format:"uuid"` // TODO eventually replace this when user auth is working
-	Body     struct {
+	GameID types.UUIDParam `path:"game_id" format:"uuid"`
+	Body   struct {
 		Status string `json:"status" format:"text" maxLength:"20" doc:"must be any of those: 'active', 'completed' or 'abandoned'"`
 	}
 }
@@ -155,8 +154,10 @@ func (h *GamesHandler) listByBoard(ctx context.Context, in *ListGamesByBoardInpu
 }
 
 func (h *GamesHandler) create(ctx context.Context, in *CreateGameInput) (*CreateGameOutput, error) {
+	sessionUser, _ := middleware.SessionUserFromContext(ctx)
+
 	game, err := h.svc.Create(ctx, repository.CreateGameInput{
-		PlayerID: in.PlayerID.Value,
+		PlayerID: sessionUser.UserID,
 		BoardID:  in.BoardID.Value,
 	})
 	if err != nil {
@@ -166,9 +167,11 @@ func (h *GamesHandler) create(ctx context.Context, in *CreateGameInput) (*Create
 }
 
 func (h *GamesHandler) updateStatus(ctx context.Context, in *UpdateGameStatusInput) (*UpdateGameStatusOutput, error) {
+	sessionUser, _ := middleware.SessionUserFromContext(ctx)
+
 	game, err := h.svc.UpdateStatus(ctx, repository.UpdateGameStatusInput{
 		GameID:   in.GameID.Value,
-		PlayerID: in.PlayerID.Value,
+		PlayerID: sessionUser.UserID,
 		Status:   in.Body.Status,
 	})
 	if err != nil {

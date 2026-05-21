@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/officeryoda/dozingo/internal/domain"
 	"github.com/officeryoda/dozingo/internal/generated"
@@ -21,6 +22,10 @@ func (s *Votes) GetAggregateByBoardID(ctx context.Context, in repository.GetVote
 }
 
 func (s *Votes) Upsert(ctx context.Context, in repository.UpsertVoteInput) (generated.Vote, error) {
+	if !in.UserID.Valid {
+		return generated.Vote{}, fmt.Errorf("anonymous users can't vote: %w", domain.ErrUnauthorized)
+	}
+
 	if in.VoteValue != -1 && in.VoteValue != 1 {
 		return generated.Vote{}, domain.ErrUnprocessableEntity
 	}
@@ -30,6 +35,10 @@ func (s *Votes) Upsert(ctx context.Context, in repository.UpsertVoteInput) (gene
 }
 
 func (s *Votes) Delete(ctx context.Context, in repository.DeleteVoteInput) error {
+	if !in.UserID.Valid {
+		return fmt.Errorf("anonymous users can't vote: %w", domain.ErrUnauthorized)
+	}
+
 	// TODO(authz): once handlers pass the session, verify in.UserID matches
 	// the authenticated user.
 	_, err := s.repo.Delete(ctx, in)
