@@ -1,78 +1,102 @@
 <template>
   <section>
-    <div class="grid container">
-      <article class="col-7 md-12">
-        <div class="card">
-          <h2>Forge a new Batch</h2>
-          <div>
-            <span>Select Grid Layout</span>
-            <div>
-              <button></button>
-              <button></button>
-              <button></button>
-            </div>
+    <div class="container">
+      <article className="card">
+        <div class="header">
+          <FilePlus :size="27" />
+          <h2 class="mb-0">Create a new board</h2>
+        </div>
+
+        <div class="firstrow">
+          <div class="title">
+            <h3>Session title</h3>
+            <input type="text" class="inputfield inputfield-title" placeholder="e.g. Intoduction to Game Theory">
           </div>
 
-
-          <div>
-            <div>
-              <span>Choose Dozent</span>
-              <div class="dropdown">
-                <button href="" className="btn btn-secondary dropdown-button">Dozent</button>
-                <ul class="dropdown-menu">
-                  <li>Kollege Röthig</li>
-                  <li>Rotzinger</li>
-                  <li>usw</li>
-                </ul>
-              </div>
-            </div>
-            <div>
-              <span>Context details</span>
-              <input type="text">
-            </div>
-            <div>
-              <span>Difficulty</span>
-              <div class="dropdown">
-                <button href="" className="btn btn-secondary dropdown-button">Choose Dificulty</button>
-                <ul class="dropdown-menu">
-                  <li>Einfach</li>
-                  <li>Mittel</li>
-                  <li>Schwer</li>
-                </ul>
-              </div>
+          <div class="boardsize">
+            <h3>Layout selection</h3>
+            <div class="layout-options">
+              <button class="btn btn-primary">3x3</button>
+              <button class="btn btn-secondary">4x4</button>
+              <button class="btn btn-secondary">5x5</button>
             </div>
           </div>
+        </div>
 
-          <button>Submit for batch review</button>
+        <div class="secondrow">
+          <h3>Description</h3>
+          <input type="text" class="inputfield describtion-input" placeholder="Briefly describe the theme of this bingo session">
+        </div>
+
+        <div class="thirdrow">
+          <h3>Session entries</h3>
+          <small>8 entries added. You need 17 more for a 5x5 layout.</small>
+          <button>
+            <CirclePlus :size="20" />
+            <p>Add new row</p>
+          </button>
         </div>
       </article>
-
-      <div class="col-5">
-        <article>
-          <div class="card">
-            <h3>Live Grid Content</h3>
-            <small>Hier Grid Vorschau einbauen</small>
-            <small>Previewing your batch inside a 5x5 campus grid. Layout scale adjusts to grid complexity.</small>
-          </div>
-        </article>
-
-        <article>
-          <div class="card">
-            <h3>Submission Code</h3>
-            <li>
-              <ul>Batch entries must follow the same category theme.</ul>
-              <ul>Duplicates in a single batch will be automatically merged.</ul>
-              <ul>Ensure the difficulty rating reflects the average rarity of the batch.</ul>
-            </li>
-          </div>
-        </article>
-      </div>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
 import { } from 'lucide-vue-next';
+import { FilePlus, CirclePlus } from 'lucide-vue-next';
 </script>
 
-<style scoped></style>
+<style scoped>
+.header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+
+.firstrow {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.layout-options {
+  display: flex;
+  gap: 8px;
+}
+
+.layout-options .btn {
+  flex: 1;
+}
+
+
+.title {
+    width: 50%;
+}
+
+.boardsize {
+  width: 50%;
+}
+
+.inputfield-title{
+  width: 100%;
+}
+
+.inputfield {
+  border: transparent;
+  border-radius: 8px;
+  background-color: #E3DFFF;
+}
+
+.describtion-input {
+  width: 100%;
+  height: 80px;
+}
+
+input::-webkit-input-placeholder { 
+  position:absolute;
+  left: 5px;
+  top: 5px;
+}
+
+</style>
