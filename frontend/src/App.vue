@@ -50,7 +50,17 @@ function closeMenu(){
         <button @click="openMenu">
           <Menu :size="20"/>
         </button> 
-        <h1 class="mb-0">Settings</h1>
+        <div class="header-spacing">
+          <h1 class="mb-0">Settings</h1>
+          <div class="dropdown">
+            <button href="" className="btn"><Languages :size="20" /></button>
+            <ul class="dropdown-menu">
+              <li>Englisch</li>
+              <li>Deutsch</li>
+              <li>Weitere</li>
+            </ul>
+          </div>
+        </div>
       </header>
 
       <main>
@@ -67,7 +77,7 @@ function closeMenu(){
 </template>
 
 <script setup lang="ts">
-import { Home, LayoutGrid, Settings, LogOut, UserCircle, Menu , Computer, SquarePen} from 'lucide-vue-next'
+import { Home, LayoutGrid, Settings, LogOut, UserCircle, Menu , Computer, SquarePen, Languages} from 'lucide-vue-next'
 </script>
 
 <style scoped>
@@ -123,5 +133,12 @@ header {
   width: 100%;
   display: flex;
   align-items: center;
+}
+
+.header-spacing {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: space-between;
 }
 </style>
