@@ -15,10 +15,10 @@
 
           <div class="boardsize">
             <h3>Layout selection</h3>
-            <div class="layout-options">
-              <button class="btn btn-primary">3x3</button>
-              <button class="btn btn-secondary">4x4</button>
-              <button class="btn btn-secondary">5x5</button>
+            <div role="radiogroup" class="layout-options">
+              <button :class="['btn', selectedSize === '3x3' ? 'btn-primary' : 'btn-secondary']" @click="selectedSize = '3x3'">3x3</button>
+              <button :class="['btn', selectedSize === '4x4' ? 'btn-primary' : 'btn-secondary']" @click="selectedSize = '4x4'">4x4</button>
+              <button :class="['btn', selectedSize === '5x5' ? 'btn-primary' : 'btn-secondary']" @click="selectedSize = '5x5'">5x5</button>
             </div>
           </div>
         </div>
@@ -29,21 +29,21 @@
             placeholder="Briefly describe the theme of this bingo session">
         </div>
 
-        <div class="thirdrow">
-          <div class="headerthirdrow">
-          <div>
-          <h3 class="mb-0">Session entries</h3>
-          <small class="additional-info-cells">8 entries added. You need 17 more for a 5x5 layout.</small>
-          </div>
-          <button class="btn btn-secondary add-row-button" @click="addRow">
-            <CirclePlus :size="20" />
-            <p class="mb-0">Add new row</p>
-          </button>
+        <div class="thirdrow mb-3">
+          <div class="headerthirdrow mb-3">
+            <div>
+              <h3 class="mb-0">Session entries</h3>
+              <small class="additional-info-cells">8 entries added. You need 17 more for a 5x5 layout.</small>
+            </div>
+            <button class="btn btn-secondary add-row-button" @click="addRow">
+              <CirclePlus :size="20" />
+              <p class="mb-0">Add new row</p>
+            </button>
           </div>
 
-          <table class="entries-table tableheader">
+          <table class="entries-table">
             <thead>
-              <tr >
+              <tr class="tableheader">
                 <th class="table-quote">Quote / Term</th>
                 <th class="table-rarity">Rarity</th>
                 <th class="table-delete">Löschen</th>
@@ -53,28 +53,27 @@
             <tbody>
               <tr v-for="(entry, index) in entries" :key="index">
                 <td class="table-td-input">
-                  <input
-                    type="text"
-                    class="inputfield entry-input"
-                    v-model="entry.term"
-                    placeholder="Enter quote or term"
-                  />
+                  <input type="text" class="entry-input" v-model="entry.term" placeholder="Enter quote or term" />
                 </td>
                 <td class="table-td-select">
-                  <select class="inputfield entry-select" v-model="entry.rarity">
+                  <select class="selection-table entry-select" v-model="entry.rarity">
                     <option value="common">Common</option>
                     <option value="uncommon">Uncommon</option>
                     <option value="rare">Rare</option>
                   </select>
                 </td>
                 <td class="table-td-button">
-                  <button class="btn-icon" @click="removeRow(index)">
+                  <button class="btn-icon btn btn-danger" @click="removeRow(index)">
                     <Trash2 :size="16" />
                   </button>
                 </td>
               </tr>
             </tbody>
           </table>
+        </div>
+
+        <div class="savebutton">
+          <button class="btn btn-primary">Save board to your templates</button>
         </div>
       </article>
     </div>
@@ -90,7 +89,8 @@ interface Entry {
   rarity: string
 }
 
-const entries = ref<Entry[]>([{ term: '', rarity: 'common' },{ term: '', rarity: 'common' },{ term: '', rarity: 'common' }])
+const entries = ref<Entry[]>([{ term: '', rarity: 'common' }, { term: '', rarity: 'common' }, { term: '', rarity: 'common' }])
+const selectedSize = ref('3x3')
 
 function addRow() {
   entries.value.push({ term: '', rarity: 'common' })
@@ -102,6 +102,12 @@ function removeRow(index: number) {
 </script>
 
 <style scoped>
+
+.savebutton {
+  display: flex;
+  justify-content: center;
+}
+
 .header {
   display: flex;
   flex-direction: row;
@@ -111,13 +117,14 @@ function removeRow(index: number) {
 
 .entry-input {
   width: 100%;
+  border-color: transparent;
 }
 
 .entry-select {
   width: 100%;
 }
 
-.table-quote{
+.table-quote {
   width: 60%;
 }
 
@@ -134,29 +141,46 @@ function removeRow(index: number) {
   text-align: center;
 }
 
+.entries-table tbody tr td {
+  border-top: 1px solid #6B7280;
+}
+
 .table-td-input {
-  padding-right: 5px;
+  padding: 5px;
 }
 
 
 .table-td-select {
-  padding-left: 5px;
+  padding: 5px;
 }
 
-.tableheader {
-  background-color:#E3DFFF;
-
-  border: 1px solid #6B7280;
-  border-radius: var(--radius-sm);
-
+th {
+  color: #5A5781;
+  font-weight: 350;
+  padding: 10px;
 }
 
+.tableheader th {
+  background-color: #E3DFFF;
+}
+
+.tableheader th:first-child {
+  border-top-left-radius: var(--radius-sm);
+}
+
+.tableheader th:last-child {
+  border-top-right-radius: var(--radius-sm);
+}
 
 
 .entries-table {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
+
+
+  border: 1px solid #6B7280;
+  border-radius: var(--radius-sm);
 }
 
 h2 {
@@ -209,6 +233,11 @@ h3 {
   background-color: #E3DFFF;
 }
 
+.selection-table {
+  border: transparent;
+  border-radius: 8px;
+}
+
 .describtion-input {
   width: 100%;
   height: 80px;
@@ -219,6 +248,7 @@ h3 {
   flex-direction: row;
   gap: 8px;
   align-items: center;
+  height: 40px;
 }
 
 .headerthirdrow {
