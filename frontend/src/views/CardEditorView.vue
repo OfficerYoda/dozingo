@@ -1,19 +1,19 @@
 <template>
   <section>
     <div class="container">
-      <article className="card">
-        <div class="header mb-3">
+      <article class="card">
+        <div class="card-header mb-3">
           <FilePlus :size="27" />
           <h2 class="mb-0">Create a new board</h2>
         </div>
 
-        <div class="firstrow mb-3">
-          <div class="title">
+        <div class="form-top mb-3">
+          <div class="form-title">
             <h3>Session title</h3>
-            <input type="text" class="inputfield inputfield-title" placeholder="e.g. Intoduction to Game Theory">
+            <input type="text" class="form-input title-input" placeholder="e.g. Introduction to Game Theory">
           </div>
 
-          <div class="boardsize">
+          <div class="form-boardsize">
             <h3>Layout selection</h3>
             <div role="radiogroup" class="layout-options">
               <button :class="['btn', selectedSize === '3x3' ? 'btn-primary' : 'btn-secondary']" @click="selectedSize = '3x3'">3x3</button>
@@ -23,19 +23,19 @@
           </div>
         </div>
 
-        <div class="secondrow mb-3">
+        <div class="form-description mb-3">
           <h3>Description</h3>
-          <input type="text" class="inputfield describtion-input"
+          <input type="text" class="form-input description-input"
             placeholder="Briefly describe the theme of this bingo session">
         </div>
 
-        <div class="thirdrow mb-3">
-          <div class="headerthirdrow mb-3">
+        <div class="form-entries mb-3">
+          <div class="entries-header mb-3">
             <div>
               <h3 class="mb-0">Session entries</h3>
-              <small class="additional-info-cells">8 entries added. You need 17 more for a 5x5 layout.</small>
+              <small class="entry-count-hint">8 entries added. You need 17 more for a 5x5 layout.</small>
             </div>
-            <button class="btn btn-secondary add-row-button" @click="addRow">
+            <button class="btn btn-secondary add-entry-btn" @click="addRow">
               <CirclePlus :size="20" />
               <p class="mb-0">Add new row</p>
             </button>
@@ -43,27 +43,28 @@
 
           <table class="entries-table">
             <thead>
-              <tr class="tableheader">
-                <th class="table-quote">Quote / Term</th>
-                <th class="table-rarity">Rarity</th>
-                <th class="table-delete">Löschen</th>
+              <tr class="table-header">
+                <th class="col-term">Quote / Term</th>
+                <th class="col-rarity">Rarity</th>
+                <th class="col-delete">Delete</th>
               </tr>
             </thead>
 
             <tbody>
               <tr v-for="(entry, index) in entries" :key="index">
-                <td class="table-td-input">
-                  <input type="text" class="entry-input" v-model="entry.term" placeholder="Enter quote or term" />
+                <td class="td-term">
+                  <input type="text" class="entry-term-input" v-model="entry.term" placeholder="Enter quote or term" />
                 </td>
-                <td class="table-td-select">
-                  <select class="selection-table entry-select" v-model="entry.rarity">
+                <td class="td-rarity">
+                  <select class="entry-select" v-model="entry.rarity">
                     <option value="common">Common</option>
-                    <option value="uncommon">Uncommon</option>
-                    <option value="rare">Rare</option>
+                    <option value="uncommon">Rare</option>
+                    <option value="rare">Epic</option>
+                    <option value="rare">Legendary</option>
                   </select>
                 </td>
-                <td class="table-td-button">
-                  <button class="btn-icon btn btn-danger" @click="removeRow(index)">
+                <td class="td-delete">
+                  <button class="btn btn-danger btn-icon" @click="removeRow(index)">
                     <Trash2 :size="16" />
                   </button>
                 </td>
@@ -72,7 +73,7 @@
           </table>
         </div>
 
-        <div class="savebutton">
+        <div class="save-btn-row">
           <button class="btn btn-primary">Save board to your templates</button>
         </div>
       </article>
@@ -103,91 +104,42 @@ function removeRow(index: number) {
 
 <style scoped>
 
-.savebutton {
-  display: flex;
-  justify-content: center;
-}
+/* === Layout === */
 
-.header {
+.card-header {
   display: flex;
-  flex-direction: row;
   align-items: center;
   gap: 10px;
 }
 
-.entry-input {
-  width: 100%;
-  border-color: transparent;
+.form-top {
+  display: flex;
+  flex-wrap: wrap;
 }
 
-.entry-select {
-  width: 100%;
+.form-title {
+  width: 50%;
+  padding-right: 5px;
 }
 
-.table-quote {
-  width: 60%;
+.form-boardsize {
+  width: 50%;
+  padding-left: 5px;
 }
 
-.table-rarity {
-  width: 20%;
+.entries-header {
+  display: flex;
+  justify-content: space-between;
 }
 
-.table-delete {
-  width: 5%;
-  text-align: center;
+.save-btn-row {
+  display: flex;
+  justify-content: center;
 }
 
-.table-td-button {
-  text-align: center;
-}
-
-.entries-table tbody tr td {
-  border-top: 1px solid #6B7280;
-}
-
-.table-td-input {
-  padding: 5px;
-}
-
-
-.table-td-select {
-  padding: 5px;
-}
-
-th {
-  color: #5A5781;
-  font-weight: 350;
-  padding: 10px;
-}
-
-.tableheader th {
-  background-color: #E3DFFF;
-}
-
-.tableheader th:first-child {
-  border-top-left-radius: var(--radius-sm);
-}
-
-.tableheader th:last-child {
-  border-top-right-radius: var(--radius-sm);
-}
-
-
-.entries-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-
-
-  border: 1px solid #6B7280;
-  border-radius: var(--radius-sm);
-}
+/* === Typography === */
 
 h2 {
-  color: #2C2A51;
-}
-
-.header svg {
   color: #2C2A51;
 }
 
@@ -197,11 +149,29 @@ h3 {
   font-size: 1.25rem;
 }
 
-.firstrow {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
+.card-header svg {
+  color: #2C2A51;
 }
+
+/* === Form inputs === */
+
+.form-input {
+  border-color: transparent;
+  border-radius: 8px;
+  background-color: #E3DFFF;
+}
+
+.title-input {
+  width: 100%;
+  height: 40px;
+}
+
+.description-input {
+  width: 100%;
+  height: 80px;
+}
+
+/* === Layout options (board size) === */
 
 .layout-options {
   display: flex;
@@ -212,57 +182,69 @@ h3 {
   flex: 1;
 }
 
-.title {
-  width: 50%;
-  padding-right: 5px;
-}
+/* === Entries table === */
 
-.boardsize {
-  width: 50%;
-  padding-left: 5px;
-}
-
-.inputfield-title {
+.entries-table {
   width: 100%;
-  height: 40px;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid #6B7280;
+  border-radius: var(--radius-sm);
 }
 
-.inputfield {
-  border: transparent;
-  border-radius: 8px;
+.entries-table th {
+  color: #5A5781;
+  font-weight: 350;
+  padding: 10px;
+}
+
+.table-header th {
   background-color: #E3DFFF;
 }
 
-.selection-table {
-  border: transparent;
+.table-header th:first-child {
+  border-top-left-radius: var(--radius-sm);
+}
+
+.table-header th:last-child {
+  border-top-right-radius: var(--radius-sm);
+}
+
+.entries-table tbody td {
+  border-top: 1px solid #6B7280;
+}
+
+.col-term  { width: 60%; }
+.col-rarity { width: 20%; }
+.col-delete { width: 5%; text-align: center; }
+
+.td-term   { padding: 5px; }
+.td-rarity { padding: 5px; }
+.td-delete { text-align: center; }
+
+.entry-term-input {
+  width: 100%;
+  border-color: transparent;
+}
+
+.entry-select {
+  width: 100%;
+  border-color: transparent;
   border-radius: 8px;
 }
 
-.describtion-input {
-  width: 100%;
-  height: 80px;
-}
+/* === Buttons === */
 
-.add-row-button {
+.add-entry-btn {
   display: flex;
-  flex-direction: row;
-  gap: 8px;
   align-items: center;
+  gap: 8px;
   height: 40px;
 }
 
-.headerthirdrow {
-  display: flex;
-  justify-content: space-between;
-}
+/* === Other === */
 
-input::-webkit-input-placeholder {
-  position: absolute;
-  left: 5px;
-  top: 5px;
-}
-
-.additional-info-cells {
+.entry-count-hint {
   color: var(--color-accent-red);
   font-weight: 500;
 }
