@@ -13,14 +13,7 @@ import (
 	"github.com/officeryoda/dozingo/internal/repository"
 )
 
-type Auth interface {
-	Register(ctx context.Context, in RegisterInput) (generated.User, error)
-	Login(ctx context.Context, in LoginInput) (generated.User, error)
-	Logout(ctx context.Context) error
-	Me(ctx context.Context, session generated.GetSessionUserByTokenRow) (generated.User, error)
-}
-
-type auth struct {
+type Auth struct {
 	users     *repository.Users
 	passwords *repository.UserPasswords
 	sessions  *repository.Sessions
@@ -28,8 +21,8 @@ type auth struct {
 	queries   *generated.Queries
 }
 
-func NewAuth(repo repository.Repos, txRunner repository.TxRunner, queries *generated.Queries) Auth {
-	return &auth{
+func NewAuth(repo repository.Repos, txRunner repository.TxRunner, queries *generated.Queries) *Auth {
+	return &Auth{
 		users:     repo.Users,
 		passwords: repo.Passwords,
 		sessions:  repo.Sessions,
@@ -50,7 +43,7 @@ type LoginInput struct {
 }
 
 // Register implements [Auth].
-func (s *auth) Register(ctx context.Context, in RegisterInput) (generated.User, error) {
+func (s *Auth) Register(ctx context.Context, in RegisterInput) (generated.User, error) {
 	user, err := s.generateUser(ctx, in)
 	if err != nil {
 		return generated.User{}, fmt.Errorf("user creation: %w", err)
@@ -67,7 +60,7 @@ func (s *auth) Register(ctx context.Context, in RegisterInput) (generated.User, 
 }
 
 // Login implements [Auth].
-func (s *auth) Login(ctx context.Context, in LoginInput) (generated.User, error) {
+func (s *Auth) Login(ctx context.Context, in LoginInput) (generated.User, error) {
 	user, err := s.users.GetForPasswordLogin(ctx, in.Username)
 	if err != nil {
 		if errors.Is(err, domain.ErrNotFound) {
@@ -96,7 +89,7 @@ func (s *auth) Login(ctx context.Context, in LoginInput) (generated.User, error)
 }
 
 // Logout implements [Auth].
-func (s *auth) Logout(ctx context.Context) error {
+func (s *Auth) Logout(ctx context.Context) error {
 	sessionUser, ok := middleware.SessionUserFromContext(ctx)
 	if !ok || !sessionUser.UserID.Valid {
 		return nil
@@ -115,7 +108,7 @@ func (s *auth) Logout(ctx context.Context) error {
 }
 
 // Me implements [Auth].
-func (s *auth) Me(ctx context.Context, session generated.GetSessionUserByTokenRow) (generated.User, error) {
+func (s *Auth) Me(ctx context.Context, session generated.GetSessionUserByTokenRow) (generated.User, error) {
 	return generated.User{
 		ID:       session.UserID,
 		Username: session.Username.String,
@@ -123,7 +116,7 @@ func (s *auth) Me(ctx context.Context, session generated.GetSessionUserByTokenRo
 	}, nil
 }
 
-func (s *auth) generateUser(ctx context.Context, in RegisterInput) (generated.User, error) {
+func (s *Auth) generateUser(ctx context.Context, in RegisterInput) (generated.User, error) {
 	passwordHash, err := authpkg.HashPassword(in.Password)
 	if err != nil {
 		return generated.User{}, err
@@ -148,7 +141,7 @@ func (s *auth) generateUser(ctx context.Context, in RegisterInput) (generated.Us
 	return user, nil
 }
 
-func (s *auth) attatchUserToSession(ctx context.Context, user generated.User) error {
+func (s *Auth) attatchUserToSession(ctx context.Context, user generated.User) error {
 	session, err := middleware.RequireSessionCtx(ctx, s.queries)
 	if err != nil {
 		return fmt.Errorf("require session: %w", err)
@@ -159,5 +152,3 @@ func (s *auth) attatchUserToSession(ctx context.Context, user generated.User) er
 	}
 	return nil
 }
-
-var _ Auth = (*auth)(nil)

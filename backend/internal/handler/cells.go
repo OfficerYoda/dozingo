@@ -63,10 +63,10 @@ type DeleteCellInput struct {
 /// ===== Handler =====
 
 type CellsHandler struct {
-	svc service.Cells
+	svc *service.Cells
 }
 
-func NewCellsHandler(svc service.Cells) *CellsHandler {
+func NewCellsHandler(svc *service.Cells) *CellsHandler {
 	return &CellsHandler{svc: svc}
 }
 

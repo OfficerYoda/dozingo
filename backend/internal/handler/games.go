@@ -73,10 +73,10 @@ type DeleteGameInput struct {
 /// ===== Handler =====
 
 type GamesHandler struct {
-	svc service.Games
+	svc *service.Games
 }
 
-func NewGamesHandler(svc service.Games) *GamesHandler {
+func NewGamesHandler(svc *service.Games) *GamesHandler {
 	return &GamesHandler{svc: svc}
 }
 

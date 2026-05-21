@@ -59,10 +59,10 @@ type UpdateGameCellMarkOutput struct {
 /// ===== Handler =====
 
 type GameCellsHandler struct {
-	svc service.GameCells
+	svc *service.GameCells
 }
 
-func NewGameCellsHandler(svc service.GameCells) *GameCellsHandler {
+func NewGameCellsHandler(svc *service.GameCells) *GameCellsHandler {
 	return &GameCellsHandler{svc: svc}
 }
 

@@ -53,10 +53,10 @@ type DeleteVoteInput struct {
 /// ===== Handler =====
 
 type VotesHandler struct {
-	svc service.Votes
+	svc *service.Votes
 }
 
-func NewVotesHandler(svc service.Votes) *VotesHandler {
+func NewVotesHandler(svc *service.Votes) *VotesHandler {
 	return &VotesHandler{svc: svc}
 }
 

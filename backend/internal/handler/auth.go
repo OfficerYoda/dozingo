@@ -41,10 +41,10 @@ type loginInput struct {
 /// ===== Handler =====
 
 type AuthHandler struct {
-	svc service.Auth
+	svc *service.Auth
 }
 
-func NewAuthHandler(svc service.Auth) *AuthHandler {
+func NewAuthHandler(svc *service.Auth) *AuthHandler {
 	return &AuthHandler{svc: svc}
 }
 

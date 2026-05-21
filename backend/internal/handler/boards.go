@@ -59,10 +59,10 @@ type DeleteBoardInput struct {
 /// ===== Handler =====
 
 type BoardsHandler struct {
-	svc service.Boards
+	svc *service.Boards
 }
 
-func NewBoardsHandler(svc service.Boards) *BoardsHandler {
+func NewBoardsHandler(svc *service.Boards) *BoardsHandler {
 	return &BoardsHandler{svc: svc}
 }
 
