@@ -151,3 +151,15 @@
   /* Focus */
   --focus-ring: 0 0 0 3px rgba(129, 140, 248, 0.4);
 }
+
+[color-correction="redgreen"] {
+  filter: hue-rotate(90deg);
+}
+
+[color-correction="blueyellow"]{
+  filter: hue-rotate(180deg)
+}
+
+[color-correction="gray"] {
+  filter: grayscale(100%);
+}
