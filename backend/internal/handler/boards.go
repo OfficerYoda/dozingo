@@ -41,10 +41,9 @@ type GetBoardByIDOutput struct {
 
 type CreateBoardInput struct {
 	Body struct {
-		Title       string          `json:"title" format:"text" required:"true" maxLength:"200"`
-		Description *string         `json:"description,omitempty" format:"text" maxLength:"500"`
-		Size        int32           `json:"size" format:"integer" required:"true" maxLength:"200"`
-		AuthorID    types.UUIDParam `json:"author_id" format:"uuid" required:"true"`
+		Title       string  `json:"title" format:"text" required:"true" maxLength:"200"`
+		Description *string `json:"description,omitempty" format:"text" maxLength:"500"`
+		Size        int32   `json:"size" format:"integer" required:"true" maxLength:"200"`
 	}
 }
 
@@ -120,11 +119,10 @@ func (h *BoardsHandler) get(ctx context.Context, in *GetBoardByIDInput) (*GetBoa
 }
 
 func (h *BoardsHandler) create(ctx context.Context, in *CreateBoardInput) (*CreateBoardOutput, error) {
-	board, err := h.svc.Create(ctx, repository.CreateBoardInput{
+	board, err := h.svc.Create(ctx, service.CreateBoardInput{
 		Title:       in.Body.Title,
 		Description: in.Body.Description,
 		Size:        in.Body.Size,
-		AuthorID:    in.Body.AuthorID.Value,
 	})
 	if err != nil {
 		return nil, toHumaErr(err, "", "failed to create board")

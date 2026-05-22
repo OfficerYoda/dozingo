@@ -138,11 +138,11 @@ func (s *Auth) generateUser(ctx context.Context, in RegisterInput) (generated.Us
 }
 
 func (s *Auth) attatchUserToSession(ctx context.Context, user generated.User) error {
-	session, err := middleware.RequireSessionCtx(ctx, s.queries)
+	sessionUser, err := middleware.RequireSessionCtx(ctx, s.queries)
 	if err != nil {
-		return fmt.Errorf("require session: %w", err)
+		return fmt.Errorf("session required: %w", err)
 	}
-	_, err = s.sessions.AttachUser(ctx, session.Token, user.ID)
+	_, err = s.sessions.AttachUser(ctx, sessionUser.Token, user.ID)
 	if err != nil {
 		return fmt.Errorf("attach user to session: %w", err)
 	}

@@ -74,18 +74,18 @@ func (s *Cells) Delete(ctx context.Context, cellID, boardID pgtype.UUID) error {
 }
 
 func checkIfCallerOwnsBoard(ctx context.Context, s *Cells, boardID pgtype.UUID) error {
-	session, err := middleware.RequireSessionCtx(ctx, s.queries)
+	sessionUser, err := middleware.RequireSessionCtx(ctx, s.queries)
 	if err != nil {
-		return fmt.Errorf("require session: %w", err)
+		return fmt.Errorf("session required: %w", err)
 	}
 
 	board, err := s.boards.Get(ctx, boardID)
 	if err != nil {
 		return err
 	}
-
-	if board.AuthorID != session.UserID {
-		return fmt.Errorf("user does not own board: %w", domain.ErrForbidden)
+	if board.AuthorID != sessionUser.UserID {
+		return fmt.Errorf("delete board: %w", domain.ErrForbidden)
 	}
+
 	return nil
 }

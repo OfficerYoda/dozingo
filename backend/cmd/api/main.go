@@ -101,7 +101,7 @@ func registerRoutes(router *chi.Mux, pool *pgxpool.Pool) {
 	// New layering
 	repos := repository.New(pool)
 	txRunner := repository.NewTxRunner(pool)
-	boardsSvc := service.NewBoards(repos.Boards)
+	boardsSvc := service.NewBoards(repos.Boards, queries)
 	cellsSvc := service.NewCells(repos.Cells, repos.Boards, queries)
 	gameCellsSvc := service.NewGameCells(repos.GameCells)
 	gamesSvc := service.NewGames(repos.Games)
