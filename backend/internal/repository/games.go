@@ -23,8 +23,8 @@ type UpdateGameStatusInput struct {
 	Status   string
 }
 
-func (r *Games) Get(ctx context.Context, id pgtype.UUID) (generated.Game, error) {
-	game, err := r.queries.GetGameByID(ctx, id)
+func (r *Games) Get(ctx context.Context, gameID pgtype.UUID) (generated.Game, error) {
+	game, err := r.queries.GetGameByID(ctx, gameID)
 	if err != nil {
 		return generated.Game{}, pgmap.TranslatePgErr(err)
 	}
@@ -70,8 +70,8 @@ func (r *Games) UpdateStatus(ctx context.Context, in UpdateGameStatusInput) (gen
 	return game, nil
 }
 
-func (r *Games) Delete(ctx context.Context, id pgtype.UUID) (generated.Game, error) {
-	game, err := r.queries.DeleteGame(ctx, id)
+func (r *Games) Delete(ctx context.Context, gameID pgtype.UUID) (generated.Game, error) {
+	game, err := r.queries.DeleteGame(ctx, gameID)
 	if err != nil {
 		return generated.Game{}, pgmap.TranslatePgErr(err)
 	}

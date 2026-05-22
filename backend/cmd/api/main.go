@@ -104,7 +104,7 @@ func registerRoutes(router *chi.Mux, pool *pgxpool.Pool) {
 	boardsSvc := service.NewBoards(repos.Boards, queries)
 	cellsSvc := service.NewCells(repos.Cells, repos.Boards, queries)
 	gameCellsSvc := service.NewGameCells(repos.GameCells)
-	gamesSvc := service.NewGames(repos.Games)
+	gamesSvc := service.NewGames(repos.Games, queries)
 	votesSvc := service.NewVotes(repos.Votes, queries)
 	authSvc := service.NewAuth(repos, queries, txRunner)
 

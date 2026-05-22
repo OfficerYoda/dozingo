@@ -30,8 +30,8 @@ func (s *Boards) List(ctx context.Context, filter repository.BoardListFilter) ([
 	return s.boards.List(ctx, filter)
 }
 
-func (s *Boards) Get(ctx context.Context, id pgtype.UUID) (generated.Board, error) {
-	return s.boards.Get(ctx, id)
+func (s *Boards) Get(ctx context.Context, boardID pgtype.UUID) (generated.Board, error) {
+	return s.boards.Get(ctx, boardID)
 }
 
 func (s *Boards) Create(ctx context.Context, in CreateBoardInput) (generated.Board, error) {
