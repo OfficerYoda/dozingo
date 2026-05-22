@@ -9,11 +9,11 @@ import (
 )
 
 type Cells struct {
-	repo *repository.Cells
+	cells  *repository.Cells
 }
 
 func NewCells(repo *repository.Cells) *Cells {
-	return &Cells{repo: repo}
+	return &Cells{cells: repo}
 }
 
 type CreateCellInput struct {
@@ -23,7 +23,7 @@ type CreateCellInput struct {
 }
 
 func (s *Cells) ListByBoardID(ctx context.Context, boardID pgtype.UUID) ([]generated.Cell, error) {
-	return s.repo.ListByBoardID(ctx, boardID)
+	return s.cells.ListByBoardID(ctx, boardID)
 }
 
 func (s *Cells) Create(ctx context.Context, in CreateCellInput) (generated.Cell, error) {
@@ -34,7 +34,7 @@ func (s *Cells) Create(ctx context.Context, in CreateCellInput) (generated.Cell,
 		def := int32(1)
 		value = &def
 	}
-	return s.repo.Create(ctx, repository.CreateCellInput{
+	return s.cells.Create(ctx, repository.CreateCellInput{
 		BoardID: in.BoardID,
 		Content: in.Content,
 		Value:   *value,
@@ -43,11 +43,11 @@ func (s *Cells) Create(ctx context.Context, in CreateCellInput) (generated.Cell,
 
 func (s *Cells) Update(ctx context.Context, in repository.UpdateCellInput) (generated.Cell, error) {
 	// TODO(authz): verify the caller owns the board.
-	return s.repo.Update(ctx, in)
+	return s.cells.Update(ctx, in)
 }
 
 func (s *Cells) Delete(ctx context.Context, cellID, boardID pgtype.UUID) error {
 	// TODO(authz): verify the caller owns the board.
-	_, err := s.repo.Delete(ctx, cellID, boardID)
+	_, err := s.cells.Delete(ctx, cellID, boardID)
 	return err
 }

@@ -9,38 +9,38 @@ import (
 )
 
 type Games struct {
-	repo *repository.Games
+	games *repository.Games
 }
 
-func NewGames(repo *repository.Games) *Games {
-	return &Games{repo: repo}
+func NewGames(games *repository.Games) *Games {
+	return &Games{games: games}
 }
 
 func (s *Games) Get(ctx context.Context, id pgtype.UUID) (generated.Game, error) {
-	return s.repo.Get(ctx, id)
+	return s.games.Get(ctx, id)
 }
 
 func (s *Games) ListByPlayer(ctx context.Context, playerID pgtype.UUID) ([]generated.Game, error) {
-	return s.repo.ListByPlayer(ctx, playerID)
+	return s.games.ListByPlayer(ctx, playerID)
 }
 
 func (s *Games) ListByBoard(ctx context.Context, boardID pgtype.UUID) ([]generated.Game, error) {
-	return s.repo.ListByBoard(ctx, boardID)
+	return s.games.ListByBoard(ctx, boardID)
 }
 
 func (s *Games) Create(ctx context.Context, in repository.CreateGameInput) (generated.Game, error) {
 	// TODO(authz): once handlers pass the session, verify in.PlayerID matches
 	// the authenticated user.
-	return s.repo.Create(ctx, in)
+	return s.games.Create(ctx, in)
 }
 
 func (s *Games) UpdateStatus(ctx context.Context, in repository.UpdateGameStatusInput) (generated.Game, error) {
 	// TODO(authz): verify the caller owns the game.
-	return s.repo.UpdateStatus(ctx, in)
+	return s.games.UpdateStatus(ctx, in)
 }
 
 func (s *Games) Delete(ctx context.Context, id pgtype.UUID) error {
 	// TODO(authz): verify the caller owns the game.
-	_, err := s.repo.Delete(ctx, id)
+	_, err := s.games.Delete(ctx, id)
 	return err
 }

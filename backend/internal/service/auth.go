@@ -17,15 +17,15 @@ type Auth struct {
 	users     *repository.Users
 	passwords *repository.UserPasswords
 	sessions  *repository.Sessions
-	txRunner  repository.TxRunner
 	queries   *generated.Queries
+	txRunner  repository.TxRunner
 }
 
-func NewAuth(repo repository.Repos, txRunner repository.TxRunner, queries *generated.Queries) *Auth {
+func NewAuth(repos repository.Repos, queries *generated.Queries, txRunner repository.TxRunner) *Auth {
 	return &Auth{
-		users:     repo.Users,
-		passwords: repo.Passwords,
-		sessions:  repo.Sessions,
+		users:     repos.Users,
+		passwords: repos.Passwords,
+		sessions:  repos.Sessions,
 		txRunner:  txRunner,
 		queries:   queries,
 	}
@@ -42,7 +42,6 @@ type LoginInput struct {
 	Password string
 }
 
-// Register implements [Auth].
 func (s *Auth) Register(ctx context.Context, in RegisterInput) (generated.User, error) {
 	user, err := s.generateUser(ctx, in)
 	if err != nil {
@@ -59,7 +58,6 @@ func (s *Auth) Register(ctx context.Context, in RegisterInput) (generated.User, 
 	return user, nil
 }
 
-// Login implements [Auth].
 func (s *Auth) Login(ctx context.Context, in LoginInput) (generated.User, error) {
 	user, err := s.users.GetForPasswordLogin(ctx, in.Username)
 	if err != nil {
@@ -88,7 +86,6 @@ func (s *Auth) Login(ctx context.Context, in LoginInput) (generated.User, error)
 	return vanillaUser, nil
 }
 
-// Logout implements [Auth].
 func (s *Auth) Logout(ctx context.Context) error {
 	sessionUser, ok := middleware.SessionUserFromContext(ctx)
 	if !ok || !sessionUser.UserID.Valid {
@@ -107,7 +104,6 @@ func (s *Auth) Logout(ctx context.Context) error {
 	return nil
 }
 
-// Me implements [Auth].
 func (s *Auth) Me(ctx context.Context, session generated.GetSessionUserByTokenRow) (generated.User, error) {
 	return generated.User{
 		ID:       session.UserID,

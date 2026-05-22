@@ -9,30 +9,30 @@ import (
 )
 
 type Boards struct {
-	repo *repository.Boards
+	boards *repository.Boards
 }
 
-func NewBoards(repo *repository.Boards) *Boards {
-	return &Boards{repo: repo}
+func NewBoards(boards *repository.Boards) *Boards {
+	return &Boards{boards: boards}
 }
 
 func (s *Boards) List(ctx context.Context, filter repository.BoardListFilter) ([]generated.Board, error) {
-	return s.repo.List(ctx, filter)
+	return s.boards.List(ctx, filter)
 }
 
 func (s *Boards) Get(ctx context.Context, id pgtype.UUID) (generated.Board, error) {
-	return s.repo.Get(ctx, id)
+	return s.boards.Get(ctx, id)
 }
 
 func (s *Boards) Create(ctx context.Context, in repository.CreateBoardInput) (generated.Board, error) {
 	// TODO(authz): once handlers pass the session, verify in.AuthorID matches
 	// the authenticated user (or admin).
-	return s.repo.Create(ctx, in)
+	return s.boards.Create(ctx, in)
 }
 
 func (s *Boards) Delete(ctx context.Context, id pgtype.UUID) error {
 	// TODO(authz): once handlers pass the session, verify the caller owns the
 	// board before deleting.
-	_, err := s.repo.Delete(ctx, id)
+	_, err := s.boards.Delete(ctx, id)
 	return err
 }
