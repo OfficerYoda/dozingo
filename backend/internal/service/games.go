@@ -38,7 +38,7 @@ func (s *Games) ListByBoard(ctx context.Context, boardID pgtype.UUID) ([]generat
 func (s *Games) Create(ctx context.Context, boardID pgtype.UUID) (generated.Game, error) {
 	sessionUser, err := requiresSessionUser(ctx, s.queries)
 	if err != nil {
-		return generated.Game{}, nil
+		return generated.Game{}, err
 	}
 
 	return s.games.Create(ctx, repository.CreateGameInput{
@@ -78,7 +78,7 @@ func checkIfCallerOwnsGame(
 ) (generated.GetSessionUserByTokenRow, error) {
 	sessionUser, err := requiresSessionUser(ctx, queries)
 	if err != nil {
-		return generated.GetSessionUserByTokenRow{}, nil
+		return generated.GetSessionUserByTokenRow{}, err
 	}
 
 	game, err := games.Get(ctx, gameID)
