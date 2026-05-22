@@ -10,10 +10,16 @@ import (
 
 type GameCells struct {
 	gameCells *repository.GameCells
+	games     *repository.Games
+	queries   *generated.Queries
 }
 
-func NewGameCells(gameCells *repository.GameCells) *GameCells {
-	return &GameCells{gameCells: gameCells}
+func NewGameCells(gameCells *repository.GameCells, games *repository.Games, queries *generated.Queries) *GameCells {
+	return &GameCells{
+		gameCells: gameCells,
+		games:     games,
+		queries:   queries,
+	}
 }
 
 func (s *GameCells) ListByGameID(ctx context.Context, gameID pgtype.UUID) ([]generated.GameCell, error) {
@@ -21,12 +27,19 @@ func (s *GameCells) ListByGameID(ctx context.Context, gameID pgtype.UUID) ([]gen
 }
 
 func (s *GameCells) Create(ctx context.Context, in repository.CreateGameCellsInput) ([]generated.GameCell, error) {
-	// TODO(authz): once handlers pass the session, verify the caller owns
-	// the game before creating cells on it.
+	_, err := checkIfCallerOwnsGame(ctx, s.games, s.queries, in.GameID)
+	if err != nil {
+		return []generated.GameCell{}, err
+	}
+
 	return s.gameCells.Create(ctx, in)
 }
 
 func (s *GameCells) UpdateMark(ctx context.Context, in repository.UpdateGameCellMarkInput) (generated.GameCell, error) {
-	// TODO(authz): verify the caller owns the game before marking cells.
+	_, err := checkIfCallerOwnsGame(ctx, s.games, s.queries, in.GameID)
+	if err != nil {
+		return generated.GameCell{}, err
+	}
+
 	return s.gameCells.UpdateMark(ctx, in)
 }

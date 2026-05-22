@@ -48,7 +48,7 @@ func (s *Games) Create(ctx context.Context, boardID pgtype.UUID) (generated.Game
 }
 
 func (s *Games) UpdateStatus(ctx context.Context, in UpdateGameStatusInput) (generated.Game, error) {
-	sessionUser, err := checkIfCallerOwnsGame(ctx, s, in.GameID)
+	sessionUser, err := checkIfCallerOwnsGame(ctx, s.games, s.queries, in.GameID)
 	if err != nil {
 		return generated.Game{}, err
 	}
@@ -61,7 +61,7 @@ func (s *Games) UpdateStatus(ctx context.Context, in UpdateGameStatusInput) (gen
 }
 
 func (s *Games) Delete(ctx context.Context, gameID pgtype.UUID) error {
-	_, err := checkIfCallerOwnsGame(ctx, s, gameID)
+	_, err := checkIfCallerOwnsGame(ctx, s.games, s.queries, gameID)
 	if err != nil {
 		return err
 	}
@@ -70,13 +70,18 @@ func (s *Games) Delete(ctx context.Context, gameID pgtype.UUID) error {
 	return err
 }
 
-func checkIfCallerOwnsGame(ctx context.Context, s *Games, gameID pgtype.UUID) (generated.GetSessionUserByTokenRow, error) {
-	sessionUser, err := requiresSessionUser(ctx, s.queries)
+func checkIfCallerOwnsGame(
+	ctx context.Context,
+	games *repository.Games,
+	queries *generated.Queries,
+	gameID pgtype.UUID,
+) (generated.GetSessionUserByTokenRow, error) {
+	sessionUser, err := requiresSessionUser(ctx, queries)
 	if err != nil {
 		return generated.GetSessionUserByTokenRow{}, nil
 	}
 
-	game, err := s.games.Get(ctx, gameID)
+	game, err := games.Get(ctx, gameID)
 	if err != nil {
 		return generated.GetSessionUserByTokenRow{}, err
 	}
