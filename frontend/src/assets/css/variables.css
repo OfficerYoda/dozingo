@@ -111,6 +111,8 @@
     /* Settings page */
     --color-heading: #2C2A51;
     --color-text-subtle: #75729E;
+    --color-subheading: #5A5781;
+    --color-input-bg: #E3DFFF;
     --color-bg-card-tinted: #F3EEFF;
     --color-bg-card-highlighted: #E9E5FF;
     --color-interactive-track: #DDD9FF;
@@ -162,6 +164,8 @@
   /* Settings page */
   --color-heading: #c7d2fe;
   --color-text-subtle: #a5b4fc;
+  --color-subheading: #a5b4fc;
+  --color-input-bg: #2a2550;
   --color-bg-card-tinted: #1e1b4b;
   --color-bg-card-highlighted: #252145;
   --color-interactive-track: #3730a3;

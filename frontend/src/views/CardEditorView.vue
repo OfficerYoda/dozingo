@@ -143,17 +143,17 @@ function removeRow(index: number) {
 /* === Typography === */
 
 h2 {
-  color: #2C2A51;
+  color: var(--color-heading);
 }
 
 h3 {
-  color: #5A5781;
+  color: var(--color-subheading);
   font-weight: 300;
   font-size: 1.25rem;
 }
 
 .card-header svg {
-  color: #2C2A51;
+  color: var(--color-heading);
 }
 
 /* === Form inputs === */
@@ -161,7 +161,7 @@ h3 {
 .form-input {
   border-color: transparent;
   border-radius: 8px;
-  background-color: #E3DFFF;
+  background-color: var(--color-input-bg);
 }
 
 .title-input {
@@ -191,18 +191,18 @@ h3 {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  border: 1px solid #6B7280;
+  border: 1px solid var(--color-text-secondary);
   border-radius: var(--radius-sm);
 }
 
 .entries-table th {
-  color: #5A5781;
+  color: var(--color-subheading);
   font-weight: 350;
   padding: 10px;
 }
 
 .table-header th {
-  background-color: #E3DFFF;
+  background-color: var(--color-input-bg);
 }
 
 .table-header th:first-child {
@@ -214,7 +214,7 @@ h3 {
 }
 
 .entries-table tbody td {
-  border-top: 1px solid #6B7280;
+  border-top: 1px solid var(--color-text-secondary);
 }
 
 .col-term  { width: 60%; }
@@ -228,6 +228,7 @@ h3 {
 .entry-term-input {
   width: 100%;
   border-color: transparent;
+  background-color: transparent;
 }
 
 .entry-select {
@@ -250,5 +251,9 @@ h3 {
 .entry-count-hint {
   color: var(--color-accent-red);
   font-weight: 500;
+}
+
+.card {
+  background-color: var(--color-bg-card-tinted);
 }
 </style>
