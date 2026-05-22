@@ -2,18 +2,27 @@ package service
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/officeryoda/dozingo/internal/domain"
 	"github.com/officeryoda/dozingo/internal/generated"
+	"github.com/officeryoda/dozingo/internal/middleware"
 	"github.com/officeryoda/dozingo/internal/repository"
 )
 
 type Cells struct {
-	cells  *repository.Cells
+	cells   *repository.Cells
+	boards  *repository.Boards
+	queries *generated.Queries
 }
 
-func NewCells(repo *repository.Cells) *Cells {
-	return &Cells{cells: repo}
+func NewCells(cells *repository.Cells, boards *repository.Boards, queries *generated.Queries) *Cells {
+	return &Cells{
+		cells:   cells,
+		boards:  boards,
+		queries: queries,
+	}
 }
 
 type CreateCellInput struct {
@@ -27,27 +36,56 @@ func (s *Cells) ListByBoardID(ctx context.Context, boardID pgtype.UUID) ([]gener
 }
 
 func (s *Cells) Create(ctx context.Context, in CreateCellInput) (generated.Cell, error) {
-	// TODO(authz): once handlers pass the session, verify the caller owns
-	// the board before creating cells on it.
-	value := in.Value
-	if value == nil {
-		def := int32(1)
-		value = &def
+	err := checkIfCallerOwnsBoard(ctx, s, in.BoardID)
+	if err != nil {
+		return generated.Cell{}, err
 	}
+
+	cellValue := in.Value
+	if cellValue == nil {
+		def := int32(1)
+		cellValue = &def
+	}
+
 	return s.cells.Create(ctx, repository.CreateCellInput{
 		BoardID: in.BoardID,
 		Content: in.Content,
-		Value:   *value,
+		Value:   *cellValue,
 	})
 }
 
 func (s *Cells) Update(ctx context.Context, in repository.UpdateCellInput) (generated.Cell, error) {
-	// TODO(authz): verify the caller owns the board.
+	err := checkIfCallerOwnsBoard(ctx, s, in.BoardID)
+	if err != nil {
+		return generated.Cell{}, err
+	}
+
 	return s.cells.Update(ctx, in)
 }
 
 func (s *Cells) Delete(ctx context.Context, cellID, boardID pgtype.UUID) error {
-	// TODO(authz): verify the caller owns the board.
-	_, err := s.cells.Delete(ctx, cellID, boardID)
+	err := checkIfCallerOwnsBoard(ctx, s, boardID)
+	if err != nil {
+		return err
+	}
+
+	_, err = s.cells.Delete(ctx, cellID, boardID)
 	return err
+}
+
+func checkIfCallerOwnsBoard(ctx context.Context, s *Cells, boardID pgtype.UUID) error {
+	session, err := middleware.RequireSessionCtx(ctx, s.queries)
+	if err != nil {
+		return fmt.Errorf("require session: %w", err)
+	}
+
+	board, err := s.boards.Get(ctx, boardID)
+	if err != nil {
+		return err
+	}
+
+	if board.AuthorID != session.UserID {
+		return fmt.Errorf("user does not own board: %w", domain.ErrForbidden)
+	}
+	return nil
 }
