@@ -52,12 +52,9 @@ func (s *Boards) Create(ctx context.Context, in CreateBoardInput) (generated.Boa
 }
 
 func (s *Boards) Delete(ctx context.Context, boardID pgtype.UUID) error {
-	sessionUser, err := middleware.RequireSession(ctx, s.queries)
+	sessionUser, err := requiresSessionUser(ctx, s.queries)
 	if err != nil {
-		return fmt.Errorf("session required: %w", err)
-	}
-	if !sessionUser.UserID.Valid {
-		return fmt.Errorf("authenticated user required: %w", domain.ErrUnauthorized)
+		return err
 	}
 
 	board, err := s.boards.Get(ctx, boardID)
