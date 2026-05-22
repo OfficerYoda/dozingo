@@ -2,36 +2,63 @@ package service
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/officeryoda/dozingo/internal/domain"
 	"github.com/officeryoda/dozingo/internal/generated"
 	"github.com/officeryoda/dozingo/internal/repository"
 )
 
 type Votes struct {
-	repo *repository.Votes
+	votes   *repository.Votes
+	queries *generated.Queries
 }
 
-func NewVotes(repo *repository.Votes) *Votes {
-	return &Votes{repo: repo}
+func NewVotes(votes *repository.Votes, queries *generated.Queries) *Votes {
+	return &Votes{votes: votes, queries: queries}
 }
 
-func (s *Votes) GetAggregateByBoardID(ctx context.Context, in repository.GetVotesAggregateInput) (generated.GetVotesByBoardIDRow, error) {
-	return s.repo.GetAggregateByBoardID(ctx, in)
+type GetVotesAggregateInput struct {
+	BoardID pgtype.UUID
+	UserID  pgtype.UUID
 }
 
-func (s *Votes) Upsert(ctx context.Context, in repository.UpsertVoteInput) (generated.Vote, error) {
-	if in.VoteValue != -1 && in.VoteValue != 1 {
-		return generated.Vote{}, domain.ErrUnprocessableEntity
+type UpsertVoteInput struct {
+	BoardID   pgtype.UUID
+	VoteValue int32
+}
+
+func (s *Votes) GetAggregateByBoardID(ctx context.Context, in GetVotesAggregateInput) (generated.GetVotesByBoardIDRow, error) {
+	return s.votes.GetAggregateByBoardID(ctx, repository.GetVotesAggregateInput(in))
+}
+
+func (s *Votes) Upsert(ctx context.Context, in UpsertVoteInput) (generated.Vote, error) {
+	sessionUser, err := requiresSessionUser(ctx, s.queries)
+	if err != nil {
+		return generated.Vote{}, err
 	}
-	// TODO(authz): once handlers pass the session, verify in.UserID matches
-	// the authenticated user.
-	return s.repo.Upsert(ctx, in)
+
+	if in.VoteValue != -1 && in.VoteValue != 1 {
+		return generated.Vote{}, fmt.Errorf("invalid vote_value: %w", domain.ErrUnprocessableEntity)
+	}
+
+	return s.votes.Upsert(ctx, repository.UpsertVoteInput{
+		BoardID:   in.BoardID,
+		VoteValue: in.VoteValue,
+		UserID:    sessionUser.UserID,
+	})
 }
 
-func (s *Votes) Delete(ctx context.Context, in repository.DeleteVoteInput) error {
-	// TODO(authz): once handlers pass the session, verify in.UserID matches
-	// the authenticated user.
-	_, err := s.repo.Delete(ctx, in)
+func (s *Votes) Delete(ctx context.Context, boardID pgtype.UUID) error {
+	sessionUser, err := requiresSessionUser(ctx, s.queries)
+	if err != nil {
+		return err
+	}
+
+	_, err = s.votes.Delete(ctx, repository.DeleteVoteInput{
+		BoardID: boardID,
+		UserID:  sessionUser.UserID,
+	})
 	return err
 }

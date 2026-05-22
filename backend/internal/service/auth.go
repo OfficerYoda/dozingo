@@ -17,15 +17,15 @@ type Auth struct {
 	users     *repository.Users
 	passwords *repository.UserPasswords
 	sessions  *repository.Sessions
-	txRunner  repository.TxRunner
 	queries   *generated.Queries
+	txRunner  repository.TxRunner
 }
 
-func NewAuth(repo repository.Repos, txRunner repository.TxRunner, queries *generated.Queries) *Auth {
+func NewAuth(repos repository.Repos, queries *generated.Queries, txRunner repository.TxRunner) *Auth {
 	return &Auth{
-		users:     repo.Users,
-		passwords: repo.Passwords,
-		sessions:  repo.Sessions,
+		users:     repos.Users,
+		passwords: repos.Passwords,
+		sessions:  repos.Sessions,
 		txRunner:  txRunner,
 		queries:   queries,
 	}
@@ -42,7 +42,6 @@ type LoginInput struct {
 	Password string
 }
 
-// Register implements [Auth].
 func (s *Auth) Register(ctx context.Context, in RegisterInput) (generated.User, error) {
 	user, err := s.generateUser(ctx, in)
 	if err != nil {
@@ -59,7 +58,6 @@ func (s *Auth) Register(ctx context.Context, in RegisterInput) (generated.User, 
 	return user, nil
 }
 
-// Login implements [Auth].
 func (s *Auth) Login(ctx context.Context, in LoginInput) (generated.User, error) {
 	user, err := s.users.GetForPasswordLogin(ctx, in.Username)
 	if err != nil {
@@ -88,7 +86,6 @@ func (s *Auth) Login(ctx context.Context, in LoginInput) (generated.User, error)
 	return vanillaUser, nil
 }
 
-// Logout implements [Auth].
 func (s *Auth) Logout(ctx context.Context) error {
 	sessionUser, ok := middleware.SessionUserFromContext(ctx)
 	if !ok || !sessionUser.UserID.Valid {
@@ -100,14 +97,13 @@ func (s *Auth) Logout(ctx context.Context) error {
 		return fmt.Errorf("delete session token: %w", err)
 	}
 
-	if err := middleware.ClearSessionTokenCookieCtx(ctx); err != nil {
+	if err := middleware.ClearSessionTokenCookie(ctx); err != nil {
 		slog.Warn("failed to clear session cookie on logout", "error", err)
 	}
 
 	return nil
 }
 
-// Me implements [Auth].
 func (s *Auth) Me(ctx context.Context, session generated.GetSessionUserByTokenRow) (generated.User, error) {
 	return generated.User{
 		ID:       session.UserID,
@@ -141,12 +137,23 @@ func (s *Auth) generateUser(ctx context.Context, in RegisterInput) (generated.Us
 	return user, nil
 }
 
-func (s *Auth) attatchUserToSession(ctx context.Context, user generated.User) error {
-	session, err := middleware.RequireSessionCtx(ctx, s.queries)
+func requiresSessionUser(ctx context.Context, queries *generated.Queries) (generated.GetSessionUserByTokenRow, error) {
+	sessionUser, err := middleware.RequireSession(ctx, queries)
 	if err != nil {
-		return fmt.Errorf("require session: %w", err)
+		return generated.GetSessionUserByTokenRow{}, fmt.Errorf("session required: %w", err)
 	}
-	_, err = s.sessions.AttachUser(ctx, session.Token, user.ID)
+	if !sessionUser.UserID.Valid {
+		return generated.GetSessionUserByTokenRow{}, fmt.Errorf("authenticated user required: %w", domain.ErrUnauthorized)
+	}
+	return sessionUser, nil
+}
+
+func (s *Auth) attatchUserToSession(ctx context.Context, user generated.User) error {
+	sessionUser, err := middleware.RequireSession(ctx, s.queries)
+	if err != nil {
+		return fmt.Errorf("session required: %w", err)
+	}
+	_, err = s.sessions.AttachUser(ctx, sessionUser.Token, user.ID)
 	if err != nil {
 		return fmt.Errorf("attach user to session: %w", err)
 	}

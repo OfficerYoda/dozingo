@@ -7,7 +7,6 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/officeryoda/dozingo/internal/generated"
 	"github.com/officeryoda/dozingo/internal/pgmap"
-	"github.com/officeryoda/dozingo/internal/repository"
 	"github.com/officeryoda/dozingo/internal/service"
 	"github.com/officeryoda/dozingo/internal/types"
 )
@@ -41,10 +40,9 @@ type GetBoardByIDOutput struct {
 
 type CreateBoardInput struct {
 	Body struct {
-		Title       string          `json:"title" format:"text" required:"true" maxLength:"200"`
-		Description *string         `json:"description,omitempty" format:"text" maxLength:"500"`
-		Size        int32           `json:"size" format:"integer" required:"true" maxLength:"200"`
-		AuthorID    types.UUIDParam `json:"author_id" format:"uuid" required:"true"`
+		Title       string  `json:"title" format:"text" required:"true" maxLength:"200"`
+		Description *string `json:"description,omitempty" format:"text" maxLength:"500"`
+		Size        int32   `json:"size" format:"integer" required:"true" maxLength:"200"`
 	}
 }
 
@@ -101,13 +99,14 @@ func (h *BoardsHandler) Register(api huma.API) {
 }
 
 func (h *BoardsHandler) list(ctx context.Context, in *GetBoardsInput) (*GetBoardsOutput, error) {
-	boards, err := h.svc.List(ctx, repository.BoardListFilter{
+	boards, err := h.svc.List(ctx, service.BoardListFilter{
 		AuthorID: in.AuthorID,
 		Size:     in.Size,
 	})
 	if err != nil {
 		return nil, toHumaErr(err, "", "failed to list boards")
 	}
+
 	return &GetBoardsOutput{Body: mapSlice(boards, boardToOutput)}, nil
 }
 
@@ -116,19 +115,20 @@ func (h *BoardsHandler) get(ctx context.Context, in *GetBoardByIDInput) (*GetBoa
 	if err != nil {
 		return nil, toHumaErr(err, "board not found", "failed to get board")
 	}
+
 	return &GetBoardByIDOutput{Body: boardToOutput(board)}, nil
 }
 
 func (h *BoardsHandler) create(ctx context.Context, in *CreateBoardInput) (*CreateBoardOutput, error) {
-	board, err := h.svc.Create(ctx, repository.CreateBoardInput{
+	board, err := h.svc.Create(ctx, service.CreateBoardInput{
 		Title:       in.Body.Title,
 		Description: in.Body.Description,
 		Size:        in.Body.Size,
-		AuthorID:    in.Body.AuthorID.Value,
 	})
 	if err != nil {
 		return nil, toHumaErr(err, "", "failed to create board")
 	}
+
 	return &CreateBoardOutput{Body: boardToOutput(board)}, nil
 }
 
@@ -136,6 +136,7 @@ func (h *BoardsHandler) delete(ctx context.Context, in *DeleteBoardInput) (*stru
 	if err := h.svc.Delete(ctx, in.BoardID.Value); err != nil {
 		return nil, toHumaErr(err, "board not found", "failed to delete board")
 	}
+
 	return &struct{}{}, nil
 }
 

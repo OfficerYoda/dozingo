@@ -21,7 +21,7 @@ func toHumaErr(err error, notFoundMsg, opMsg string) error {
 		return huma.Error401Unauthorized(err.Error())
 	case errors.Is(err, domain.ErrForbidden):
 		return huma.Error403Forbidden(err.Error())
-	case errors.Is(err, domain.ErrInvalid):
+	case errors.Is(err, domain.ErrBadInput):
 		return huma.Error400BadRequest(err.Error())
 	case errors.Is(err, domain.ErrUnprocessableEntity):
 		return huma.Error422UnprocessableEntity(err.Error())
@@ -38,5 +38,6 @@ func mapSlice[T, U any](in []T, fn func(T) U) []U {
 	for _, v := range in {
 		out = append(out, fn(v))
 	}
+
 	return out
 }

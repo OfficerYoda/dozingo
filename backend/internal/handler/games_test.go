@@ -18,8 +18,8 @@ func TestCreateGame(t *testing.T) {
 	setupTest(t)
 	userID, boardID := setupForGames(t)
 
-	w := doRequest(http.MethodPost,
-		fmt.Sprintf("/api/boards/%s/games?player_id=%s", boardID, userID), nil)
+	w := doRequestWithCookies(http.MethodPost,
+		fmt.Sprintf("/api/boards/%s/games", boardID), nil, cookiesFor(userID))
 	assertStatus(t, w, http.StatusOK)
 
 	var resp map[string]any
@@ -32,6 +32,14 @@ func TestCreateGame(t *testing.T) {
 	if _, ok := resp["game_id"]; !ok {
 		t.Error("expected 'id' field in response")
 	}
+}
+
+func TestCreateGame_Unauthenticated(t *testing.T) {
+	setupTest(t)
+	_, boardID := setupForGames(t)
+
+	w := doRequest(http.MethodPost, fmt.Sprintf("/api/boards/%s/games", boardID), nil)
+	assertStatus(t, w, http.StatusUnauthorized)
 }
 
 func TestGetGameByID(t *testing.T) {
@@ -131,9 +139,10 @@ func TestUpdateGameStatus(t *testing.T) {
 	userID, boardID := setupForGames(t)
 	gameID := createTestGame(t, userID, boardID)
 
-	w := doRequest(http.MethodPut,
-		fmt.Sprintf("/api/games/%s/status?player_id=%s", gameID, userID),
+	w := doRequestWithCookies(http.MethodPut,
+		fmt.Sprintf("/api/games/%s/status", gameID),
 		map[string]any{"status": "completed"},
+		cookiesFor(userID),
 	)
 	assertStatus(t, w, http.StatusOK)
 
@@ -149,9 +158,10 @@ func TestUpdateGameStatus_Abandoned(t *testing.T) {
 	userID, boardID := setupForGames(t)
 	gameID := createTestGame(t, userID, boardID)
 
-	w := doRequest(http.MethodPut,
-		fmt.Sprintf("/api/games/%s/status?player_id=%s", gameID, userID),
+	w := doRequestWithCookies(http.MethodPut,
+		fmt.Sprintf("/api/games/%s/status", gameID),
 		map[string]any{"status": "abandoned"},
+		cookiesFor(userID),
 	)
 	assertStatus(t, w, http.StatusOK)
 
@@ -165,25 +175,29 @@ func TestUpdateGameStatus_NotFound(t *testing.T) {
 	setupTest(t)
 	userID := createTestUser(t, "ghostplayer", "ghost@example.com")
 
-	w := doRequest(http.MethodPut,
-		fmt.Sprintf("/api/games/00000000-0000-0000-0000-000000000000/status?player_id=%s", userID),
+	w := doRequestWithCookies(http.MethodPut,
+		"/api/games/00000000-0000-0000-0000-000000000000/status",
 		map[string]any{"status": "completed"},
+		cookiesFor(userID),
 	)
 	assertStatus(t, w, http.StatusNotFound)
 }
 
 func TestUpdateGameStatus_WrongPlayer(t *testing.T) {
 	setupTest(t)
-	user1, boardID := setupForGames(t)
-	user2 := createTestUser(t, "otherplayer", "other@example.com")
-	gameID := createTestGame(t, user1, boardID)
+	owner, boardID := setupForGames(t)
+	gameID := createTestGame(t, owner, boardID)
 
-	// user2 tries to update user1's game
-	w := doRequest(http.MethodPut,
-		fmt.Sprintf("/api/games/%s/status?player_id=%s", gameID, user2),
+	stranger := createTestUser(t, "stranger", "stranger@example.com")
+
+	// stranger tries to update owner's game; service returns
+	// domain.ErrUnauthorized -> 401.
+	w := doRequestWithCookies(http.MethodPut,
+		fmt.Sprintf("/api/games/%s/status", gameID),
 		map[string]any{"status": "completed"},
+		cookiesFor(stranger),
 	)
-	assertStatus(t, w, http.StatusNotFound)
+	assertStatus(t, w, http.StatusUnauthorized)
 }
 
 func TestDeleteGame(t *testing.T) {
@@ -192,7 +206,7 @@ func TestDeleteGame(t *testing.T) {
 	gameID := createTestGame(t, userID, boardID)
 
 	// Delete the game
-	w := doRequest(http.MethodDelete, fmt.Sprintf("/api/games/%s", gameID), nil)
+	w := doRequestWithCookies(http.MethodDelete, fmt.Sprintf("/api/games/%s", gameID), nil, cookiesFor(userID))
 	assertStatus(t, w, http.StatusNoContent)
 
 	// Verify game is gone
@@ -206,8 +220,21 @@ func TestDeleteGame(t *testing.T) {
 func TestDeleteGame_NotFound(t *testing.T) {
 	setupTest(t)
 
-	w := doRequest(http.MethodDelete, "/api/games/00000000-0000-0000-0000-000000000000", nil)
+	userID := createTestUser(t, "delnogame", "delnogame@example.com")
+
+	w := doRequestWithCookies(http.MethodDelete,
+		"/api/games/00000000-0000-0000-0000-000000000000",
+		nil,
+		cookiesFor(userID),
+	)
 	assertStatus(t, w, http.StatusNotFound)
+}
+
+func TestDeleteGame_NotFound_Unauthenticated(t *testing.T) {
+	setupTest(t)
+
+	w := doRequest(http.MethodDelete, "/api/games/00000000-0000-0000-0000-000000000000", nil)
+	assertStatus(t, w, http.StatusUnauthorized)
 }
 
 func TestCreateGame_MultipleOnSameBoard(t *testing.T) {
@@ -230,12 +257,12 @@ func TestDeleteGame_CascadesGameCells(t *testing.T) {
 	gameID := createTestGame(t, userID, boardID)
 
 	// Create game cells
-	doRequest(http.MethodPost, fmt.Sprintf("/api/games/%s/cells", gameID), []map[string]any{
+	doRequestWithCookies(http.MethodPost, fmt.Sprintf("/api/games/%s/cells", gameID), []map[string]any{
 		{"cell_id": cellID, "content": "Test Cell", "position": 0},
-	})
+	}, cookiesFor(userID))
 
 	// Delete the game (should cascade to game_cells)
-	w := doRequest(http.MethodDelete, fmt.Sprintf("/api/games/%s", gameID), nil)
+	w := doRequestWithCookies(http.MethodDelete, fmt.Sprintf("/api/games/%s", gameID), nil, cookiesFor(userID))
 	assertStatus(t, w, http.StatusNoContent)
 
 	// Verify game cells are gone too

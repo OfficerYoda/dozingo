@@ -7,7 +7,6 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/officeryoda/dozingo/internal/generated"
 	"github.com/officeryoda/dozingo/internal/pgmap"
-	"github.com/officeryoda/dozingo/internal/repository"
 	"github.com/officeryoda/dozingo/internal/service"
 	"github.com/officeryoda/dozingo/internal/types"
 )
@@ -46,8 +45,7 @@ type ListGamesByBoardOutput struct {
 }
 
 type CreateGameInput struct {
-	PlayerID types.UUIDParam `query:"player_id" format:"uuid"` // TODO eventually replace this when user auth is working
-	BoardID  types.UUIDParam `path:"board_id" format:"uuid"`
+	BoardID types.UUIDParam `path:"board_id" format:"uuid"`
 }
 
 type CreateGameOutput struct {
@@ -55,9 +53,8 @@ type CreateGameOutput struct {
 }
 
 type UpdateGameStatusInput struct {
-	GameID   types.UUIDParam `path:"game_id" format:"uuid"`
-	PlayerID types.UUIDParam `query:"player_id" format:"uuid"` // TODO eventually replace this when user auth is working
-	Body     struct {
+	GameID types.UUIDParam `path:"game_id" format:"uuid"`
+	Body   struct {
 		Status string `json:"status" format:"text" maxLength:"20" doc:"must be any of those: 'active', 'completed' or 'abandoned'"`
 	}
 }
@@ -135,6 +132,7 @@ func (h *GamesHandler) get(ctx context.Context, in *GetGameByIDInput) (*GetGameB
 	if err != nil {
 		return nil, toHumaErr(err, "game not found", "failed to get game")
 	}
+
 	return &GetGameByIDOutput{Body: gameToOutput(game)}, nil
 }
 
@@ -143,6 +141,7 @@ func (h *GamesHandler) listByPlayer(ctx context.Context, in *ListGamesByPlayerIn
 	if err != nil {
 		return nil, toHumaErr(err, "", "failed to list games by player")
 	}
+
 	return &ListGamesByPlayerOutput{Body: mapSlice(games, gameToOutput)}, nil
 }
 
@@ -151,29 +150,28 @@ func (h *GamesHandler) listByBoard(ctx context.Context, in *ListGamesByBoardInpu
 	if err != nil {
 		return nil, toHumaErr(err, "", "failed to list games by board")
 	}
+
 	return &ListGamesByBoardOutput{Body: mapSlice(games, gameToOutput)}, nil
 }
 
 func (h *GamesHandler) create(ctx context.Context, in *CreateGameInput) (*CreateGameOutput, error) {
-	game, err := h.svc.Create(ctx, repository.CreateGameInput{
-		PlayerID: in.PlayerID.Value,
-		BoardID:  in.BoardID.Value,
-	})
+	game, err := h.svc.Create(ctx, in.BoardID.Value)
 	if err != nil {
 		return nil, toHumaErr(err, "", "failed to create game")
 	}
+
 	return &CreateGameOutput{Body: gameToOutput(game)}, nil
 }
 
 func (h *GamesHandler) updateStatus(ctx context.Context, in *UpdateGameStatusInput) (*UpdateGameStatusOutput, error) {
-	game, err := h.svc.UpdateStatus(ctx, repository.UpdateGameStatusInput{
-		GameID:   in.GameID.Value,
-		PlayerID: in.PlayerID.Value,
-		Status:   in.Body.Status,
+	game, err := h.svc.UpdateStatus(ctx, service.UpdateGameStatusInput{
+		GameID: in.GameID.Value,
+		Status: in.Body.Status,
 	})
 	if err != nil {
 		return nil, toHumaErr(err, "game not found", "failed to update game")
 	}
+
 	return &UpdateGameStatusOutput{Body: gameToOutput(game)}, nil
 }
 
@@ -181,6 +179,7 @@ func (h *GamesHandler) delete(ctx context.Context, in *DeleteGameInput) (*struct
 	if err := h.svc.Delete(ctx, in.GameID.Value); err != nil {
 		return nil, toHumaErr(err, "game not found", "failed to delete game")
 	}
+
 	return &struct{}{}, nil
 }
 

@@ -213,7 +213,7 @@ func TestTranslatePgErr_ForeignKeyViolation(t *testing.T) {
 		ConstraintName: "votes_user_id_fkey",
 	}
 	got := TranslatePgErr(pgErr)
-	if !errors.Is(got, domain.ErrInvalid) {
+	if !errors.Is(got, domain.ErrBadInput) {
 		t.Errorf("expected domain.ErrInvalid, got %v", got)
 	}
 	want := "votes_user_id_fkey"

@@ -103,6 +103,7 @@ func (h *AuthHandler) login(ctx context.Context, in *loginInput) (*authOutput, e
 	if err != nil {
 		return nil, toHumaErr(err, "", "failed to login user")
 	}
+
 	return &authOutput{Body: userToOutput(user)}, nil
 }
 
@@ -111,6 +112,7 @@ func (h *AuthHandler) logout(ctx context.Context, in *struct{}) (*struct{}, erro
 	if err != nil {
 		return &struct{}{}, toHumaErr(err, "", "failed to logout user")
 	}
+
 	return &struct{}{}, nil
 }
 

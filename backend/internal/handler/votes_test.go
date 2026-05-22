@@ -18,9 +18,10 @@ func TestUpsertVote_Create(t *testing.T) {
 	setupTest(t)
 	userID, boardID := setupBoardForVotes(t)
 
-	w := doRequest(http.MethodPut,
-		fmt.Sprintf("/api/boards/%s/vote?user_id=%s", boardID, userID),
+	w := doRequestWithCookies(http.MethodPut,
+		fmt.Sprintf("/api/boards/%s/vote", boardID),
 		map[string]any{"vote_value": 1},
+		cookiesFor(userID),
 	)
 	assertStatus(t, w, http.StatusOK)
 
@@ -35,20 +36,33 @@ func TestUpsertVote_Create(t *testing.T) {
 	}
 }
 
+func TestUpsertVote_Unauthenticated(t *testing.T) {
+	setupTest(t)
+	_, boardID := setupBoardForVotes(t)
+
+	w := doRequest(http.MethodPut,
+		fmt.Sprintf("/api/boards/%s/vote", boardID),
+		map[string]any{"vote_value": 1},
+	)
+	assertStatus(t, w, http.StatusUnauthorized)
+}
+
 func TestUpsertVote_Update(t *testing.T) {
 	setupTest(t)
 	userID, boardID := setupBoardForVotes(t)
 
 	// Create initial upvote
-	doRequest(http.MethodPut,
-		fmt.Sprintf("/api/boards/%s/vote?user_id=%s", boardID, userID),
+	doRequestWithCookies(http.MethodPut,
+		fmt.Sprintf("/api/boards/%s/vote", boardID),
 		map[string]any{"vote_value": 1},
+		cookiesFor(userID),
 	)
 
 	// Change to downvote
-	w := doRequest(http.MethodPut,
-		fmt.Sprintf("/api/boards/%s/vote?user_id=%s", boardID, userID),
+	w := doRequestWithCookies(http.MethodPut,
+		fmt.Sprintf("/api/boards/%s/vote", boardID),
 		map[string]any{"vote_value": -1},
+		cookiesFor(userID),
 	)
 	assertStatus(t, w, http.StatusOK)
 
@@ -66,9 +80,10 @@ func TestGetVotesByBoardID(t *testing.T) {
 	// Create an upvote
 	createTestVote(t, boardID, userID, 1)
 
-	w := doRequest(http.MethodGet,
-		fmt.Sprintf("/api/boards/%s/vote?user_id=%s", boardID, userID),
+	w := doRequestWithCookies(http.MethodGet,
+		fmt.Sprintf("/api/boards/%s/vote", boardID),
 		nil,
+		cookiesFor(userID),
 	)
 	assertStatus(t, w, http.StatusOK)
 
@@ -94,9 +109,10 @@ func TestGetVotesByBoardID_NoVotes(t *testing.T) {
 	setupTest(t)
 	userID, boardID := setupBoardForVotes(t)
 
-	w := doRequest(http.MethodGet,
-		fmt.Sprintf("/api/boards/%s/vote?user_id=%s", boardID, userID),
+	w := doRequestWithCookies(http.MethodGet,
+		fmt.Sprintf("/api/boards/%s/vote", boardID),
 		nil,
+		cookiesFor(userID),
 	)
 	assertStatus(t, w, http.StatusOK)
 
@@ -128,9 +144,10 @@ func TestGetVotesByBoardID_MultipleVoters(t *testing.T) {
 	createTestVote(t, boardID, user2, -1)
 
 	// Check aggregated results from user1's perspective
-	w := doRequest(http.MethodGet,
-		fmt.Sprintf("/api/boards/%s/vote?user_id=%s", boardID, user1),
+	w := doRequestWithCookies(http.MethodGet,
+		fmt.Sprintf("/api/boards/%s/vote", boardID),
 		nil,
+		cookiesFor(user1),
 	)
 	assertStatus(t, w, http.StatusOK)
 
@@ -160,16 +177,18 @@ func TestDeleteVote(t *testing.T) {
 	createTestVote(t, boardID, userID, 1)
 
 	// Delete the vote
-	w := doRequest(http.MethodDelete,
-		fmt.Sprintf("/api/boards/%s/vote?user_id=%s", boardID, userID),
+	w := doRequestWithCookies(http.MethodDelete,
+		fmt.Sprintf("/api/boards/%s/vote", boardID),
 		nil,
+		cookiesFor(userID),
 	)
 	assertStatus(t, w, http.StatusNoContent)
 
 	// Verify vote is gone via GET
-	getResp := doRequest(http.MethodGet,
-		fmt.Sprintf("/api/boards/%s/vote?user_id=%s", boardID, userID),
+	getResp := doRequestWithCookies(http.MethodGet,
+		fmt.Sprintf("/api/boards/%s/vote", boardID),
 		nil,
+		cookiesFor(userID),
 	)
 	assertStatus(t, getResp, http.StatusOK)
 
@@ -189,9 +208,10 @@ func TestDeleteVote_NotFound(t *testing.T) {
 	userID, boardID := setupBoardForVotes(t)
 
 	// Try to delete a vote that doesn't exist
-	w := doRequest(http.MethodDelete,
-		fmt.Sprintf("/api/boards/%s/vote?user_id=%s", boardID, userID),
+	w := doRequestWithCookies(http.MethodDelete,
+		fmt.Sprintf("/api/boards/%s/vote", boardID),
 		nil,
+		cookiesFor(userID),
 	)
 	assertStatus(t, w, http.StatusNotFound)
 }
@@ -200,21 +220,10 @@ func TestGetVotesByBoardID_InvalidBoardID(t *testing.T) {
 	setupTest(t)
 	userID := createTestUser(t, "invalidvoteuser", "invalidvote@example.com")
 
-	w := doRequest(http.MethodGet,
-		fmt.Sprintf("/api/boards/not-a-uuid/vote?user_id=%s", userID),
+	w := doRequestWithCookies(http.MethodGet,
+		"/api/boards/not-a-uuid/vote",
 		nil,
+		cookiesFor(userID),
 	)
-	assertStatus(t, w, http.StatusUnprocessableEntity)
-}
-
-func TestGetVotesByBoardID_InvalidUserID(t *testing.T) {
-	setupTest(t)
-	_, boardID := setupBoardForVotes(t)
-
-	w := doRequest(http.MethodGet,
-		fmt.Sprintf("/api/boards/%s/vote?user_id=not-a-uuid", boardID),
-		nil,
-	)
-	// huma validates the uuid format on query params and returns 422
 	assertStatus(t, w, http.StatusUnprocessableEntity)
 }

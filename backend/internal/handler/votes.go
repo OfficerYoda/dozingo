@@ -6,7 +6,7 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/officeryoda/dozingo/internal/generated"
-	"github.com/officeryoda/dozingo/internal/repository"
+	"github.com/officeryoda/dozingo/internal/middleware"
 	"github.com/officeryoda/dozingo/internal/service"
 	"github.com/officeryoda/dozingo/internal/types"
 )
@@ -21,7 +21,6 @@ type VoteOutput struct {
 }
 
 type GetVotesByBoardIDInput struct {
-	UserID  types.UUIDParam `query:"user_id" format:"uuid"` // TODO eventually replace this when user auth is working
 	BoardID types.UUIDParam `path:"board_id"`
 }
 
@@ -34,7 +33,6 @@ type GetVotesByBoardIDOutput struct {
 }
 
 type UpsertVoteInput struct {
-	UserID  types.UUIDParam `query:"user_id" format:"uuid" required:"true"` // TODO eventually replace this when user auth is working
 	BoardID types.UUIDParam `path:"board_id" format:"uuid"`
 	Body    struct {
 		VoteValue int32 `json:"vote_value" format:"integer" required:"true" minimum:"-1" maximum:"1"`
@@ -46,7 +44,6 @@ type UpsertVoteOutput struct {
 }
 
 type DeleteVoteInput struct {
-	UserID  types.UUIDParam `query:"user_id" format:"uuid" required:"true"` // TODO eventually replace this when user auth is working
 	BoardID types.UUIDParam `path:"board_id" format:"uuid"`
 }
 
@@ -88,9 +85,11 @@ func (h *VotesHandler) Register(api huma.API) {
 }
 
 func (h *VotesHandler) get(ctx context.Context, in *GetVotesByBoardIDInput) (*GetVotesByBoardIDOutput, error) {
-	votes, err := h.svc.GetAggregateByBoardID(ctx, repository.GetVotesAggregateInput{
+	sessionUser, _ := middleware.SessionUserFromContext(ctx)
+
+	votes, err := h.svc.GetAggregateByBoardID(ctx, service.GetVotesAggregateInput{
 		BoardID: in.BoardID.Value,
-		UserID:  in.UserID.Value,
+		UserID:  sessionUser.UserID,
 	})
 	if err != nil {
 		return nil, toHumaErr(err, "", "failed to get votes")
@@ -109,24 +108,23 @@ func (h *VotesHandler) get(ctx context.Context, in *GetVotesByBoardIDInput) (*Ge
 }
 
 func (h *VotesHandler) upsert(ctx context.Context, in *UpsertVoteInput) (*UpsertVoteOutput, error) {
-	vote, err := h.svc.Upsert(ctx, repository.UpsertVoteInput{
-		UserID:    in.UserID.Value,
+	vote, err := h.svc.Upsert(ctx, service.UpsertVoteInput{
 		BoardID:   in.BoardID.Value,
 		VoteValue: in.Body.VoteValue,
 	})
 	if err != nil {
 		return nil, toHumaErr(err, "", "failed to upsert vote")
 	}
+
 	return &UpsertVoteOutput{Body: voteToOutput(vote)}, nil
 }
 
 func (h *VotesHandler) delete(ctx context.Context, in *DeleteVoteInput) (*struct{}, error) {
-	if err := h.svc.Delete(ctx, repository.DeleteVoteInput{
-		UserID:  in.UserID.Value,
-		BoardID: in.BoardID.Value,
-	}); err != nil {
+	err := h.svc.Delete(ctx, in.BoardID.Value)
+	if err != nil {
 		return nil, toHumaErr(err, "vote not found on this board", "failed to delete vote")
 	}
+
 	return &struct{}{}, nil
 }
 

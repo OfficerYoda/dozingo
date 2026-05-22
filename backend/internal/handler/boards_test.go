@@ -12,12 +12,11 @@ func TestCreateBoard(t *testing.T) {
 	userID := createTestUser(t, "boardauthor", "boardauthor@example.com")
 
 	body := map[string]any{
-		"title":     "Test Board",
-		"size":      5,
-		"author_id": userID,
+		"title": "Test Board",
+		"size":  5,
 	}
 
-	w := doRequest(http.MethodPost, "/api/boards", body)
+	w := doRequestWithCookies(http.MethodPost, "/api/boards", body, cookiesFor(userID))
 	assertStatus(t, w, http.StatusOK)
 
 	var resp map[string]any
@@ -45,10 +44,9 @@ func TestCreateBoard_WithDescription(t *testing.T) {
 		"title":       "Described Board",
 		"description": "A board with a description",
 		"size":        4,
-		"author_id":   userID,
 	}
 
-	w := doRequest(http.MethodPost, "/api/boards", body)
+	w := doRequestWithCookies(http.MethodPost, "/api/boards", body, cookiesFor(userID))
 	assertStatus(t, w, http.StatusOK)
 
 	var resp map[string]any
@@ -65,12 +63,11 @@ func TestCreateBoard_WithoutDescription(t *testing.T) {
 	userID := createTestUser(t, "nodescauthor", "nodescauthor@example.com")
 
 	body := map[string]any{
-		"title":     "No Desc Board",
-		"size":      5,
-		"author_id": userID,
+		"title": "No Desc Board",
+		"size":  5,
 	}
 
-	w := doRequest(http.MethodPost, "/api/boards", body)
+	w := doRequestWithCookies(http.MethodPost, "/api/boards", body, cookiesFor(userID))
 	assertStatus(t, w, http.StatusOK)
 
 	var resp map[string]any
@@ -82,6 +79,18 @@ func TestCreateBoard_WithoutDescription(t *testing.T) {
 	if desc, ok := resp["description"].(string); ok && desc != "" {
 		t.Errorf("expected empty description, got %q", desc)
 	}
+}
+
+func TestCreateBoard_Unauthenticated(t *testing.T) {
+	setupTest(t)
+
+	body := map[string]any{
+		"title": "Anon Board",
+		"size":  5,
+	}
+
+	w := doRequest(http.MethodPost, "/api/boards", body)
+	assertStatus(t, w, http.StatusUnauthorized)
 }
 
 func TestGetBoards(t *testing.T) {
@@ -192,7 +201,7 @@ func TestDeleteBoard(t *testing.T) {
 	boardID := createTestBoard(t, "DeleteMe Board", 5, userID, nil)
 
 	// Delete the board
-	w := doRequest(http.MethodDelete, fmt.Sprintf("/api/boards/%s", boardID), nil)
+	w := doRequestWithCookies(http.MethodDelete, fmt.Sprintf("/api/boards/%s", boardID), nil, cookiesFor(userID))
 	assertStatus(t, w, http.StatusNoContent)
 
 	// Verify board is gone
@@ -203,8 +212,21 @@ func TestDeleteBoard(t *testing.T) {
 func TestDeleteBoard_NotFound(t *testing.T) {
 	setupTest(t)
 
-	w := doRequest(http.MethodDelete, "/api/boards/00000000-0000-0000-0000-000000000000", nil)
+	userID := createTestUser(t, "delnoboard", "delnoboard@example.com")
+
+	w := doRequestWithCookies(http.MethodDelete,
+		"/api/boards/00000000-0000-0000-0000-000000000000",
+		nil,
+		cookiesFor(userID),
+	)
 	assertStatus(t, w, http.StatusNotFound)
+}
+
+func TestDeleteBoard_NotFound_Unauthenticated(t *testing.T) {
+	setupTest(t)
+
+	w := doRequest(http.MethodDelete, "/api/boards/00000000-0000-0000-0000-000000000000", nil)
+	assertStatus(t, w, http.StatusUnauthorized)
 }
 
 func TestGetBoards_CombinedFilters(t *testing.T) {

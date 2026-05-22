@@ -101,12 +101,12 @@ func registerRoutes(router *chi.Mux, pool *pgxpool.Pool) {
 	// New layering
 	repos := repository.New(pool)
 	txRunner := repository.NewTxRunner(pool)
-	boardsSvc := service.NewBoards(repos.Boards)
-	cellsSvc := service.NewCells(repos.Cells)
-	gameCellsSvc := service.NewGameCells(repos.GameCells)
-	gamesSvc := service.NewGames(repos.Games)
-	votesSvc := service.NewVotes(repos.Votes)
-	authSvc := service.NewAuth(repos, txRunner, queries)
+	boardsSvc := service.NewBoards(repos.Boards, queries)
+	cellsSvc := service.NewCells(repos.Cells, repos.Boards, queries)
+	gameCellsSvc := service.NewGameCells(repos.GameCells, repos.Games, queries)
+	gamesSvc := service.NewGames(repos.Games, queries)
+	votesSvc := service.NewVotes(repos.Votes, queries)
+	authSvc := service.NewAuth(repos, queries, txRunner)
 
 	handler.NewBoardsHandler(boardsSvc).Register(apiGroup)
 	handler.NewCellsHandler(cellsSvc).Register(apiGroup)

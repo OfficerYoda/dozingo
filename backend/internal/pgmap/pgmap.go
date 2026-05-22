@@ -57,7 +57,7 @@ func TranslatePgErr(err error) error {
 		return nil
 	}
 	if errors.Is(err, pgx.ErrNoRows) {
-		return fmt.Errorf("%w", domain.ErrNotFound)
+		return domain.ErrNotFound
 	}
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) {
@@ -65,7 +65,9 @@ func TranslatePgErr(err error) error {
 		case "23505": // unique_violation
 			return fmt.Errorf("%s: %w", pgErr.ConstraintName, domain.ErrConflict)
 		case "23503": // foreign_key_violation
-			return fmt.Errorf("%s: %w", pgErr.ConstraintName, domain.ErrInvalid)
+			return fmt.Errorf("%s: %w", pgErr.ConstraintName, domain.ErrBadInput)
+		case "23514": // violates check constraint
+			return fmt.Errorf("%s: %w", pgErr.ConstraintName, domain.ErrBadInput)
 		}
 	}
 	return err
