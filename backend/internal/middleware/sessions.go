@@ -86,7 +86,7 @@ func SessionUser(api huma.API, queries *generated.Queries) func(huma.Context, fu
 		sessionUser, err := queries.GetSessionUserByToken(ctx.Context(), sessionToken)
 		if err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
-				ClearSessionTokenCookie(ctx)
+				ClearSessionTokenCookie(ctx.Context())
 				next(ctx)
 				return
 			}
@@ -104,12 +104,6 @@ func SessionUser(api huma.API, queries *generated.Queries) func(huma.Context, fu
 	}
 }
 
-// humaContextFrom returns the huma.Context stashed by SessionUser middleware.
-func humaContextFrom(ctx context.Context) (huma.Context, bool) {
-	humaCtx, ok := ctx.Value(contextHumaCtx).(huma.Context)
-	return humaCtx, ok
-}
-
 // SessionUserFromContext returns the session previously set by SessionUser
 // middleware. The second return value is false when the request had no valid
 // session cookie. Handlers that may need to mint a session for anonymous
@@ -124,8 +118,14 @@ func SessionUserFromContext(ctx context.Context) (generated.GetSessionUserByToke
 
 // RequireSession returns the request's session, minting and setting a
 // Set-Cookie header for an anonymous one if none exists yet.
-func RequireSession(ctx huma.Context, queries *generated.Queries) (generated.GetSessionUserByTokenRow, error) {
-	slot, ok := ctx.Context().Value(contextSessionSlot).(*sessionSlot)
+func RequireSession(ctx context.Context, queries *generated.Queries) (generated.GetSessionUserByTokenRow, error) {
+	humaCtx, ok := humaContextFrom(ctx)
+	if !ok {
+		return generated.GetSessionUserByTokenRow{}, errors.New("RequireSessionCtx called without SessionUser middleware")
+	}
+
+	// func requireSession(humaCtx huma.Context, queries *generated.Queries) (generated.GetSessionUserByTokenRow, error) {
+	slot, ok := humaCtx.Context().Value(contextSessionSlot).(*sessionSlot)
 	if !ok {
 		return generated.GetSessionUserByTokenRow{}, errors.New("RequireSession called without SessionUser middleware")
 	}
@@ -134,13 +134,13 @@ func RequireSession(ctx huma.Context, queries *generated.Queries) (generated.Get
 		return slot.row, nil
 	}
 
-	session, err := createNewSession(queries, ctx)
+	session, err := createNewSession(queries, humaCtx)
 	if err != nil {
 		slog.Error("failed to create new session", "error", err)
 		return generated.GetSessionUserByTokenRow{}, err
 	}
 
-	setSessionTokenCookie(ctx, session.Token)
+	setSessionTokenCookie(humaCtx, session.Token)
 
 	row := generated.GetSessionUserByTokenRow{
 		SessionID: session.ID,
@@ -151,18 +151,6 @@ func RequireSession(ctx huma.Context, queries *generated.Queries) (generated.Get
 	slot.filled = true
 
 	return row, nil
-}
-
-// RequireSessionCtx is the context.Context-friendly variant of RequireSession,
-// for use inside typed Huma handlers whose signature is
-// `func(ctx context.Context, input *T) (*U, error)`. It looks up the
-// huma.Context that SessionUser middleware stashed and delegates.
-func RequireSessionCtx(ctx context.Context, queries *generated.Queries) (generated.GetSessionUserByTokenRow, error) {
-	humaCtx, ok := humaContextFrom(ctx)
-	if !ok {
-		return generated.GetSessionUserByTokenRow{}, errors.New("RequireSessionCtx called without SessionUser middleware")
-	}
-	return RequireSession(humaCtx, queries)
 }
 
 func getSessionTokenFromCookie(ctx huma.Context) string {
@@ -186,7 +174,12 @@ func setSessionTokenCookie(ctx huma.Context, token string) {
 	ctx.AppendHeader("Set-Cookie", newCookie.String())
 }
 
-func ClearSessionTokenCookie(ctx huma.Context) {
+func ClearSessionTokenCookie(ctx context.Context) error {
+	humaCtx, ok := humaContextFrom(ctx)
+	if !ok {
+		return errors.New("ClearSessionTokenCookieCtx called without SessionUser middleware")
+	}
+
 	cookie := http.Cookie{
 		Name:     cookieSessionToken,
 		Value:    "",
@@ -196,15 +189,8 @@ func ClearSessionTokenCookie(ctx huma.Context) {
 		Path:     "/",
 		MaxAge:   -1,
 	}
-	ctx.AppendHeader("Set-Cookie", cookie.String())
-}
+	humaCtx.AppendHeader("Set-Cookie", cookie.String())
 
-func ClearSessionTokenCookieCtx(ctx context.Context) error {
-	humaCtx, ok := humaContextFrom(ctx)
-	if !ok {
-		return errors.New("ClearSessionTokenCookieCtx called without SessionUser middleware")
-	}
-	ClearSessionTokenCookie(humaCtx)
 	return nil
 }
 
@@ -242,4 +228,10 @@ func createNewSession(queries *generated.Queries, ctx huma.Context) (generated.S
 	}
 
 	return session, nil
+}
+
+// humaContextFrom returns the huma.Context stashed by SessionUser middleware.
+func humaContextFrom(ctx context.Context) (huma.Context, bool) {
+	humaCtx, ok := ctx.Value(contextHumaCtx).(huma.Context)
+	return humaCtx, ok
 }

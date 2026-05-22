@@ -97,7 +97,7 @@ func (s *Auth) Logout(ctx context.Context) error {
 		return fmt.Errorf("delete session token: %w", err)
 	}
 
-	if err := middleware.ClearSessionTokenCookieCtx(ctx); err != nil {
+	if err := middleware.ClearSessionTokenCookie(ctx); err != nil {
 		slog.Warn("failed to clear session cookie on logout", "error", err)
 	}
 
@@ -138,7 +138,7 @@ func (s *Auth) generateUser(ctx context.Context, in RegisterInput) (generated.Us
 }
 
 func (s *Auth) attatchUserToSession(ctx context.Context, user generated.User) error {
-	sessionUser, err := middleware.RequireSessionCtx(ctx, s.queries)
+	sessionUser, err := middleware.RequireSession(ctx, s.queries)
 	if err != nil {
 		return fmt.Errorf("session required: %w", err)
 	}

@@ -35,7 +35,7 @@ func (s *Boards) Get(ctx context.Context, id pgtype.UUID) (generated.Board, erro
 }
 
 func (s *Boards) Create(ctx context.Context, in CreateBoardInput) (generated.Board, error) {
-	sessionUser, err := middleware.RequireSessionCtx(ctx, s.queries)
+	sessionUser, err := middleware.RequireSession(ctx, s.queries)
 	if err != nil {
 		return generated.Board{}, fmt.Errorf("session required: %w", err)
 	}
@@ -52,7 +52,7 @@ func (s *Boards) Create(ctx context.Context, in CreateBoardInput) (generated.Boa
 }
 
 func (s *Boards) Delete(ctx context.Context, boardID pgtype.UUID) error {
-	sessionUser, err := middleware.RequireSessionCtx(ctx, s.queries)
+	sessionUser, err := middleware.RequireSession(ctx, s.queries)
 	if err != nil {
 		return fmt.Errorf("session required: %w", err)
 	}

@@ -74,7 +74,7 @@ func (s *Cells) Delete(ctx context.Context, cellID, boardID pgtype.UUID) error {
 }
 
 func checkIfCallerOwnsBoard(ctx context.Context, s *Cells, boardID pgtype.UUID) error {
-	sessionUser, err := middleware.RequireSessionCtx(ctx, s.queries)
+	sessionUser, err := middleware.RequireSession(ctx, s.queries)
 	if err != nil {
 		return fmt.Errorf("session required: %w", err)
 	}
