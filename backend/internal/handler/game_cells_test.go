@@ -28,7 +28,7 @@ func TestCreateGameCells(t *testing.T) {
 		{"cell_id": cellID2, "content": "Cell Content 2", "position": 1},
 	}
 
-	w := doRequest(http.MethodPost, fmt.Sprintf("/api/games/%s/cells", gameID), body)
+	w := doRequestWithCookies(http.MethodPost, fmt.Sprintf("/api/games/%s/cells", gameID), body, cookiesForGame(t, gameID))
 	assertStatus(t, w, http.StatusOK)
 
 	var resp []map[string]any
@@ -52,6 +52,18 @@ func TestCreateGameCells(t *testing.T) {
 	assertJSONField(t, resp[0], "game_id", gameID)
 }
 
+func TestCreateGameCells_Unauthenticated(t *testing.T) {
+	setupTest(t)
+	_, _, cellID, gameID := setupForGameCells(t)
+
+	body := []map[string]any{
+		{"cell_id": cellID, "content": "Anon Cell", "position": 0},
+	}
+
+	w := doRequest(http.MethodPost, fmt.Sprintf("/api/games/%s/cells", gameID), body)
+	assertStatus(t, w, http.StatusUnauthorized)
+}
+
 func TestCreateGameCells_FullBoard(t *testing.T) {
 	setupTest(t)
 	_, boardID, _, gameID := setupForGameCells(t)
@@ -67,7 +79,7 @@ func TestCreateGameCells_FullBoard(t *testing.T) {
 		}
 	}
 
-	w := doRequest(http.MethodPost, fmt.Sprintf("/api/games/%s/cells", gameID), cells)
+	w := doRequestWithCookies(http.MethodPost, fmt.Sprintf("/api/games/%s/cells", gameID), cells, cookiesForGame(t, gameID))
 	assertStatus(t, w, http.StatusOK)
 
 	var resp []map[string]any
@@ -88,7 +100,7 @@ func TestGetGameCellsByGameID(t *testing.T) {
 		{"cell_id": cellID, "content": "Cell B", "position": 1},
 		{"cell_id": cellID, "content": "Cell C", "position": 2},
 	}
-	doRequest(http.MethodPost, fmt.Sprintf("/api/games/%s/cells", gameID), body)
+	doRequestWithCookies(http.MethodPost, fmt.Sprintf("/api/games/%s/cells", gameID), body, cookiesForGame(t, gameID))
 
 	w := doRequest(http.MethodGet, fmt.Sprintf("/api/games/%s/cells", gameID), nil)
 	assertStatus(t, w, http.StatusOK)
@@ -131,8 +143,9 @@ func TestUpdateGameCellMark_MarkTrue(t *testing.T) {
 	gameCellID := createTestGameCell(t, gameID, cellID, "Markable Cell", 0)
 
 	// Mark the cell
-	w := doRequest(http.MethodPut, fmt.Sprintf("/api/games/%s/cells/%s", gameID, gameCellID),
+	w := doRequestWithCookies(http.MethodPut, fmt.Sprintf("/api/games/%s/cells/%s", gameID, gameCellID),
 		map[string]any{"is_marked": true},
+		cookiesForGame(t, gameID),
 	)
 	assertStatus(t, w, http.StatusOK)
 
@@ -150,15 +163,18 @@ func TestUpdateGameCellMark_MarkFalse(t *testing.T) {
 	_, _, cellID, gameID := setupForGameCells(t)
 
 	gameCellID := createTestGameCell(t, gameID, cellID, "Toggle Cell", 0)
+	cookies := cookiesForGame(t, gameID)
 
 	// Mark it true first
-	doRequest(http.MethodPut, fmt.Sprintf("/api/games/%s/cells/%s", gameID, gameCellID),
+	doRequestWithCookies(http.MethodPut, fmt.Sprintf("/api/games/%s/cells/%s", gameID, gameCellID),
 		map[string]any{"is_marked": true},
+		cookies,
 	)
 
 	// Now unmark it
-	w := doRequest(http.MethodPut, fmt.Sprintf("/api/games/%s/cells/%s", gameID, gameCellID),
+	w := doRequestWithCookies(http.MethodPut, fmt.Sprintf("/api/games/%s/cells/%s", gameID, gameCellID),
 		map[string]any{"is_marked": false},
+		cookies,
 	)
 	assertStatus(t, w, http.StatusOK)
 
@@ -174,9 +190,10 @@ func TestUpdateGameCellMark_NotFound(t *testing.T) {
 	setupTest(t)
 	_, _, _, gameID := setupForGameCells(t)
 
-	w := doRequest(http.MethodPut,
+	w := doRequestWithCookies(http.MethodPut,
 		fmt.Sprintf("/api/games/%s/cells/00000000-0000-0000-0000-000000000000", gameID),
 		map[string]any{"is_marked": true},
+		cookiesForGame(t, gameID),
 	)
 	assertStatus(t, w, http.StatusNotFound)
 }
@@ -187,12 +204,13 @@ func TestUpdateGameCellMark_WrongGame(t *testing.T) {
 
 	gameCellID := createTestGameCell(t, gameID, cellID, "Cell", 0)
 
-	// Create a second game
+	// Create a second game (same player so cookie lookup works for both)
 	game2ID := createTestGame(t, userID, boardID)
 
 	// Try to mark cell from game1 using game2's path
-	w := doRequest(http.MethodPut, fmt.Sprintf("/api/games/%s/cells/%s", game2ID, gameCellID),
+	w := doRequestWithCookies(http.MethodPut, fmt.Sprintf("/api/games/%s/cells/%s", game2ID, gameCellID),
 		map[string]any{"is_marked": true},
+		cookiesForGame(t, game2ID),
 	)
 	assertStatus(t, w, http.StatusNotFound)
 }
@@ -210,7 +228,7 @@ func TestCreateGameCells_IsMarkedDefaultsFalse(t *testing.T) {
 		{"cell_id": cellID, "content": "New Cell", "position": 0},
 	}
 
-	w := doRequest(http.MethodPost, fmt.Sprintf("/api/games/%s/cells", gameID), body)
+	w := doRequestWithCookies(http.MethodPost, fmt.Sprintf("/api/games/%s/cells", gameID), body, cookiesForGame(t, gameID))
 	assertStatus(t, w, http.StatusOK)
 
 	var resp []map[string]any
@@ -233,10 +251,10 @@ func TestGetGameCellsByGameID_CellIDNullable(t *testing.T) {
 	body := []map[string]any{
 		{"cell_id": cellID, "content": "Linked Cell", "position": 0},
 	}
-	doRequest(http.MethodPost, fmt.Sprintf("/api/games/%s/cells", gameID), body)
+	doRequestWithCookies(http.MethodPost, fmt.Sprintf("/api/games/%s/cells", gameID), body, cookiesForGame(t, gameID))
 
 	// Delete the source cell (should SET NULL on game_cells.cell_id)
-	doRequest(http.MethodDelete, fmt.Sprintf("/api/boards/%s/cells/%s", boardID, cellID), nil)
+	doRequestWithCookies(http.MethodDelete, fmt.Sprintf("/api/boards/%s/cells/%s", boardID, cellID), nil, cookiesForBoard(t, boardID))
 
 	// Fetch game cells — cell_id should now be null
 	w := doRequest(http.MethodGet, fmt.Sprintf("/api/games/%s/cells", gameID), nil)

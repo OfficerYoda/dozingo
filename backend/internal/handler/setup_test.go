@@ -123,12 +123,12 @@ func TestMain(m *testing.M) {
 	// New layering: repositories -> services -> handlers.
 	repos := repository.New(testPool)
 	txRunner := repository.NewTxRunner(testPool)
-	NewBoardsHandler(service.NewBoards(repos.Boards)).Register(apiGroup)
-	NewCellsHandler(service.NewCells(repos.Cells)).Register(apiGroup)
-	NewGameCellsHandler(service.NewGameCells(repos.GameCells)).Register(apiGroup)
-	NewGamesHandler(service.NewGames(repos.Games)).Register(apiGroup)
-	NewVotesHandler(service.NewVotes(repos.Votes)).Register(apiGroup)
-	NewAuthHandler(service.NewAuth(repos, txRunner, queries)).Register(apiGroup)
+	NewBoardsHandler(service.NewBoards(repos.Boards, queries)).Register(apiGroup)
+	NewCellsHandler(service.NewCells(repos.Cells, repos.Boards, queries)).Register(apiGroup)
+	NewGameCellsHandler(service.NewGameCells(repos.GameCells, repos.Games, queries)).Register(apiGroup)
+	NewGamesHandler(service.NewGames(repos.Games, queries)).Register(apiGroup)
+	NewVotesHandler(service.NewVotes(repos.Votes, queries)).Register(apiGroup)
+	NewAuthHandler(service.NewAuth(repos, queries, txRunner)).Register(apiGroup)
 
 	// Clean tables before running tests to ensure a fresh state
 	truncateAllTables()
@@ -359,13 +359,14 @@ func loadSessionByToken(t *testing.T, token string) (generated.GetSessionUserByT
 /// ===== Factories: domain entities =====
 
 // createTestBoard creates a board via the API and returns its ID. Pass nil for
-// description to omit it from the request.
+// description to omit it from the request. The caller is authenticated as
+// authorID via the captured session cookie; the server reads the author from
+// the session, not from a body field.
 func createTestBoard(t *testing.T, title string, size int, authorID string, description *string) string {
 	t.Helper()
 	body := map[string]any{
-		"title":     title,
-		"size":      size,
-		"author_id": authorID,
+		"title": title,
+		"size":  size,
 	}
 	if description != nil {
 		body["description"] = *description

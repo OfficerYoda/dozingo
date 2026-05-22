@@ -36,6 +36,17 @@ func TestUpsertVote_Create(t *testing.T) {
 	}
 }
 
+func TestUpsertVote_Unauthenticated(t *testing.T) {
+	setupTest(t)
+	_, boardID := setupBoardForVotes(t)
+
+	w := doRequest(http.MethodPut,
+		fmt.Sprintf("/api/boards/%s/vote", boardID),
+		map[string]any{"vote_value": 1},
+	)
+	assertStatus(t, w, http.StatusUnauthorized)
+}
+
 func TestUpsertVote_Update(t *testing.T) {
 	setupTest(t)
 	userID, boardID := setupBoardForVotes(t)
