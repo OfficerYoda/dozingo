@@ -20,14 +20,19 @@ func NewBoards(boards *repository.Boards, queries *generated.Queries) *Boards {
 	return &Boards{boards: boards, queries: queries}
 }
 
+type BoardListFilter struct {
+	AuthorID string
+	Size     int32
+}
+
 type CreateBoardInput struct {
 	Title       string
 	Description *string
 	Size        int32
 }
 
-func (s *Boards) List(ctx context.Context, filter repository.BoardListFilter) ([]generated.Board, error) {
-	return s.boards.List(ctx, filter)
+func (s *Boards) List(ctx context.Context, filter BoardListFilter) ([]generated.Board, error) {
+	return s.boards.List(ctx, repository.BoardListFilter(filter))
 }
 
 func (s *Boards) Get(ctx context.Context, boardID pgtype.UUID) (generated.Board, error) {

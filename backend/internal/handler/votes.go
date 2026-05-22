@@ -7,7 +7,6 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/officeryoda/dozingo/internal/generated"
 	"github.com/officeryoda/dozingo/internal/middleware"
-	"github.com/officeryoda/dozingo/internal/repository"
 	"github.com/officeryoda/dozingo/internal/service"
 	"github.com/officeryoda/dozingo/internal/types"
 )
@@ -88,7 +87,7 @@ func (h *VotesHandler) Register(api huma.API) {
 func (h *VotesHandler) get(ctx context.Context, in *GetVotesByBoardIDInput) (*GetVotesByBoardIDOutput, error) {
 	sessionUser, _ := middleware.SessionUserFromContext(ctx)
 
-	votes, err := h.svc.GetAggregateByBoardID(ctx, repository.GetVotesAggregateInput{
+	votes, err := h.svc.GetAggregateByBoardID(ctx, service.GetVotesAggregateInput{
 		BoardID: in.BoardID.Value,
 		UserID:  sessionUser.UserID,
 	})
@@ -116,13 +115,16 @@ func (h *VotesHandler) upsert(ctx context.Context, in *UpsertVoteInput) (*Upsert
 	if err != nil {
 		return nil, toHumaErr(err, "", "failed to upsert vote")
 	}
+
 	return &UpsertVoteOutput{Body: voteToOutput(vote)}, nil
 }
 
 func (h *VotesHandler) delete(ctx context.Context, in *DeleteVoteInput) (*struct{}, error) {
-	if err := h.svc.Delete(ctx, in.BoardID.Value); err != nil {
+	err := h.svc.Delete(ctx, in.BoardID.Value)
+	if err != nil {
 		return nil, toHumaErr(err, "vote not found on this board", "failed to delete vote")
 	}
+
 	return &struct{}{}, nil
 }
 

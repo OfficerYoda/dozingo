@@ -7,7 +7,6 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/officeryoda/dozingo/internal/generated"
 	"github.com/officeryoda/dozingo/internal/pgmap"
-	"github.com/officeryoda/dozingo/internal/repository"
 	"github.com/officeryoda/dozingo/internal/service"
 	"github.com/officeryoda/dozingo/internal/types"
 )
@@ -97,31 +96,33 @@ func (h *GameCellsHandler) list(ctx context.Context, in *GetGameCellsByGameIDInp
 	if err != nil {
 		return nil, toHumaErr(err, "", "failed to get game cells")
 	}
+
 	return &GetGameCellsByGameIDOutput{Body: mapSlice(cells, gameCellToOutput)}, nil
 }
 
 func (h *GameCellsHandler) create(ctx context.Context, in *CreateGameCellsInput) (*CreateGameCellsOutput, error) {
-	items := make([]repository.CreateGameCellItem, 0, len(in.Body))
+	items := make([]service.CreateGameCellItem, 0, len(in.Body))
 	for _, c := range in.Body {
-		items = append(items, repository.CreateGameCellItem{
+		items = append(items, service.CreateGameCellItem{
 			CellID:   c.CellID.Value,
 			Content:  c.Content,
 			Position: c.Position,
 		})
 	}
 
-	cells, err := h.svc.Create(ctx, repository.CreateGameCellsInput{
+	cells, err := h.svc.Create(ctx, service.CreateGameCellsInput{
 		GameID: in.GameID.Value,
 		Items:  items,
 	})
 	if err != nil {
 		return nil, toHumaErr(err, "", "failed to create game cells")
 	}
+
 	return &CreateGameCellsOutput{Body: mapSlice(cells, gameCellToOutput)}, nil
 }
 
 func (h *GameCellsHandler) updateMark(ctx context.Context, in *UpdateGameCellMarkInput) (*UpdateGameCellMarkOutput, error) {
-	cell, err := h.svc.UpdateMark(ctx, repository.UpdateGameCellMarkInput{
+	cell, err := h.svc.UpdateMark(ctx, service.UpdateGameCellMarkInput{
 		GameCellID: in.GameCellID.Value,
 		GameID:     in.GameID.Value,
 		IsMarked:   in.Body.IsMarked,
@@ -129,6 +130,7 @@ func (h *GameCellsHandler) updateMark(ctx context.Context, in *UpdateGameCellMar
 	if err != nil {
 		return nil, toHumaErr(err, "game cell not found", "failed to update game cell")
 	}
+
 	return &UpdateGameCellMarkOutput{Body: gameCellToOutput(cell)}, nil
 }
 

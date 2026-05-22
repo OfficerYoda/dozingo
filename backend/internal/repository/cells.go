@@ -25,6 +25,11 @@ type UpdateCellInput struct {
 	Value   *int32
 }
 
+type DeleteCellInput struct {
+	CellID  pgtype.UUID
+	BoardID pgtype.UUID
+}
+
 func (r *Cells) ListByBoardID(ctx context.Context, boardID pgtype.UUID) ([]generated.Cell, error) {
 	cells, err := r.queries.GetCellsByBoardID(ctx, boardID)
 	if err != nil {
@@ -58,10 +63,10 @@ func (r *Cells) Update(ctx context.Context, in UpdateCellInput) (generated.Cell,
 	return cell, nil
 }
 
-func (r *Cells) Delete(ctx context.Context, cellID, boardID pgtype.UUID) (generated.Cell, error) {
+func (r *Cells) Delete(ctx context.Context, in DeleteCellInput) (generated.Cell, error) {
 	cell, err := r.queries.DeleteCell(ctx, generated.DeleteCellParams{
-		ID:      cellID,
-		BoardID: boardID,
+		ID:      in.CellID,
+		BoardID: in.BoardID,
 	})
 	if err != nil {
 		return generated.Cell{}, pgmap.TranslatePgErr(err)

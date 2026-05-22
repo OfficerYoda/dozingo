@@ -38,5 +38,6 @@ func mapSlice[T, U any](in []T, fn func(T) U) []U {
 	for _, v := range in {
 		out = append(out, fn(v))
 	}
+
 	return out
 }

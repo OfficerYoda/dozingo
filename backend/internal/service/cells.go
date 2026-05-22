@@ -31,6 +31,18 @@ type CreateCellInput struct {
 	Value   *int32
 }
 
+type UpdateCellInput struct {
+	CellID  pgtype.UUID
+	BoardID pgtype.UUID
+	Content *string
+	Value   *int32
+}
+
+type DeleteCellInput struct {
+	CellID  pgtype.UUID
+	BoardID pgtype.UUID
+}
+
 func (s *Cells) ListByBoardID(ctx context.Context, boardID pgtype.UUID) ([]generated.Cell, error) {
 	return s.cells.ListByBoardID(ctx, boardID)
 }
@@ -54,22 +66,22 @@ func (s *Cells) Create(ctx context.Context, in CreateCellInput) (generated.Cell,
 	})
 }
 
-func (s *Cells) Update(ctx context.Context, in repository.UpdateCellInput) (generated.Cell, error) {
+func (s *Cells) Update(ctx context.Context, in UpdateCellInput) (generated.Cell, error) {
 	err := checkIfCallerOwnsBoard(ctx, s, in.BoardID)
 	if err != nil {
 		return generated.Cell{}, err
 	}
 
-	return s.cells.Update(ctx, in)
+	return s.cells.Update(ctx, repository.UpdateCellInput(in))
 }
 
-func (s *Cells) Delete(ctx context.Context, cellID, boardID pgtype.UUID) error {
-	err := checkIfCallerOwnsBoard(ctx, s, boardID)
+func (s *Cells) Delete(ctx context.Context, in DeleteCellInput) error {
+	err := checkIfCallerOwnsBoard(ctx, s, in.BoardID)
 	if err != nil {
 		return err
 	}
 
-	_, err = s.cells.Delete(ctx, cellID, boardID)
+	_, err = s.cells.Delete(ctx, repository.DeleteCellInput(in))
 	return err
 }
 

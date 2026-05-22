@@ -7,7 +7,6 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/officeryoda/dozingo/internal/generated"
 	"github.com/officeryoda/dozingo/internal/pgmap"
-	"github.com/officeryoda/dozingo/internal/repository"
 	"github.com/officeryoda/dozingo/internal/service"
 	"github.com/officeryoda/dozingo/internal/types"
 )
@@ -109,6 +108,7 @@ func (h *CellsHandler) list(ctx context.Context, in *GetCellsByBoardIDInput) (*G
 	if err != nil {
 		return nil, toHumaErr(err, "", "failed to list cells")
 	}
+
 	return &GetCellsByBoardIDOutput{Body: mapSlice(cells, cellToOutput)}, nil
 }
 
@@ -121,11 +121,12 @@ func (h *CellsHandler) create(ctx context.Context, in *CreateCellInput) (*Create
 	if err != nil {
 		return nil, toHumaErr(err, "", "failed to create cell")
 	}
+
 	return &CreateCellOutput{Body: cellToOutput(cell)}, nil
 }
 
 func (h *CellsHandler) update(ctx context.Context, in *UpdateCellInput) (*UpdateCellOutput, error) {
-	cell, err := h.svc.Update(ctx, repository.UpdateCellInput{
+	cell, err := h.svc.Update(ctx, service.UpdateCellInput{
 		CellID:  in.CellID.Value,
 		BoardID: in.BoardID.Value,
 		Content: in.Body.Content,
@@ -134,13 +135,19 @@ func (h *CellsHandler) update(ctx context.Context, in *UpdateCellInput) (*Update
 	if err != nil {
 		return nil, toHumaErr(err, "cell not found on this board", "failed to update cell")
 	}
+
 	return &UpdateCellOutput{Body: cellToOutput(cell)}, nil
 }
 
 func (h *CellsHandler) delete(ctx context.Context, in *DeleteCellInput) (*struct{}, error) {
-	if err := h.svc.Delete(ctx, in.CellID.Value, in.BoardID.Value); err != nil {
+	err := h.svc.Delete(ctx, service.DeleteCellInput{
+		CellID:  in.CellID.Value,
+		BoardID: in.BoardID.Value,
+	})
+	if err != nil {
 		return nil, toHumaErr(err, "cell not found on this board", "failed to delete cell")
 	}
+
 	return &struct{}{}, nil
 }
 

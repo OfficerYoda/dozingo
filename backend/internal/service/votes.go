@@ -19,13 +19,18 @@ func NewVotes(votes *repository.Votes, queries *generated.Queries) *Votes {
 	return &Votes{votes: votes, queries: queries}
 }
 
+type GetVotesAggregateInput struct {
+	BoardID pgtype.UUID
+	UserID  pgtype.UUID
+}
+
 type UpsertVoteInput struct {
 	BoardID   pgtype.UUID
 	VoteValue int32
 }
 
-func (s *Votes) GetAggregateByBoardID(ctx context.Context, in repository.GetVotesAggregateInput) (generated.GetVotesByBoardIDRow, error) {
-	return s.votes.GetAggregateByBoardID(ctx, in)
+func (s *Votes) GetAggregateByBoardID(ctx context.Context, in GetVotesAggregateInput) (generated.GetVotesByBoardIDRow, error) {
+	return s.votes.GetAggregateByBoardID(ctx, repository.GetVotesAggregateInput(in))
 }
 
 func (s *Votes) Upsert(ctx context.Context, in UpsertVoteInput) (generated.Vote, error) {
