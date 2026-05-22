@@ -137,7 +137,7 @@ function changeDarkMode() {
 }
 
 .highlighedcard {
-  background-color: var(--color-bg-card-highlighted);
+  background-color: var(--color-bg-surface);
   padding: 24px;
   margin-top: 24px;
   border-radius: var(--radius-sm);
