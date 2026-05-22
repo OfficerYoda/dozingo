@@ -137,6 +137,17 @@ func (s *Auth) generateUser(ctx context.Context, in RegisterInput) (generated.Us
 	return user, nil
 }
 
+func requiresSessionUser(ctx context.Context, queries *generated.Queries) (generated.GetSessionUserByTokenRow, error) {
+	sessionUser, err := middleware.RequireSession(ctx, queries)
+	if err != nil {
+		return generated.GetSessionUserByTokenRow{}, fmt.Errorf("session required: %w", err)
+	}
+	if !sessionUser.UserID.Valid {
+		return generated.GetSessionUserByTokenRow{}, fmt.Errorf("authenticated user required: %w", domain.ErrUnauthorized)
+	}
+	return sessionUser, nil
+}
+
 func (s *Auth) attatchUserToSession(ctx context.Context, user generated.User) error {
 	sessionUser, err := middleware.RequireSession(ctx, s.queries)
 	if err != nil {
