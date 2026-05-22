@@ -28,6 +28,7 @@
         </div>
 
         <div class="display-darkmode">
+          <Bell :size="23" />
           <div class="display-darkmode-info">
             <span>{{ $t('settings.security.loginNotification') }}</span>
             <small>{{ $t('settings.security.loginNotificationDesc') }}</small>
@@ -48,6 +49,7 @@
         <span class="account-security-subtitle">{{ $t('settings.display.subtitle') }}</span>
 
         <div class="display-darkmode">
+          <Moon :size="23" />
           <div class="display-darkmode-info">
             <span>{{ $t('settings.display.darkMode') }}</span>
             <small>{{ $t('settings.display.darkModeDesc') }}</small>
@@ -60,6 +62,7 @@
         </div>
 
         <div class="display-darkmode">
+          <Eye :size="23" />
           <div class="display-darkmode-info">
             <span>{{ $t('settings.display.colorCorrection') }}</span>
             <small>{{ $t('settings.display.colorCorrectionDesc') }}</small>
@@ -74,7 +77,10 @@
         </div>
 
         <div class="display-fontsize">
-          <small class="display-fontsize-title">{{ $t('settings.display.fontSize') }}</small>
+          <div class="display-fontsize-header">
+            <ALargeSmall :size="23" />
+            <small class="display-fontsize-title">{{ $t('settings.display.fontSize') }}</small>
+          </div>
           <input class="sliderreal" type="range" min="1" max="5" value="3" step="1">
           <div class="display-fontsize-texts">
             <small>{{ $t('settings.display.small') }}</small>
@@ -87,7 +93,10 @@
 
       <article class="card deactivateaccount col-12">
         <div class="deactivateaccount-title">
-          <h2 class="mb-0">{{ $t('settings.account.deactivate') }}</h2>
+          <div class="deactivateaccount-heading">
+            <UserX :size="23" />
+            <h2 class="mb-0">{{ $t('settings.account.deactivate') }}</h2>
+          </div>
           <small>{{ $t('settings.account.deactivateDesc') }}</small>
         </div>
         <button class="btn btn-danger deactivateaccount-btn">{{ $t('settings.account.deactivateBtn') }}</button>
@@ -99,7 +108,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { ShieldUser, Key, Smartphone, Palette } from 'lucide-vue-next';
+import { ShieldUser, Key, Smartphone, Palette, Bell, Moon, Eye, ALargeSmall, UserX } from 'lucide-vue-next';
 
 useI18n()
 
@@ -184,6 +193,7 @@ function changeDarkMode() {
 
 .account-security-title {
   display: flex;
+  align-items: center;
   gap: 8px;
 }
 
@@ -199,6 +209,12 @@ function changeDarkMode() {
   display: flex;
   flex-direction: row;
   align-items: center;
+  gap: 12px;
+}
+
+.display-darkmode svg {
+  color: var(--card-blue);
+  flex-shrink: 0;
 }
 
 .display-darkmode-info {
@@ -224,6 +240,16 @@ h2 {
 
 .deactivateaccount {
   display: flex;
+}
+
+.deactivateaccount-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.deactivateaccount-heading svg {
+  color: var(--card-red);
 }
 
 .deactivateaccount-title {
@@ -274,6 +300,13 @@ input[type=range]::-webkit-slider-thumb {
 
 .display-fontsize {
   margin-top: 24px;
+}
+
+.display-fontsize-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
 }
 
 .display-fontsize-title {
