@@ -109,10 +109,7 @@ func (h *VotesHandler) get(ctx context.Context, in *GetVotesByBoardIDInput) (*Ge
 }
 
 func (h *VotesHandler) upsert(ctx context.Context, in *UpsertVoteInput) (*UpsertVoteOutput, error) {
-	sessionUser, _ := middleware.SessionUserFromContext(ctx)
-
-	vote, err := h.svc.Upsert(ctx, repository.UpsertVoteInput{
-		UserID:    sessionUser.UserID,
+	vote, err := h.svc.Upsert(ctx, service.UpsertVoteInput{
 		BoardID:   in.BoardID.Value,
 		VoteValue: in.Body.VoteValue,
 	})
@@ -123,12 +120,7 @@ func (h *VotesHandler) upsert(ctx context.Context, in *UpsertVoteInput) (*Upsert
 }
 
 func (h *VotesHandler) delete(ctx context.Context, in *DeleteVoteInput) (*struct{}, error) {
-	sessionUser, _ := middleware.SessionUserFromContext(ctx)
-
-	if err := h.svc.Delete(ctx, repository.DeleteVoteInput{
-		UserID:  sessionUser.UserID,
-		BoardID: in.BoardID.Value,
-	}); err != nil {
+	if err := h.svc.Delete(ctx, in.BoardID.Value); err != nil {
 		return nil, toHumaErr(err, "vote not found on this board", "failed to delete vote")
 	}
 	return &struct{}{}, nil
