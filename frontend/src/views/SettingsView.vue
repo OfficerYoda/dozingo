@@ -53,7 +53,8 @@
             <small>{{ $t('settings.display.darkModeDesc') }}</small>
           </div>
           <label class="toggle">
-            <input type="checkbox" id="btnDarkToggle" name="btnDarkToggle" v-model="isChecked" @change="changeDarkMode"/>
+            <input type="checkbox" id="btnDarkToggle" name="btnDarkToggle" v-model="isChecked"
+              @change="changeDarkMode" />
             <span class="slider"></span>
           </label>
         </div>
@@ -63,14 +64,13 @@
             <span>{{ $t('settings.display.colorCorrection') }}</span>
             <small>{{ $t('settings.display.colorCorrectionDesc') }}</small>
           </div>
-          <div class="dropdown">
-            <button class="btn btn-secondary dropdown-button">{{ $t('settings.display.colorTheme') }}</button>
-            <ul class="dropdown-menu">
-              <li>{{ $t('settings.display.colorFilters.redGreen') }}</li>
-              <li>{{ $t('settings.display.colorFilters.blueYellow') }}</li>
-              <li>{{ $t('settings.display.colorFilters.grayscale') }}</li>
-            </ul>
-          </div>
+            
+            <select v-model="colorCorrection" class="btn btn-secondary">
+              <option value="standart">{{ $t('settings.display.colorFilters.standard') }}</option>
+              <option value="redgreen">{{ $t('settings.display.colorFilters.redGreen') }}</option>
+              <option value="blueyellow">{{ $t('settings.display.colorFilters.blueYellow') }}</option>
+              <option value="gray">{{ $t('settings.display.colorFilters.grayscale') }}</option>
+            </select>
         </div>
 
         <div class="display-fontsize">
@@ -97,13 +97,23 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { ShieldUser, Key, Smartphone, Palette } from 'lucide-vue-next';
 
 useI18n()
 
 const isChecked = ref(localStorage.getItem('theme') === 'dark')
+const colorCorrection = ref(localStorage.getItem('colorCorrection') ?? 'standart')
+
+watch(colorCorrection, (newValue) => {
+  localStorage.setItem('colorCorrection', newValue)
+  if (newValue === 'standart') {
+    document.documentElement.removeAttribute('color-correction')
+  } else {
+    document.documentElement.setAttribute('color-correction', newValue)
+  }
+}, { immediate: true })
 
 function changeDarkMode() {
   if (isChecked.value) {

@@ -32,6 +32,7 @@
       "colorCorrectionDesc": "Adjust colors for visual impairments",
       "colorTheme": "Color Theme",
       "colorFilters": {
+        "standard": "Standard",
         "redGreen": "Red-Green",
         "blueYellow": "Blue-Yellow",
         "grayscale": "Grayscale"

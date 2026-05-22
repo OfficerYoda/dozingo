@@ -32,6 +32,7 @@
       "colorCorrectionDesc": "Farben für Sehbeeinträchtigungen anpassen",
       "colorTheme": "Farbschema",
       "colorFilters": {
+        "standard": "Standard",
         "redGreen": "Rot-Grün",
         "blueYellow": "Blau-Gelb",
         "grayscale": "Graustufen"
