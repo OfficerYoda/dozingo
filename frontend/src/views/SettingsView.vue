@@ -129,7 +129,7 @@ function changeDarkMode() {
 
 <style scoped>
 .card {
-  background-color: #F3EEFF
+  background-color: var(--color-bg-card-tinted);
 }
 
 .card.deactivateaccount {
@@ -137,7 +137,7 @@ function changeDarkMode() {
 }
 
 .highlighedcard {
-  background-color: #E9E5FF;
+  background-color: var(--color-bg-card-highlighted);
   padding: 24px;
   margin-top: 24px;
   border-radius: var(--radius-sm);
@@ -159,27 +159,27 @@ function changeDarkMode() {
 }
 
 .display-title svg {
-  color: #874E00;
+  color: var(--card-yellow);
 }
 
 .account-security-info span {
-  color: #2C2A51;
+  color: var(--color-heading);
   font-size: 16px;
   font-weight: 550;
 }
 
 .account-security-info small {
-  color: #75729E;
+  color: var(--color-text-subtle);
 }
 
 .display-darkmode span {
-  color: #2C2A51;
+  color: var(--color-heading);
   font-size: 16px;
   font-weight: 550;
 }
 
 .display-darkmode small {
-  color: #75729E;
+  color: var(--color-text-subtle);
 }
 
 .account-security-title {
@@ -188,13 +188,13 @@ function changeDarkMode() {
 }
 
 .account-security-title svg {
-  color: #B41340;
+  color: var(--card-red);
 }
 
 .display-darkmode {
   padding: 24px;
   margin-top: 24px;
-  background-color: #FFFFFF;
+  background-color: var(--color-bg-surface);
   border-radius: var(--radius-sm);
   display: flex;
   flex-direction: row;
@@ -208,15 +208,15 @@ function changeDarkMode() {
 }
 
 h2 {
-  color: #2C2A51;
+  color: var(--color-heading);
 }
 
 .highlighedcard svg {
-  color: #4052B6;
+  color: var(--card-blue);
 }
 
 .account-security-subtitle {
-  color: #75729E;
+  color: var(--color-text-subtle);
   font-weight: 500;
   padding-block-start: 20px;
 }
@@ -245,7 +245,7 @@ input[type=range] {
 }
 
 input[type=range]::-webkit-slider-runnable-track {
-  background-color: #DDD9FF;
+  background-color: var(--color-interactive-track);
   border-radius: var(--radius-lg);
   width: 100%;
 }
@@ -253,7 +253,7 @@ input[type=range]::-webkit-slider-runnable-track {
 input[type=range]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  background: #75729E;
+  background: var(--color-text-subtle);
   margin-top: -5px;
   width: 20px;
   height: 20px;
@@ -267,7 +267,7 @@ input[type=range]::-webkit-slider-thumb {
 }
 
 .display-fontsize-texts small {
-  color: #75729E;
+  color: var(--color-text-subtle);
   font-size: 12px;
   font-weight: 600;
 }
@@ -315,7 +315,7 @@ input[type=range]::-webkit-slider-thumb {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: #DDD9FF;
+  background-color: var(--color-interactive-track);
   transition: 0.4s;
   border-radius: 34px;
 }
@@ -333,7 +333,7 @@ input[type=range]::-webkit-slider-thumb {
 }
 
 input:checked+.slider {
-  background-color: #75729E;
+  background-color: var(--color-text-subtle);
 }
 
 input:checked+.slider:before {
