@@ -103,13 +103,15 @@ import { ShieldUser, Key, Smartphone, Palette } from 'lucide-vue-next';
 
 useI18n()
 
-const isChecked = ref(document.documentElement.getAttribute('data-theme') === 'dark')
+const isChecked = ref(localStorage.getItem('theme') === 'dark')
 
 function changeDarkMode() {
   if (isChecked.value) {
-    document.documentElement.setAttribute('data-theme', 'dark');
+    document.documentElement.setAttribute('data-theme', 'dark')
+    localStorage.setItem('theme', 'dark')
   } else {
-    document.documentElement.removeAttribute('data-theme');
+    document.documentElement.removeAttribute('data-theme')
+    localStorage.setItem('theme', 'light')
   }
 }
 
