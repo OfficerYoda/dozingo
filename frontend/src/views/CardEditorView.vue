@@ -73,7 +73,7 @@
         </div>
 
         <div class="save-btn-row">
-          <button class="btn btn-primary">{{ $t('cardEditor.save') }}</button>
+          <button type="submit" class="btn btn-primary">{{ $t('cardEditor.save') }}</button>
         </div>
       </article>
     </div>
