@@ -25,15 +25,14 @@
 
         <div class="form-description mb-3">
           <h3>{{ $t('cardEditor.description') }}</h3>
-          <input type="text" class="form-input description-input"
-            :placeholder="$t('cardEditor.descriptionPlaceholder')">
+          <textarea rows="3" class="form-input description-input" :placeholder="$t('cardEditor.descriptionPlaceholder')"></textarea>
         </div>
 
         <div class="form-entries mb-3">
           <div class="entries-header mb-3">
             <div>
               <h3 class="mb-0">{{ $t('cardEditor.entries') }}</h3>
-              <small class="entry-count-hint">8 entries added. You need 17 more for a 5x5 layout.</small>
+              <small class="entry-count-hint">8 entries added. You need 17 more for a 5x5 layout.(Nicht übersetzt bzw. keine dynamische Anpassung)</small>
             </div>
             <button class="btn btn-secondary add-entry-btn" @click="addRow">
               <CirclePlus :size="20" />
@@ -172,6 +171,7 @@ h3 {
 .description-input {
   width: 100%;
   height: 80px;
+  resize: vertical;
 }
 
 /* === Layout options (board size) === */
