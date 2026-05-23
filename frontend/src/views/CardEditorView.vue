@@ -302,5 +302,4 @@ h3 {
 .card {
   background-color: var(--color-bg-card-tinted);
 }
-
 </style>
