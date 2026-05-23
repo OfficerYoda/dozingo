@@ -132,20 +132,29 @@
 .dropdown .dropdown-menu{
     display: none;
     position: absolute;
-    top: 40px;
+    top: 100%;
+    margin-top: 4px;
     right: 0;
+    z-index: 100;
     background-color: var(--color-primary-200);
     list-style-type: none;
     padding: 5px 0;
     border-radius: var(--radius-sm);
 }
+.dropdown .dropdown-menu::before{
+    content: '';
+    position: absolute;
+    top: -4px;
+    left: 0;
+    right: 0;
+    height: 4px;
+}
 .dropdown .dropdown-menu li{
     padding: 4px 20px;
-    border-top: 1px solid var(--color-primary-100);
+    cursor: pointer;
 }
-.dropdown .dropdown-menu li:last-of-type{
-    padding: 4px 20px;
-    border-bottom: 1px solid var(--color-primary-100);
+.dropdown .dropdown-menu li + li{
+    border-top: 1px solid var(--color-primary-300);
 }
 .dropdown:hover .dropdown-menu{
     display: block;

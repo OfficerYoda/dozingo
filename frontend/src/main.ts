@@ -5,6 +5,11 @@ import i18n from './i18n'
 
 import './assets/css/main.css'
 
+const savedTheme = localStorage.getItem('theme')
+if (savedTheme === 'dark') {
+  document.documentElement.setAttribute('data-theme', 'dark')
+}
+
 const app = createApp(App)
 
 app.use(router)

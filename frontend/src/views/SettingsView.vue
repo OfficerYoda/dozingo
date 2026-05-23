@@ -4,33 +4,34 @@
       <article class="card col-6 md-12">
         <div class="account-security-title">
           <ShieldUser :size="30" />
-          <h2 class="mb-0">Account Security</h2>
+          <h2 class="mb-0">{{ $t('settings.security.title') }}</h2>
         </div>
 
-        <span class="account-security-subtitle">Authentication</span>
+        <span class="account-security-subtitle">{{ $t('settings.security.subtitle') }}</span>
 
         <div class="highlighedcard">
           <Smartphone :size="23" />
           <div class="account-security-info">
-            <span>2FA Security</span>
-            <small>Currently Disabled</small>
+            <span>{{ $t('settings.security.twoFa') }}</span>
+            <small>{{ $t('settings.security.disabled') }}</small>
           </div>
-          <button class="btn btn-primary">Enable</button>
+          <button class="btn btn-primary">{{ $t('settings.security.enable') }}</button>
         </div>
 
         <div class="highlighedcard">
           <Key :size="23" />
           <div class="account-security-info">
-            <span>Last password change</span>
+            <span>{{ $t('settings.security.lastPasswordChange') }}</span>
             <small>3 Months ago</small>
           </div>
-          <button class="btn btn-primary">Change</button>
+          <button class="btn btn-primary">{{ $t('settings.security.change') }}</button>
         </div>
 
         <div class="display-darkmode">
+          <Bell :size="23" />
           <div class="display-darkmode-info">
-            <span>Login-Notifiaction</span>
-            <small>Get notification for each login</small>
+            <span>{{ $t('settings.security.loginNotification') }}</span>
+            <small>{{ $t('settings.security.loginNotificationDesc') }}</small>
           </div>
           <label class="toggle">
             <input type="checkbox" id="btnToggle" name="btnToggle" />
@@ -42,44 +43,49 @@
       <article class="card col-6 md-12">
         <div class="display-title">
           <Palette :size="30" />
-          <h2 class="mb-0">Display</h2>
+          <h2 class="mb-0">{{ $t('settings.display.title') }}</h2>
         </div>
 
-        <span class="account-security-subtitle">Appearance</span>
+        <span class="account-security-subtitle">{{ $t('settings.display.subtitle') }}</span>
 
         <div class="display-darkmode">
+          <Moon :size="23" />
           <div class="display-darkmode-info">
-            <span>Dark-Mode</span>
-            <small>Adjust for night study</small>
+            <span>{{ $t('settings.display.darkMode') }}</span>
+            <small>{{ $t('settings.display.darkModeDesc') }}</small>
           </div>
           <label class="toggle">
-            <input type="checkbox" id="btnToggle" name="btnToggle" v-model="isChecked" @change="changeDarkMode"/>
+            <input type="checkbox" id="btnDarkToggle" name="btnDarkToggle" v-model="isChecked"
+              @change="changeDarkMode" />
             <span class="slider"></span>
           </label>
         </div>
 
         <div class="display-darkmode">
+          <Eye :size="23" />
           <div class="display-darkmode-info">
-            <span>Color-Correction</span>
-            <small>Adapt the colors correction</small>
+            <span>{{ $t('settings.display.colorCorrection') }}</span>
+            <small>{{ $t('settings.display.colorCorrectionDesc') }}</small>
           </div>
-          <div class="dropdown">
-            <button href="" className="btn btn-secondary dropdown-button">Color-Theme</button>
-            <ul class="dropdown-menu">
-              <li>Rot-Grün</li>
-              <li>Blau-Gelb</li>
-              <li>Graustufen</li>
-            </ul>
-          </div>
+            
+            <select v-model="colorCorrection" class="btn btn-secondary">
+              <option value="standart">{{ $t('settings.display.colorFilters.standard') }}</option>
+              <option value="redgreen">{{ $t('settings.display.colorFilters.redGreen') }}</option>
+              <option value="blueyellow">{{ $t('settings.display.colorFilters.blueYellow') }}</option>
+              <option value="gray">{{ $t('settings.display.colorFilters.grayscale') }}</option>
+            </select>
         </div>
 
         <div class="display-fontsize">
-          <small class="display-fontsize-title">Font size adjustment</small>
+          <div class="display-fontsize-header">
+            <ALargeSmall :size="23" />
+            <small class="display-fontsize-title">{{ $t('settings.display.fontSize') }}</small>
+          </div>
           <input class="sliderreal" type="range" min="1" max="5" value="3" step="1">
           <div class="display-fontsize-texts">
-            <small>Small</small>
-            <small>Standart</small>
-            <small>Large</small>
+            <small>{{ $t('settings.display.small') }}</small>
+            <small>{{ $t('settings.display.standard') }}</small>
+            <small>{{ $t('settings.display.large') }}</small>
           </div>
         </div>
 
@@ -87,26 +93,44 @@
 
       <article class="card deactivateaccount col-12">
         <div class="deactivateaccount-title">
-          <h2 class="mb-0">Deactive Account</h2>
-          <small>Temporarily hide your profile and rankings from the playground.</small>
+          <div class="deactivateaccount-heading">
+            <UserX :size="23" />
+            <h2 class="mb-0">{{ $t('settings.account.deactivate') }}</h2>
+          </div>
+          <small>{{ $t('settings.account.deactivateDesc') }}</small>
         </div>
-        <button class="btn btn-danger deactivateaccount-btn">Deactivate</button>
+        <button class="btn btn-danger deactivateaccount-btn">{{ $t('settings.account.deactivateBtn') }}</button>
       </article>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import { ShieldUser, Key, Smartphone, Palette } from 'lucide-vue-next';
+import { ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
+import { ShieldUser, Key, Smartphone, Palette, Bell, Moon, Eye, ALargeSmall, UserX } from 'lucide-vue-next';
 
-const isChecked = ref(document.documentElement.getAttribute('data-theme') === 'dark')
+useI18n()
+
+const isChecked = ref(localStorage.getItem('theme') === 'dark')
+const colorCorrection = ref(localStorage.getItem('colorCorrection') ?? 'standart')
+
+watch(colorCorrection, (newValue) => {
+  localStorage.setItem('colorCorrection', newValue)
+  if (newValue === 'standart') {
+    document.documentElement.removeAttribute('color-correction')
+  } else {
+    document.documentElement.setAttribute('color-correction', newValue)
+  }
+}, { immediate: true })
 
 function changeDarkMode() {
   if (isChecked.value) {
-    document.documentElement.setAttribute('data-theme', 'dark');
+    document.documentElement.setAttribute('data-theme', 'dark')
+    localStorage.setItem('theme', 'dark')
   } else {
-    document.documentElement.removeAttribute('data-theme');
+    document.documentElement.removeAttribute('data-theme')
+    localStorage.setItem('theme', 'light')
   }
 }
 
@@ -114,7 +138,7 @@ function changeDarkMode() {
 
 <style scoped>
 .card {
-  background-color: #F3EEFF
+  background-color: var(--color-bg-card-tinted);
 }
 
 .card.deactivateaccount {
@@ -122,7 +146,7 @@ function changeDarkMode() {
 }
 
 .highlighedcard {
-  background-color: #E9E5FF;
+  background-color: var(--color-bg-surface);
   padding: 24px;
   margin-top: 24px;
   border-radius: var(--radius-sm);
@@ -144,46 +168,53 @@ function changeDarkMode() {
 }
 
 .display-title svg {
-  color: #874E00;
+  color: var(--card-yellow);
 }
 
 .account-security-info span {
-  color: #2C2A51;
+  color: var(--color-heading);
   font-size: 16px;
   font-weight: 550;
 }
 
 .account-security-info small {
-  color: #75729E;
+  color: var(--color-text-subtle);
 }
 
 .display-darkmode span {
-  color: #2C2A51;
+  color: var(--color-heading);
   font-size: 16px;
   font-weight: 550;
 }
 
 .display-darkmode small {
-  color: #75729E;
+  color: var(--color-text-subtle);
 }
 
 .account-security-title {
   display: flex;
+  align-items: center;
   gap: 8px;
 }
 
 .account-security-title svg {
-  color: #B41340;
+  color: var(--card-red);
 }
 
 .display-darkmode {
   padding: 24px;
   margin-top: 24px;
-  background-color: #FFFFFF;
+  background-color: var(--color-bg-surface);
   border-radius: var(--radius-sm);
   display: flex;
   flex-direction: row;
   align-items: center;
+  gap: 12px;
+}
+
+.display-darkmode svg {
+  color: var(--card-blue);
+  flex-shrink: 0;
 }
 
 .display-darkmode-info {
@@ -193,15 +224,15 @@ function changeDarkMode() {
 }
 
 h2 {
-  color: #2C2A51;
+  color: var(--color-heading);
 }
 
 .highlighedcard svg {
-  color: #4052B6;
+  color: var(--card-blue);
 }
 
 .account-security-subtitle {
-  color: #75729E;
+  color: var(--color-text-subtle);
   font-weight: 500;
   padding-block-start: 20px;
 }
@@ -209,6 +240,16 @@ h2 {
 
 .deactivateaccount {
   display: flex;
+}
+
+.deactivateaccount-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.deactivateaccount-heading svg {
+  color: var(--card-red);
 }
 
 .deactivateaccount-title {
@@ -230,7 +271,7 @@ input[type=range] {
 }
 
 input[type=range]::-webkit-slider-runnable-track {
-  background-color: #DDD9FF;
+  background-color: var(--color-interactive-track);
   border-radius: var(--radius-lg);
   width: 100%;
 }
@@ -238,7 +279,7 @@ input[type=range]::-webkit-slider-runnable-track {
 input[type=range]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  background: #75729E;
+  background: var(--color-text-subtle);
   margin-top: -5px;
   width: 20px;
   height: 20px;
@@ -252,13 +293,20 @@ input[type=range]::-webkit-slider-thumb {
 }
 
 .display-fontsize-texts small {
-  color: #75729E;
+  color: var(--color-text-subtle);
   font-size: 12px;
   font-weight: 600;
 }
 
 .display-fontsize {
   margin-top: 24px;
+}
+
+.display-fontsize-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
 }
 
 .display-fontsize-title {
@@ -269,7 +317,6 @@ input[type=range]::-webkit-slider-thumb {
 .sliderreal {
   padding-top: 16px;
 }
-
 
 
 
@@ -301,7 +348,7 @@ input[type=range]::-webkit-slider-thumb {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: #DDD9FF;
+  background-color: var(--color-interactive-track);
   transition: 0.4s;
   border-radius: 34px;
 }
@@ -319,7 +366,7 @@ input[type=range]::-webkit-slider-thumb {
 }
 
 input:checked+.slider {
-  background-color: #75729E;
+  background-color: var(--color-text-subtle);
 }
 
 input:checked+.slider:before {

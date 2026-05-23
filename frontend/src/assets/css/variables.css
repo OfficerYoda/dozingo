@@ -106,6 +106,16 @@
     --card-blue: #4052B6;
     --card-green: #006B1B;
     --card-yellow: #874E00;
+    --card-red: #B41340;
+
+    /* Settings page */
+    --color-heading: #2C2A51;
+    --color-text-subtle: #75729E;
+    --color-subheading: #5A5781;
+    --color-input-bg: #E3DFFF;
+    --color-bg-card-tinted: #F3EEFF;
+    --color-bg-card-highlighted: #E9E5FF;
+    --color-interactive-track: #DDD9FF;
 }
 
 
@@ -150,4 +160,25 @@
 
   /* Focus */
   --focus-ring: 0 0 0 3px rgba(129, 140, 248, 0.4);
+
+  /* Settings page */
+  --color-heading: #c7d2fe;
+  --color-text-subtle: #a5b4fc;
+  --color-subheading: #a5b4fc;
+  --color-input-bg: #2a2550;
+  --color-bg-card-tinted: #1e1b4b;
+  --color-bg-card-highlighted: #252145;
+  --color-interactive-track: #3730a3;
+}
+
+[color-correction="redgreen"] {
+  filter: hue-rotate(90deg);
+}
+
+[color-correction="blueyellow"]{
+  filter: hue-rotate(180deg)
+}
+
+[color-correction="gray"] {
+  filter: grayscale(100%);
 }

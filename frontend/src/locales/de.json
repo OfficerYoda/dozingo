@@ -4,7 +4,11 @@
     "about": "Über uns",
     "settings": "Einstellungen",
     "profile": "Profil",
-    "signOut": "Abmelden"
+    "signOut": "Abmelden",
+    "cardEditor": "Karten-Editor"
+  },
+  "footer": {
+    "copyright": "© DOZINGO - Alle Rechte vorbehalten"
   },
   "settings": {
     "title": "Einstellungen",
@@ -12,15 +16,27 @@
       "title": "Kontosicherheit",
       "subtitle": "Authentifizierung",
       "twoFa": "2FA-Sicherheit",
+      "disabled": "Aktuell deaktiviert",
       "enable": "Aktivieren",
       "lastPasswordChange": "Letzte Passwortänderung",
-      "change": "Ändern"
+      "change": "Ändern",
+      "loginNotification": "Login-Benachrichtigung",
+      "loginNotificationDesc": "Bei jedem Login benachrichtigt werden"
     },
     "display": {
       "title": "Anzeige",
       "subtitle": "Erscheinungsbild",
       "darkMode": "Dunkelmodus",
       "darkModeDesc": "Für nächtliches Lernen anpassen",
+      "colorCorrection": "Farbkorrektur",
+      "colorCorrectionDesc": "Farben für Sehbeeinträchtigungen anpassen",
+      "colorTheme": "Farbschema",
+      "colorFilters": {
+        "standard": "Standard",
+        "redGreen": "Rot-Grün",
+        "blueYellow": "Blau-Gelb",
+        "grayscale": "Graustufen"
+      },
       "fontSize": "Schriftgröße anpassen",
       "small": "Klein",
       "standard": "Standard",
@@ -28,7 +44,28 @@
     },
     "account": {
       "deactivate": "Konto deaktivieren",
-      "deactivateDesc": "Dein Profil und deine Ranglisten vorübergehend aus dem Playground ausblenden."
+      "deactivateDesc": "Dein Profil und deine Ranglisten vorübergehend aus dem Playground ausblenden.",
+      "deactivateBtn": "Deaktivieren"
+    }
+  },
+  "cardEditor": {
+    "title": "Neues Board erstellen",
+    "sessionTitle": "Sitzungstitel",
+    "titlePlaceholder": "z.B. Einführung in die Spieltheorie",
+    "layoutSelection": "Layout-Auswahl",
+    "description": "Beschreibung",
+    "descriptionPlaceholder": "Beschreibe kurz das Thema dieser Bingo-Sitzung",
+    "entries": "Sitzungseinträge",
+    "addRow": "Eintrag hinzufügen",
+    "termColumn": "Zitat / Begriff",
+    "rarityColumn": "Rarität",
+    "termPlaceholder": "Zitat oder Begriff eingeben",
+    "save": "Als Vorlage speichern",
+    "rarity": {
+      "common": "Gewöhnlich",
+      "uncommon": "Selten",
+      "rare": "Episch",
+      "legendary": "Legendär"
     }
   }
 }

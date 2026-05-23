@@ -24,8 +24,8 @@ function closeMenu(){
       <div class="sidebar-content my-3">
         <nav>
           <ul>
-            <li><RouterLink to="/" class="sidebar-buttons upper-buttons"><Home :size="20" />Home</RouterLink></li>
-            <li><RouterLink to="/about" class="sidebar-buttons upper-buttons"><LayoutGrid :size="20"/>About</RouterLink></li>
+            <li><RouterLink to="/" class="sidebar-buttons upper-buttons"><Home :size="20" />{{ $t('nav.home') }}</RouterLink></li>
+            <li><RouterLink to="/cardeditor" class="sidebar-buttons upper-buttons"><SquarePen :size="20"/>{{ $t('nav.cardEditor') }}</RouterLink></li>
             <li><RouterLink to="/components" class="sidebar-buttons upper-buttons"><Computer :size="20"/>Components(only for dev)</RouterLink></li>
           </ul>
         </nav>
@@ -35,10 +35,10 @@ function closeMenu(){
         <hr class="m-0">
         <nav>
           <ul>
-            <li><RouterLink to="/settings" class="sidebar-buttons"><Settings :size="20"/>Settings</RouterLink></li>
-            <li><button class="sidebar-buttons"><LogOut :size="20" class="sidebar-footer-signout"/><span class="sidebar-footer-signout">Sign Out</span></button></li>
+            <li><RouterLink to="/settings" class="sidebar-buttons"><Settings :size="20"/>{{ $t('nav.settings') }}</RouterLink></li>
+            <li><button class="sidebar-buttons"><LogOut :size="20" class="sidebar-footer-signout"/><span class="sidebar-footer-signout">{{ $t('nav.signOut') }}</span></button></li>
             <hr class="m-0">
-            <li><RouterLink class="sidebar-buttons" to="/profile"><UserCircle :size="20"/>Profile</RouterLink></li>
+            <li><RouterLink class="sidebar-buttons" to="/profile"><UserCircle :size="20"/>{{ $t('nav.profile') }}</RouterLink></li>
           </ul>
         </nav>
       </div>
@@ -49,16 +49,25 @@ function closeMenu(){
         <button @click="openMenu">
           <Menu :size="20"/>
         </button> 
-        <h1 class="mb-0">Settings</h1>
+        <div class="header-spacing">
+          <h1 class="mb-0">{{ $t('nav.settings') }}</h1>
+          <div class="dropdown">
+            <button class="btn"><Languages :size="20" /></button>
+            <ul class="dropdown-menu">
+              <li @click="locale = 'en'">English</li>
+              <li @click="locale = 'de'">Deutsch</li>
+            </ul>
+          </div>
+        </div>
       </header>
 
       <main>
         <RouterView />
       </main>
 
-      <footer>
-        &#169 DOZINGO - Alle Rechte vorbehalten
-      </footer>
+        <footer>
+          {{ $t('footer.copyright') }}
+        </footer>
 
       <div class="disable-layer" id="disable-layer" @click="closeMenu"></div>
     </div>
@@ -66,7 +75,15 @@ function closeMenu(){
 </template>
 
 <script setup lang="ts">
-import { Home, LayoutGrid, Settings, LogOut, UserCircle, Menu , Computer} from 'lucide-vue-next'
+import { watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { Home, Settings, LogOut, UserCircle, Menu, Computer, SquarePen, Languages } from 'lucide-vue-next'
+
+const { locale } = useI18n()
+
+watch(locale, (newLocale) => {
+  localStorage.setItem('locale', newLocale)
+})
 </script>
 
 <style scoped>
@@ -122,5 +139,12 @@ header {
   width: 100%;
   display: flex;
   align-items: center;
+}
+
+.header-spacing {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: space-between;
 }
 </style>
