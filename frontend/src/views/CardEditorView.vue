@@ -15,24 +15,37 @@
 
           <div class="form-boardsize">
             <h3>{{ $t('cardEditor.layoutSelection') }}</h3>
+
             <div role="radiogroup" class="layout-options">
-              <button :class="['btn', selectedSize === '3x3' ? 'btn-primary' : 'btn-secondary']" @click="selectedSize = '3x3'">3x3</button>
-              <button :class="['btn', selectedSize === '4x4' ? 'btn-primary' : 'btn-secondary']" @click="selectedSize = '4x4'">4x4</button>
-              <button :class="['btn', selectedSize === '5x5' ? 'btn-primary' : 'btn-secondary']" @click="selectedSize = '5x5'">5x5</button>
+              <label :class="['btn', selectedSize === '3x3' ? 'btn-primary' : 'btn-secondary']">
+                <input type="radio" name="boardsize" value="3x3" v-model="selectedSize" class="sr-only" />
+                3x3
+              </label>
+              <label :class="['btn', selectedSize === '4x4' ? 'btn-primary' : 'btn-secondary']">
+                <input type="radio" name="boardsize" value="4x4" v-model="selectedSize" class="sr-only" />
+                4x4
+              </label>
+              <label :class="['btn', selectedSize === '5x5' ? 'btn-primary' : 'btn-secondary']">
+                <input type="radio" name="boardsize" value="5x5" v-model="selectedSize" class="sr-only" />
+                5x5
+              </label>
             </div>
           </div>
         </div>
 
         <div class="form-description mb-3">
           <h3>{{ $t('cardEditor.description') }}</h3>
-          <textarea rows="3" class="form-input description-input" :placeholder="$t('cardEditor.descriptionPlaceholder')"></textarea>
+          <textarea rows="3" class="form-input description-input"
+            :placeholder="$t('cardEditor.descriptionPlaceholder')"></textarea>
         </div>
 
         <div class="form-entries mb-3">
           <div class="entries-header mb-3">
             <div>
               <h3 class="mb-0">{{ $t('cardEditor.entries') }}</h3>
-              <small class="entry-count-hint">8 entries added. You need 17 more for a 5x5 layout.(Nicht übersetzt bzw. keine dynamische Anpassung)</small>
+              <small class="entry-count-hint">8 entries added. You need 17 more for a 5x5 layout.(Nicht übersetzt bzw.
+                keine
+                dynamische Anpassung)</small>
             </div>
             <button class="btn btn-secondary add-entry-btn" @click="addRow">
               <CirclePlus :size="20" />
@@ -52,7 +65,8 @@
             <tbody>
               <tr v-for="(entry, index) in entries" :key="index">
                 <td class="td-term">
-                  <input type="text" class="entry-term-input" v-model="entry.term" :placeholder="$t('cardEditor.termPlaceholder')" />
+                  <input type="text" class="entry-term-input" v-model="entry.term"
+                    :placeholder="$t('cardEditor.termPlaceholder')" />
                 </td>
                 <td class="td-rarity">
                   <select class="entry-select" v-model="entry.rarity">
@@ -93,7 +107,7 @@ interface Entry {
 }
 
 const entries = ref<Entry[]>([{ term: '', rarity: 'common' }, { term: '', rarity: 'common' }, { term: '', rarity: 'common' }])
-const selectedSize = ref('3x3')
+const selectedSize = ref('4x4')
 
 function addRow() {
   entries.value.push({ term: '', rarity: 'common' })
@@ -105,7 +119,6 @@ function removeRow(index: number) {
 </script>
 
 <style scoped>
-
 /* === Layout === */
 
 .card-header {
@@ -183,6 +196,22 @@ h3 {
 
 .layout-options .btn {
   flex: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* === Entries table === */
@@ -217,13 +246,30 @@ h3 {
   border-top: 1px solid var(--color-text-secondary);
 }
 
-.col-term  { width: 60%; }
-.col-rarity { width: 20%; }
-.col-delete { width: 5%; text-align: center; }
+.col-term {
+  width: 60%;
+}
 
-.td-term   { padding: 5px; }
-.td-rarity { padding: 5px; }
-.td-delete { text-align: center; }
+.col-rarity {
+  width: 20%;
+}
+
+.col-delete {
+  width: 5%;
+  text-align: center;
+}
+
+.td-term {
+  padding: 5px;
+}
+
+.td-rarity {
+  padding: 5px;
+}
+
+.td-delete {
+  text-align: center;
+}
 
 .entry-term-input {
   width: 100%;
@@ -256,4 +302,5 @@ h3 {
 .card {
   background-color: var(--color-bg-card-tinted);
 }
+
 </style>
