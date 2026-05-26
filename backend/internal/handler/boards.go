@@ -151,7 +151,8 @@ func (h *BoardsHandler) create(ctx context.Context, in *CreateBoardInput) (*Crea
 }
 
 func (h *BoardsHandler) delete(ctx context.Context, in *DeleteBoardInput) (*struct{}, error) {
-	if err := h.svc.Delete(ctx, in.BoardID.Value); err != nil { // TODO remove inline error check
+	err := h.svc.Delete(ctx, in.BoardID.Value)
+	if err != nil { // TODO remove inline error check
 		return nil, toHumaErr(err, "board not found", "failed to delete board")
 	}
 

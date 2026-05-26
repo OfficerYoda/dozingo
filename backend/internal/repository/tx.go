@@ -44,7 +44,8 @@ func (r *pgxTxRunner) WithTx(ctx context.Context, fn func(Repos) error) error {
 		}
 	}()
 
-	if err := fn(NewWithDBTX(tx)); err != nil {
+	err = fn(NewWithDBTX(tx))
+	if err != nil {
 		return err
 	}
 	return tx.Commit(ctx)
