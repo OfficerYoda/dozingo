@@ -65,9 +65,10 @@ func (s *Games) UpdateStatus(ctx context.Context, in UpdateGameStatusInput) (gen
 	}
 
 	return s.games.UpdateStatus(ctx, repository.UpdateGameStatusInput{
-		GameID:   in.GameID,
-		Status:   in.Status,
-		PlayerID: sessionUser.UserID,
+		GameID:    in.GameID,
+		Status:    in.Status,
+		PlayerID:  sessionUser.UserID,
+		SessionID: sessionUser.SessionID,
 	})
 }
 
@@ -96,8 +97,17 @@ func checkIfCallerOwnsGame(
 	if err != nil {
 		return generated.GetSessionUserByTokenRow{}, err
 	}
-	if sessionUser.UserID != game.PlayerID {
-		return generated.GetSessionUserByTokenRow{}, domain.ErrForbidden
+
+	// Authored games are owned by the player; anonymous games are owned by
+	// the session that created them. 
+	if game.PlayerID.Valid {
+		if sessionUser.UserID != game.PlayerID {
+			return generated.GetSessionUserByTokenRow{}, domain.ErrForbidden
+		}
+	} else {
+		if sessionUser.SessionID != game.SessionID {
+			return generated.GetSessionUserByTokenRow{}, domain.ErrForbidden
+		}
 	}
 
 	return sessionUser, nil

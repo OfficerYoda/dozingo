@@ -19,9 +19,10 @@ type CreateGameInput struct {
 }
 
 type UpdateGameStatusInput struct {
-	GameID   pgtype.UUID
-	PlayerID pgtype.UUID
-	Status   string
+	GameID    pgtype.UUID
+	PlayerID  pgtype.UUID
+	SessionID pgtype.UUID
+	Status    string
 }
 
 func (r *Games) Get(ctx context.Context, gameID pgtype.UUID) (generated.Game, error) {
@@ -70,9 +71,10 @@ func (r *Games) Create(ctx context.Context, in CreateGameInput) (generated.Game,
 
 func (r *Games) UpdateStatus(ctx context.Context, in UpdateGameStatusInput) (generated.Game, error) {
 	game, err := r.queries.UpdateGameStatus(ctx, generated.UpdateGameStatusParams{
-		ID:       in.GameID,
-		PlayerID: in.PlayerID,
-		Status:   in.Status,
+		ID:        in.GameID,
+		PlayerID:  in.PlayerID,
+		SessionID: in.SessionID,
+		Status:    in.Status,
 	})
 	if err != nil {
 		return generated.Game{}, pgmap.TranslatePgErr(err)
