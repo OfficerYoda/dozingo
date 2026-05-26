@@ -10,7 +10,7 @@
         <div class="form-top mb-3">
           <div class="form-title">
             <h3>{{ $t('cardEditor.sessionTitle') }}</h3>
-            <input type="text" class="form-input title-input" :placeholder="$t('cardEditor.titlePlaceholder')">
+            <input type="text" class="form-input title-input" v-model="title" :placeholder="$t('cardEditor.titlePlaceholder')">
           </div>
 
           <div class="form-boardsize">
@@ -35,7 +35,7 @@
 
         <div class="form-description mb-3">
           <h3>{{ $t('cardEditor.description') }}</h3>
-          <textarea rows="3" class="form-input description-input"
+          <textarea rows="3" class="form-input description-input" v-model="description"
             :placeholder="$t('cardEditor.descriptionPlaceholder')"></textarea>
         </div>
 
@@ -87,7 +87,7 @@
         </div>
 
         <div class="save-btn-row">
-          <button type="submit" class="btn btn-primary">{{ $t('cardEditor.save') }}</button>
+          <button type="submit" class="btn btn-primary" @click="saveBoard">{{ $t('cardEditor.save') }}</button>
         </div>
       </article>
     </div>
@@ -106,8 +106,12 @@ interface Entry {
   rarity: string
 }
 
+const title = ref('')
+const description = ref('')
 const entries = ref<Entry[]>([{ term: '', rarity: 'common' }, { term: '', rarity: 'common' }, { term: '', rarity: 'common' }])
 const selectedSize = ref('4x4')
+
+const rarityValue: Record<string, number> = { common: 1, uncommon: 2, rare: 3, legendary: 4 }
 
 function addRow() {
   entries.value.push({ term: '', rarity: 'common' })
@@ -115,6 +119,34 @@ function addRow() {
 
 function removeRow(index: number) {
   entries.value.splice(index, 1)
+}
+
+async function saveBoard() {
+  const size = parseInt(selectedSize.value)
+
+  const boardRes = await fetch('/api/boards', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ title: title.value, description: description.value || undefined, size }),
+  })
+  if (!boardRes.ok) return console.error('Failed to create board', await boardRes.text())
+  const board = await boardRes.json()
+
+  await Promise.all(
+    entries.value
+      .filter(e => e.term.trim())
+      .map(e =>
+        fetch(`/api/boards/${board.board_id}/cells`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ content: e.term, value: rarityValue[e.rarity] }),
+        })
+      )
+  )
+
+  console.log('Board created:', board.board_id)
 }
 </script>
 

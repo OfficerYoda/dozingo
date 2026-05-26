@@ -12,6 +12,11 @@ export default defineConfig({
     vueJsx(),
     vueDevTools(),
   ],
+  server: {
+    proxy: {
+      '/api': 'http://localhost:4242',
+    },
+  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))

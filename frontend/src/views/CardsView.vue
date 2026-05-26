@@ -10,158 +10,24 @@
                 </div>
             </div>
 
+            <p v-if="error" class="error-text">{{ error }}</p>
+
             <div class="grid">
-                <button class="card card-border-blue col-4">
+                <button
+                    v-for="cell in cells"
+                    :key="cell.cell_id"
+                    class="card card-border-blue col-4 md-6 sm-12"
+                >
                     <div class="card-body">
-                        <h3>Lorum ipsum</h3>
-                        <small>Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam</small>
+                        <h3>{{ cell.content }}</h3>
+                        <small>Value: {{ cell.value }}</small>
                     </div>
                     <hr class="mb-2">
                     <div class="card-footer">
-                        <span class="card-meta-text">Used 999 times</span>
+                        <span class="card-meta-text">Board {{ cell.board_id.slice(0, 8) }}</span>
                         <div class="like-group">
                             <Heart :size="20" />
-                            <span class="card-meta-text">99k</span>
-                        </div>
-                    </div>
-                </button>
-                <button class="card card-border-blue col-4">
-                    <div class="card-body">
-                        <h3>Lorum ipsum</h3>
-                        <small>Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam</small>
-                    </div>
-                    <hr class="mb-2">
-                    <div class="card-footer">
-                        <span class="card-meta-text">Used 999 times</span>
-                        <div class="like-group">
-                            <Heart :size="20" />
-                            <span class="card-meta-text">99k</span>
-                        </div>
-                    </div>
-                </button>
-                <button class="card card-border-blue col-4">
-                    <div class="card-body">
-                        <h3>Lorum ipsum</h3>
-                        <small>Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam</small>
-                    </div>
-                    <hr class="mb-2">
-                    <div class="card-footer">
-                        <span class="card-meta-text">Used 999 times</span>
-                        <div class="like-group">
-                            <Heart :size="20" />
-                            <span class="card-meta-text">99k</span>
-                        </div>
-                    </div>
-                </button>
-                <button class="card card-border-blue col-4">
-                    <div class="card-body">
-                        <h3>Lorum ipsum</h3>
-                        <small>Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam</small>
-                    </div>
-                    <hr class="mb-2">
-                    <div class="card-footer">
-                        <span class="card-meta-text">Used 999 times</span>
-                        <div class="like-group">
-                            <Heart :size="20" />
-                            <span class="card-meta-text">99k</span>
-                        </div>
-                    </div>
-                </button>
-                <button class="card card-border-blue col-4">
-                    <div class="card-body">
-                        <h3>Lorum ipsum</h3>
-                        <small>Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam</small>
-                    </div>
-                    <hr class="mb-2">
-                    <div class="card-footer">
-                        <span class="card-meta-text">Used 999 times</span>
-                        <div class="like-group">
-                            <Heart :size="20" />
-                            <span class="card-meta-text">99k</span>
-                        </div>
-                    </div>
-                </button>
-                <button class="card card-border-blue col-4">
-                    <div class="card-body">
-                        <h3>Lorum ipsum</h3>
-                        <small>Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam</small>
-                    </div>
-                    <hr class="mb-2">
-                    <div class="card-footer">
-                        <span class="card-meta-text">Used 999 times</span>
-                        <div class="like-group">
-                            <Heart :size="20" />
-                            <span class="card-meta-text">99k</span>
-                        </div>
-                    </div>
-                </button>
-                <button class="card card-border-blue col-4">
-                    <div class="card-body">
-                        <h3>Lorum ipsum</h3>
-                        <small>Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam</small>
-                    </div>
-                    <hr class="mb-2">
-                    <div class="card-footer">
-                        <span class="card-meta-text">Used 999 times</span>
-                        <div class="like-group">
-                            <Heart :size="20" />
-                            <span class="card-meta-text">99k</span>
-                        </div>
-                    </div>
-                </button>
-                <button class="card card-border-blue col-4">
-                    <div class="card-body">
-                        <h3>Lorum ipsum</h3>
-                        <small>Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam</small>
-                    </div>
-                    <hr class="mb-2">
-                    <div class="card-footer">
-                        <span class="card-meta-text">Used 999 times</span>
-                        <div class="like-group">
-                            <Heart :size="20" />
-                            <span class="card-meta-text">99k</span>
-                        </div>
-                    </div>
-                </button>
-                <button class="card card-border-blue col-4">
-                    <div class="card-body">
-                        <h3>Lorum ipsum</h3>
-                        <small>Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam</small>
-                    </div>
-                    <hr class="mb-2">
-                    <div class="card-footer">
-                        <span class="card-meta-text">Used 999 times</span>
-                        <div class="like-group">
-                            <Heart :size="20" />
-                            <span class="card-meta-text">99k</span>
-                        </div>
-                    </div>
-                </button>
-                <button class="card card-border-blue col-4">
-                    <div class="card-body">
-                        <h3>Lorum ipsum</h3>
-                        <small>Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam</small>
-                    </div>
-                    <hr class="mb-2">
-                    <div class="card-footer">
-                        <span class="card-meta-text">Used 999 times</span>
-                        <div class="like-group">
-                            <Heart :size="20" />
-                            <span class="card-meta-text">99k</span>
-                        </div>
-                    </div>
-                </button>
-                <button class="card card-border-blue col-4">
-                    <div class="card-body">
-                        <h3>Lorum ipsum</h3>
-                        <small>Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam</small>
-                    </div>
-                    <hr class="mb-2">
-                    <div class="card-footer">
-                        <span class="card-meta-text">Used 999 times</span>
-                        <div class="like-group">
-                            <Heart :size="20" />
-                            <span class="card-meta-text">99k</span>
+                            <span class="card-meta-text">0</span>
                         </div>
                     </div>
                 </button>
@@ -171,10 +37,45 @@
 </template>
 
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n';
-import { Heart } from 'lucide-vue-next';
+import { ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { Heart } from 'lucide-vue-next'
+
+interface Cell {
+    cell_id: string
+    board_id: string
+    content: string
+    author_id: string | null
+    value: number
+}
+
+interface Board {
+    board_id: string
+}
 
 useI18n()
+
+const cells = ref<Cell[]>([])
+const error = ref<string | null>(null)
+
+async function fetchAllCells() {
+    const boardsRes = await fetch('/api/boards', { credentials: 'include' })
+    if (!boardsRes.ok) {
+        error.value = 'Failed to load boards'
+        return
+    }
+    const boards: Board[] = await boardsRes.json()
+
+    const cellsPerBoard = await Promise.all(
+        boards.map(board =>
+            fetch(`/api/boards/${board.board_id}/cells`, { credentials: 'include' })
+                .then(res => res.ok ? res.json() as Promise<Cell[]> : [])
+        )
+    )
+    cells.value = cellsPerBoard.flat()
+}
+
+onMounted(fetchAllCells)
 </script>
 
 <style scoped>
