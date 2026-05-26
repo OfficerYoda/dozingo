@@ -18,7 +18,7 @@ type boardOutput struct {
 	Title       string  `json:"title"`
 	Description *string `json:"description"`
 	Size        int32   `json:"size"`
-	AuthorID    string  `json:"author_id" format:"uuid"`
+	AuthorID    *string `json:"author_id" format:"uuid"`
 }
 
 type getBoardsInput struct {
@@ -186,6 +186,6 @@ func boardToOutput(board generated.Board) boardOutput {
 		Title:       board.Title,
 		Description: pgmap.StringFromPgText(board.Description),
 		Size:        board.Size,
-		AuthorID:    board.AuthorID.String(),
+		AuthorID:    pgmap.StringFromPgUUID(board.AuthorID),
 	}
 }
