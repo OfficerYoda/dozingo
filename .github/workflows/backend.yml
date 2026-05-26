@@ -1,0 +1,77 @@
+name: backend
+
+on:
+  pull_request:
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend.yml'
+
+concurrency:
+  group: backend-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: backend tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: dozingo_user
+          POSTGRES_PASSWORD: dozingo_pass
+          POSTGRES_DB: dozingo
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U dozingo_user -d dozingo"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://dozingo_user:dozingo_pass@localhost:5432/dozingo?sslmode=disable
+      TEST_DATABASE_URL: postgres://dozingo_user:dozingo_pass@localhost:5432/dozingo_test?sslmode=disable
+      # Tracks .mise.toml's `gomigrate = "4.18.3"`. Bump in lockstep.
+      MIGRATE_VERSION: v4.18.3
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache: true
+          cache-dependency-path: backend/go.sum
+
+      # The Postgres service container does not run backend/docker/init.sql,
+      # so the second database used by the handler tests has to be created
+      # explicitly. psql is preinstalled on ubuntu-latest.
+      - name: Create test database
+        env:
+          PGPASSWORD: dozingo_pass
+        run: psql -h localhost -U dozingo_user -d postgres -c 'CREATE DATABASE dozingo_test;'
+
+      - name: Install golang-migrate
+        run: |
+          curl -fsSL "https://github.com/golang-migrate/migrate/releases/download/${MIGRATE_VERSION}/migrate.linux-amd64.tar.gz" | tar xz
+          sudo mv migrate /usr/local/bin/migrate
+          migrate -version
+
+      - name: Apply migrations (dev DB)
+        run: migrate -path internal/db/migrations -database "$DATABASE_URL" up
+
+      - name: Apply migrations (test DB)
+        run: migrate -path internal/db/migrations -database "$TEST_DATABASE_URL" up
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: go test
+        run: go test ./...
