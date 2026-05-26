@@ -65,17 +65,21 @@ func run() error {
 
 // connectDB creates a connection pool to PostgreSQL and verifies the connection.
 func connectDB(databaseURL string) (*pgxpool.Pool, error) {
-	pool, err := pgxpool.New(context.Background(), databaseURL)
-	if err != nil {
-		return nil, fmt.Errorf("creating pool: %w", err)
-	}
+    ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+    defer cancel()
 
-	if err := pool.Ping(context.Background()); err != nil {
-		return nil, fmt.Errorf("pinging database: %w", err)
-	}
+    pool, err := pgxpool.New(ctx, databaseURL)
+    if err != nil {
+        return nil, fmt.Errorf("creating pool: %w", err)
+    }
 
-	slog.Info("connected to database")
-	return pool, nil
+    if err := pool.Ping(ctx); err != nil {
+        pool.Close()
+        return nil, fmt.Errorf("pinging database: %w", err)
+    }
+
+    slog.Info("connected to database")
+    return pool, nil
 }
 
 // createRouter creates a Chi router with standard middleware and a root health page.
