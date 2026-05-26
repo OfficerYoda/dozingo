@@ -5,8 +5,7 @@
         <div class="hero-banner mb-3 col-8 md-12 sm-12">
           <div class="hero-content">
             <h2 class="hero-title">Ready for your next lecture win?</h2>
-            <p class="hero-subtitle">Quick-start a bingo grid for today's lecture and join other students currently
-              playing.</p>
+            <p class="hero-subtitle">Quick-start a bingo grid for today's lecture and join other students currently playing.</p>
             <RouterLink to="/cards" class="hero-button">Browse Cards</RouterLink>
           </div>
         </div>
