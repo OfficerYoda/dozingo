@@ -67,13 +67,13 @@
             <span>{{ $t('settings.display.colorCorrection') }}</span>
             <small>{{ $t('settings.display.colorCorrectionDesc') }}</small>
           </div>
-            
-            <select v-model="colorCorrection" class="btn btn-secondary">
-              <option value="standart">{{ $t('settings.display.colorFilters.standard') }}</option>
-              <option value="redgreen">{{ $t('settings.display.colorFilters.redGreen') }}</option>
-              <option value="blueyellow">{{ $t('settings.display.colorFilters.blueYellow') }}</option>
-              <option value="gray">{{ $t('settings.display.colorFilters.grayscale') }}</option>
-            </select>
+
+          <select v-model="colorCorrection" class="btn btn-secondary">
+            <option value="standart">{{ $t('settings.display.colorFilters.standard') }}</option>
+            <option value="redgreen">{{ $t('settings.display.colorFilters.redGreen') }}</option>
+            <option value="blueyellow">{{ $t('settings.display.colorFilters.blueYellow') }}</option>
+            <option value="gray">{{ $t('settings.display.colorFilters.grayscale') }}</option>
+          </select>
         </div>
 
         <div class="display-fontsize">

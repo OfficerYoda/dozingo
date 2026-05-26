@@ -5,19 +5,19 @@
                 <h2 class="mb-0">Explore all Cards</h2>
                 <div class="header-actions">
                     <input class="btn btn-secondary" type="search" placeholder="Search..">
-                    <button class="btn btn-primary">Never played</button>
-                    <button class="btn btn-secondary">New</button>
+                    <select class="btn btn-secondary" v-model="appliedFiler">
+                        <option value="no-filter">No Filter</option>
+                        <option value="newest">Newest</option>
+                        <option value="most-liked">Most liked</option>
+                        <option value="most-played">Most played</option>
+                    </select>
                 </div>
             </div>
 
             <p v-if="error" class="error-text">{{ error }}</p>
 
             <div class="grid">
-                <button
-                    v-for="cell in cells"
-                    :key="cell.cell_id"
-                    class="card card-border-blue col-4 md-6 sm-12"
-                >
+                <button v-for="cell in cells" :key="cell.cell_id" class="card card-border-blue col-4 md-6 sm-12">
                     <div class="card-body">
                         <h3>{{ cell.content }}</h3>
                         <small>Value: {{ cell.value }}</small>
@@ -37,8 +37,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute } from 'vue-router'
 import { Heart } from 'lucide-vue-next'
 
 interface Cell {
@@ -54,11 +55,12 @@ interface Board {
 }
 
 useI18n()
+const route = useRoute()
 
 const cells = ref<Cell[]>([])
 const error = ref<string | null>(null)
 
-async function fetchAllCells() {
+async function fetchAllCells(filterString: string) {
     const boardsRes = await fetch('/api/boards', { credentials: 'include' })
     if (!boardsRes.ok) {
         error.value = 'Failed to load boards'
@@ -75,7 +77,11 @@ async function fetchAllCells() {
     cells.value = cellsPerBoard.flat()
 }
 
-onMounted(fetchAllCells)
+const appliedFiler = ref((route.query.filter as string) ?? 'no-filter')
+
+watch(appliedFiler, (newValue) => {
+    fetchAllCells(newValue)
+}, { immediate: true })
 </script>
 
 <style scoped>
