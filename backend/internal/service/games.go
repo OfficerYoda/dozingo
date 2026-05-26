@@ -5,6 +5,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/officeryoda/dozingo/internal/domain"
+	"github.com/officeryoda/dozingo/internal/middleware"
 	"github.com/officeryoda/dozingo/internal/generated"
 	"github.com/officeryoda/dozingo/internal/repository"
 )
@@ -31,19 +32,29 @@ func (s *Games) ListByPlayer(ctx context.Context, playerID pgtype.UUID) ([]gener
 	return s.games.ListByPlayer(ctx, playerID)
 }
 
+func (s *Games) ListByCurrentSession(ctx context.Context) ([]generated.Game, error) {
+	sessionUser, err := middleware.RequireSession(ctx, s.queries)
+	if err != nil {
+		return []generated.Game{}, err
+	}
+
+	return s.games.ListBySession(ctx, sessionUser.SessionID)
+}
+
 func (s *Games) ListByBoard(ctx context.Context, boardID pgtype.UUID) ([]generated.Game, error) {
 	return s.games.ListByBoard(ctx, boardID)
 }
 
 func (s *Games) Create(ctx context.Context, boardID pgtype.UUID) (generated.Game, error) {
-	sessionUser, err := requiresSessionUser(ctx, s.queries)
+	sessionUser, err := middleware.RequireSession(ctx, s.queries)
 	if err != nil {
 		return generated.Game{}, err
 	}
 
 	return s.games.Create(ctx, repository.CreateGameInput{
-		BoardID:  boardID,
 		PlayerID: sessionUser.UserID,
+		SessionID: sessionUser.SessionID,
+		BoardID:  boardID,
 	})
 }
 
@@ -76,7 +87,7 @@ func checkIfCallerOwnsGame(
 	queries *generated.Queries,
 	gameID pgtype.UUID,
 ) (generated.GetSessionUserByTokenRow, error) {
-	sessionUser, err := requiresSessionUser(ctx, queries)
+	sessionUser, err := middleware.RequireSession(ctx, queries)
 	if err != nil {
 		return generated.GetSessionUserByTokenRow{}, err
 	}
