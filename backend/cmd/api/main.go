@@ -113,15 +113,13 @@ func registerRoutes(router *chi.Mux, repos repository.Repos, pool *pgxpool.Pool)
 	votesSvc := service.NewVotes(repos.Votes, queries)
 	authSvc := service.NewAuth(repos, queries, txRunner)
 
+	handler.NewHealthHandler().Register(apiGroup)
 	handler.NewBoardsHandler(boardsSvc).Register(apiGroup)
 	handler.NewCellsHandler(cellsSvc).Register(apiGroup)
 	handler.NewGameCellsHandler(gameCellsSvc).Register(apiGroup)
 	handler.NewGamesHandler(gamesSvc).Register(apiGroup)
 	handler.NewVotesHandler(votesSvc).Register(apiGroup)
 	handler.NewAuthHandler(authSvc).Register(apiGroup)
-
-	// TODO: Legacy registrars (to be migrated).
-	handler.RegisterHealth(apiGroup)
 }
 
 func createServer(port int, handler http.Handler) *http.Server {

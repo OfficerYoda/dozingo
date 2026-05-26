@@ -19,15 +19,21 @@ type healthOutput struct {
 
 // ===== Handler =====
 
-func RegisterHealth(api huma.API) {
+type HealthHandler struct{}
+
+func NewHealthHandler() *HealthHandler {
+	return &HealthHandler{}
+}
+
+func (h *HealthHandler) Register(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID: "health-check",
 		Method:      http.MethodGet,
 		Path:        "/health",
 		Summary:     "Health check",
-	}, handleHealth)
+	}, h.handleHealth)
 }
 
-func handleHealth(ctx context.Context, input *struct{}) (*healthOutput, error) {
+func (h *HealthHandler) handleHealth(ctx context.Context, input *struct{}) (*healthOutput, error) {
 	return &healthOutput{Body: healthOutputBody{Status: "ok"}}, nil
 }
