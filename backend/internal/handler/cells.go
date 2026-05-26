@@ -11,55 +11,59 @@ import (
 	"github.com/officeryoda/dozingo/internal/types"
 )
 
-/// ===== Input/Output types =====
+// ===== Input/Output types =====
 
-type CellOutput struct {
+type cellOutput struct {
 	CellID   string  `json:"cell_id" format:"uuid"`
 	BoardID  string  `json:"board_id" format:"uuid"`
-	Content  string  `json:"content" format:"text"`
+	Content  string  `json:"content"`
 	AuthorID *string `json:"author_id" format:"uuid"`
 	Value    int32   `json:"value"`
 }
 
-type GetCellsByBoardIDInput struct {
-	BoardID types.UUIDParam `path:"board_id"`
-}
-
-type GetCellsByBoardIDOutput struct {
-	Body []CellOutput
-}
-
-type CreateCellInput struct {
+type getCellsByBoardIDInput struct {
 	BoardID types.UUIDParam `path:"board_id" format:"uuid"`
-	Body    struct {
-		Content string `json:"content" format:"text" required:"true" maxLength:"200"`
-		Value   *int32 `json:"value,omitempty"`
-	}
 }
 
-type CreateCellOutput struct {
-	Body CellOutput
+type getCellsByBoardIDOutput struct {
+	Body []cellOutput
 }
 
-type UpdateCellInput struct {
+type createCellInputBody struct {
+	Content string `json:"content" required:"true" maxLength:"200"`
+	Value   *int32 `json:"value,omitempty"`
+}
+
+type createCellInput struct {
 	BoardID types.UUIDParam `path:"board_id" format:"uuid"`
-	CellID  types.UUIDParam `path:"cell_id" format:"uuid"`
-	Body    struct {
-		Content *string `json:"content,omitempty" maxLength:"200"`
-		Value   *int32  `json:"value,omitempty"`
-	}
+	Body    createCellInputBody
 }
 
-type UpdateCellOutput struct {
-	Body CellOutput
+type createCellOutput struct {
+	Body cellOutput
 }
 
-type DeleteCellInput struct {
+type updateCellInputBody struct {
+	Content *string `json:"content,omitempty" maxLength:"200"`
+	Value   *int32  `json:"value,omitempty"`
+}
+
+type updateCellInput struct {
 	BoardID types.UUIDParam `path:"board_id" format:"uuid"`
 	CellID  types.UUIDParam `path:"cell_id" format:"uuid"`
+	Body    updateCellInputBody
 }
 
-/// ===== Handler =====
+type updateCellOutput struct {
+	Body cellOutput
+}
+
+type deleteCellInput struct {
+	BoardID types.UUIDParam `path:"board_id" format:"uuid"`
+	CellID  types.UUIDParam `path:"cell_id" format:"uuid"`
+}
+
+// ===== Handler =====
 
 type CellsHandler struct {
 	svc *service.Cells
@@ -103,16 +107,16 @@ func (h *CellsHandler) Register(api huma.API) {
 	}, h.delete)
 }
 
-func (h *CellsHandler) list(ctx context.Context, in *GetCellsByBoardIDInput) (*GetCellsByBoardIDOutput, error) {
+func (h *CellsHandler) list(ctx context.Context, in *getCellsByBoardIDInput) (*getCellsByBoardIDOutput, error) {
 	cells, err := h.svc.ListByBoardID(ctx, in.BoardID.Value)
 	if err != nil {
 		return nil, toHumaErr(err, "", "failed to list cells")
 	}
 
-	return &GetCellsByBoardIDOutput{Body: mapSlice(cells, cellToOutput)}, nil
+	return &getCellsByBoardIDOutput{Body: mapSlice(cells, cellToOutput)}, nil
 }
 
-func (h *CellsHandler) create(ctx context.Context, in *CreateCellInput) (*CreateCellOutput, error) {
+func (h *CellsHandler) create(ctx context.Context, in *createCellInput) (*createCellOutput, error) {
 	cell, err := h.svc.Create(ctx, service.CreateCellInput{
 		BoardID: in.BoardID.Value,
 		Content: in.Body.Content,
@@ -122,10 +126,10 @@ func (h *CellsHandler) create(ctx context.Context, in *CreateCellInput) (*Create
 		return nil, toHumaErr(err, "", "failed to create cell")
 	}
 
-	return &CreateCellOutput{Body: cellToOutput(cell)}, nil
+	return &createCellOutput{Body: cellToOutput(cell)}, nil
 }
 
-func (h *CellsHandler) update(ctx context.Context, in *UpdateCellInput) (*UpdateCellOutput, error) {
+func (h *CellsHandler) update(ctx context.Context, in *updateCellInput) (*updateCellOutput, error) {
 	cell, err := h.svc.Update(ctx, service.UpdateCellInput{
 		CellID:  in.CellID.Value,
 		BoardID: in.BoardID.Value,
@@ -136,10 +140,10 @@ func (h *CellsHandler) update(ctx context.Context, in *UpdateCellInput) (*Update
 		return nil, toHumaErr(err, "cell not found on this board", "failed to update cell")
 	}
 
-	return &UpdateCellOutput{Body: cellToOutput(cell)}, nil
+	return &updateCellOutput{Body: cellToOutput(cell)}, nil
 }
 
-func (h *CellsHandler) delete(ctx context.Context, in *DeleteCellInput) (*struct{}, error) {
+func (h *CellsHandler) delete(ctx context.Context, in *deleteCellInput) (*struct{}, error) {
 	err := h.svc.Delete(ctx, service.DeleteCellInput{
 		CellID:  in.CellID.Value,
 		BoardID: in.BoardID.Value,
@@ -151,8 +155,8 @@ func (h *CellsHandler) delete(ctx context.Context, in *DeleteCellInput) (*struct
 	return &struct{}{}, nil
 }
 
-func cellToOutput(cell generated.Cell) CellOutput {
-	return CellOutput{
+func cellToOutput(cell generated.Cell) cellOutput {
+	return cellOutput{
 		CellID:   cell.ID.String(),
 		BoardID:  cell.BoardID.String(),
 		Content:  cell.Content,

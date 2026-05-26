@@ -7,11 +7,17 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 )
 
-type HealthOutput struct {
-	Body struct {
-		Status string `json:"status"`
-	}
+// ===== Input/Output types =====
+
+type healthOutputBody struct {
+	Status string `json:"status"`
 }
+
+type healthOutput struct {
+	Body healthOutputBody
+}
+
+// ===== Handler =====
 
 func RegisterHealth(api huma.API) {
 	huma.Register(api, huma.Operation{
@@ -22,8 +28,6 @@ func RegisterHealth(api huma.API) {
 	}, handleHealth)
 }
 
-func handleHealth(ctx context.Context, input *struct{}) (*HealthOutput, error) {
-	resp := &HealthOutput{}
-	resp.Body.Status = "ok"
-	return resp, nil
+func handleHealth(ctx context.Context, input *struct{}) (*healthOutput, error) {
+	return &healthOutput{Body: healthOutputBody{Status: "ok"}}, nil
 }
