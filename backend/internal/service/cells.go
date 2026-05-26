@@ -96,7 +96,7 @@ func checkIfCallerOwnsBoard(ctx context.Context, s *Cells, boardID pgtype.UUID) 
 		return err
 	}
 	if board.AuthorID != sessionUser.UserID {
-		return fmt.Errorf("delete board: %w", domain.ErrForbidden)
+		return fmt.Errorf("caller doesn't own board: %w", domain.ErrForbidden)
 	}
 
 	return nil

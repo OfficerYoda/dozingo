@@ -122,7 +122,7 @@ func (h *AuthHandler) login(ctx context.Context, in *loginInput) (*loginOutput, 
 func (h *AuthHandler) logout(ctx context.Context, in *struct{}) (*struct{}, error) {
 	err := h.svc.Logout(ctx)
 	if err != nil {
-		return &struct{}{}, toHumaErr(err, "", "failed to logout user")
+		return nil, toHumaErr(err, "", "failed to logout user")
 	}
 
 	return &struct{}{}, nil
@@ -134,7 +134,11 @@ func (h *AuthHandler) me(ctx context.Context, in *struct{}) (*meOutput, error) {
 		return nil, huma.Error401Unauthorized("not logged in")
 	}
 
-	user, _ := h.svc.Me(ctx, session)
+	user, err := h.svc.Me(ctx, session)
+	if err != nil {
+		return nil, toHumaErr(err, "", "failed to get me")
+	}
+
 	return &meOutput{Body: userToOutput(user)}, nil
 }
 

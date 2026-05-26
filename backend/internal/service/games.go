@@ -85,9 +85,9 @@ func checkIfCallerOwnsGame(
 	if err != nil {
 		return generated.GetSessionUserByTokenRow{}, err
 	}
-
 	if sessionUser.UserID != game.PlayerID {
-		return generated.GetSessionUserByTokenRow{}, domain.ErrUnauthorized
+		return generated.GetSessionUserByTokenRow{}, domain.ErrForbidden
 	}
+
 	return sessionUser, nil
 }

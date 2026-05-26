@@ -197,7 +197,7 @@ func TestUpdateGameStatus_WrongPlayer(t *testing.T) {
 		map[string]any{"status": "completed"},
 		cookiesFor(stranger),
 	)
-	assertStatus(t, w, http.StatusUnauthorized)
+	assertStatus(t, w, http.StatusForbidden)
 }
 
 func TestDeleteGame(t *testing.T) {

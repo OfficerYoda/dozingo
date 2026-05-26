@@ -40,7 +40,7 @@ func main() {
 func run() error {
 	cfg, err := config.Load()
 	if err != nil {
-		slog.Warn("failed to load config", "error", err)
+		return fmt.Errorf("failed to load config: %w", err)
 	}
 
 	pool, err := connectDB(cfg.DatabaseURL)
@@ -55,7 +55,7 @@ func run() error {
 	repos := repository.New(pool)
 
 	cleaner := worker.NewSessionCleaner(repos.Sessions, sessionCleanupInterval)
-	go cleaner.Start(ctx)
+	cleaner.Start(ctx)
 
 	router := createRouter(cfg)
 	registerRoutes(router, repos, pool)
