@@ -73,3 +73,8 @@ func (s *Boards) Delete(ctx context.Context, boardID pgtype.UUID) error {
 	_, err = s.boards.Delete(ctx, boardID)
 	return err
 }
+
+func (s *Boards) TotalGamesPlayed(ctx context.Context, boardID pgtype.UUID) (generated.GetTotalGamesPlayedForBoardRow, error) {
+	playedGames, err := s.boards.TotalGamesPlayed(ctx, boardID)
+	return playedGames, err
+}

@@ -54,6 +54,16 @@ type DeleteBoardInput struct {
 	BoardID types.UUIDParam `path:"board_id" format:"uuid"`
 }
 
+type GetTotalGamesPlayedInput struct {
+	BoardID types.UUIDParam `path:"board_id" format:"uuid"`
+}
+
+type GetTotalGamesPlayedOutput struct {
+	BoardID    string
+	BoardTitle string
+	TotalGames int64
+}
+
 /// ===== Handler =====
 
 type BoardsHandler struct {
@@ -96,6 +106,14 @@ func (h *BoardsHandler) Register(api huma.API) {
 		Summary:     "Delete a board",
 		Tags:        []string{"Boards"},
 	}, h.delete)
+
+	huma.Register(api, huma.Operation{
+		OperationID: "total-played-games",
+		Method:      http.MethodGet,
+		Path:        "/boards/{board_id}/total-played-games",
+		Summary:     "Get total count of played games",
+		Tags:        []string{"Boards"},
+	}, h.totalPlayedGames)
 }
 
 func (h *BoardsHandler) list(ctx context.Context, in *GetBoardsInput) (*GetBoardsOutput, error) {
@@ -133,11 +151,24 @@ func (h *BoardsHandler) create(ctx context.Context, in *CreateBoardInput) (*Crea
 }
 
 func (h *BoardsHandler) delete(ctx context.Context, in *DeleteBoardInput) (*struct{}, error) {
-	if err := h.svc.Delete(ctx, in.BoardID.Value); err != nil {
+	if err := h.svc.Delete(ctx, in.BoardID.Value); err != nil { // TODO remove inline error check
 		return nil, toHumaErr(err, "board not found", "failed to delete board")
 	}
 
 	return &struct{}{}, nil
+}
+
+func (h *BoardsHandler) totalPlayedGames(ctx context.Context, in *GetTotalGamesPlayedInput) (*GetTotalGamesPlayedOutput, error) {
+	playedGames, err := h.svc.TotalGamesPlayed(ctx, in.BoardID.Value)
+	if err != nil {
+		return nil, toHumaErr(err, "", "failed to count total played games")
+	}
+
+	return &GetTotalGamesPlayedOutput{
+		BoardID:    playedGames.BoardID.String(),
+		BoardTitle: playedGames.BoardTitle,
+		TotalGames: playedGames.TotalGames,
+	}, nil
 }
 
 func boardToOutput(board generated.Board) BoardOutput {

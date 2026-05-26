@@ -95,3 +95,11 @@ func (r *Boards) Delete(ctx context.Context, id pgtype.UUID) (generated.Board, e
 	}
 	return board, nil
 }
+
+func (r *Boards) TotalGamesPlayed(ctx context.Context, id pgtype.UUID) (generated.GetTotalGamesPlayedForBoardRow, error) {
+	playedGames, err := r.queries.GetTotalGamesPlayedForBoard(ctx, id)
+	if err != nil {
+		return generated.GetTotalGamesPlayedForBoardRow{}, pgmap.TranslatePgErr(err)
+	}
+	return playedGames, nil
+}
