@@ -21,6 +21,7 @@ const (
 	contextSessionUser contextKey = iota
 	contextSessionSlot
 	contextHumaCtx
+	contextSessionMW
 )
 
 const (
@@ -37,35 +38,34 @@ type sessionSlot struct {
 	filled bool
 }
 
-var (
-	cfg *config.Config
-	err error
-)
-
-func init() {
-	cfg, err = config.Load()
-	if err != nil {
-		slog.Warn("failed to load config", "error", err)
-	}
+// SessionMiddleware bundles the dependencies needed by the session-aware
+// middleware and its companion cookie helpers (RequireSession,
+// ClearSessionTokenCookie). Construct it with NewSessionMiddleware and pass
+// the result into huma's UseMiddleware.
+type SessionMiddleware struct {
+	cfg     *config.Config
+	queries *generated.Queries
 }
 
-// SetCookieSecureForTesting overrides the Secure flag used when emitting
-// session cookies. Tests run over plain HTTP via httptest, which would drop
-// Secure cookies; this lets the test setup force-disable the flag without
-// touching real environment variables. Production code must never call this.
-func SetCookieSecureForTesting(secure bool) {
+// NewSessionMiddleware returns a SessionMiddleware bound to the given config
+// and query handle. The config drives cookie behaviour (Secure flag); the
+// queries handle is used to look up sessions during request handling.
+func NewSessionMiddleware(cfg *config.Config, queries *generated.Queries) *SessionMiddleware {
 	if cfg == nil {
-		cfg = &config.Config{}
+		panic("middleware: nil *config.Config")
 	}
-	cfg.SecureCookie = secure
+	if queries == nil {
+		panic("middleware: nil *generated.Queries")
+	}
+	return &SessionMiddleware{cfg: cfg, queries: queries}
 }
 
-// SessionUser is a read-only middleware. If the request carries a valid
+// Handler is a read-only middleware. If the request carries a valid
 // session_token cookie, it loads the session, optionally extends it, and
 // stashes it in the request context. Requests without a cookie do not touch
 // the database. Handlers that need to persist anonymous activity should call
 // RequireSession to lazily mint a session.
-func SessionUser(api huma.API, queries *generated.Queries) func(huma.Context, func(huma.Context)) {
+func (m *SessionMiddleware) Handler(api huma.API) func(huma.Context, func(huma.Context)) {
 	return func(ctx huma.Context, next func(huma.Context)) {
 		// Always attach an empty slot so RequireSession can cache a minted
 		// session within the lifetime of this request.
@@ -77,13 +77,18 @@ func SessionUser(api huma.API, queries *generated.Queries) func(huma.Context, fu
 		// RequireSessionCtx helper.
 		ctx = huma.WithValue(ctx, contextHumaCtx, ctx)
 
+		// Stash the middleware itself so the free-function helpers
+		// (RequireSession, ClearSessionTokenCookie) can read config and
+		// queries from the request context without package-level globals.
+		ctx = huma.WithValue(ctx, contextSessionMW, m)
+
 		sessionToken := getSessionTokenFromCookie(ctx)
 		if sessionToken == "" {
 			next(ctx)
 			return
 		}
 
-		sessionUser, err := queries.GetSessionUserByToken(ctx.Context(), sessionToken)
+		sessionUser, err := m.queries.GetSessionUserByToken(ctx.Context(), sessionToken)
 		if err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
 				ClearSessionTokenCookie(ctx.Context())
@@ -95,7 +100,7 @@ func SessionUser(api huma.API, queries *generated.Queries) func(huma.Context, fu
 			return
 		}
 
-		extendCloseToExpiredSessions(&sessionUser, queries, ctx)
+		extendCloseToExpiredSessions(&sessionUser, m.queries, ctx)
 
 		slot.row = sessionUser
 		slot.filled = true
@@ -121,13 +126,17 @@ func SessionUserFromContext(ctx context.Context) (generated.GetSessionUserByToke
 func RequireSession(ctx context.Context, queries *generated.Queries) (generated.GetSessionUserByTokenRow, error) {
 	humaCtx, ok := humaContextFrom(ctx)
 	if !ok {
-		return generated.GetSessionUserByTokenRow{}, errors.New("RequireSessionCtx called without SessionUser middleware")
+		return generated.GetSessionUserByTokenRow{}, errors.New("RequireSession called without Session middleware")
 	}
 
-	// func requireSession(humaCtx huma.Context, queries *generated.Queries) (generated.GetSessionUserByTokenRow, error) {
+	mw, ok := sessionMiddlewareFrom(ctx)
+	if !ok {
+		return generated.GetSessionUserByTokenRow{}, errors.New("RequireSession called without Session middleware")
+	}
+
 	slot, ok := humaCtx.Context().Value(contextSessionSlot).(*sessionSlot)
 	if !ok {
-		return generated.GetSessionUserByTokenRow{}, errors.New("RequireSession called without SessionUser middleware")
+		return generated.GetSessionUserByTokenRow{}, errors.New("RequireSession called without Session middleware")
 	}
 
 	if slot.filled {
@@ -140,7 +149,7 @@ func RequireSession(ctx context.Context, queries *generated.Queries) (generated.
 		return generated.GetSessionUserByTokenRow{}, err
 	}
 
-	setSessionTokenCookie(humaCtx, session.Token)
+	mw.setSessionTokenCookie(humaCtx, session.Token)
 
 	row := generated.GetSessionUserByTokenRow{
 		SessionID: session.ID,
@@ -161,12 +170,12 @@ func getSessionTokenFromCookie(ctx huma.Context) string {
 	return cookie.Value
 }
 
-func setSessionTokenCookie(ctx huma.Context, token string) {
+func (m *SessionMiddleware) setSessionTokenCookie(ctx huma.Context, token string) {
 	newCookie := http.Cookie{
 		Name:     cookieSessionToken,
 		Value:    token,
 		HttpOnly: true,
-		Secure:   cfg.SecureCookie,
+		Secure:   m.cfg.SecureCookie,
 		SameSite: http.SameSiteStrictMode,
 		Path:     "/",
 		Expires:  time.Now().Add(sessionTokenTTL),
@@ -177,14 +186,18 @@ func setSessionTokenCookie(ctx huma.Context, token string) {
 func ClearSessionTokenCookie(ctx context.Context) error {
 	humaCtx, ok := humaContextFrom(ctx)
 	if !ok {
-		return errors.New("ClearSessionTokenCookieCtx called without SessionUser middleware")
+		return errors.New("ClearSessionTokenCookie called without Session middleware")
+	}
+	mw, ok := sessionMiddlewareFrom(ctx)
+	if !ok {
+		return errors.New("ClearSessionTokenCookie called without Session middleware")
 	}
 
 	cookie := http.Cookie{
 		Name:     cookieSessionToken,
 		Value:    "",
 		HttpOnly: true,
-		Secure:   cfg.SecureCookie,
+		Secure:   mw.cfg.SecureCookie,
 		SameSite: http.SameSiteStrictMode,
 		Path:     "/",
 		MaxAge:   -1,
@@ -230,8 +243,15 @@ func createNewSession(queries *generated.Queries, ctx huma.Context) (generated.S
 	return session, nil
 }
 
-// humaContextFrom returns the huma.Context stashed by SessionUser middleware.
+// humaContextFrom returns the huma.Context stashed by Session middleware.
 func humaContextFrom(ctx context.Context) (huma.Context, bool) {
 	humaCtx, ok := ctx.Value(contextHumaCtx).(huma.Context)
 	return humaCtx, ok
+}
+
+// sessionMiddlewareFrom returns the SessionMiddleware stashed by the request
+// pipeline.
+func sessionMiddlewareFrom(ctx context.Context) (*SessionMiddleware, bool) {
+	mw, ok := ctx.Value(contextSessionMW).(*SessionMiddleware)
+	return mw, ok
 }

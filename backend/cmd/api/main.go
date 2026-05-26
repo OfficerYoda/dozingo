@@ -58,7 +58,7 @@ func run() error {
 	cleaner.Start(ctx)
 
 	router := createRouter(cfg)
-	registerRoutes(router, repos, pool)
+	registerRoutes(router, repos, pool, cfg)
 
 	return serveHTTP(ctx, createServer(cfg.Port, router))
 }
@@ -97,11 +97,11 @@ func rootHandler(port int) http.HandlerFunc {
 }
 
 // registerRoutes sets up the Huma API and registers all handler groups.
-func registerRoutes(router *chi.Mux, repos repository.Repos, pool *pgxpool.Pool) {
+func registerRoutes(router *chi.Mux, repos repository.Repos, pool *pgxpool.Pool, cfg *config.Config) {
 	queries := generated.New(pool)
 
 	api := humachi.New(router, huma.DefaultConfig("Dozingo API", "0.2.0"))
-	api.UseMiddleware(middleware.SessionUser(api, queries))
+	api.UseMiddleware(middleware.NewSessionMiddleware(cfg, queries).Handler(api))
 
 	apiGroup := huma.NewGroup(api, "/api")
 	txRunner := repository.NewTxRunner(pool)
