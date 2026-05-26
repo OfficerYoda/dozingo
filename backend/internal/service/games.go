@@ -23,8 +23,8 @@ type UpdateGameStatusInput struct {
 	Status string
 }
 
-func (s *Games) Get(ctx context.Context, id pgtype.UUID) (generated.Game, error) {
-	return s.games.Get(ctx, id)
+func (s *Games) Get(ctx context.Context, gameID pgtype.UUID) (generated.Game, error) {
+	return s.games.Get(ctx, gameID)
 }
 
 func (s *Games) ListByPlayer(ctx context.Context, playerID pgtype.UUID) ([]generated.Game, error) {

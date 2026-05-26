@@ -68,8 +68,8 @@ func (r *Boards) List(ctx context.Context, f BoardListFilter) ([]generated.Board
 	return boards, nil
 }
 
-func (r *Boards) Get(ctx context.Context, id pgtype.UUID) (generated.Board, error) {
-	board, err := r.queries.GetBoardByID(ctx, id)
+func (r *Boards) Get(ctx context.Context, boardID pgtype.UUID) (generated.Board, error) {
+	board, err := r.queries.GetBoardByID(ctx, boardID)
 	if err != nil {
 		return generated.Board{}, pgmap.TranslatePgErr(err)
 	}
@@ -89,16 +89,16 @@ func (r *Boards) Create(ctx context.Context, in CreateBoardInput) (generated.Boa
 	return board, nil
 }
 
-func (r *Boards) Delete(ctx context.Context, id pgtype.UUID) (generated.Board, error) {
-	board, err := r.queries.DeleteBoard(ctx, id)
+func (r *Boards) Delete(ctx context.Context, boardID pgtype.UUID) (generated.Board, error) {
+	board, err := r.queries.DeleteBoard(ctx, boardID)
 	if err != nil {
 		return generated.Board{}, pgmap.TranslatePgErr(err)
 	}
 	return board, nil
 }
 
-func (r *Boards) TotalGamesPlayed(ctx context.Context, id pgtype.UUID) (generated.GetTotalGamesPlayedForBoardRow, error) {
-	playedGames, err := r.queries.GetTotalGamesPlayedForBoard(ctx, id)
+func (r *Boards) TotalGamesPlayed(ctx context.Context, boardID pgtype.UUID) (generated.GetTotalGamesPlayedForBoardRow, error) {
+	playedGames, err := r.queries.GetTotalGamesPlayedForBoard(ctx, boardID)
 	if err != nil {
 		return generated.GetTotalGamesPlayedForBoardRow{}, pgmap.TranslatePgErr(err)
 	}
