@@ -52,7 +52,7 @@ func TestCreateGameCells(t *testing.T) {
 	assertJSONField(t, resp[0], "game_id", gameID)
 }
 
-func TestCreateGameCells_Unauthenticated(t *testing.T) {
+func TestCreateGameCells_AnonymousNonOwner(t *testing.T) {
 	setupTest(t)
 	_, _, cellID, gameID := setupForGameCells(t)
 
@@ -60,8 +60,12 @@ func TestCreateGameCells_Unauthenticated(t *testing.T) {
 		{"cell_id": cellID, "content": "Anon Cell", "position": 0},
 	}
 
+	// Anonymous caller (no cookie) is automatically minted a fresh session by
+	// RequireSession middleware, so the request reaches the ownership check.
+	// That check fails because the game belongs to someone else, returning
+	// 403 Forbidden.
 	w := doRequest(http.MethodPost, fmt.Sprintf("/api/games/%s/cells", gameID), body)
-	assertStatus(t, w, http.StatusUnauthorized)
+	assertStatus(t, w, http.StatusForbidden)
 }
 
 func TestCreateGameCells_FullBoard(t *testing.T) {

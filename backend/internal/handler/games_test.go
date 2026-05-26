@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"testing"
+	"time"
 )
 
 // setupForGames creates a user and board, returning both IDs.
@@ -34,12 +35,58 @@ func TestCreateGame(t *testing.T) {
 	}
 }
 
-func TestCreateGame_Unauthenticated(t *testing.T) {
+func TestCreateGame_Anonymous(t *testing.T) {
 	setupTest(t)
 	_, boardID := setupForGames(t)
 
+	// No cookie -> server mints a fresh anonymous session and creates the
+	// game with player_id = NULL, session_id set.
 	w := doRequest(http.MethodPost, fmt.Sprintf("/api/boards/%s/games", boardID), nil)
-	assertStatus(t, w, http.StatusUnauthorized)
+	assertStatus(t, w, http.StatusOK)
+
+	var resp map[string]any
+	decodeJSON(t, w, &resp)
+
+	if val, ok := resp["player_id"]; !ok || val != nil {
+		t.Errorf("expected player_id to be null for anonymous game, got %v", val)
+	}
+	sessionID, ok := resp["session_id"].(string)
+	if !ok || sessionID == "" {
+		t.Errorf("expected session_id to be a non-empty string, got %v", resp["session_id"])
+	}
+	assertJSONField(t, resp, "board_id", boardID)
+	assertJSONField(t, resp, "status", "active")
+
+	// The response must carry a Set-Cookie for the freshly minted session.
+	if cookie := extractSessionCookie(w); cookie == nil || cookie.Value == "" {
+		t.Error("expected a session_token cookie to be set on anonymous game creation")
+	}
+}
+
+func TestCreateGame_AnonymousReusesExistingSession(t *testing.T) {
+	setupTest(t)
+	_, boardID := setupForGames(t)
+
+	// Pre-mint an anonymous session and post with that cookie.
+	token, cookie := mintAnonSession(t, 30*24*time.Hour)
+	row, ok := loadSessionByToken(t, token)
+	if !ok {
+		t.Fatalf("failed to load freshly minted anon session by token")
+	}
+	expectedSessionID := row.SessionID.String()
+
+	gameID := createAnonGame(t, cookie, boardID)
+
+	// Read it back and assert the server reused our pre-minted session.
+	w := doRequest(http.MethodGet, fmt.Sprintf("/api/games/%s", gameID), nil)
+	assertStatus(t, w, http.StatusOK)
+	var resp map[string]any
+	decodeJSON(t, w, &resp)
+
+	assertJSONField(t, resp, "session_id", expectedSessionID)
+	if val, ok := resp["player_id"]; !ok || val != nil {
+		t.Errorf("expected player_id to be null, got %v", val)
+	}
 }
 
 func TestGetGameByID(t *testing.T) {
@@ -230,11 +277,15 @@ func TestDeleteGame_NotFound(t *testing.T) {
 	assertStatus(t, w, http.StatusNotFound)
 }
 
-func TestDeleteGame_NotFound_Unauthenticated(t *testing.T) {
+func TestDeleteGame_NotFound_Anonymous(t *testing.T) {
 	setupTest(t)
 
+	// Anonymous caller -> RequireSession mints a session, then the service
+	// loads the (nonexistent) game and returns ErrNotFound -> 404.
+	// Previously this returned 401; the relaxed authentication policy means
+	// the absence of a cookie is no longer an error in itself.
 	w := doRequest(http.MethodDelete, "/api/games/00000000-0000-0000-0000-000000000000", nil)
-	assertStatus(t, w, http.StatusUnauthorized)
+	assertStatus(t, w, http.StatusNotFound)
 }
 
 func TestCreateGame_MultipleOnSameBoard(t *testing.T) {
@@ -275,4 +326,185 @@ func TestDeleteGame_CascadesGameCells(t *testing.T) {
 			t.Errorf("expected 0 game cells after game deletion, got %d", len(cells))
 		}
 	}
+}
+
+// ===== Anonymous + /me/games coverage =====
+
+func TestGetGameByID_Anonymous(t *testing.T) {
+	setupTest(t)
+	_, boardID := setupForGames(t)
+
+	_, cookie := mintAnonSession(t, 30*24*time.Hour)
+	gameID := createAnonGame(t, cookie, boardID)
+
+	w := doRequest(http.MethodGet, fmt.Sprintf("/api/games/%s", gameID), nil)
+	assertStatus(t, w, http.StatusOK)
+
+	var resp map[string]any
+	decodeJSON(t, w, &resp)
+
+	assertJSONField(t, resp, "game_id", gameID)
+	assertJSONField(t, resp, "board_id", boardID)
+	assertJSONField(t, resp, "status", "active")
+
+	if val, ok := resp["player_id"]; !ok || val != nil {
+		t.Errorf("expected player_id to be null for anonymous game, got %v", val)
+	}
+	sessionID, ok := resp["session_id"].(string)
+	if !ok || sessionID == "" {
+		t.Errorf("expected session_id to be a non-empty string, got %v", resp["session_id"])
+	}
+}
+
+func TestListByCurrentSession_Authenticated(t *testing.T) {
+	setupTest(t)
+	user1, boardID := setupForGames(t)
+	user2 := createTestUser(t, "othergameuser", "othergameuser@example.com")
+
+	createTestGame(t, user1, boardID)
+	createTestGame(t, user1, boardID)
+	createTestGame(t, user2, boardID)
+
+	w := doRequestWithCookies(http.MethodGet, "/api/me/games", nil, cookiesFor(user1))
+	assertStatus(t, w, http.StatusOK)
+
+	var resp []map[string]any
+	decodeJSON(t, w, &resp)
+
+	if len(resp) != 2 {
+		t.Errorf("expected 2 games for user1's session, got %d", len(resp))
+	}
+	for _, g := range resp {
+		if pid, ok := g["player_id"].(string); !ok || pid != user1 {
+			t.Errorf("expected each game to belong to user1 (%s), got %v", user1, g["player_id"])
+		}
+	}
+}
+
+func TestListByCurrentSession_Anonymous(t *testing.T) {
+	setupTest(t)
+	_, boardID := setupForGames(t)
+
+	_, cookie := mintAnonSession(t, 30*24*time.Hour)
+	createAnonGame(t, cookie, boardID)
+	createAnonGame(t, cookie, boardID)
+
+	w := doRequestWithCookies(http.MethodGet, "/api/me/games", nil, []*http.Cookie{cookie})
+	assertStatus(t, w, http.StatusOK)
+
+	var resp []map[string]any
+	decodeJSON(t, w, &resp)
+
+	if len(resp) != 2 {
+		t.Errorf("expected 2 anonymous games for the session, got %d", len(resp))
+	}
+	for _, g := range resp {
+		if val, ok := g["player_id"]; !ok || val != nil {
+			t.Errorf("expected each anonymous game to have player_id == null, got %v", val)
+		}
+	}
+}
+
+func TestListByCurrentSession_Empty(t *testing.T) {
+	setupTest(t)
+
+	// Pre-minted session has no games on it.
+	_, cookie := mintAnonSession(t, 30*24*time.Hour)
+
+	w := doRequestWithCookies(http.MethodGet, "/api/me/games", nil, []*http.Cookie{cookie})
+	assertStatus(t, w, http.StatusOK)
+
+	var resp []map[string]any
+	decodeJSON(t, w, &resp)
+
+	if len(resp) != 0 {
+		t.Errorf("expected 0 games on a fresh session, got %d", len(resp))
+	}
+}
+
+func TestListByCurrentSession_AfterLogin(t *testing.T) {
+	setupTest(t)
+	_, boardID := setupForGames(t)
+
+	// Anonymous session creates a game...
+	_, cookie := mintAnonSession(t, 30*24*time.Hour)
+	anonGameID := createAnonGame(t, cookie, boardID)
+
+	// ...then registers a user reusing the same cookie. Register attaches
+	// the user to the existing session row, so the session_id stays the
+	// same and the previously-anonymous game is still listed under it.
+	body := map[string]any{
+		"username": "promoteduser",
+		"password": "testpassword123",
+		"email":    "promoteduser@example.com",
+	}
+	regResp := doRequestWithCookies(http.MethodPost, "/api/auth/register", body, []*http.Cookie{cookie})
+	assertStatus(t, regResp, http.StatusOK)
+
+	w := doRequestWithCookies(http.MethodGet, "/api/me/games", nil, []*http.Cookie{cookie})
+	assertStatus(t, w, http.StatusOK)
+
+	var resp []map[string]any
+	decodeJSON(t, w, &resp)
+
+	if len(resp) != 1 {
+		t.Fatalf("expected 1 game on the promoted session, got %d", len(resp))
+	}
+	if id, ok := resp[0]["game_id"].(string); !ok || id != anonGameID {
+		t.Errorf("expected listed game to be %s, got %v", anonGameID, resp[0]["game_id"])
+	}
+	// The anon game's player_id is still NULL even though the session now
+	// has a user_id; only games created *after* login get the player_id.
+	if val, ok := resp[0]["player_id"]; !ok || val != nil {
+		t.Errorf("expected player_id to remain null on the pre-login game, got %v", val)
+	}
+}
+
+// ===== Latent bugs (these tests are expected to fail until the bugs are
+// fixed in a follow-up commit). =====
+
+// TestUpdateGameStatus_Anonymous documents that anonymous players cannot
+// update their own anonymous game's status today. The repository's
+// UpdateStatus method only forwards PlayerID to the SQL query, so the
+// session-id branch in the WHERE clause never matches for anon callers and
+// the UPDATE affects 0 rows -> ErrNoRows -> 404. Should be 200.
+func TestUpdateGameStatus_Anonymous(t *testing.T) {
+	setupTest(t)
+	_, boardID := setupForGames(t)
+
+	_, cookie := mintAnonSession(t, 30*24*time.Hour)
+	gameID := createAnonGame(t, cookie, boardID)
+
+	w := doRequestWithCookies(http.MethodPut,
+		fmt.Sprintf("/api/games/%s/status", gameID),
+		map[string]any{"status": "completed"},
+		[]*http.Cookie{cookie},
+	)
+	assertStatus(t, w, http.StatusOK)
+
+	var resp map[string]any
+	decodeJSON(t, w, &resp)
+	assertJSONField(t, resp, "status", "completed")
+}
+
+// TestDeleteGame_AnonymousNonOwner documents that a *different* anonymous
+// caller can currently delete someone else's anonymous game. The
+// service-layer ownership check compares sessionUser.UserID == game.PlayerID;
+// for anon-vs-anon both are zero pgtype.UUID, so the equality holds and
+// authorization passes incorrectly. Authorization for anon games must be by
+// session_id, not by player_id.
+func TestDeleteGame_AnonymousNonOwner(t *testing.T) {
+	setupTest(t)
+	_, boardID := setupForGames(t)
+
+	_, ownerCookie := mintAnonSession(t, 30*24*time.Hour)
+	gameID := createAnonGame(t, ownerCookie, boardID)
+
+	_, strangerCookie := mintAnonSession(t, 30*24*time.Hour)
+	w := doRequestWithCookies(http.MethodDelete,
+		fmt.Sprintf("/api/games/%s", gameID),
+		nil,
+		[]*http.Cookie{strangerCookie},
+	)
+	assertStatus(t, w, http.StatusForbidden)
 }
