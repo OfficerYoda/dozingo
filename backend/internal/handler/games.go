@@ -11,63 +11,65 @@ import (
 	"github.com/officeryoda/dozingo/internal/types"
 )
 
-/// ===== Input/Output types =====
+// ===== Input/Output types =====
 
-type GameOutput struct {
+type gameOutput struct {
 	GameID   string  `json:"game_id" format:"uuid"`
 	BoardID  *string `json:"board_id" format:"uuid"`
 	PlayerID string  `json:"player_id" format:"uuid"`
-	Status   string  `json:"status" format:"text"`
+	Status   string  `json:"status"`
 }
 
-type GetGameByIDInput struct {
+type getGameByIDInput struct {
 	GameID types.UUIDParam `path:"game_id" format:"uuid"`
 }
 
-type GetGameByIDOutput struct {
-	Body GameOutput
+type getGameByIDOutput struct {
+	Body gameOutput
 }
 
-type ListGamesByPlayerInput struct {
+type listGamesByPlayerInput struct {
 	PlayerID types.UUIDParam `path:"player_id" format:"uuid"`
 }
 
-type ListGamesByPlayerOutput struct {
-	Body []GameOutput
+type listGamesByPlayerOutput struct {
+	Body []gameOutput
 }
 
-type ListGamesByBoardInput struct {
+type listGamesByBoardInput struct {
 	BoardID types.UUIDParam `path:"board_id" format:"uuid"`
 }
 
-type ListGamesByBoardOutput struct {
-	Body []GameOutput
+type listGamesByBoardOutput struct {
+	Body []gameOutput
 }
 
-type CreateGameInput struct {
+type createGameInput struct {
 	BoardID types.UUIDParam `path:"board_id" format:"uuid"`
 }
 
-type CreateGameOutput struct {
-	Body GameOutput
+type createGameOutput struct {
+	Body gameOutput
 }
 
-type UpdateGameStatusInput struct {
+type updateGameStatusInputBody struct {
+	Status string `json:"status" maxLength:"20" doc:"must be any of those: 'active', 'completed' or 'abandoned'"`
+}
+
+type updateGameStatusInput struct {
 	GameID types.UUIDParam `path:"game_id" format:"uuid"`
-	Body   struct {
-		Status string `json:"status" format:"text" maxLength:"20" doc:"must be any of those: 'active', 'completed' or 'abandoned'"`
-	}
+	Body   updateGameStatusInputBody
 }
 
-type UpdateGameStatusOutput struct {
-	Body GameOutput
+type updateGameStatusOutput struct {
+	Body gameOutput
 }
 
-type DeleteGameInput struct {
+type deleteGameInput struct {
 	GameID types.UUIDParam `path:"game_id" format:"uuid"`
 }
 
-/// ===== Handler =====
+// ===== Handler =====
 
 type GamesHandler struct {
 	svc *service.Games
@@ -127,43 +129,43 @@ func (h *GamesHandler) Register(api huma.API) {
 	}, h.delete)
 }
 
-func (h *GamesHandler) get(ctx context.Context, in *GetGameByIDInput) (*GetGameByIDOutput, error) {
+func (h *GamesHandler) get(ctx context.Context, in *getGameByIDInput) (*getGameByIDOutput, error) {
 	game, err := h.svc.Get(ctx, in.GameID.Value)
 	if err != nil {
 		return nil, toHumaErr(err, "game not found", "failed to get game")
 	}
 
-	return &GetGameByIDOutput{Body: gameToOutput(game)}, nil
+	return &getGameByIDOutput{Body: gameToOutput(game)}, nil
 }
 
-func (h *GamesHandler) listByPlayer(ctx context.Context, in *ListGamesByPlayerInput) (*ListGamesByPlayerOutput, error) {
+func (h *GamesHandler) listByPlayer(ctx context.Context, in *listGamesByPlayerInput) (*listGamesByPlayerOutput, error) {
 	games, err := h.svc.ListByPlayer(ctx, in.PlayerID.Value)
 	if err != nil {
 		return nil, toHumaErr(err, "", "failed to list games by player")
 	}
 
-	return &ListGamesByPlayerOutput{Body: mapSlice(games, gameToOutput)}, nil
+	return &listGamesByPlayerOutput{Body: mapSlice(games, gameToOutput)}, nil
 }
 
-func (h *GamesHandler) listByBoard(ctx context.Context, in *ListGamesByBoardInput) (*ListGamesByBoardOutput, error) {
+func (h *GamesHandler) listByBoard(ctx context.Context, in *listGamesByBoardInput) (*listGamesByBoardOutput, error) {
 	games, err := h.svc.ListByBoard(ctx, in.BoardID.Value)
 	if err != nil {
 		return nil, toHumaErr(err, "", "failed to list games by board")
 	}
 
-	return &ListGamesByBoardOutput{Body: mapSlice(games, gameToOutput)}, nil
+	return &listGamesByBoardOutput{Body: mapSlice(games, gameToOutput)}, nil
 }
 
-func (h *GamesHandler) create(ctx context.Context, in *CreateGameInput) (*CreateGameOutput, error) {
+func (h *GamesHandler) create(ctx context.Context, in *createGameInput) (*createGameOutput, error) {
 	game, err := h.svc.Create(ctx, in.BoardID.Value)
 	if err != nil {
 		return nil, toHumaErr(err, "", "failed to create game")
 	}
 
-	return &CreateGameOutput{Body: gameToOutput(game)}, nil
+	return &createGameOutput{Body: gameToOutput(game)}, nil
 }
 
-func (h *GamesHandler) updateStatus(ctx context.Context, in *UpdateGameStatusInput) (*UpdateGameStatusOutput, error) {
+func (h *GamesHandler) updateStatus(ctx context.Context, in *updateGameStatusInput) (*updateGameStatusOutput, error) {
 	game, err := h.svc.UpdateStatus(ctx, service.UpdateGameStatusInput{
 		GameID: in.GameID.Value,
 		Status: in.Body.Status,
@@ -172,10 +174,10 @@ func (h *GamesHandler) updateStatus(ctx context.Context, in *UpdateGameStatusInp
 		return nil, toHumaErr(err, "game not found", "failed to update game")
 	}
 
-	return &UpdateGameStatusOutput{Body: gameToOutput(game)}, nil
+	return &updateGameStatusOutput{Body: gameToOutput(game)}, nil
 }
 
-func (h *GamesHandler) delete(ctx context.Context, in *DeleteGameInput) (*struct{}, error) {
+func (h *GamesHandler) delete(ctx context.Context, in *deleteGameInput) (*struct{}, error) {
 	if err := h.svc.Delete(ctx, in.GameID.Value); err != nil {
 		return nil, toHumaErr(err, "game not found", "failed to delete game")
 	}
@@ -183,8 +185,8 @@ func (h *GamesHandler) delete(ctx context.Context, in *DeleteGameInput) (*struct
 	return &struct{}{}, nil
 }
 
-func gameToOutput(game generated.Game) GameOutput {
-	return GameOutput{
+func gameToOutput(game generated.Game) gameOutput {
+	return gameOutput{
 		GameID:   game.ID.String(),
 		BoardID:  pgmap.StringFromPgUUID(game.BoardID),
 		PlayerID: game.PlayerID.String(),

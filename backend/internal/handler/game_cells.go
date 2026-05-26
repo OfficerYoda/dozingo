@@ -11,51 +11,55 @@ import (
 	"github.com/officeryoda/dozingo/internal/types"
 )
 
-/// ===== Input/Output types =====
+// ===== Input/Output types =====
 
-type GameCellOutput struct {
+type gameCellOutput struct {
 	GameCellID string  `json:"game_cell_id" format:"uuid"`
 	GameID     string  `json:"game_id" format:"uuid"`
 	CellID     *string `json:"cell_id" format:"uuid"`
-	Content    string  `json:"content" format:"text"`
-	Position   int32   `json:"position" format:"integer"`
+	Content    string  `json:"content"`
+	Position   int32   `json:"position"`
 	IsMarked   bool    `json:"is_marked"`
 }
 
-type GetGameCellsByGameIDInput struct {
+type getGameCellsByGameIDInput struct {
 	GameID types.UUIDParam `path:"game_id" format:"uuid"`
 }
 
-type GetGameCellsByGameIDOutput struct {
-	Body []GameCellOutput
+type getGameCellsByGameIDOutput struct {
+	Body []gameCellOutput
 }
 
-type CreateGameCellsInput struct {
+type createGameCellsItem struct {
+	CellID   types.UUIDParam `json:"cell_id" format:"uuid"`
+	Content  string          `json:"content" required:"true" maxLength:"200"`
+	Position int32           `json:"position" required:"true"`
+}
+
+type createGameCellsInput struct {
 	GameID types.UUIDParam `path:"game_id" format:"uuid"`
-	Body   []struct {
-		CellID   types.UUIDParam `json:"cell_id" format:"uuid"`
-		Content  string          `json:"content" format:"text" required:"true" maxLength:"200"`
-		Position int32           `json:"position" format:"integer" required:"true"`
-	}
+	Body   []createGameCellsItem
 }
 
-type CreateGameCellsOutput struct {
-	Body []GameCellOutput
+type createGameCellsOutput struct {
+	Body []gameCellOutput
 }
 
-type UpdateGameCellMarkInput struct {
+type updateGameCellMarkInputBody struct {
+	IsMarked bool `json:"is_marked" required:"true"`
+}
+
+type updateGameCellMarkInput struct {
 	GameID     types.UUIDParam `path:"game_id" format:"uuid"`
 	GameCellID types.UUIDParam `path:"game_cell_id" format:"uuid"`
-	Body       struct {
-		IsMarked bool `json:"is_marked" required:"true"`
-	}
+	Body       updateGameCellMarkInputBody
 }
 
-type UpdateGameCellMarkOutput struct {
-	Body GameCellOutput
+type updateGameCellMarkOutput struct {
+	Body gameCellOutput
 }
 
-/// ===== Handler =====
+// ===== Handler =====
 
 type GameCellsHandler struct {
 	svc *service.GameCells
@@ -91,16 +95,16 @@ func (h *GameCellsHandler) Register(api huma.API) {
 	}, h.updateMark)
 }
 
-func (h *GameCellsHandler) list(ctx context.Context, in *GetGameCellsByGameIDInput) (*GetGameCellsByGameIDOutput, error) {
+func (h *GameCellsHandler) list(ctx context.Context, in *getGameCellsByGameIDInput) (*getGameCellsByGameIDOutput, error) {
 	cells, err := h.svc.ListByGameID(ctx, in.GameID.Value)
 	if err != nil {
 		return nil, toHumaErr(err, "", "failed to get game cells")
 	}
 
-	return &GetGameCellsByGameIDOutput{Body: mapSlice(cells, gameCellToOutput)}, nil
+	return &getGameCellsByGameIDOutput{Body: mapSlice(cells, gameCellToOutput)}, nil
 }
 
-func (h *GameCellsHandler) create(ctx context.Context, in *CreateGameCellsInput) (*CreateGameCellsOutput, error) {
+func (h *GameCellsHandler) create(ctx context.Context, in *createGameCellsInput) (*createGameCellsOutput, error) {
 	items := make([]service.CreateGameCellItem, 0, len(in.Body))
 	for _, c := range in.Body {
 		items = append(items, service.CreateGameCellItem{
@@ -118,10 +122,10 @@ func (h *GameCellsHandler) create(ctx context.Context, in *CreateGameCellsInput)
 		return nil, toHumaErr(err, "", "failed to create game cells")
 	}
 
-	return &CreateGameCellsOutput{Body: mapSlice(cells, gameCellToOutput)}, nil
+	return &createGameCellsOutput{Body: mapSlice(cells, gameCellToOutput)}, nil
 }
 
-func (h *GameCellsHandler) updateMark(ctx context.Context, in *UpdateGameCellMarkInput) (*UpdateGameCellMarkOutput, error) {
+func (h *GameCellsHandler) updateMark(ctx context.Context, in *updateGameCellMarkInput) (*updateGameCellMarkOutput, error) {
 	cell, err := h.svc.UpdateMark(ctx, service.UpdateGameCellMarkInput{
 		GameCellID: in.GameCellID.Value,
 		GameID:     in.GameID.Value,
@@ -131,11 +135,11 @@ func (h *GameCellsHandler) updateMark(ctx context.Context, in *UpdateGameCellMar
 		return nil, toHumaErr(err, "game cell not found", "failed to update game cell")
 	}
 
-	return &UpdateGameCellMarkOutput{Body: gameCellToOutput(cell)}, nil
+	return &updateGameCellMarkOutput{Body: gameCellToOutput(cell)}, nil
 }
 
-func gameCellToOutput(cell generated.GameCell) GameCellOutput {
-	return GameCellOutput{
+func gameCellToOutput(cell generated.GameCell) gameCellOutput {
+	return gameCellOutput{
 		GameCellID: cell.ID.String(),
 		GameID:     cell.GameID.String(),
 		CellID:     pgmap.StringFromPgUUID(cell.CellID),

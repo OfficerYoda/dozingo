@@ -118,11 +118,9 @@ func TestMain(m *testing.M) {
 
 	apiGroup := huma.NewGroup(api, "/api")
 
-	RegisterHealth(apiGroup)
-
-	// New layering: repositories -> services -> handlers.
 	repos := repository.New(testPool)
 	txRunner := repository.NewTxRunner(testPool)
+	NewHealthHandler().Register(apiGroup)
 	NewBoardsHandler(service.NewBoards(repos.Boards, queries)).Register(apiGroup)
 	NewCellsHandler(service.NewCells(repos.Cells, repos.Boards, queries)).Register(apiGroup)
 	NewGameCellsHandler(service.NewGameCells(repos.GameCells, repos.Games, queries)).Register(apiGroup)
@@ -407,7 +405,8 @@ func createTestGame(t *testing.T, playerID, boardID string) string {
 // body. The caller is authenticated as userID via the captured session cookie.
 func createTestVote(t *testing.T, boardID, userID string, value int) map[string]any {
 	t.Helper()
-	w := doRequestWithCookies(http.MethodPut,
+	w := doRequestWithCookies(
+		http.MethodPut,
 		fmt.Sprintf("/api/boards/%s/vote", boardID),
 		map[string]any{"vote_value": value},
 		cookiesFor(userID),

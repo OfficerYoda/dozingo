@@ -11,34 +11,46 @@ import (
 	"github.com/officeryoda/dozingo/internal/service"
 )
 
-/// ===== Input/Output types =====
+// ===== Input/Output types =====
 
-type authOutput struct {
-	Body authOutputBody
+type userOutputBody struct {
+	UserID   string  `json:"user_id" format:"uuid"`
+	Username string  `json:"username"`
+	Email    *string `json:"email"`
 }
 
-type authOutputBody struct {
-	UserID   string  `json:"user_id" format:"uuid"`
-	Username string  `json:"username" format:"text"`
-	Email    *string `json:"email" format:"text"`
+type registerInputBody struct {
+	Username string  `json:"username" required:"true" maxLength:"200"`
+	Password string  `json:"password" required:"true" maxLength:"72"`
+	Email    *string `json:"email,omitempty" maxLength:"200"`
 }
 
 type registerInput struct {
-	Body struct {
-		Username string  `json:"username" format:"text" required:"true" maxLength:"200"`
-		Password string  `json:"password" format:"text" required:"true" maxLength:"72"`
-		Email    *string `json:"email,omitempty" format:"text" maxLength:"200"`
-	}
+	Body registerInputBody
+}
+
+type registerOutput struct {
+	Body userOutputBody
+}
+
+type loginInputBody struct {
+	Username string `json:"username" required:"true" maxLength:"200"`
+	Password string `json:"password" required:"true" maxLength:"72"`
 }
 
 type loginInput struct {
-	Body struct {
-		Username string `json:"username" format:"text" required:"true" maxLength:"200"`
-		Password string `json:"password" format:"text" required:"true" maxLength:"72"`
-	}
+	Body loginInputBody
 }
 
-/// ===== Handler =====
+type loginOutput struct {
+	Body userOutputBody
+}
+
+type meOutput struct {
+	Body userOutputBody
+}
+
+// ===== Handler =====
 
 type AuthHandler struct {
 	svc *service.Auth
@@ -82,7 +94,7 @@ func (h *AuthHandler) Register(api huma.API) {
 	}, h.me)
 }
 
-func (h *AuthHandler) register(ctx context.Context, in *registerInput) (*authOutput, error) {
+func (h *AuthHandler) register(ctx context.Context, in *registerInput) (*registerOutput, error) {
 	user, err := h.svc.Register(ctx, service.RegisterInput{
 		Username: in.Body.Username,
 		Password: in.Body.Password,
@@ -92,10 +104,10 @@ func (h *AuthHandler) register(ctx context.Context, in *registerInput) (*authOut
 		return nil, toHumaErr(err, "", "failed to register user")
 	}
 
-	return &authOutput{Body: userToOutput(user)}, nil
+	return &registerOutput{Body: userToOutput(user)}, nil
 }
 
-func (h *AuthHandler) login(ctx context.Context, in *loginInput) (*authOutput, error) {
+func (h *AuthHandler) login(ctx context.Context, in *loginInput) (*loginOutput, error) {
 	user, err := h.svc.Login(ctx, service.LoginInput{
 		Username: in.Body.Username,
 		Password: in.Body.Password,
@@ -104,7 +116,7 @@ func (h *AuthHandler) login(ctx context.Context, in *loginInput) (*authOutput, e
 		return nil, toHumaErr(err, "", "failed to login user")
 	}
 
-	return &authOutput{Body: userToOutput(user)}, nil
+	return &loginOutput{Body: userToOutput(user)}, nil
 }
 
 func (h *AuthHandler) logout(ctx context.Context, in *struct{}) (*struct{}, error) {
@@ -116,18 +128,18 @@ func (h *AuthHandler) logout(ctx context.Context, in *struct{}) (*struct{}, erro
 	return &struct{}{}, nil
 }
 
-func (h *AuthHandler) me(ctx context.Context, in *struct{}) (*authOutput, error) {
+func (h *AuthHandler) me(ctx context.Context, in *struct{}) (*meOutput, error) {
 	session, ok := middleware.SessionUserFromContext(ctx)
 	if !ok || !session.UserID.Valid {
 		return nil, huma.Error401Unauthorized("not logged in")
 	}
 
 	user, _ := h.svc.Me(ctx, session)
-	return &authOutput{Body: userToOutput(user)}, nil
+	return &meOutput{Body: userToOutput(user)}, nil
 }
 
-func userToOutput(user generated.User) authOutputBody {
-	return authOutputBody{
+func userToOutput(user generated.User) userOutputBody {
+	return userOutputBody{
 		UserID:   user.ID.String(),
 		Username: user.Username,
 		Email:    pgmap.StringFromPgText(user.Email),
