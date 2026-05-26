@@ -18,7 +18,8 @@ func Load() (*Config, error) {
 	_ = godotenv.Load()
 
 	cfg := &Config{}
-	if err := env.Parse(cfg); err != nil {
+	err := env.Parse(cfg)
+	if err != nil {
 		return nil, fmt.Errorf("parsing env config: %w", err)
 	}
 

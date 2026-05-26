@@ -15,3 +15,13 @@ RETURNING *;
 DELETE FROM boards
 WHERE id = $1
 RETURNING *;
+
+-- name: GetTotalGamesPlayedForBoard :one
+SELECT
+    b.id AS board_id,
+    b.title AS board_title,
+    COUNT(g.id) AS total_games
+FROM boards b
+LEFT JOIN games g ON g.board_id = b.id
+WHERE b.id = $1
+GROUP BY b.id, b.title;

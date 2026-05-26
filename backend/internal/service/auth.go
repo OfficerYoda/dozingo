@@ -97,7 +97,8 @@ func (s *Auth) Logout(ctx context.Context) error {
 		return fmt.Errorf("delete session token: %w", err)
 	}
 
-	if err := middleware.ClearSessionTokenCookie(ctx); err != nil {
+	err = middleware.ClearSessionTokenCookie(ctx)
+	if err != nil {
 		slog.Warn("failed to clear session cookie on logout", "error", err)
 	}
 

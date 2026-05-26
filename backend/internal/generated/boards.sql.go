@@ -117,3 +117,27 @@ func (q *Queries) GetBoards(ctx context.Context) ([]Board, error) {
 	}
 	return items, nil
 }
+
+const getTotalGamesPlayedForBoard = `-- name: GetTotalGamesPlayedForBoard :one
+SELECT
+    b.id AS board_id,
+    b.title AS board_title,
+    COUNT(g.id) AS total_games
+FROM boards b
+LEFT JOIN games g ON g.board_id = b.id
+WHERE b.id = $1
+GROUP BY b.id, b.title
+`
+
+type GetTotalGamesPlayedForBoardRow struct {
+	BoardID    pgtype.UUID `json:"board_id"`
+	BoardTitle string      `json:"board_title"`
+	TotalGames int64       `json:"total_games"`
+}
+
+func (q *Queries) GetTotalGamesPlayedForBoard(ctx context.Context, id pgtype.UUID) (GetTotalGamesPlayedForBoardRow, error) {
+	row := q.db.QueryRow(ctx, getTotalGamesPlayedForBoard, id)
+	var i GetTotalGamesPlayedForBoardRow
+	err := row.Scan(&i.BoardID, &i.BoardTitle, &i.TotalGames)
+	return i, err
+}

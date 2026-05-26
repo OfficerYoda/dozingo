@@ -38,9 +38,11 @@ func (u *UUIDParam) OnParamSet(isSet bool, parsed any) {
 // UnmarshalJSON allows UUIDParam to be used in JSON request bodies.
 func (u *UUIDParam) UnmarshalJSON(data []byte) error {
 	var s string
-	if err := json.Unmarshal(data, &s); err != nil {
+	err := json.Unmarshal(data, &s)
+	if err != nil {
 		return err
 	}
+
 	u.raw = s
 	return u.Value.Scan(s)
 }
