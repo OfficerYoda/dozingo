@@ -58,10 +58,14 @@ type GetTotalGamesPlayedInput struct {
 	BoardID types.UUIDParam `path:"board_id" format:"uuid"`
 }
 
+type GetTotalGamesPlayedBody struct {
+	BoardID    string `json:"board_id" format:"uuid"`
+	BoardTitle string `json:"board_title" format:"text"`
+	TotalGames int64  `json:"total_games" format:"integer"`
+}
+
 type GetTotalGamesPlayedOutput struct {
-	BoardID    string
-	BoardTitle string
-	TotalGames int64
+	Body GetTotalGamesPlayedBody
 }
 
 /// ===== Handler =====
@@ -166,9 +170,11 @@ func (h *BoardsHandler) totalPlayedGames(ctx context.Context, in *GetTotalGamesP
 	}
 
 	return &GetTotalGamesPlayedOutput{
-		BoardID:    playedGames.BoardID.String(),
-		BoardTitle: playedGames.BoardTitle,
-		TotalGames: playedGames.TotalGames,
+		Body: GetTotalGamesPlayedBody{
+			BoardID:    playedGames.BoardID.String(),
+			BoardTitle: playedGames.BoardTitle,
+			TotalGames: playedGames.TotalGames,
+		},
 	}, nil
 }
 
