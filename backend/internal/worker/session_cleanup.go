@@ -5,22 +5,22 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/officeryoda/dozingo/internal/generated"
+	"github.com/officeryoda/dozingo/internal/repository"
 )
 
 type SessionCleaner struct {
-	queries  *generated.Queries
+	sessions *repository.Sessions
 	interval time.Duration
 }
 
-func NewSessionCleaner(queries *generated.Queries, interval time.Duration) *SessionCleaner {
-	return &SessionCleaner{queries: queries, interval: interval}
+func NewSessionCleaner(sessions *repository.Sessions, interval time.Duration) *SessionCleaner {
+	return &SessionCleaner{sessions: sessions, interval: interval}
 }
 
 func (s *SessionCleaner) Start(ctx context.Context) {
 	go func() {
 		// Run once at startup
-		deleteExpiredSessions(ctx, s.queries)
+		deleteExpiredSessions(ctx, s.sessions)
 
 		ticker := time.NewTicker(s.interval)
 		defer ticker.Stop()
@@ -28,7 +28,7 @@ func (s *SessionCleaner) Start(ctx context.Context) {
 		for {
 			select {
 			case <-ticker.C:
-				deleteExpiredSessions(ctx, s.queries)
+				deleteExpiredSessions(ctx, s.sessions)
 			case <-ctx.Done():
 				return
 			}
@@ -36,8 +36,8 @@ func (s *SessionCleaner) Start(ctx context.Context) {
 	}()
 }
 
-func deleteExpiredSessions(ctx context.Context, queries *generated.Queries) {
-	err := queries.DeleteExpiredSessions(ctx) // TODO replace this with a repository call
+func deleteExpiredSessions(ctx context.Context, sessions *repository.Sessions) {
+	err := sessions.DeleteExpiredSessions(ctx)
 	if err != nil {
 		slog.Error("failed to clean up expired sessions", "error", err)
 	}

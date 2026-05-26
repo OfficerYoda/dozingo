@@ -42,12 +42,14 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
+	repos := repository.New(pool)
+
 	// Periodically remove expired sessions
-	cleaner := worker.NewSessionCleaner(generated.New(pool), sessionCleanupInterval)
+	cleaner := worker.NewSessionCleaner(repos.Sessions, sessionCleanupInterval)
 	go cleaner.Start(ctx)
 
 	router := createRouter(cfg)
-	registerRoutes(router, pool)
+	registerRoutes(router, repos, pool)
 	srv := createServer(cfg.Port, router)
 	go startServer(srv)
 
@@ -90,7 +92,7 @@ func createRouter(cfg *config.Config) *chi.Mux {
 }
 
 // registerRoutes sets up the Huma API and registers all handler groups.
-func registerRoutes(router *chi.Mux, pool *pgxpool.Pool) {
+func registerRoutes(router *chi.Mux, repos repository.Repos, pool *pgxpool.Pool) {
 	queries := generated.New(pool)
 
 	api := humachi.New(router, huma.DefaultConfig("Dozingo API", "0.2.0"))
@@ -98,8 +100,6 @@ func registerRoutes(router *chi.Mux, pool *pgxpool.Pool) {
 
 	apiGroup := huma.NewGroup(api, "/api")
 
-	// New layering
-	repos := repository.New(pool)
 	txRunner := repository.NewTxRunner(pool)
 	boardsSvc := service.NewBoards(repos.Boards, queries)
 	cellsSvc := service.NewCells(repos.Cells, repos.Boards, queries)
@@ -115,7 +115,7 @@ func registerRoutes(router *chi.Mux, pool *pgxpool.Pool) {
 	handler.NewVotesHandler(votesSvc).Register(apiGroup)
 	handler.NewAuthHandler(authSvc).Register(apiGroup)
 
-	// Legacy registrars (to be migrated).
+	// TODO: Legacy registrars (to be migrated).
 	handler.RegisterHealth(apiGroup)
 }
 
