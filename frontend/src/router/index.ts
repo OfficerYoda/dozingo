@@ -7,7 +7,7 @@ import SettingsView from '@/views/SettingsView.vue'
 import ProfileView from '@/views/ProfileView.vue'
 import ComponentsView from '@/views/ComponentsView.vue'
 import CardEditorView from '@/views/CardEditorView.vue'
-import CardsView from '@/views/CardsView.vue'
+import BordsView from '@/views/BordsView.vue'
 import RegisterView from '@/views/RegisterView.vue'
 import ForgotPasswordView from '@/views/ForgotPasswordView.vue'
 
@@ -27,7 +27,7 @@ const routes = [
   { path: '/profile', name: 'profile', component: ProfileView, meta: { requiresAuth: true } },
   { path: '/components', name: 'components', component: ComponentsView, meta: { requiresAuth: false } },
   { path: '/cardeditor', name: 'cardeditor', component: CardEditorView, meta: { requiresAuth: true } },
-  { path: '/cards', name: 'cards', component: CardsView, meta: { requiresAuth: false } },
+  { path: '/bords', name: 'bords', component: BordsView, meta: { requiresAuth: false } },
 ]
 
 const router = createRouter({
