@@ -8,36 +8,39 @@
                         <h2 class="mb-0">Join the Game</h2>
                         <small>Start your journey here at dozingo</small>
                     </div>
-                    <form action="#">
+                    <form @submit.prevent="handleRegister">
                         <div class="mb-3">
                             <label for="username">Username</label>
                             <div class="input-group">
                                 <span><User :size="20" /></span>
-                                <input type="text" id="username" required>
+                                <input v-model="username" type="text" id="username" required>
                             </div>
                         </div>
                         <div class="mb-3">
                             <label for="email">Email</label>
                             <div class="input-group">
                                 <span><Mail :size="20" /></span>
-                                <input type="email" id="email" required>
+                                <input v-model="email" type="email" id="email">
                             </div>
                         </div>
                         <div class="mb-3">
                             <label for="password">Password</label>
                             <div class="input-group">
                                 <span><KeyRound :size="20" /></span>
-                                <input type="password" id="password" required>
+                                <input v-model="password" type="password" id="password" required>
                             </div>
                         </div>
                         <div class="mb-3">
                             <label for="confirm-password">Confirm Password</label>
                             <div class="input-group">
                                 <span><KeyRound :size="20" /></span>
-                                <input type="password" id="confirm-password" required>
+                                <input v-model="confirmPassword" type="password" id="confirm-password" required>
                             </div>
                         </div>
-                        <button type="submit" class="btn btn-primary">Log In</button>
+                        <p v-if="error" class="auth-error">{{ error }}</p>
+                        <button type="submit" class="btn btn-primary" :disabled="loading">
+                            {{ loading ? 'Creating account...' : 'Create Account' }}
+                        </button>
                     </form>
                     <small class="login-notice">
                         Already have an account? <RouterLink to="/login">Log In</RouterLink>
@@ -88,8 +91,56 @@
         font-weight: 600;
         color: var(--color-primary-600);
     }
+
+    .auth-error{
+        color: var(--color-danger, #e53e3e);
+        font-size: 0.85rem;
+        margin-bottom: 8px;
+    }
 </style>
 
 <script setup lang="ts">
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { User, Mail, KeyRound } from 'lucide-vue-next'
+
+const router = useRouter()
+const username = ref('')
+const email = ref('')
+const password = ref('')
+const confirmPassword = ref('')
+const error = ref('')
+const loading = ref(false)
+
+async function handleRegister() {
+    error.value = ''
+    if (password.value !== confirmPassword.value) {
+        error.value = 'Passwords do not match.'
+        return
+    }
+    loading.value = true
+    try {
+        const res = await fetch('/api/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+                username: username.value,
+                password: password.value,
+                email: email.value || undefined,
+            }),
+        })
+        if (res.status === 409) {
+            error.value = 'Username or email is already taken.'
+            return
+        }
+        if (!res.ok) {
+            error.value = 'Something went wrong. Please try again.'
+            return
+        }
+        router.push('/')
+    } finally {
+        loading.value = false
+    }
+}
 </script>

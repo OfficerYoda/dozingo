@@ -8,12 +8,12 @@
                         <h2 class="mb-0">Welcome Back</h2>
                         <small>Continue your bingo journey</small>
                     </div>
-                    <form action="#">
+                    <form @submit.prevent="handleLogin">
                         <div class="mb-3">
                             <label for="username">Username or Email</label>
                             <div class="input-group">
                                 <span><User :size="20" /></span>
-                                <input type="text" id="username" required>
+                                <input v-model="username" type="text" id="username" required>
                             </div>
                         </div>
                         <div class="mb-3">
@@ -23,10 +23,13 @@
                             </div>
                             <div class="input-group">
                                 <span><KeyRound :size="20" /></span>
-                                <input type="password" id="password" required>
+                                <input v-model="password" type="password" id="password" required>
                             </div>
                         </div>
-                        <button type="submit" class="btn btn-primary">Log In</button>
+                        <p v-if="error" class="auth-error">{{ error }}</p>
+                        <button type="submit" class="btn btn-primary" :disabled="loading">
+                            {{ loading ? 'Logging in...' : 'Log In' }}
+                        </button>
                     </form>
                     <small class="register-notice">
                         Don't have an account? <RouterLink to="/register">Join the Squad</RouterLink>
@@ -109,8 +112,46 @@
         font-weight: 600;
         color: var(--color-primary-600);
     }
+
+    .auth-error{
+        color: var(--color-danger, #e53e3e);
+        font-size: 0.85rem;
+        margin-bottom: 8px;
+    }
 </style>
 
 <script setup lang="ts">
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { User, KeyRound } from 'lucide-vue-next'
+
+const router = useRouter()
+const username = ref('')
+const password = ref('')
+const error = ref('')
+const loading = ref(false)
+
+async function handleLogin() {
+    error.value = ''
+    loading.value = true
+    try {
+        const res = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ username: username.value, password: password.value }),
+        })
+        if (res.status === 401) {
+            error.value = 'Invalid username or password.'
+            return
+        }
+        if (!res.ok) {
+            error.value = 'Something went wrong. Please try again.'
+            return
+        }
+        router.push('/')
+    } finally {
+        loading.value = false
+    }
+}
 </script>
