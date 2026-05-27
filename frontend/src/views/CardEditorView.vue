@@ -254,6 +254,7 @@ h3 {
   border-spacing: 0;
   border: 1px solid var(--color-text-secondary);
   border-radius: var(--radius-sm);
+  overflow: hidden;
 }
 
 .entries-table th {
