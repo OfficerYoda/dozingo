@@ -54,6 +54,10 @@ async function logout(): Promise<void> {
     state.user = null
 }
 
+async function pwRequest(email: string): Promise<number | null> {
+    return null
+}
+
 export function useAuth() {
     return {
         state: readonly(state),
@@ -61,5 +65,6 @@ export function useAuth() {
         login,
         register,
         logout,
+        pwRequest,
     }
 }

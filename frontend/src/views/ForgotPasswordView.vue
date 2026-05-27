@@ -1,38 +1,29 @@
 <template>
-    <section class="login">
+    <section class="pwforgot">
         <div class="container">
             <div class="grid">
                 <div class="col-4 md-2 sm-0"></div>
                 <div class="card col-4 md-8 sm-12">
                     <div class="heading mb-3">
-                        <h2 class="mb-0">Welcome Back</h2>
-                        <small>Continue your bingo journey</small>
+                        <h2 class="mb-0">Stupid?</h2>
+                        <small>Reset your password</small>
                     </div>
-                    <form @submit.prevent="handleLogin">
+                    <form @submit.prevent="handlePWRequest">
                         <div class="mb-3">
-                            <label for="username">Username or Email</label>
+                            <label for="email">Email</label>
                             <div class="input-group">
-                                <span><User :size="20" /></span>
-                                <input v-model="username" type="text" id="username" required>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <div class="password-top">
-                                <label for="password">Password</label>
-                                <a href="/forgotpw">Forgot Password?</a>
-                            </div>
-                            <div class="input-group">
-                                <span><KeyRound :size="20" /></span>
-                                <input v-model="password" type="password" id="password" required>
+                                <span><Mail :size="20" /></span>
+                                <input v-model="email" type="email" id="email" required>
                             </div>
                         </div>
                         <p v-if="error" class="auth-error">{{ error }}</p>
+                        <p v-if="info" class="auth-info">{{ info }}</p>
                         <button type="submit" class="btn btn-primary" :disabled="loading">
                             {{ loading ? 'Logging in...' : 'Log In' }}
                         </button>
                     </form>
-                    <small class="register-notice">
-                        Don't have an account? <RouterLink to="/register">Join the Squad</RouterLink>
+                    <small class="pwforgot-notice">
+                        Remember again? <RouterLink to="/login">Log In</RouterLink>
                     </small>
                 </div>
             </div>
@@ -41,7 +32,7 @@
 </template>
 
 <style>
-    .login .card{
+    .pwforgot .card{
         border-top: 5px solid var(--card-blue);
     }
 
@@ -73,7 +64,7 @@
         color: var(--color-subheading);
     }
 
-    .login input{
+    .pwforgot input{
         background-color: var(--color-bg-card-tinted);
         outline: none;
         border: none;
@@ -95,12 +86,12 @@
         color: var(--color-primary-600);
     }
 
-    .login button{
+    .pwforgot button{
         width: 100%;
         border-radius: 999px !important;
     }
 
-    .register-notice{
+    .pwforgot-notice{
         color: var(--color-text-subtle);
         text-align: center;
         display: block;
@@ -108,7 +99,7 @@
         padding-bottom: 5px;
     }
 
-    .register-notice a{
+    .pwforgot-notice a{
         font-weight: 600;
         color: var(--color-primary-600);
     }
@@ -118,36 +109,40 @@
         font-size: 0.85rem;
         margin-bottom: 8px;
     }
+
+    .auth-info{
+        color: #3498db;
+        font-size: 0.85rem;
+        margin-bottom: 8px;
+    }
 </style>
 
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { User, KeyRound } from 'lucide-vue-next'
+import { Mail } from 'lucide-vue-next'
 import { useAuth } from '@/composables/useAuth'
 
 const router = useRouter()
-const { login } = useAuth()
+const { pwRequest } = useAuth()
 
-const username = ref('')
-const password = ref('')
+const email = ref('')
 const error = ref('')
+const info = ref('')
 const loading = ref(false)
 
-async function handleLogin() {
+async function handlePWRequest() {
     error.value = ''
+    info.value = ''
     loading.value = true
     try {
-        const status = await login(username.value, password.value)
-        if (status === 401) {
-            error.value = 'Invalid username or password.'
-            return
-        }
+        const status = await pwRequest(email.value)
         if (status !== null) {
             error.value = 'Something went wrong. Please try again.'
             return
         }
-        router.push('/')
+        info.value = 'If we find your account, you will receive a mail to reset your password. This can take up to 5 minutes.'
+        return;
     } finally {
         loading.value = false
     }
