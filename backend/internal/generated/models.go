@@ -5,8 +5,53 @@
 package generated
 
 import (
+	"database/sql/driver"
+	"fmt"
+
 	"github.com/jackc/pgx/v5/pgtype"
 )
+
+type TokenType string
+
+const (
+	TokenTypePasswordReset     TokenType = "password_reset"
+	TokenTypeEmailVerification TokenType = "email_verification"
+)
+
+func (e *TokenType) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = TokenType(s)
+	case string:
+		*e = TokenType(s)
+	default:
+		return fmt.Errorf("unsupported scan type for TokenType: %T", src)
+	}
+	return nil
+}
+
+type NullTokenType struct {
+	TokenType TokenType `json:"token_type"`
+	Valid     bool      `json:"valid"` // Valid is true if TokenType is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullTokenType) Scan(value interface{}) error {
+	if value == nil {
+		ns.TokenType, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.TokenType.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullTokenType) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.TokenType), nil
+}
 
 type Board struct {
 	ID          pgtype.UUID        `json:"id"`
@@ -81,6 +126,16 @@ type UserPassword struct {
 	PasswordHash string             `json:"password_hash"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+}
+
+type VerificationToken struct {
+	ID        pgtype.UUID        `json:"id"`
+	UserID    pgtype.UUID        `json:"user_id"`
+	Token     string             `json:"token"`
+	Type      TokenType          `json:"type"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }
 
 type Vote struct {

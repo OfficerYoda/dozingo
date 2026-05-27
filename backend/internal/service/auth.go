@@ -105,7 +105,12 @@ func (s *Auth) Logout(ctx context.Context) error {
 	return nil
 }
 
-func (s *Auth) Me(ctx context.Context, session generated.GetSessionUserByTokenRow) (generated.User, error) {
+func (s *Auth) Me(ctx context.Context) (generated.User, error) {
+	session, ok := middleware.SessionUserFromContext(ctx)
+	if !ok || !session.UserID.Valid {
+		return generated.User{}, fmt.Errorf("not logged in: %w", domain.ErrUnauthorized)
+	}
+
 	return generated.User{
 		ID:       session.UserID,
 		Username: session.Username.String,
