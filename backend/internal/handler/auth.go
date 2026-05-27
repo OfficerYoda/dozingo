@@ -14,9 +14,9 @@ import (
 // ===== Input/Output types =====
 
 type userOutputBody struct {
-	UserID   string  `json:"user_id" format:"uuid"`
-	Username string  `json:"username"`
-	Email    *string `json:"email"`
+	UserID   string  `json:"user_id"  format:"uuid"`
+	Username string  `json:"username" pattern:"^[^\\s\\x00-\\x1F\\x7F]+$"`
+	Email    *string `json:"email"    format:"email"`
 }
 
 type registerInputBody struct {
@@ -81,7 +81,7 @@ func (h *AuthHandler) Register(api huma.API) {
 		OperationID: "logout",
 		Method:      http.MethodPost,
 		Path:        "/auth/logout",
-		Summary:     "Logout from logged in User",
+		Summary:     "Logout from current User",
 		Tags:        []string{"Auth"},
 	}, h.logout)
 
@@ -119,7 +119,7 @@ func (h *AuthHandler) login(ctx context.Context, in *loginInput) (*loginOutput, 
 	return &loginOutput{Body: userToOutput(user)}, nil
 }
 
-func (h *AuthHandler) logout(ctx context.Context, in *struct{}) (*struct{}, error) {
+func (h *AuthHandler) logout(ctx context.Context, _ *struct{}) (*struct{}, error) {
 	err := h.svc.Logout(ctx)
 	if err != nil {
 		return nil, toHumaErr(err, "", "failed to logout user")
@@ -128,7 +128,7 @@ func (h *AuthHandler) logout(ctx context.Context, in *struct{}) (*struct{}, erro
 	return &struct{}{}, nil
 }
 
-func (h *AuthHandler) me(ctx context.Context, in *struct{}) (*meOutput, error) {
+func (h *AuthHandler) me(ctx context.Context, _ *struct{}) (*meOutput, error) {
 	session, ok := middleware.SessionUserFromContext(ctx)
 	if !ok || !session.UserID.Valid {
 		return nil, huma.Error401Unauthorized("not logged in")

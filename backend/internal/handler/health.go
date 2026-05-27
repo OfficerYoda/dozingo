@@ -34,6 +34,6 @@ func (h *HealthHandler) Register(api huma.API) {
 	}, h.handleHealth)
 }
 
-func (h *HealthHandler) handleHealth(ctx context.Context, input *struct{}) (*healthOutput, error) {
+func (h *HealthHandler) handleHealth(ctx context.Context, _ *struct{}) (*healthOutput, error) {
 	return &healthOutput{Body: healthOutputBody{Status: "ok"}}, nil
 }

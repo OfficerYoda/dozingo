@@ -28,6 +28,15 @@ func (s *Games) Get(ctx context.Context, gameID pgtype.UUID) (generated.Game, er
 	return s.games.Get(ctx, gameID)
 }
 
+func (s *Games) ListBySession(ctx context.Context) ([]generated.Game, error) {
+	sessionUser, err := requiresSessionUser(ctx, s.queries)
+	if err != nil {
+		return []generated.Game{}, err
+	}
+
+	return s.ListByPlayer(ctx, sessionUser.UserID)
+}
+
 func (s *Games) ListByPlayer(ctx context.Context, playerID pgtype.UUID) ([]generated.Game, error) {
 	return s.games.ListByPlayer(ctx, playerID)
 }

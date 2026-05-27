@@ -34,6 +34,20 @@ type CreateBoardInput struct {
 	Size        int32
 }
 
+func (s *Boards) ListBySession(ctx context.Context, filter BoardListFilter) ([]repository.BoardWithStats, error) {
+	sessionUser, err := requiresSessionUser(ctx, s.queries)
+	if err != nil {
+		return []repository.BoardWithStats{}, err
+	}
+
+	return s.List(ctx, BoardListFilter{
+		AuthorID: sessionUser.UserID.String(),
+		Size:     filter.Size,
+		Sort:     filter.Sort,
+		Limit:    filter.Limit,
+	})
+}
+
 func (s *Boards) List(ctx context.Context, filter BoardListFilter) ([]repository.BoardWithStats, error) {
 	return s.boards.List(ctx, repository.BoardListFilter{
 		AuthorID: filter.AuthorID,
