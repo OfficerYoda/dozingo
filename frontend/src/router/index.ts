@@ -22,7 +22,7 @@ const routes = [
   { path: '/login', name: 'login', component: LoginView, meta: { guestOnly: true } },
   { path: '/register', name: 'register', component: RegisterView, meta: { guestOnly: true } },
   { path: '/settings', name: 'settings', component: SettingsView, meta: { requiresAuth: false } },
-  { path: '/profile', name: 'profile', component: ProfileView, meta: { requiresAuth: false } },
+  { path: '/profile', name: 'profile', component: ProfileView, meta: { requiresAuth: true } },
   { path: '/components', name: 'components', component: ComponentsView, meta: { requiresAuth: false } },
   { path: '/cardeditor', name: 'cardeditor', component: CardEditorView, meta: { requiresAuth: true } },
   { path: '/cards', name: 'cards', component: CardsView, meta: { requiresAuth: false } },
