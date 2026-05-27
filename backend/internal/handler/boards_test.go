@@ -954,3 +954,113 @@ func TestGetTotalGamesPlayed_BoardTitleEchoed(t *testing.T) {
 
 	assertJSONField(t, resp, "board_title", "Echo Title Board")
 }
+
+/// ===== GET /boards search filter =====
+
+func TestGetBoards_SearchByTitle(t *testing.T) {
+	setupTest(t)
+	userID := createTestUser(t, "searchauthor", "searchauthor@example.com")
+	createTestBoard(t, "Go Programming", 5, userID, nil)
+	createTestBoard(t, "Vue Basics", 5, userID, nil)
+	createTestBoard(t, "Go Advanced", 5, userID, nil)
+	w := doRequest(http.MethodGet, "/api/boards?search=Go", nil)
+	assertStatus(t, w, http.StatusOK)
+	var resp []map[string]any
+	decodeJSON(t, w, &resp)
+	if len(resp) != 2 {
+		t.Errorf("expected 2 boards matching 'Go', got %d", len(resp))
+	}
+}
+
+func TestGetBoards_SearchTypoTolerant(t *testing.T) {
+	setupTest(t)
+
+	userID := createTestUser(t, "fuzzauthor", "fuzz@example.com")
+	createTestBoard(t, "Go Programming", 5, userID, nil)
+	createTestBoard(t, "Vue Basics", 5, userID, nil)
+
+	// 'programing' (one missing 'm') is not a substring of any title, so
+	// the previous ILIKE-only implementation would have returned zero
+	// results. Trigram similarity (sim=0.625, well above the 0.3 default
+	// threshold) catches it.
+	w := doRequest(http.MethodGet, "/api/boards?search=programing", nil)
+	assertStatus(t, w, http.StatusOK)
+
+	var resp []map[string]any
+	decodeJSON(t, w, &resp)
+	if len(resp) != 1 {
+		t.Fatalf("expected 1 fuzzy match for 'programing', got %d", len(resp))
+	}
+	assertJSONField(t, resp[0], "title", "Go Programming")
+}
+
+func TestGetBoards_SearchCaseInsensitive(t *testing.T) {
+	setupTest(t)
+
+	userID := createTestUser(t, "caseauthor", "case@example.com")
+	createTestBoard(t, "Go Programming", 5, userID, nil)
+
+	// Trigram similarity is case-insensitive, and so is ILIKE; verify the
+	// API surface honors that for both arms of the OR.
+	for _, q := range []string{"GO", "go", "Go", "PROGRAMMING"} {
+		w := doRequest(http.MethodGet, fmt.Sprintf("/api/boards?search=%s", q), nil)
+		assertStatus(t, w, http.StatusOK)
+
+		var resp []map[string]any
+		decodeJSON(t, w, &resp)
+		if len(resp) != 1 {
+			t.Errorf("search=%q: expected 1 result, got %d", q, len(resp))
+		}
+	}
+}
+
+func TestGetBoards_SearchRelevanceRanking(t *testing.T) {
+	setupTest(t)
+
+	userID := createTestUser(t, "rankauthor", "rank@example.com")
+
+	// All three contain 'Go', but their similarity to the query 'Go
+	// Programming' differs:
+	//   sim('Go Programming', 'Go Programming') = 1.00 (exact)
+	//   sim('Go Advanced',    'Go Programming') ≈ 0.13
+	//   sim('Lego Stories',   'Go Programming') ≈ 0.10
+	// We assert that the exact match comes first regardless of insertion
+	// order and regardless of the requested ?sort= (which should be
+	// overridden by relevance when search is set).
+	createTestBoard(t, "Go Advanced", 5, userID, nil)
+	time.Sleep(2 * time.Millisecond)
+	createTestBoard(t, "Go Programming", 5, userID, nil)
+	time.Sleep(2 * time.Millisecond)
+	createTestBoard(t, "Lego Stories", 5, userID, nil)
+
+	// Pick sort=oldest deliberately: under that sort, 'Go Advanced' would
+	// come first. Relevance ranking must override it.
+	w := doRequest(http.MethodGet, "/api/boards?search=Go+Programming&sort=oldest", nil)
+	assertStatus(t, w, http.StatusOK)
+
+	var resp []map[string]any
+	decodeJSON(t, w, &resp)
+	if len(resp) == 0 {
+		t.Fatal("expected at least one match")
+	}
+	assertJSONField(t, resp[0], "title", "Go Programming")
+}
+
+func TestGetBoards_SearchNoMatches(t *testing.T) {
+	setupTest(t)
+
+	userID := createTestUser(t, "nomatchauthor", "nomatch@example.com")
+	createTestBoard(t, "Go Programming", 5, userID, nil)
+	createTestBoard(t, "Vue Basics", 5, userID, nil)
+
+	// A query with no shared trigrams and no substring match returns
+	// empty (similarity = 0, well below the 0.3 threshold).
+	w := doRequest(http.MethodGet, "/api/boards?search=xyzqrs", nil)
+	assertStatus(t, w, http.StatusOK)
+
+	var resp []map[string]any
+	decodeJSON(t, w, &resp)
+	if len(resp) != 0 {
+		t.Errorf("expected 0 results for non-matching query, got %d", len(resp))
+	}
+}

@@ -29,6 +29,7 @@ type getBoardsInput struct {
 	Size     int32  `query:"size"`
 	Sort     string `query:"sort" enum:"newest,oldest,most-liked,least-liked,most-played,least-played" default:"newest"`
 	Limit    int32  `query:"limit" minimum:"1" default:"20"`
+	Search   string `query:"search"`
 }
 
 type getBoardsOutput struct {
@@ -133,6 +134,7 @@ func (h *BoardsHandler) list(ctx context.Context, in *getBoardsInput) (*getBoard
 		Size:     in.Size,
 		Sort:     in.Sort,
 		Limit:    in.Limit,
+		Search:   in.Search,
 	})
 	if err != nil {
 		return nil, toHumaErr(err, "", "failed to list boards")

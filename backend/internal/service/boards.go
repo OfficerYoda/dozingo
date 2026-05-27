@@ -25,6 +25,7 @@ type BoardListFilter struct {
 	Size     int32
 	Sort     string
 	Limit    int32
+	Search   string
 }
 
 type CreateBoardInput struct {
@@ -39,6 +40,7 @@ func (s *Boards) List(ctx context.Context, filter BoardListFilter) ([]repository
 		Size:     filter.Size,
 		Sort:     filter.Sort,
 		Limit:    filter.Limit,
+		Search:   filter.Search,
 	})
 }
 

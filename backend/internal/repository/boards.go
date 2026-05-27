@@ -22,6 +22,7 @@ type BoardListFilter struct {
 	Size     int32
 	Sort     string
 	Limit    int32
+	Search   string
 }
 
 type CreateBoardInput struct {
@@ -112,8 +113,22 @@ func (r *Boards) List(ctx context.Context, f BoardListFilter) ([]BoardWithStats,
 		i++
 	}
 
-	query.WriteString(" ORDER BY ")
-	query.WriteString(orderByForSort(f.Sort))
+	if f.Search != "" {
+		// Two-pronged match: ILIKE catches literal substring hits
+		// (including matches shorter than a trigram, e.g. 2-char queries)
+		// while the trigram similarity operator (%) catches typo-tolerant
+		// fuzzy matches. Both are accelerated by the GIN(title gin_trgm_ops)
+		// index installed by migration 000009.
+		fmt.Fprintf(&query, " AND (b.title ILIKE $%d OR b.title %% $%d::text)", i, i+1)
+		args = append(args, "%"+f.Search+"%", f.Search)
+		searchBareIdx := i + 1
+		i += 2
+
+		fmt.Fprintf(&query, " ORDER BY similarity(b.title, $%d) DESC, b.created_at DESC", searchBareIdx)
+	} else {
+		query.WriteString(" ORDER BY ")
+		query.WriteString(orderByForSort(f.Sort))
+	}
 
 	if f.Limit > 0 {
 		fmt.Fprintf(&query, " LIMIT $%d", i)

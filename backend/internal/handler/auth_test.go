@@ -298,11 +298,11 @@ func TestRegister_EmailWhitespaceTreatedAsNull(t *testing.T) {
 func TestLogin_SetsSessionCookie(t *testing.T) {
 	setupTest(t)
 
-	createTestUserWithRegister(t, "logincookie", "pw123", stringPtr("lc@example.com"))
+	createTestUserWithRegister(t, "logincookie", "pw12345678", stringPtr("lc@example.com"))
 
 	w := doRequest(http.MethodPost, "/api/auth/login", map[string]any{
 		"username": "logincookie",
-		"password": "pw123",
+		"password": "pw12345678",
 	})
 	assertStatus(t, w, http.StatusOK)
 
@@ -316,13 +316,13 @@ func TestLogin_AttachesExistingAnonSession(t *testing.T) {
 
 	// Register a user first (this will create its own session, but we don't
 	// reuse it here -- we want a fresh anon cookie below).
-	createTestUserWithRegister(t, "anonloginer", "pw123", nil)
+	createTestUserWithRegister(t, "anonloginer", "pw12345678", nil)
 
 	token, cookie := mintAnonSession(t, 30*24*time.Hour)
 
 	w := doRequestWithCookies(http.MethodPost, "/api/auth/login", map[string]any{
 		"username": "anonloginer",
-		"password": "pw123",
+		"password": "pw12345678",
 	}, []*http.Cookie{cookie})
 	assertStatus(t, w, http.StatusOK)
 
@@ -391,7 +391,7 @@ func TestMe_AfterLogout_401(t *testing.T) {
 
 	r := doRequest(http.MethodPost, "/api/auth/register", map[string]any{
 		"username": "logmeout",
-		"password": "pw12345",
+		"password": "pw12345678",
 	})
 	assertStatus(t, r, http.StatusOK)
 	cookie := extractSessionCookie(r)
@@ -417,7 +417,7 @@ func TestLogout_AuthenticatedDeletesSessionAndClearsCookie(t *testing.T) {
 
 	r := doRequest(http.MethodPost, "/api/auth/register", map[string]any{
 		"username": "logoutuser",
-		"password": "pw12345",
+		"password": "pw12345678",
 	})
 	assertStatus(t, r, http.StatusOK)
 	cookie := extractSessionCookie(r)
