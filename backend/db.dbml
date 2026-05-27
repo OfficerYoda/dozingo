@@ -58,6 +58,22 @@ Table sessions {
 
 Ref: sessions.user_id > users.id [delete: cascade]
 
+Table verification_tokens {
+  id uuid [pk, default: `gen_random_uuid()`]
+  user_id uuid [not null]
+  token text [unique, not null]
+  type text [not null, note: '"password_reset" or "email_verification"']
+  expires_at timestamptz [not null]
+  ~timestamps
+
+  indexes {
+      expires_at
+      (user_id, type)
+  }
+}
+
+Ref: verification_tokens.user_id > users.id [delete: cascade]
+
 //// ============================================
 //// BOARDS & CELLS
 //// ============================================
