@@ -37,9 +37,9 @@ function closeMenu(){
         <nav>
           <ul>
             <li><RouterLink to="/settings" class="sidebar-buttons"><Settings :size="20"/>{{ $t('nav.settings') }}</RouterLink></li>
-            <li><button class="sidebar-buttons"><LogOut :size="20" class="sidebar-footer-signout"/><span class="sidebar-footer-signout">{{ $t('nav.signOut') }}</span></button></li>
+            <li><button class="sidebar-buttons" @click="handleLogout"><LogOut :size="20" class="sidebar-footer-signout"/><span class="sidebar-footer-signout">{{ $t('nav.signOut') }}</span></button></li>
             <hr class="m-0">
-            <li><RouterLink class="sidebar-buttons" to="/profile"><UserCircle :size="20"/>{{ $t('nav.profile') }}</RouterLink></li>
+            <li><RouterLink class="sidebar-buttons" to="/profile"><UserCircle :size="20"/>{{ auth.state.user?.username ?? $t('nav.profile') }}</RouterLink></li>
           </ul>
         </nav>
       </div>
@@ -77,14 +77,23 @@ function closeMenu(){
 
 <script setup lang="ts">
 import { watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { Home, Settings, LogOut, UserCircle, Menu, Computer, SquarePen, Languages } from 'lucide-vue-next'
+import { useAuth } from '@/composables/useAuth'
 
 const { locale } = useI18n()
+const router = useRouter()
+const auth = useAuth()
 
 watch(locale, (newLocale) => {
   localStorage.setItem('locale', newLocale)
 })
+
+async function handleLogout() {
+  await auth.logout()
+  router.push('/login')
+}
 </script>
 
 <style scoped>

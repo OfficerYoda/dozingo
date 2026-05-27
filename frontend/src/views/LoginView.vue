@@ -124,8 +124,11 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { User, KeyRound } from 'lucide-vue-next'
+import { useAuth } from '@/composables/useAuth'
 
 const router = useRouter()
+const { login } = useAuth()
+
 const username = ref('')
 const password = ref('')
 const error = ref('')
@@ -135,17 +138,12 @@ async function handleLogin() {
     error.value = ''
     loading.value = true
     try {
-        const res = await fetch('/api/auth/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ username: username.value, password: password.value }),
-        })
-        if (res.status === 401) {
+        const status = await login(username.value, password.value)
+        if (status === 401) {
             error.value = 'Invalid username or password.'
             return
         }
-        if (!res.ok) {
+        if (status !== null) {
             error.value = 'Something went wrong. Please try again.'
             return
         }

@@ -103,8 +103,11 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { User, Mail, KeyRound } from 'lucide-vue-next'
+import { useAuth } from '@/composables/useAuth'
 
 const router = useRouter()
+const { register } = useAuth()
+
 const username = ref('')
 const email = ref('')
 const password = ref('')
@@ -120,21 +123,12 @@ async function handleRegister() {
     }
     loading.value = true
     try {
-        const res = await fetch('/api/auth/register', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({
-                username: username.value,
-                password: password.value,
-                email: email.value || undefined,
-            }),
-        })
-        if (res.status === 409) {
+        const status = await register(username.value, password.value, email.value || undefined)
+        if (status === 409) {
             error.value = 'Username or email is already taken.'
             return
         }
-        if (!res.ok) {
+        if (status !== null) {
             error.value = 'Something went wrong. Please try again.'
             return
         }

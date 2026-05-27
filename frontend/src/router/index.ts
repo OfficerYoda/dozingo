@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { useAuth } from '@/composables/useAuth'
 
 import HomeView from '@/views/HomeView.vue'
 import LoginView from '@/views/LoginView.vue'
@@ -9,21 +10,40 @@ import CardEditorView from '@/views/CardEditorView.vue'
 import CardsView from '@/views/CardsView.vue'
 import RegisterView from '@/views/RegisterView.vue'
 
+declare module 'vue-router' {
+  interface RouteMeta {
+    requiresAuth?: boolean
+    guestOnly?: boolean
+  }
+}
 
 const routes = [
-  { path: '/', name: 'home', component: HomeView },
-  { path: '/login', name: 'login', component: LoginView },
-  { path: '/register', name: 'register', component: RegisterView },
-  { path: '/settings', name: 'settings', component: SettingsView },
-  { path: '/profile', name: 'profile', component: ProfileView },
-  { path: '/components', name: 'components', component: ComponentsView },
-  { path: '/cardeditor', name: 'cardeditor', component: CardEditorView },
-  { path: '/cards', name: 'cards', component: CardsView },
+  { path: '/', name: 'home', component: HomeView, meta: { requiresAuth: true } },
+  { path: '/login', name: 'login', component: LoginView, meta: { guestOnly: true } },
+  { path: '/register', name: 'register', component: RegisterView, meta: { guestOnly: true } },
+  { path: '/settings', name: 'settings', component: SettingsView, meta: { requiresAuth: true } },
+  { path: '/profile', name: 'profile', component: ProfileView, meta: { requiresAuth: true } },
+  { path: '/components', name: 'components', component: ComponentsView, meta: { requiresAuth: true } },
+  { path: '/cardeditor', name: 'cardeditor', component: CardEditorView, meta: { requiresAuth: true } },
+  { path: '/cards', name: 'cards', component: CardsView, meta: { requiresAuth: true } },
 ]
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
+})
+
+router.beforeEach(async (to) => {
+  const { state, fetchUser } = useAuth()
+  if (!state.ready) {
+    await fetchUser()
+  }
+  if (to.meta.requiresAuth && !state.user) {
+    return { name: 'login' }
+  }
+  if (to.meta.guestOnly && state.user) {
+    return { name: 'home' }
+  }
 })
 
 export default router
