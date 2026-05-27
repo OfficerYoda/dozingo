@@ -33,7 +33,7 @@ type CreateBoardInput struct {
 	Size        int32
 }
 
-func (s *Boards) List(ctx context.Context, filter BoardListFilter) ([]generated.Board, error) {
+func (s *Boards) List(ctx context.Context, filter BoardListFilter) ([]repository.BoardWithStats, error) {
 	return s.boards.List(ctx, repository.BoardListFilter{
 		AuthorID: filter.AuthorID,
 		Size:     filter.Size,
@@ -42,17 +42,17 @@ func (s *Boards) List(ctx context.Context, filter BoardListFilter) ([]generated.
 	})
 }
 
-func (s *Boards) Get(ctx context.Context, boardID pgtype.UUID) (generated.Board, error) {
+func (s *Boards) Get(ctx context.Context, boardID pgtype.UUID) (repository.BoardWithStats, error) {
 	return s.boards.Get(ctx, boardID)
 }
 
-func (s *Boards) Create(ctx context.Context, in CreateBoardInput) (generated.Board, error) {
+func (s *Boards) Create(ctx context.Context, in CreateBoardInput) (repository.BoardWithStats, error) {
 	sessionUser, err := middleware.RequireSession(ctx, s.queries)
 	if err != nil {
-		return generated.Board{}, fmt.Errorf("session required: %w", err)
+		return repository.BoardWithStats{}, fmt.Errorf("session required: %w", err)
 	}
 	if !sessionUser.UserID.Valid {
-		return generated.Board{}, fmt.Errorf("authenticated user required: %w", domain.ErrUnauthorized)
+		return repository.BoardWithStats{}, fmt.Errorf("authenticated user required: %w", domain.ErrUnauthorized)
 	}
 
 	return s.boards.Create(ctx, repository.CreateBoardInput{

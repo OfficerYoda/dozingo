@@ -31,62 +31,68 @@ type CreateBoardInput struct {
 	AuthorID    pgtype.UUID
 }
 
-// sortMode classifies the requested sort into the kind of FROM clause and
-// ORDER BY expression it needs.
-type sortMode struct {
-	join    string // optional LEFT JOIN ... clause
-	groupBy bool   // whether GROUP BY b.id is required
-	orderBy string // ORDER BY expression (without "ORDER BY" prefix)
+// BoardWithStats is a board augmented with aggregate counters: total vote
+// score (sum of vote_value), number of votes cast, and number of games
+// played. Returned by all repository read paths.
+type BoardWithStats struct {
+	generated.Board
+	Score     int64 `db:"score"`
+	VoteCount int64 `db:"vote_count"`
+	PlayCount int64 `db:"play_count"`
 }
 
-func resolveSort(sort string) sortMode {
+// boardWithStatsBaseSelect is the SELECT clause + FROM/JOIN tree shared by
+// list and get-by-id queries. Both join pre-aggregated subqueries so
+// per-board counts stay accurate even when filters or LIMIT are applied,
+// without inflation from a Cartesian product between votes and games.
+const boardWithStatsBaseSelect = `SELECT
+	b.id, b.title, b.size, b.author_id, b.created_at, b.updated_at, b.description,
+	COALESCE(v.score, 0)      AS score,
+	COALESCE(v.vote_count, 0) AS vote_count,
+	COALESCE(g.play_count, 0) AS play_count
+FROM boards b
+LEFT JOIN (
+	SELECT board_id,
+	       SUM(vote_value) AS score,
+	       COUNT(*)        AS vote_count
+	FROM votes
+	GROUP BY board_id
+) v ON v.board_id = b.id
+LEFT JOIN (
+	SELECT board_id, COUNT(*) AS play_count
+	FROM games
+	GROUP BY board_id
+) g ON g.board_id = b.id`
+
+// orderByForSort returns the ORDER BY expression (without the "ORDER BY"
+// prefix) for the given sort key. Unknown / empty values fall back to
+// newest-first. Non-temporal sorts include a deterministic created_at
+// tiebreaker.
+func orderByForSort(sort string) string {
 	switch sort {
 	case "oldest":
-		return sortMode{orderBy: "b.created_at ASC"}
+		return "b.created_at ASC"
 	case "most-liked":
-		return sortMode{
-			join:    "LEFT JOIN votes v ON v.board_id = b.id",
-			groupBy: true,
-			orderBy: "COALESCE(SUM(v.vote_value), 0) DESC, b.created_at DESC",
-		}
+		return "COALESCE(v.score, 0) DESC, b.created_at DESC"
 	case "least-liked":
-		return sortMode{
-			join:    "LEFT JOIN votes v ON v.board_id = b.id",
-			groupBy: true,
-			orderBy: "COALESCE(SUM(v.vote_value), 0) ASC, b.created_at DESC",
-		}
+		return "COALESCE(v.score, 0) ASC, b.created_at DESC"
 	case "most-played":
-		return sortMode{
-			join:    "LEFT JOIN games g ON g.board_id = b.id",
-			groupBy: true,
-			orderBy: "COUNT(g.id) DESC, b.created_at DESC",
-		}
+		return "COALESCE(g.play_count, 0) DESC, b.created_at DESC"
 	case "least-played":
-		return sortMode{
-			join:    "LEFT JOIN games g ON g.board_id = b.id",
-			groupBy: true,
-			orderBy: "COUNT(g.id) ASC, b.created_at DESC",
-		}
+		return "COALESCE(g.play_count, 0) ASC, b.created_at DESC"
 	default:
-		// "newest" and any unknown value fall back to newest-first.
-		return sortMode{orderBy: "b.created_at DESC"}
+		return "b.created_at DESC"
 	}
 }
 
-func (r *Boards) List(ctx context.Context, f BoardListFilter) ([]generated.Board, error) {
+func (r *Boards) List(ctx context.Context, f BoardListFilter) ([]BoardWithStats, error) {
 	var (
 		query strings.Builder
 		args  []any
 		i     = 1
 	)
 
-	mode := resolveSort(f.Sort)
-
-	query.WriteString("SELECT b.id, b.title, b.size, b.author_id, b.created_at, b.updated_at, b.description FROM boards b")
-	if mode.join != "" {
-		query.WriteString(" ")
-		query.WriteString(mode.join)
-	}
+	query.WriteString(boardWithStatsBaseSelect)
 	query.WriteString(" WHERE 1=1")
 
 	if f.AuthorID != "" {
@@ -106,12 +112,8 @@ func (r *Boards) List(ctx context.Context, f BoardListFilter) ([]generated.Board
 		i++
 	}
 
-	if mode.groupBy {
-		query.WriteString(" GROUP BY b.id")
-	}
-
 	query.WriteString(" ORDER BY ")
-	query.WriteString(mode.orderBy)
+	query.WriteString(orderByForSort(f.Sort))
 
 	if f.Limit > 0 {
 		fmt.Fprintf(&query, " LIMIT $%d", i)
@@ -125,22 +127,30 @@ func (r *Boards) List(ctx context.Context, f BoardListFilter) ([]generated.Board
 	}
 	defer rows.Close()
 
-	boards, err := pgx.CollectRows(rows, pgx.RowToStructByName[generated.Board])
+	boards, err := pgx.CollectRows(rows, pgx.RowToStructByName[BoardWithStats])
 	if err != nil {
 		return nil, fmt.Errorf("scan boards: %w", err)
 	}
 	return boards, nil
 }
 
-func (r *Boards) Get(ctx context.Context, boardID pgtype.UUID) (generated.Board, error) {
-	board, err := r.queries.GetBoardByID(ctx, boardID)
+func (r *Boards) Get(ctx context.Context, boardID pgtype.UUID) (BoardWithStats, error) {
+	query := boardWithStatsBaseSelect + " WHERE b.id = $1"
+
+	rows, err := r.db.Query(ctx, query, boardID)
 	if err != nil {
-		return generated.Board{}, pgmap.TranslatePgErr(err)
+		return BoardWithStats{}, fmt.Errorf("query board: %w", err)
+	}
+	defer rows.Close()
+
+	board, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[BoardWithStats])
+	if err != nil {
+		return BoardWithStats{}, pgmap.TranslatePgErr(err)
 	}
 	return board, nil
 }
 
-func (r *Boards) Create(ctx context.Context, in CreateBoardInput) (generated.Board, error) {
+func (r *Boards) Create(ctx context.Context, in CreateBoardInput) (BoardWithStats, error) {
 	board, err := r.queries.CreateBoard(ctx, generated.CreateBoardParams{
 		Title:       in.Title,
 		Description: pgmap.PgTextFromString(in.Description),
@@ -148,9 +158,11 @@ func (r *Boards) Create(ctx context.Context, in CreateBoardInput) (generated.Boa
 		AuthorID:    in.AuthorID,
 	})
 	if err != nil {
-		return generated.Board{}, pgmap.TranslatePgErr(err)
+		return BoardWithStats{}, pgmap.TranslatePgErr(err)
 	}
-	return board, nil
+	// A freshly-created board has no votes and no games yet, so all stats
+	// are zero. Skip a re-query.
+	return BoardWithStats{Board: board}, nil
 }
 
 func (r *Boards) Delete(ctx context.Context, boardID pgtype.UUID) (generated.Board, error) {
