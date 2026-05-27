@@ -4,15 +4,15 @@
             <div class="list-header mb-4">
                 <h2 class="mb-0">Explore all Cards</h2>
                 <div class="header-actions">
-                    <input class="btn btn-secondary" type="search" placeholder="Search..">
+                    <input class="btn btn-secondary" type="search" placeholder="Search.." v-model="search">
                     <select class="btn btn-secondary" v-model="appliedFiler">
                         <option value="">No Filter</option>
-                        <option value="?sort=newest">Newest</option>
-                        <option value="?sort=most-liked">Most liked</option>
-                        <option value="?sort=most-played">Most played</option>
-                        <option value="?sort=oldest">Oldest</option>
-                        <option value="?sort=least-liked">Least liked</option>
-                        <option value="?sort=least-played">Least played</option>
+                        <option value="newest">Newest</option>
+                        <option value="most-liked">Most liked</option>
+                        <option value="most-played">Most played</option>
+                        <option value="oldest">Oldest</option>
+                        <option value="least-liked">Least liked</option>
+                        <option value="least-played">Least played</option>
                     </select>
                 </div>
             </div>
@@ -45,8 +45,6 @@ import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { Heart, Variable } from 'lucide-vue-next'
 
-
-
 interface Board {
     board_id: string
     title: string
@@ -61,9 +59,13 @@ const route = useRoute()
 const error = ref<string | null>(null)
 const boards = ref<Board[]>([])
 
-async function fetchAllCells(filterString: string) {
+async function fetchAllCells() {
+    const params = new URLSearchParams()
+    if (appliedFiler.value) params.set('sort', appliedFiler.value)
+    if (search.value) params.set('search', search.value)
 
-    const boardsRes = await fetch('/api/boards' + filterString, { credentials: 'include' })
+    const query = params.toString() ? '?' + params.toString() : ''
+    const boardsRes = await fetch('/api/boards' + query, { credentials: 'include' })
     if (!boardsRes.ok) {
         error.value = 'Failed to load boards'
         return
@@ -72,11 +74,13 @@ async function fetchAllCells(filterString: string) {
     boards.value = await boardsRes.json()
 }
 
-const appliedFiler = ref(route.query.sort ? `?sort=${route.query.sort}` : '')
+const appliedFiler = ref(route.query.sort ? String(route.query.sort) : '')
+const search = ref('')
 
-watch(appliedFiler, (newValue) => {
-    fetchAllCells(newValue)
+watch([appliedFiler, search], () => {
+    fetchAllCells()
 }, { immediate: true })
+
 </script>
 
 <style scoped>
