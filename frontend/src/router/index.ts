@@ -18,14 +18,14 @@ declare module 'vue-router' {
 }
 
 const routes = [
-  { path: '/', name: 'home', component: HomeView, meta: { requiresAuth: true } },
+  { path: '/', name: 'home', component: HomeView, meta: { requiresAuth: false } },
   { path: '/login', name: 'login', component: LoginView, meta: { guestOnly: true } },
   { path: '/register', name: 'register', component: RegisterView, meta: { guestOnly: true } },
-  { path: '/settings', name: 'settings', component: SettingsView, meta: { requiresAuth: true } },
-  { path: '/profile', name: 'profile', component: ProfileView, meta: { requiresAuth: true } },
-  { path: '/components', name: 'components', component: ComponentsView, meta: { requiresAuth: true } },
+  { path: '/settings', name: 'settings', component: SettingsView, meta: { requiresAuth: false } },
+  { path: '/profile', name: 'profile', component: ProfileView, meta: { requiresAuth: false } },
+  { path: '/components', name: 'components', component: ComponentsView, meta: { requiresAuth: false } },
   { path: '/cardeditor', name: 'cardeditor', component: CardEditorView, meta: { requiresAuth: true } },
-  { path: '/cards', name: 'cards', component: CardsView, meta: { requiresAuth: true } },
+  { path: '/cards', name: 'cards', component: CardsView, meta: { requiresAuth: false } },
 ]
 
 const router = createRouter({
