@@ -66,7 +66,7 @@ function closeMenu(){
         <RouterView />
       </main>
 
-        <footer>
+        <footer class="text-muted">
           {{ $t('footer.copyright') }}
         </footer>
 
