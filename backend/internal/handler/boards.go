@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
-	"github.com/officeryoda/dozingo/internal/generated"
 	"github.com/officeryoda/dozingo/internal/pgmap"
+	"github.com/officeryoda/dozingo/internal/repository"
 	"github.com/officeryoda/dozingo/internal/service"
 	"github.com/officeryoda/dozingo/internal/types"
 )
@@ -19,11 +19,16 @@ type boardOutput struct {
 	Description *string `json:"description"`
 	Size        int32   `json:"size"`
 	AuthorID    string  `json:"author_id" format:"uuid"`
+	Score       int64   `json:"score"`
+	VoteCount   int64   `json:"vote_count"`
+	PlayCount   int64   `json:"play_count"`
 }
 
 type getBoardsInput struct {
 	AuthorID string `query:"author_id"`
 	Size     int32  `query:"size"`
+	Sort     string `query:"sort" enum:"newest,oldest,most-liked,least-liked,most-played,least-played" default:"newest"`
+	Limit    int32  `query:"limit" minimum:"1" default:"20"`
 }
 
 type getBoardsOutput struct {
@@ -126,6 +131,8 @@ func (h *BoardsHandler) list(ctx context.Context, in *getBoardsInput) (*getBoard
 	boards, err := h.svc.List(ctx, service.BoardListFilter{
 		AuthorID: in.AuthorID,
 		Size:     in.Size,
+		Sort:     in.Sort,
+		Limit:    in.Limit,
 	})
 	if err != nil {
 		return nil, toHumaErr(err, "", "failed to list boards")
@@ -180,12 +187,15 @@ func (h *BoardsHandler) totalPlayedGames(ctx context.Context, in *getTotalGamesP
 	}, nil
 }
 
-func boardToOutput(board generated.Board) boardOutput {
+func boardToOutput(board repository.BoardWithStats) boardOutput {
 	return boardOutput{
 		BoardID:     board.ID.String(),
 		Title:       board.Title,
 		Description: pgmap.StringFromPgText(board.Description),
 		Size:        board.Size,
 		AuthorID:    board.AuthorID.String(),
+		Score:       board.Score,
+		VoteCount:   board.VoteCount,
+		PlayCount:   board.PlayCount,
 	}
 }

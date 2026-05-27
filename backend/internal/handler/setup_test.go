@@ -250,6 +250,26 @@ func assertJSONField(t *testing.T, data map[string]any, key string, expected str
 	}
 }
 
+// assertJSONInt asserts that the JSON field at key equals the expected
+// integer value. JSON numbers decode as float64 by default; this helper
+// centralizes the cast and avoids repeating it in every test.
+func assertJSONInt(t *testing.T, data map[string]any, key string, expected int64) {
+	t.Helper()
+	val, ok := data[key]
+	if !ok {
+		t.Errorf("expected field %q in response, but it was missing", key)
+		return
+	}
+	f, ok := val.(float64)
+	if !ok {
+		t.Errorf("expected field %q to be a number, got %T", key, val)
+		return
+	}
+	if int64(f) != expected {
+		t.Errorf("expected %s = %d, got %d", key, expected, int64(f))
+	}
+}
+
 /// ===== Misc helpers =====
 
 // stringPtr returns a pointer to s. Convenient for optional string fields in
