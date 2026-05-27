@@ -1,17 +1,59 @@
 <template>
   <section>
     <div class="container">
-      <div class="hero-section grid">
+      <div class="hero-section grid mb-3">
         <div class="hero-banner mb-3 col-8 md-12 sm-12">
           <div class="hero-content">
             <h2 class="hero-title">Ready for your next lecture win?</h2>
-            <p class="hero-subtitle">Quick-start a bingo grid for today's lecture and join other students currently playing.</p>
+            <p class="hero-subtitle">Quick-start a bingo grid for today's lecture and join other students currently
+              playing.</p>
             <RouterLink to="/cards" class="hero-button">Browse Cards</RouterLink>
           </div>
         </div>
 
-        <div class="card col-4 md-12 sm-12">
-          <h2>Content coming soon</h2>
+        <div class="card activity-card col-4 md-12 sm-12">
+          <h3 class="mb-0">Last 24hrs Activity</h3>
+          <div class="raster-container">
+            <div class="icon-div box">
+              <div class="icon-circle">
+                <Medal :size="20" />
+              </div>
+              <div class="icon-text">
+                <small class="category">BINGOS</small>
+                <span class="category-value">3</span>
+              </div>
+            </div>
+
+            <div class="icon-div box">
+              <div class="icon-circle">
+                <GamepadDirectional :size="20" />
+              </div>
+              <div class="icon-text">
+                <small class="category">GAMES</small>
+                <span class="category-value">12</span>
+              </div>
+            </div>
+
+            <div class="icon-div box">
+              <div class="icon-circle">
+                <LayoutGrid :size="20" />
+              </div>
+              <div class="icon-text">
+                <small class="category">BOARDS</small>
+                <span class="category-value">4</span>
+              </div>
+            </div>
+
+            <div class="icon-div box">
+              <div class="icon-circle">
+                <SquarePlus :size="18" />
+              </div>
+              <div class="icon-text">
+                <small class="category">CELLS</small>
+                <span class="category-value">86</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -74,12 +116,12 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { Heart } from 'lucide-vue-next'
+import { Heart, GamepadDirectional, SquarePlus, LayoutGrid, Medal } from 'lucide-vue-next'
 
 interface Board {
   board_id: string
   title: string
-  description: string | null
+  description: string
   size: number
   author_id: string
   score: number
@@ -119,6 +161,7 @@ onMounted(fetchBoards)
   background-color: #4B4AC8;
   border-radius: 16px;
   padding: 40px 36px;
+  height: 100%
 }
 
 .hero-content {
@@ -173,6 +216,12 @@ onMounted(fetchBoards)
   color: #75729E;
 }
 
+/* Activity card */
+.activity-card {
+  display: flex;
+  flex-direction: column;
+}
+
 /* Card */
 .card-body {
   text-align: left;
@@ -199,5 +248,68 @@ onMounted(fetchBoards)
 
 .like-group svg {
   color: #5A5781;
+}
+
+.grid-icons {
+  background-color: gray;
+  border-radius: 50%;
+}
+
+.icon-circle {
+  width: 52px;
+  height: 52px;
+  min-width: 52px;
+  border-radius: 50%;
+  background-color: #EEEEF8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-div {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+}
+
+.icon-div svg {
+  color: #4052B6;
+}
+
+.icon-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.category {
+  color: #75729E;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.category-value {
+  color: #2C2A51;
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.raster-container {
+  width: 100%;
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-content: space-evenly;
+  gap: 0;
+}
+
+.box {
+  display: flex;
+  justify-content: space-evenly;
+  align-items: space-evenly;
 }
 </style>

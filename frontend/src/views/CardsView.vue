@@ -23,7 +23,7 @@
                 <button v-for="board in boards" :key="board.board_id" class="card card-border-blue col-4 md-6 sm-12">
                     <div class="card-body">
                         <h3>{{ board.title }}</h3>
-                        <small>{{ board.describtion }}</small>
+                        <small>{{ board.description }}</small>
                     </div>
                     <hr class="mb-2">
                     <div class="card-footer">
@@ -50,7 +50,7 @@ import { Heart, Variable } from 'lucide-vue-next'
 interface Board {
     board_id: string
     title: string
-    describtion: string
+    description: string
     play_count: number
     vote_count: number
 }
