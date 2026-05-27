@@ -954,3 +954,20 @@ func TestGetTotalGamesPlayed_BoardTitleEchoed(t *testing.T) {
 
 	assertJSONField(t, resp, "board_title", "Echo Title Board")
 }
+
+/// ===== GET /boards search filter =====
+
+func TestGetBoards_SearchByTitle(t *testing.T) {
+	setupTest(t)
+	userID := createTestUser(t, "searchauthor", "searchauthor@example.com")
+	createTestBoard(t, "Go Programming", 5, userID, nil)
+	createTestBoard(t, "Vue Basics", 5, userID, nil)
+	createTestBoard(t, "Go Advanced", 5, userID, nil)
+	w := doRequest(http.MethodGet, "/api/boards?search=Go", nil)
+	assertStatus(t, w, http.StatusOK)
+	var resp []map[string]any
+	decodeJSON(t, w, &resp)
+	if len(resp) != 2 {
+		t.Errorf("expected 2 boards matching 'Go', got %d", len(resp))
+	}
+}
