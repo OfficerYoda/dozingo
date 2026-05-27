@@ -24,6 +24,8 @@ type boardOutput struct {
 type getBoardsInput struct {
 	AuthorID string `query:"author_id"`
 	Size     int32  `query:"size"`
+	Sort     string `query:"sort" enum:"newest,oldest,most-liked,least-liked,most-played,least-played" default:"newest"`
+	Limit    int32  `query:"limit" minimum:"1" default:"20"`
 }
 
 type getBoardsOutput struct {
@@ -126,6 +128,8 @@ func (h *BoardsHandler) list(ctx context.Context, in *getBoardsInput) (*getBoard
 	boards, err := h.svc.List(ctx, service.BoardListFilter{
 		AuthorID: in.AuthorID,
 		Size:     in.Size,
+		Sort:     in.Sort,
+		Limit:    in.Limit,
 	})
 	if err != nil {
 		return nil, toHumaErr(err, "", "failed to list boards")
