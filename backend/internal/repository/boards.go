@@ -22,6 +22,7 @@ type BoardListFilter struct {
 	Size     int32
 	Sort     string
 	Limit    int32
+	Search   string
 }
 
 type CreateBoardInput struct {
@@ -109,6 +110,12 @@ func (r *Boards) List(ctx context.Context, f BoardListFilter) ([]BoardWithStats,
 	if f.Size != 0 {
 		fmt.Fprintf(&query, " AND b.size = $%d", i)
 		args = append(args, f.Size)
+		i++
+	}
+
+	if f.Search != "" {
+		fmt.Fprintf(&query, " AND b.title ILIKE $%d", i)
+		args = append(args, "%"+f.Search+"%")
 		i++
 	}
 
