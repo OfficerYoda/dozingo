@@ -67,7 +67,7 @@ Table boards {
   title text [not null]
   description text
   size integer [not null, default: 5, note: 'size=5 means a 5x5 board']
-  author_id uuid [not null]
+  author_id uuid [note: 'null when author was deleted']
   ~timestamps
 
   checks {
@@ -75,7 +75,7 @@ Table boards {
   }
 }
 
-Ref: boards.author_id > users.id [delete: cascade]
+Ref: boards.author_id > users.id [delete: set null]
 
 Table cells {
   id uuid [pk, default: `gen_random_uuid()`]
@@ -87,7 +87,7 @@ Table cells {
 }
 
 Ref: cells.board_id > boards.id [delete: cascade]
-Ref: cells.author_id > users.id [delete: cascade]
+Ref: cells.author_id > users.id [delete: set null]
 
 //// ============================================
 //// VOTES

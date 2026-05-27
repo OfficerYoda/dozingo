@@ -8,23 +8,52 @@ import (
 	"github.com/officeryoda/dozingo/internal/domain"
 )
 
+// Stable, user-facing messages for each domain sentinel. Using fixed
+// strings here (instead of err.Error()) keeps internal details such as
+// pgmap-wrapped Postgres constraint names from leaking to clients. The
+// underlying error is still logged with full context for debugging.
+const (
+	msgNotFound              = "not found"
+	msgConflict              = "conflict"
+	msgUnauthorized          = "unauthorized"
+	msgForbidden             = "forbidden"
+	msgBadRequest            = "bad request"
+	msgUnprocessableEntity   = "unprocessable entity"
+)
+
+// toHumaErr maps a domain error to a huma HTTP error. Sentinel-matched
+// errors get a fixed user-facing message; the wrapped error is logged so
+// constraint names and other internal context remain available
+// server-side. Unmatched errors surface as 500 with opMsg as the body.
+//
+// notFoundMsg overrides the default "not found" message for ErrNotFound
+// when non-empty (e.g. "board not found"). It is the only per-call
+// override: other sentinels deliberately use generic messages to avoid
+// callers accidentally re-introducing the leak by passing err.Error().
 func toHumaErr(err error, notFoundMsg, opMsg string) error {
 	switch {
 	case errors.Is(err, domain.ErrNotFound):
-		if notFoundMsg == "" {
-			notFoundMsg = err.Error()
+		slog.Warn(opMsg, "error", err)
+		msg := notFoundMsg
+		if msg == "" {
+			msg = msgNotFound
 		}
-		return huma.Error404NotFound(notFoundMsg)
+		return huma.Error404NotFound(msg)
 	case errors.Is(err, domain.ErrConflict):
-		return huma.Error409Conflict(err.Error())
+		slog.Warn(opMsg, "error", err)
+		return huma.Error409Conflict(msgConflict)
 	case errors.Is(err, domain.ErrUnauthorized):
-		return huma.Error401Unauthorized(err.Error())
+		slog.Warn(opMsg, "error", err)
+		return huma.Error401Unauthorized(msgUnauthorized)
 	case errors.Is(err, domain.ErrForbidden):
-		return huma.Error403Forbidden(err.Error())
+		slog.Warn(opMsg, "error", err)
+		return huma.Error403Forbidden(msgForbidden)
 	case errors.Is(err, domain.ErrBadInput):
-		return huma.Error400BadRequest(err.Error())
+		slog.Warn(opMsg, "error", err)
+		return huma.Error400BadRequest(msgBadRequest)
 	case errors.Is(err, domain.ErrUnprocessableEntity):
-		return huma.Error422UnprocessableEntity(err.Error())
+		slog.Warn(opMsg, "error", err)
+		return huma.Error422UnprocessableEntity(msgUnprocessableEntity)
 	}
 
 	slog.Error(opMsg, "error", err)

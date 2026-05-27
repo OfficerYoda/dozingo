@@ -40,7 +40,7 @@ func main() {
 func run() error {
 	cfg, err := config.Load()
 	if err != nil {
-		slog.Warn("failed to load config", "error", err)
+		return fmt.Errorf("failed to load config: %w", err)
 	}
 
 	pool, err := connectDB(cfg.DatabaseURL)
@@ -55,27 +55,31 @@ func run() error {
 	repos := repository.New(pool)
 
 	cleaner := worker.NewSessionCleaner(repos.Sessions, sessionCleanupInterval)
-	go cleaner.Start(ctx)
+	cleaner.Start(ctx)
 
 	router := createRouter(cfg)
-	registerRoutes(router, repos, pool)
+	registerRoutes(router, repos, pool, cfg)
 
 	return serveHTTP(ctx, createServer(cfg.Port, router))
 }
 
 // connectDB creates a connection pool to PostgreSQL and verifies the connection.
 func connectDB(databaseURL string) (*pgxpool.Pool, error) {
-	pool, err := pgxpool.New(context.Background(), databaseURL)
-	if err != nil {
-		return nil, fmt.Errorf("creating pool: %w", err)
-	}
+    ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+    defer cancel()
 
-	if err := pool.Ping(context.Background()); err != nil {
-		return nil, fmt.Errorf("pinging database: %w", err)
-	}
+    pool, err := pgxpool.New(ctx, databaseURL)
+    if err != nil {
+        return nil, fmt.Errorf("creating pool: %w", err)
+    }
 
-	slog.Info("connected to database")
-	return pool, nil
+    if err := pool.Ping(ctx); err != nil {
+        pool.Close()
+        return nil, fmt.Errorf("pinging database: %w", err)
+    }
+
+    slog.Info("connected to database")
+    return pool, nil
 }
 
 // createRouter creates a Chi router with standard middleware and a root health page.
@@ -97,11 +101,11 @@ func rootHandler(port int) http.HandlerFunc {
 }
 
 // registerRoutes sets up the Huma API and registers all handler groups.
-func registerRoutes(router *chi.Mux, repos repository.Repos, pool *pgxpool.Pool) {
+func registerRoutes(router *chi.Mux, repos repository.Repos, pool *pgxpool.Pool, cfg *config.Config) {
 	queries := generated.New(pool)
 
 	api := humachi.New(router, huma.DefaultConfig("Dozingo API", "0.2.0"))
-	api.UseMiddleware(middleware.SessionUser(api, queries))
+	api.UseMiddleware(middleware.NewSessionMiddleware(cfg, queries).Handler(api))
 
 	apiGroup := huma.NewGroup(api, "/api")
 	txRunner := repository.NewTxRunner(pool)

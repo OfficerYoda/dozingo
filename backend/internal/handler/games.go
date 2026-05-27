@@ -16,7 +16,8 @@ import (
 type gameOutput struct {
 	GameID   string  `json:"game_id" format:"uuid"`
 	BoardID  *string `json:"board_id" format:"uuid"`
-	PlayerID string  `json:"player_id" format:"uuid"`
+	PlayerID *string  `json:"player_id" format:"uuid"`
+	SessionID *string  `json:"session_id" format:"uuid"`
 	Status   string  `json:"status"`
 }
 
@@ -32,7 +33,7 @@ type listGamesByPlayerInput struct {
 	PlayerID types.UUIDParam `path:"player_id" format:"uuid"`
 }
 
-type listGamesByPlayerOutput struct {
+type listGamesOutput struct {
 	Body []gameOutput
 }
 
@@ -96,6 +97,15 @@ func (h *GamesHandler) Register(api huma.API) {
 		Tags:        []string{"Games"},
 	}, h.listByPlayer)
 
+
+	huma.Register(api, huma.Operation{
+		OperationID: "list-games-by-current-session",
+		Method:      http.MethodGet,
+		Path:        "/me/games",
+		Summary:     "List all games from current session",
+		Tags:        []string{"Games"},
+	}, h.listByCurrentSession)
+
 	huma.Register(api, huma.Operation{
 		OperationID: "list-games-by-board",
 		Method:      http.MethodGet,
@@ -138,13 +148,22 @@ func (h *GamesHandler) get(ctx context.Context, in *getGameByIDInput) (*getGameB
 	return &getGameByIDOutput{Body: gameToOutput(game)}, nil
 }
 
-func (h *GamesHandler) listByPlayer(ctx context.Context, in *listGamesByPlayerInput) (*listGamesByPlayerOutput, error) {
+func (h *GamesHandler) listByPlayer(ctx context.Context, in *listGamesByPlayerInput) (*listGamesOutput, error) {
 	games, err := h.svc.ListByPlayer(ctx, in.PlayerID.Value)
 	if err != nil {
 		return nil, toHumaErr(err, "", "failed to list games by player")
 	}
 
-	return &listGamesByPlayerOutput{Body: mapSlice(games, gameToOutput)}, nil
+	return &listGamesOutput{Body: mapSlice(games, gameToOutput)}, nil
+}
+
+func (h *GamesHandler) listByCurrentSession(ctx context.Context, in *struct{}) (*listGamesOutput, error) {
+	games, err := h.svc.ListByCurrentSession(ctx)
+	if err != nil {
+		return nil, toHumaErr(err, "", "failed to list games by player")
+	}
+
+	return &listGamesOutput{Body: mapSlice(games, gameToOutput)}, nil
 }
 
 func (h *GamesHandler) listByBoard(ctx context.Context, in *listGamesByBoardInput) (*listGamesByBoardOutput, error) {
@@ -189,7 +208,8 @@ func gameToOutput(game generated.Game) gameOutput {
 	return gameOutput{
 		GameID:   game.ID.String(),
 		BoardID:  pgmap.StringFromPgUUID(game.BoardID),
-		PlayerID: game.PlayerID.String(),
+		PlayerID:  pgmap.StringFromPgUUID(game.PlayerID),
+		SessionID:  pgmap.StringFromPgUUID(game.SessionID),
 		Status:   game.Status,
 	}
 }

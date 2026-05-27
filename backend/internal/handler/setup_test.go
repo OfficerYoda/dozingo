@@ -19,6 +19,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	"github.com/officeryoda/dozingo/internal/auth"
+	"github.com/officeryoda/dozingo/internal/config"
 	"github.com/officeryoda/dozingo/internal/generated"
 	"github.com/officeryoda/dozingo/internal/middleware"
 	"github.com/officeryoda/dozingo/internal/repository"
@@ -112,9 +113,9 @@ func TestMain(m *testing.M) {
 	// SessionUser middleware is required by /auth/* and any handler calling
 	// RequireSessionCtx. Tests run over plain HTTP via httptest, so disable
 	// the Secure cookie flag to let cookies round-trip.
-	middleware.SetCookieSecureForTesting(false)
+	testCfg := &config.Config{SecureCookie: false}
 	queries := generated.New(testPool)
-	api.UseMiddleware(middleware.SessionUser(api, queries))
+	api.UseMiddleware(middleware.NewSessionMiddleware(testCfg, queries).Handler(api))
 
 	apiGroup := huma.NewGroup(api, "/api")
 
@@ -453,4 +454,21 @@ func createTestGameCell(t *testing.T, gameID, cellID, content string, position i
 		t.Fatalf("expected at least one game cell in response, got 0")
 	}
 	return resp[0]["game_cell_id"].(string)
+}
+
+// createAnonGame creates a game via the API using the supplied cookie
+// directly (instead of looking it up in userCookies). Pass nil for cookie to
+// send the request without any cookie at all -- the server will mint a fresh
+// anonymous session and emit a Set-Cookie header. Returns the new game ID.
+func createAnonGame(t *testing.T, cookie *http.Cookie, boardID string) string {
+	t.Helper()
+	var cookies []*http.Cookie
+	if cookie != nil {
+		cookies = []*http.Cookie{cookie}
+	}
+	w := doRequestWithCookies(http.MethodPost, fmt.Sprintf("/api/boards/%s/games", boardID), nil, cookies)
+	assertStatus(t, w, http.StatusOK)
+	var resp map[string]any
+	decodeJSON(t, w, &resp)
+	return resp["game_id"].(string)
 }

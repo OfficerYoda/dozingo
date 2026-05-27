@@ -62,6 +62,25 @@ func TestRegister_DuplicateUsername(t *testing.T) {
 
 	w := doRequest(http.MethodPost, "/api/auth/register", body)
 	assertStatus(t, w, http.StatusConflict)
+
+	// Response must not leak internal DB details (constraint name, SQL
+	// state, table name, etc.). Only the generic "conflict" detail.
+	rawBody := w.Body.String()
+	for _, leak := range []string{
+		"users_username_key",
+		"_key",
+		"constraint",
+		"users_username",
+		"23505",
+	} {
+		if strings.Contains(rawBody, leak) {
+			t.Errorf("response body must not leak %q, got: %s", leak, rawBody)
+		}
+	}
+
+	var resp map[string]any
+	decodeJSON(t, w, &resp)
+	assertJSONField(t, resp, "detail", "conflict")
 }
 
 func TestRegister_DuplicateEmail(t *testing.T) {
@@ -78,6 +97,24 @@ func TestRegister_DuplicateEmail(t *testing.T) {
 
 	w := doRequest(http.MethodPost, "/api/auth/register", body)
 	assertStatus(t, w, http.StatusConflict)
+
+	// Response must not leak internal DB details.
+	rawBody := w.Body.String()
+	for _, leak := range []string{
+		"users_email_key",
+		"_key",
+		"constraint",
+		"users_email",
+		"23505",
+	} {
+		if strings.Contains(rawBody, leak) {
+			t.Errorf("response body must not leak %q, got: %s", leak, rawBody)
+		}
+	}
+
+	var resp map[string]any
+	decodeJSON(t, w, &resp)
+	assertJSONField(t, resp, "detail", "conflict")
 }
 
 func TestLogin_Success(t *testing.T) {

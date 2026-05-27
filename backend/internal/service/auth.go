@@ -50,7 +50,7 @@ func (s *Auth) Register(ctx context.Context, in RegisterInput) (generated.User, 
 
 	// Run session stuff outside the transaction so the user can recover
 	// via login when something with the session fails
-	err = s.attatchUserToSession(ctx, user)
+	err = s.attachUserToSession(ctx, user)
 	if err != nil {
 		return generated.User{}, fmt.Errorf("attach user to session: %w", err)
 	}
@@ -78,7 +78,7 @@ func (s *Auth) Login(ctx context.Context, in LoginInput) (generated.User, error)
 		Username: user.Username,
 		Email:    user.Email,
 	}
-	err = s.attatchUserToSession(ctx, vanillaUser)
+	err = s.attachUserToSession(ctx, vanillaUser)
 	if err != nil {
 		return generated.User{}, fmt.Errorf("attach user to session: %w", err)
 	}
@@ -149,7 +149,7 @@ func requiresSessionUser(ctx context.Context, queries *generated.Queries) (gener
 	return sessionUser, nil
 }
 
-func (s *Auth) attatchUserToSession(ctx context.Context, user generated.User) error {
+func (s *Auth) attachUserToSession(ctx context.Context, user generated.User) error {
 	sessionUser, err := middleware.RequireSession(ctx, s.queries)
 	if err != nil {
 		return fmt.Errorf("session required: %w", err)
