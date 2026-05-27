@@ -258,6 +258,289 @@ func TestGetBoards_CombinedFilters(t *testing.T) {
 	assertJSONField(t, resp[0], "title", "Match")
 }
 
+/// ===== GET /boards sort & limit =====
+
+// titlesOf extracts the "title" field of every board in a list response, in
+// order. Useful for asserting sort ordering.
+func titlesOf(t *testing.T, resp []map[string]any) []string {
+	t.Helper()
+	out := make([]string, 0, len(resp))
+	for i, b := range resp {
+		title, ok := b["title"].(string)
+		if !ok {
+			t.Fatalf("board[%d]: expected string title, got %T", i, b["title"])
+		}
+		out = append(out, title)
+	}
+	return out
+}
+
+func TestGetBoards_SortNewest(t *testing.T) {
+	setupTest(t)
+
+	userID := createTestUser(t, "sortnew", "sortnew@example.com")
+
+	// Created in order: First, Second, Third. Newest first ⇒ Third, Second, First.
+	createTestBoard(t, "First", 5, userID, nil)
+	time.Sleep(2 * time.Millisecond)
+	createTestBoard(t, "Second", 5, userID, nil)
+	time.Sleep(2 * time.Millisecond)
+	createTestBoard(t, "Third", 5, userID, nil)
+
+	w := doRequest(http.MethodGet, "/api/boards?sort=newest", nil)
+	assertStatus(t, w, http.StatusOK)
+
+	var resp []map[string]any
+	decodeJSON(t, w, &resp)
+
+	got := titlesOf(t, resp)
+	want := []string{"Third", "Second", "First"}
+	if !equalStrSlice(got, want) {
+		t.Errorf("sort=newest: expected %v, got %v", want, got)
+	}
+}
+
+func TestGetBoards_SortOldest(t *testing.T) {
+	setupTest(t)
+
+	userID := createTestUser(t, "sortold", "sortold@example.com")
+
+	createTestBoard(t, "First", 5, userID, nil)
+	time.Sleep(2 * time.Millisecond)
+	createTestBoard(t, "Second", 5, userID, nil)
+	time.Sleep(2 * time.Millisecond)
+	createTestBoard(t, "Third", 5, userID, nil)
+
+	w := doRequest(http.MethodGet, "/api/boards?sort=oldest", nil)
+	assertStatus(t, w, http.StatusOK)
+
+	var resp []map[string]any
+	decodeJSON(t, w, &resp)
+
+	got := titlesOf(t, resp)
+	want := []string{"First", "Second", "Third"}
+	if !equalStrSlice(got, want) {
+		t.Errorf("sort=oldest: expected %v, got %v", want, got)
+	}
+}
+
+func TestGetBoards_SortMostLiked(t *testing.T) {
+	setupTest(t)
+
+	author := createTestUser(t, "mlauthor", "mlauthor@example.com")
+	v1 := createTestUser(t, "mlvoter1", "mlvoter1@example.com")
+	v2 := createTestUser(t, "mlvoter2", "mlvoter2@example.com")
+	v3 := createTestUser(t, "mlvoter3", "mlvoter3@example.com")
+
+	low := createTestBoard(t, "Low", 5, author, nil)
+	mid := createTestBoard(t, "Mid", 5, author, nil)
+	high := createTestBoard(t, "High", 5, author, nil)
+
+	// high: +2 (two upvotes)
+	createTestVote(t, high, v1, 1)
+	createTestVote(t, high, v2, 1)
+	// mid:  +1
+	createTestVote(t, mid, v1, 1)
+	// low:  -1
+	createTestVote(t, low, v3, -1)
+
+	w := doRequest(http.MethodGet, "/api/boards?sort=most-liked", nil)
+	assertStatus(t, w, http.StatusOK)
+
+	var resp []map[string]any
+	decodeJSON(t, w, &resp)
+
+	got := titlesOf(t, resp)
+	want := []string{"High", "Mid", "Low"}
+	if !equalStrSlice(got, want) {
+		t.Errorf("sort=most-liked: expected %v, got %v", want, got)
+	}
+}
+
+func TestGetBoards_SortLeastLiked(t *testing.T) {
+	setupTest(t)
+
+	author := createTestUser(t, "llauthor", "llauthor@example.com")
+	v1 := createTestUser(t, "llvoter1", "llvoter1@example.com")
+	v2 := createTestUser(t, "llvoter2", "llvoter2@example.com")
+	v3 := createTestUser(t, "llvoter3", "llvoter3@example.com")
+
+	low := createTestBoard(t, "Low", 5, author, nil)
+	mid := createTestBoard(t, "Mid", 5, author, nil)
+	high := createTestBoard(t, "High", 5, author, nil)
+
+	createTestVote(t, high, v1, 1)
+	createTestVote(t, high, v2, 1)
+	createTestVote(t, mid, v1, 1)
+	createTestVote(t, low, v3, -1)
+
+	w := doRequest(http.MethodGet, "/api/boards?sort=least-liked", nil)
+	assertStatus(t, w, http.StatusOK)
+
+	var resp []map[string]any
+	decodeJSON(t, w, &resp)
+
+	got := titlesOf(t, resp)
+	want := []string{"Low", "Mid", "High"}
+	if !equalStrSlice(got, want) {
+		t.Errorf("sort=least-liked: expected %v, got %v", want, got)
+	}
+}
+
+func TestGetBoards_SortMostPlayed(t *testing.T) {
+	setupTest(t)
+
+	author := createTestUser(t, "mpauthor", "mpauthor@example.com")
+
+	one := createTestBoard(t, "One", 5, author, nil)
+	two := createTestBoard(t, "Two", 5, author, nil)
+	three := createTestBoard(t, "Three", 5, author, nil)
+
+	// three: 3 games, two: 2 games, one: 1 game.
+	createTestGame(t, author, one)
+	createTestGame(t, author, two)
+	createTestGame(t, author, two)
+	createTestGame(t, author, three)
+	createTestGame(t, author, three)
+	createTestGame(t, author, three)
+
+	w := doRequest(http.MethodGet, "/api/boards?sort=most-played", nil)
+	assertStatus(t, w, http.StatusOK)
+
+	var resp []map[string]any
+	decodeJSON(t, w, &resp)
+
+	got := titlesOf(t, resp)
+	want := []string{"Three", "Two", "One"}
+	if !equalStrSlice(got, want) {
+		t.Errorf("sort=most-played: expected %v, got %v", want, got)
+	}
+}
+
+func TestGetBoards_SortLeastPlayed(t *testing.T) {
+	setupTest(t)
+
+	author := createTestUser(t, "lpauthor", "lpauthor@example.com")
+
+	one := createTestBoard(t, "One", 5, author, nil)
+	two := createTestBoard(t, "Two", 5, author, nil)
+	three := createTestBoard(t, "Three", 5, author, nil)
+
+	createTestGame(t, author, one)
+	createTestGame(t, author, two)
+	createTestGame(t, author, two)
+	createTestGame(t, author, three)
+	createTestGame(t, author, three)
+	createTestGame(t, author, three)
+
+	w := doRequest(http.MethodGet, "/api/boards?sort=least-played", nil)
+	assertStatus(t, w, http.StatusOK)
+
+	var resp []map[string]any
+	decodeJSON(t, w, &resp)
+
+	got := titlesOf(t, resp)
+	want := []string{"One", "Two", "Three"}
+	if !equalStrSlice(got, want) {
+		t.Errorf("sort=least-played: expected %v, got %v", want, got)
+	}
+}
+
+func TestGetBoards_Limit(t *testing.T) {
+	setupTest(t)
+
+	userID := createTestUser(t, "limitauthor", "limit@example.com")
+	for i := 0; i < 5; i++ {
+		createTestBoard(t, fmt.Sprintf("Board %d", i), 5, userID, nil)
+	}
+
+	w := doRequest(http.MethodGet, "/api/boards?limit=2", nil)
+	assertStatus(t, w, http.StatusOK)
+
+	var resp []map[string]any
+	decodeJSON(t, w, &resp)
+
+	if len(resp) != 2 {
+		t.Errorf("expected 2 boards (limit=2), got %d", len(resp))
+	}
+}
+
+func TestGetBoards_LimitWithMostLiked(t *testing.T) {
+	setupTest(t)
+
+	author := createTestUser(t, "lmlauthor", "lml@example.com")
+	v1 := createTestUser(t, "lmlvoter1", "lmlv1@example.com")
+	v2 := createTestUser(t, "lmlvoter2", "lmlv2@example.com")
+
+	a := createTestBoard(t, "A", 5, author, nil)
+	b := createTestBoard(t, "B", 5, author, nil)
+	c := createTestBoard(t, "C", 5, author, nil)
+
+	createTestVote(t, a, v1, 1)
+	createTestVote(t, a, v2, 1)
+	createTestVote(t, b, v1, 1)
+	_ = c // C has 0 votes
+
+	w := doRequest(http.MethodGet, "/api/boards?sort=most-liked&limit=2", nil)
+	assertStatus(t, w, http.StatusOK)
+
+	var resp []map[string]any
+	decodeJSON(t, w, &resp)
+
+	if len(resp) != 2 {
+		t.Fatalf("expected 2 boards, got %d", len(resp))
+	}
+	got := titlesOf(t, resp)
+	want := []string{"A", "B"}
+	if !equalStrSlice(got, want) {
+		t.Errorf("sort=most-liked&limit=2: expected %v, got %v", want, got)
+	}
+}
+
+func TestGetBoards_DefaultSortNewestApplied(t *testing.T) {
+	setupTest(t)
+
+	userID := createTestUser(t, "defsort", "defsort@example.com")
+
+	createTestBoard(t, "Older", 5, userID, nil)
+	time.Sleep(2 * time.Millisecond)
+	createTestBoard(t, "Newer", 5, userID, nil)
+
+	// No sort param ⇒ Huma default "newest".
+	w := doRequest(http.MethodGet, "/api/boards", nil)
+	assertStatus(t, w, http.StatusOK)
+
+	var resp []map[string]any
+	decodeJSON(t, w, &resp)
+
+	got := titlesOf(t, resp)
+	want := []string{"Newer", "Older"}
+	if !equalStrSlice(got, want) {
+		t.Errorf("default sort: expected %v, got %v", want, got)
+	}
+}
+
+func TestGetBoards_InvalidSortRejected(t *testing.T) {
+	setupTest(t)
+
+	w := doRequest(http.MethodGet, "/api/boards?sort=bogus", nil)
+	// Huma enforces the enum; expect a 422 validation error.
+	assertStatus(t, w, http.StatusUnprocessableEntity)
+}
+
+// equalStrSlice reports whether two string slices are element-wise equal.
+func equalStrSlice(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
 /// ===== GET /boards/{board_id}/total-played-games =====
 
 // mustParseUUID parses a UUID string into pgtype.UUID, failing the test on
