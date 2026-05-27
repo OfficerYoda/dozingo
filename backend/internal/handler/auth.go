@@ -21,7 +21,7 @@ type userOutputBody struct {
 
 type registerInputBody struct {
 	Username string  `json:"username" required:"true" maxLength:"200"`
-	Password string  `json:"password" required:"true" maxLength:"72"`
+	Password string  `json:"password" required:"true" minLength:"8" maxLength:"72"`
 	Email    *string `json:"email,omitempty" maxLength:"200"`
 }
 
@@ -35,7 +35,7 @@ type registerOutput struct {
 
 type loginInputBody struct {
 	Username string `json:"username" required:"true" maxLength:"200"`
-	Password string `json:"password" required:"true" maxLength:"72"`
+	Password string `json:"password" required:"true" minLength:"8" maxLength:"72"`
 }
 
 type loginInput struct {
