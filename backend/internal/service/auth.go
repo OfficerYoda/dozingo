@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"time"
 
 	authpkg "github.com/officeryoda/dozingo/internal/auth"
 	"github.com/officeryoda/dozingo/internal/domain"
@@ -14,20 +15,22 @@ import (
 )
 
 type Auth struct {
-	users     *repository.Users
-	passwords *repository.UserPasswords
-	sessions  *repository.Sessions
-	queries   *generated.Queries
-	txRunner  repository.TxRunner
+	users              *repository.Users
+	passwords          *repository.UserPasswords
+	sessions           *repository.Sessions
+	verificationTokens *repository.VerificationTokens
+	queries            *generated.Queries
+	txRunner           repository.TxRunner
 }
 
 func NewAuth(repos repository.Repos, queries *generated.Queries, txRunner repository.TxRunner) *Auth {
 	return &Auth{
-		users:     repos.Users,
-		passwords: repos.Passwords,
-		sessions:  repos.Sessions,
-		txRunner:  txRunner,
-		queries:   queries,
+		users:              repos.Users,
+		passwords:          repos.Passwords,
+		sessions:           repos.Sessions,
+		verificationTokens: repos.VerificationTokens,
+		txRunner:           txRunner,
+		queries:            queries,
 	}
 }
 
@@ -40,6 +43,11 @@ type RegisterInput struct {
 type LoginInput struct {
 	Username string
 	Password string
+}
+
+type UpdatePasswordInput struct {
+	Token       string
+	NewPassword string
 }
 
 func (s *Auth) Register(ctx context.Context, in RegisterInput) (generated.User, error) {
@@ -116,6 +124,53 @@ func (s *Auth) Me(ctx context.Context) (generated.User, error) {
 		Username: session.Username.String,
 		Email:    session.Email,
 	}, nil
+}
+
+func (s *Auth) UpdatePassword(ctx context.Context, in UpdatePasswordInput) (generated.User, error) {
+	token, err := s.verificationTokens.GetByToken(ctx, in.Token)
+	if err != nil {
+		return generated.User{}, fmt.Errorf("retrieve verification token: %w", err)
+	}
+
+	if token.Type != generated.TokenType("password_reset") {
+		return generated.User{}, fmt.Errorf("invalid token type: %w", domain.ErrBadInput)
+	}
+
+	if token.ExpiresAt.Time.After(time.Now()) {
+		return generated.User{}, fmt.Errorf("invalid expired: %w", domain.ErrGone)
+	}
+
+	passwordHash, err := authpkg.HashPassword(in.NewPassword)
+	if err != nil {
+		return generated.User{}, fmt.Errorf("hash password: %w", err)
+	}
+
+	err = s.txRunner.WithTx(ctx, func(r repository.Repos) error {
+		err = r.VerificationTokens.Delete(ctx, token.Token)
+		if err != nil {
+			return fmt.Errorf("delete verification token : %w", err)
+		}
+
+		if err = r.Sessions.DeleteByUserID(ctx, token.UserID); err != nil {
+			return fmt.Errorf("delete user sessions: %w", err)
+		}
+
+		if _, err = r.Passwords.Upsert(ctx, token.UserID, passwordHash); err != nil {
+			return fmt.Errorf("update password: %w", err)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return generated.User{}, err
+	}
+
+	user, err := s.users.GetByID(ctx, token.UserID)
+	if err != nil {
+		return generated.User{}, fmt.Errorf("retrieve user: %w", err)
+	}
+
+	return user, nil
 }
 
 func (s *Auth) generateUser(ctx context.Context, in RegisterInput) (generated.User, error) {

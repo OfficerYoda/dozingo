@@ -15,6 +15,7 @@ const (
 	msgForbidden           = "forbidden"
 	msgBadRequest          = "bad request"
 	msgUnprocessableEntity = "unprocessable entity"
+	msgGone                = "gone"
 )
 
 // toHumaErr maps a domain error to a huma HTTP error. Sentinel-matched
@@ -50,6 +51,9 @@ func toHumaErr(err error, notFoundMsg, opMsg string) error {
 	case errors.Is(err, domain.ErrUnprocessableEntity):
 		slog.Warn(opMsg, "error", err)
 		return huma.Error422UnprocessableEntity(msgUnprocessableEntity)
+	case errors.Is(err, domain.ErrGone):
+		slog.Warn(opMsg, "error", err)
+		return huma.Error410Gone(msgGone)
 	}
 
 	slog.Error(opMsg, "error", err)

@@ -6,7 +6,6 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/officeryoda/dozingo/internal/generated"
-	"github.com/officeryoda/dozingo/internal/middleware"
 	"github.com/officeryoda/dozingo/internal/pgmap"
 	"github.com/officeryoda/dozingo/internal/service"
 )
@@ -50,6 +49,19 @@ type meOutput struct {
 	Body userOutputBody
 }
 
+type updatePasswordInput struct {
+	Body updatePasswordInputBody
+}
+
+type updatePasswordInputBody struct {
+	Token       string `json:"token" required:"true"`
+	NewPassword string `json:"new_password" required:"true" minLength:"8" maxLength:"72"`
+}
+
+type updatePasswordOutput struct {
+	Body userOutputBody
+}
+
 // ===== Handler =====
 
 type AuthHandler struct {
@@ -89,9 +101,17 @@ func (h *AuthHandler) Register(api huma.API) {
 		OperationID: "me",
 		Method:      http.MethodGet,
 		Path:        "/auth/me",
-		Summary:     "Information about the logged-in user",
+		Summary:     "Information about the current user",
 		Tags:        []string{"Auth"},
 	}, h.me)
+
+	huma.Register(api, huma.Operation{
+		OperationID: "update-password",
+		Method:      http.MethodPost,
+		Path:        "/auth/update-password",
+		Summary:     "Update the password",
+		Tags:        []string{"Auth"},
+	}, h.updatePassword)
 }
 
 func (h *AuthHandler) register(ctx context.Context, in *registerInput) (*registerOutput, error) {
@@ -129,17 +149,24 @@ func (h *AuthHandler) logout(ctx context.Context, _ *struct{}) (*struct{}, error
 }
 
 func (h *AuthHandler) me(ctx context.Context, _ *struct{}) (*meOutput, error) {
-	session, ok := middleware.SessionUserFromContext(ctx)
-	if !ok || !session.UserID.Valid {
-		return nil, huma.Error401Unauthorized("not logged in")
-	}
-
-	user, err := h.svc.Me(ctx, session)
+	user, err := h.svc.Me(ctx)
 	if err != nil {
 		return nil, toHumaErr(err, "", "failed to get me")
 	}
 
 	return &meOutput{Body: userToOutput(user)}, nil
+}
+
+func (h *AuthHandler) updatePassword(ctx context.Context, in *updatePasswordInput) (*updatePasswordOutput, error) {
+	user, err := h.svc.UpdatePassword(ctx, service.UpdatePasswordInput{
+		Token:       in.Body.Token,
+		NewPassword: in.Body.NewPassword,
+	})
+	if err != nil {
+		return nil, toHumaErr(err, "", "failed to update password")
+	}
+
+	return &updatePasswordOutput{Body: userToOutput(user)}, nil
 }
 
 func userToOutput(user generated.User) userOutputBody {

@@ -25,8 +25,7 @@ type CreateVerificationTokenParams struct {
 }
 
 func (q *Queries) CreateVerificationToken(ctx context.Context, arg CreateVerificationTokenParams) (VerificationToken, error) {
-	row := q.db.QueryRow(
-		ctx, createVerificationToken,
+	row := q.db.QueryRow(ctx, createVerificationToken,
 		arg.UserID,
 		arg.Token,
 		arg.Type,
@@ -95,7 +94,8 @@ func (q *Queries) GetValidTokenForUser(ctx context.Context, arg GetValidTokenFor
 
 const getVerificationTokenByToken = `-- name: GetVerificationTokenByToken :one
 SELECT id, user_id, token, type, expires_at, created_at, updated_at FROM verification_tokens
-WHERE token = $1
+WHERE token = $1 
+  AND expires_at > now()
 `
 
 func (q *Queries) GetVerificationTokenByToken(ctx context.Context, token string) (VerificationToken, error) {

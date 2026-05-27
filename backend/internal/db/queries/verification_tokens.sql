@@ -5,7 +5,8 @@ RETURNING *;
 
 -- name: GetVerificationTokenByToken :one
 SELECT * FROM verification_tokens
-WHERE token = $1 ;
+WHERE token = $1 
+  AND expires_at > now();
 
 -- name: GetValidTokenForUser :one
 -- Fetches an unexpired token of a specific type for a user
