@@ -6,6 +6,7 @@ package main
 //   timoWerner42       / timoSecret42
 //   ghostUser01        / ghostpass        (no email)
 //   anon_student       / anonpass         (no email)
+//   admin              / password123      (easy test admin)
 //
 // Seed session tokens (for local dev only):
 //   seed-anon-fresh-token-0001      (anonymous, ~30d valid)
@@ -13,6 +14,7 @@ package main
 //   seed-anon-expired-0003          (anonymous, expired -> cleanup target)
 //   seed-user-max-token-0010        (bound to maxmustermann)
 //   seed-user-ghost-token-0011      (bound to ghostUser01)
+//   seed-user-admin-token-0012      (bound to admin)
 
 // userData holds username and email pairs for seeding users.
 type userData struct {
@@ -75,6 +77,7 @@ var users = []userData{
 	{Username: "emiliaWolf", Email: "emilia.wolf@stud.uni-koeln.de"},
 	{Username: "ghostUser01", Email: ""},
 	{Username: "anon_student", Email: ""},
+	{Username: "admin", Email: "admin@dozingo.de"},
 }
 
 // boards defines 15 boards with mixed sizes (3-7), each linked to an author.
@@ -103,6 +106,14 @@ var boards = []boardData{
 	{Title: "Compilerbau Endgegner", Description: "Parser, Lexer und Optimierung", Size: 7, AuthorIdx: 3},
 	{Title: "Verteilte Systeme Bingo", Description: "CAP-Theorem und Konsens", Size: 7, AuthorIdx: 6},
 	{Title: "Maschinelles Lernen Bingo", Description: "Gradient Descent und Overfitting", Size: 7, AuthorIdx: 2},
+
+	// Admin-authored boards (AuthorIdx: 12)
+	// Board 15: Size 4 -> 21 cells in pool
+	{Title: "Programmierkurs Klassiker", Description: "Live-Coding-Fails und Stack Traces", Size: 4, AuthorIdx: 12},
+	// Board 16: Size 5 -> 32 cells in pool
+	{Title: "Webtechnologien Bingo", Description: "HTTP, REST und CSS-Spezifität", Size: 5, AuthorIdx: 12},
+	// Board 17: Size 4 -> 21 cells in pool (English / admin themed)
+	{Title: "Admin Debug Bingo", Description: "QA hits, prod fires, and questionable commits", Size: 4, AuthorIdx: 12},
 }
 
 // cellPhrases contains German lecture bingo phrases for each board index.
@@ -683,6 +694,92 @@ var cellPhrases = map[int][]string{
 		"Prof zeichnet Decision Boundary",
 		"'Nächste Woche: Deep Learning'",
 	},
+
+	// Board 15: "Programmierkurs Klassiker" (size 4, 21 cells, German)
+	15: {
+		"Prof vergisst Semikolon",
+		"Live-Demo crasht",
+		"'Das funktioniert auf meinem Rechner'",
+		"Stack Overflow wird offen gezeigt",
+		"IDE friert ein",
+		"Prof tippt sehr langsam",
+		"Variable heißt 'temp'",
+		"Endlosschleife im Beispiel",
+		"'Ignorieren Sie diese Warnung'",
+		"Prof vergisst zu speichern",
+		"Tippfehler im Methodennamen",
+		"Compiler meckert",
+		"'Das ist nur Pseudocode'",
+		"Prof googelt während der Vorlesung",
+		"Off-by-One-Fehler",
+		"Hello World funktioniert nicht",
+		"Prof verwechselt == und =",
+		"Indentation falsch",
+		"'Das pushen wir später'",
+		"Linter unterringelt alles",
+		"Konsolenausgabe verschwindet",
+	},
+
+	// Board 16: "Webtechnologien Bingo" (size 5, 32 cells, German)
+	16: {
+		"'CORS-Fehler'",
+		"Prof zeigt 404-Seite",
+		"JavaScript verhält sich seltsam",
+		"'CSS ist auch Programmierung'",
+		"REST vs SOAP Diskussion",
+		"Prof öffnet DevTools",
+		"'Das sieht in Safari anders aus'",
+		"JSON-Parse-Error",
+		"Cookie wird nicht gesetzt",
+		"Prof erwähnt jQuery",
+		"'Promise.then-Hölle'",
+		"HTTPS-Zertifikat abgelaufen",
+		"Cache-Problem im Browser",
+		"Prof zeigt Lighthouse-Score",
+		"'Das löst React für uns'",
+		"Async/Await falsch verwendet",
+		"DOM wird manipuliert",
+		"'Single-Page-Application'",
+		"Prof verwirrt durch z-index",
+		"Flexbox vs Grid Debatte",
+		"'!important verwenden'",
+		"Prof zeigt Wireshark-Trace",
+		"WebSocket-Verbindung bricht ab",
+		"Form Submission ohne preventDefault",
+		"Prof sagt 'Hydration'",
+		"Bundle-Size zu groß",
+		"'Tailwind oder Vanilla CSS?'",
+		"TypeScript-Fehler ignoriert",
+		"Prof zeigt Network-Tab",
+		"'localhost:3000 ist down'",
+		"Service Worker macht Probleme",
+		"Prof sagt 'Progressive Enhancement'",
+	},
+
+	// Board 17: "Admin Debug Bingo" (size 4, 21 cells, English, with hidden references)
+	17: {
+		"Tests pass on second try",
+		"`TODO: fix later` from 2019",
+		"Admin force-pushes to main",
+		"'It works on my machine'",
+		"42 unread Slack pings",
+		"Prod is on fire",
+		"Coffee runs out at 3 AM",
+		"Someone blames the intern",
+		"`rm -rf` typed too fast",
+		"Linter wins the argument",
+		"'Have you tried turning it off and on again?'",
+		"'I'm sorry, Dave, I'm afraid I can't do that.'",
+		"'There is no spoon.'",
+		"Stack trace longer than the code",
+		"Hotfix on a Friday at 5 PM",
+		"Database is 'just slow'",
+		"'It's a UNIX system, I know this!'",
+		"Commit message says 'stuff'",
+		"PR approved without review",
+		"Cache invalidation goes wrong",
+		"'Hello, IT. Have you tried forcing an unexpected reboot?'",
+	},
 }
 
 // votes defines vote data. Each entry is a (userIdx, boardIdx, value) tuple.
@@ -718,6 +815,26 @@ var votes = []voteData{
 	{UserIdx: 7, BoardIdx: 12, Value: 1},
 	{UserIdx: 8, BoardIdx: 10, Value: 1},
 	{UserIdx: 9, BoardIdx: 9, Value: -1},
+
+	// Admin (UserIdx 12) votes on roughly half the boards so the user can
+	// easily find both voted and unvoted boards in the UI.
+	// Voted boards: 0, 2, 6, 9, 12, 15, 16, 17 (8 of 18).
+	// Unvoted boards: 1, 3, 4, 5, 7, 8, 10, 11, 13, 14.
+	{UserIdx: 12, BoardIdx: 0, Value: 1},
+	{UserIdx: 12, BoardIdx: 2, Value: 1},
+	{UserIdx: 12, BoardIdx: 6, Value: -1},
+	{UserIdx: 12, BoardIdx: 9, Value: 1},
+	{UserIdx: 12, BoardIdx: 12, Value: 1},
+	{UserIdx: 12, BoardIdx: 15, Value: 1}, // own board
+	{UserIdx: 12, BoardIdx: 16, Value: 1}, // own board
+	{UserIdx: 12, BoardIdx: 17, Value: 1}, // own board
+
+	// A few other users vote on admin's boards so they show non-zero scores.
+	{UserIdx: 0, BoardIdx: 15, Value: 1},
+	{UserIdx: 1, BoardIdx: 16, Value: 1},
+	{UserIdx: 3, BoardIdx: 16, Value: -1},
+	{UserIdx: 4, BoardIdx: 17, Value: 1},
+	{UserIdx: 7, BoardIdx: 17, Value: 1},
 }
 
 // games defines game sessions. Each game is played by a user on a board.
@@ -743,6 +860,13 @@ var games = []gameData{
 	// (session 3 = "seed-user-max-token-0010"). Has both player_id and session_id.
 	// Board 8 (Datenbanken Vorlesung, size 5 -> 25 cells) - completed
 	{PlayerIdx: 0, SessionIdx: 3, BoardIdx: 8, Status: "completed"},
+
+	// Game 8: admin plays own board 15 (Programmierkurs Klassiker, size 4 -> 16 cells) - completed
+	{PlayerIdx: 12, SessionIdx: -1, BoardIdx: 15, Status: "completed"},
+	// Game 9: admin plays own board 17 (Admin Debug Bingo, size 4 -> 16 cells) - active
+	{PlayerIdx: 12, SessionIdx: -1, BoardIdx: 17, Status: "active"},
+	// Game 10: admin plays existing board 6 (Algorithmen, size 5 -> 25 cells) via bound session - active
+	{PlayerIdx: 12, SessionIdx: 5, BoardIdx: 6, Status: "active"},
 }
 
 // gameCells defines the game_cells for each game index.
@@ -898,6 +1022,75 @@ var gameCells = map[int][]gameCellData{
 		{Content: "'Das optimiert der Query-Planner'", Position: 23, IsMarked: true},
 		{Content: "Kardinalitäten werden bestimmt", Position: 24, IsMarked: true},
 	},
+
+	// Game 8: admin on board 15 (Programmierkurs Klassiker, size 4 -> 16 cells, completed, mostly marked)
+	8: {
+		{Content: "Prof vergisst Semikolon", Position: 0, IsMarked: true},
+		{Content: "Live-Demo crasht", Position: 1, IsMarked: true},
+		{Content: "'Das funktioniert auf meinem Rechner'", Position: 2, IsMarked: true},
+		{Content: "Stack Overflow wird offen gezeigt", Position: 3, IsMarked: true},
+		{Content: "IDE friert ein", Position: 4, IsMarked: false},
+		{Content: "Prof tippt sehr langsam", Position: 5, IsMarked: true},
+		{Content: "Variable heißt 'temp'", Position: 6, IsMarked: true},
+		{Content: "Endlosschleife im Beispiel", Position: 7, IsMarked: true},
+		{Content: "'Ignorieren Sie diese Warnung'", Position: 8, IsMarked: false},
+		{Content: "Prof vergisst zu speichern", Position: 9, IsMarked: true},
+		{Content: "Tippfehler im Methodennamen", Position: 10, IsMarked: true},
+		{Content: "Compiler meckert", Position: 11, IsMarked: true},
+		{Content: "'Das ist nur Pseudocode'", Position: 12, IsMarked: false},
+		{Content: "Prof googelt während der Vorlesung", Position: 13, IsMarked: true},
+		{Content: "Off-by-One-Fehler", Position: 14, IsMarked: true},
+		{Content: "Hello World funktioniert nicht", Position: 15, IsMarked: false},
+	},
+
+	// Game 9: admin on board 17 (Admin Debug Bingo, size 4 -> 16 cells, active, a few marks)
+	9: {
+		{Content: "Tests pass on second try", Position: 0, IsMarked: true},
+		{Content: "`TODO: fix later` from 2019", Position: 1, IsMarked: true},
+		{Content: "Admin force-pushes to main", Position: 2, IsMarked: false},
+		{Content: "'It works on my machine'", Position: 3, IsMarked: true},
+		{Content: "42 unread Slack pings", Position: 4, IsMarked: false},
+		{Content: "Prod is on fire", Position: 5, IsMarked: false},
+		{Content: "Coffee runs out at 3 AM", Position: 6, IsMarked: true},
+		{Content: "Someone blames the intern", Position: 7, IsMarked: false},
+		{Content: "`rm -rf` typed too fast", Position: 8, IsMarked: false},
+		{Content: "Linter wins the argument", Position: 9, IsMarked: true},
+		{Content: "'Have you tried turning it off and on again?'", Position: 10, IsMarked: false},
+		{Content: "'I'm sorry, Dave, I'm afraid I can't do that.'", Position: 11, IsMarked: false},
+		{Content: "'There is no spoon.'", Position: 12, IsMarked: false},
+		{Content: "Stack trace longer than the code", Position: 13, IsMarked: false},
+		{Content: "Hotfix on a Friday at 5 PM", Position: 14, IsMarked: false},
+		{Content: "Database is 'just slow'", Position: 15, IsMarked: false},
+	},
+
+	// Game 10: admin on board 6 (Algorithmen, size 5 -> 25 cells, active, early progress)
+	10: {
+		{Content: "O-Notation wird erklärt", Position: 0, IsMarked: true},
+		{Content: "'Das ist in O(n log n)'", Position: 1, IsMarked: true},
+		{Content: "Binärbaum wird gezeichnet", Position: 2, IsMarked: false},
+		{Content: "Prof sagt 'Divide and Conquer'", Position: 3, IsMarked: true},
+		{Content: "Rekursion wird rekursiv erklärt", Position: 4, IsMarked: true},
+		{Content: "Bubble Sort als Negativbeispiel", Position: 5, IsMarked: false},
+		{Content: "Hashtabelle Kollision", Position: 6, IsMarked: false},
+		{Content: "Prof vergisst Basisfall", Position: 7, IsMarked: true},
+		{Content: "'Das ist ein bekanntes Problem'", Position: 8, IsMarked: false},
+		{Content: "Heap wird aufgebaut", Position: 9, IsMarked: true},
+		{Content: "Adjazenzliste vs Adjazenzmatrix", Position: 10, IsMarked: false},
+		{Content: "Dijkstra wird falsch ausgesprochen", Position: 11, IsMarked: true},
+		{Content: "Prof zeichnet einen Graphen", Position: 12, IsMarked: false},
+		{Content: "Stack Overflow Witz", Position: 13, IsMarked: true},
+		{Content: "'Das überlasse ich als Übung'", Position: 14, IsMarked: false},
+		{Content: "Quicksort Worst Case", Position: 15, IsMarked: false},
+		{Content: "Jemand sagt 'Einfach sortieren'", Position: 16, IsMarked: false},
+		{Content: "Dynamische Programmierung eingeführt", Position: 17, IsMarked: false},
+		{Content: "Prof schreibt Pseudocode", Position: 18, IsMarked: false},
+		{Content: "Laufzeitanalyse wird kompliziert", Position: 19, IsMarked: false},
+		{Content: "Red-Black-Tree wird erwähnt", Position: 20, IsMarked: false},
+		{Content: "'Das geht auch effizienter'", Position: 21, IsMarked: false},
+		{Content: "BFS vs DFS Vergleich", Position: 22, IsMarked: false},
+		{Content: "Prof vergisst Kantenfall", Position: 23, IsMarked: false},
+		{Content: "Amortisierte Analyse", Position: 24, IsMarked: false},
+	},
 }
 
 // passwordData holds a password to seed for a user.
@@ -912,8 +1105,9 @@ var passwords = []passwordData{
 	{UserIdx: 0, Password: "password123"},
 	{UserIdx: 1, Password: "securePass!"},
 	{UserIdx: 2, Password: "timoSecret42"},
-	{UserIdx: 10, Password: "ghostpass"}, // user with no email
-	{UserIdx: 11, Password: "anonpass"},  // user with no email
+	{UserIdx: 10, Password: "ghostpass"},   // user with no email
+	{UserIdx: 11, Password: "anonpass"},    // user with no email
+	{UserIdx: 12, Password: "password123"}, // admin / easy test account
 }
 
 // sessionData holds a session row to seed.
@@ -940,4 +1134,6 @@ var sessions = []sessionData{
 	{UserIdx: 0, Token: "seed-user-max-token-0010", ExpiresInHours: 30 * 24},
 	// User-bound, fresh -- ghostUser01 (password "ghostpass", no email)
 	{UserIdx: 10, Token: "seed-user-ghost-token-0011", ExpiresInHours: 30 * 24},
+	// User-bound, fresh -- admin (password "password123")
+	{UserIdx: 12, Token: "seed-user-admin-token-0012", ExpiresInHours: 30 * 24},
 }
