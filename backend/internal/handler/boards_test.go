@@ -39,6 +39,11 @@ func TestCreateBoard(t *testing.T) {
 	if size, ok := resp["size"].(float64); !ok || int(size) != 5 {
 		t.Errorf("expected size = 5, got %v", resp["size"])
 	}
+
+	// Freshly created boards have no votes and no games yet.
+	assertJSONInt(t, resp, "score", 0)
+	assertJSONInt(t, resp, "vote_count", 0)
+	assertJSONInt(t, resp, "play_count", 0)
 }
 
 func TestCreateBoard_WithDescription(t *testing.T) {
@@ -191,6 +196,11 @@ func TestGetBoardByID(t *testing.T) {
 	assertJSONField(t, resp, "title", "GetMe Board")
 	assertJSONField(t, resp, "description", "Test description")
 	assertJSONField(t, resp, "author_id", userID)
+
+	// No votes, no games on this board.
+	assertJSONInt(t, resp, "score", 0)
+	assertJSONInt(t, resp, "vote_count", 0)
+	assertJSONInt(t, resp, "play_count", 0)
 }
 
 func TestGetBoardByID_NotFound(t *testing.T) {
@@ -539,6 +549,155 @@ func equalStrSlice(a, b []string) bool {
 		}
 	}
 	return true
+}
+
+/// ===== GET /boards stats fields (score, vote_count, play_count) =====
+
+// findByID returns the first map in resp whose "board_id" field equals id.
+// Fails the test if no match is found.
+func findByID(t *testing.T, resp []map[string]any, id string) map[string]any {
+	t.Helper()
+	for _, b := range resp {
+		if got, _ := b["board_id"].(string); got == id {
+			return b
+		}
+	}
+	t.Fatalf("board %s not found in response of %d boards", id, len(resp))
+	return nil
+}
+
+func TestGetBoards_IncludesStats(t *testing.T) {
+	setupTest(t)
+
+	author := createTestUser(t, "statsauthor", "statsauthor@example.com")
+	v1 := createTestUser(t, "statsv1", "statsv1@example.com")
+	v2 := createTestUser(t, "statsv2", "statsv2@example.com")
+	boardID := createTestBoard(t, "Stats Board", 5, author, nil)
+
+	// One upvote (+1) and one downvote (-1) ⇒ score=0, vote_count=2.
+	createTestVote(t, boardID, v1, 1)
+	createTestVote(t, boardID, v2, -1)
+	// Two games played.
+	createTestGame(t, author, boardID)
+	createTestGame(t, author, boardID)
+
+	w := doRequest(http.MethodGet, "/api/boards", nil)
+	assertStatus(t, w, http.StatusOK)
+
+	var resp []map[string]any
+	decodeJSON(t, w, &resp)
+
+	board := findByID(t, resp, boardID)
+	assertJSONInt(t, board, "score", 0)
+	assertJSONInt(t, board, "vote_count", 2)
+	assertJSONInt(t, board, "play_count", 2)
+}
+
+func TestGetBoards_ZeroStatsForFreshBoard(t *testing.T) {
+	setupTest(t)
+
+	userID := createTestUser(t, "freshstats", "freshstats@example.com")
+	boardID := createTestBoard(t, "Fresh Board", 5, userID, nil)
+
+	w := doRequest(http.MethodGet, "/api/boards", nil)
+	assertStatus(t, w, http.StatusOK)
+
+	var resp []map[string]any
+	decodeJSON(t, w, &resp)
+
+	board := findByID(t, resp, boardID)
+	assertJSONInt(t, board, "score", 0)
+	assertJSONInt(t, board, "vote_count", 0)
+	assertJSONInt(t, board, "play_count", 0)
+}
+
+func TestGetBoards_StatsAcrossMultipleBoards(t *testing.T) {
+	setupTest(t)
+
+	author := createTestUser(t, "multistats", "multistats@example.com")
+	v1 := createTestUser(t, "msv1", "msv1@example.com")
+	v2 := createTestUser(t, "msv2", "msv2@example.com")
+
+	a := createTestBoard(t, "A", 5, author, nil)
+	b := createTestBoard(t, "B", 5, author, nil)
+	c := createTestBoard(t, "C", 5, author, nil)
+
+	// A: 2 upvotes, 1 game.
+	createTestVote(t, a, v1, 1)
+	createTestVote(t, a, v2, 1)
+	createTestGame(t, author, a)
+
+	// B: 0 votes, 3 games.
+	createTestGame(t, author, b)
+	createTestGame(t, author, b)
+	createTestGame(t, author, b)
+
+	// C: 1 downvote, 0 games.
+	createTestVote(t, c, v1, -1)
+
+	w := doRequest(http.MethodGet, "/api/boards", nil)
+	assertStatus(t, w, http.StatusOK)
+
+	var resp []map[string]any
+	decodeJSON(t, w, &resp)
+
+	bA := findByID(t, resp, a)
+	assertJSONInt(t, bA, "score", 2)
+	assertJSONInt(t, bA, "vote_count", 2)
+	assertJSONInt(t, bA, "play_count", 1)
+
+	bB := findByID(t, resp, b)
+	assertJSONInt(t, bB, "score", 0)
+	assertJSONInt(t, bB, "vote_count", 0)
+	assertJSONInt(t, bB, "play_count", 3)
+
+	bC := findByID(t, resp, c)
+	assertJSONInt(t, bC, "score", -1)
+	assertJSONInt(t, bC, "vote_count", 1)
+	assertJSONInt(t, bC, "play_count", 0)
+}
+
+func TestGetBoardByID_IncludesStats(t *testing.T) {
+	setupTest(t)
+
+	author := createTestUser(t, "getstats", "getstats@example.com")
+	v1 := createTestUser(t, "getstatsv1", "getstatsv1@example.com")
+	v2 := createTestUser(t, "getstatsv2", "getstatsv2@example.com")
+	boardID := createTestBoard(t, "Get Stats", 5, author, nil)
+
+	createTestVote(t, boardID, v1, 1)
+	createTestVote(t, boardID, v2, 1)
+	createTestGame(t, author, boardID)
+
+	w := doRequest(http.MethodGet, fmt.Sprintf("/api/boards/%s", boardID), nil)
+	assertStatus(t, w, http.StatusOK)
+
+	var resp map[string]any
+	decodeJSON(t, w, &resp)
+
+	assertJSONInt(t, resp, "score", 2)
+	assertJSONInt(t, resp, "vote_count", 2)
+	assertJSONInt(t, resp, "play_count", 1)
+}
+
+func TestCreateBoard_ReturnsZeroStats(t *testing.T) {
+	setupTest(t)
+
+	userID := createTestUser(t, "createstats", "createstats@example.com")
+
+	body := map[string]any{
+		"title": "Fresh",
+		"size":  5,
+	}
+	w := doRequestWithCookies(http.MethodPost, "/api/boards", body, cookiesFor(userID))
+	assertStatus(t, w, http.StatusOK)
+
+	var resp map[string]any
+	decodeJSON(t, w, &resp)
+
+	assertJSONInt(t, resp, "score", 0)
+	assertJSONInt(t, resp, "vote_count", 0)
+	assertJSONInt(t, resp, "play_count", 0)
 }
 
 /// ===== GET /boards/{board_id}/total-played-games =====
