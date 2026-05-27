@@ -23,6 +23,8 @@ func NewBoards(boards *repository.Boards, queries *generated.Queries) *Boards {
 type BoardListFilter struct {
 	AuthorID string
 	Size     int32
+	Sort     string
+	Limit    int32
 }
 
 type CreateBoardInput struct {
@@ -35,6 +37,8 @@ func (s *Boards) List(ctx context.Context, filter BoardListFilter) ([]generated.
 	return s.boards.List(ctx, repository.BoardListFilter{
 		AuthorID: filter.AuthorID,
 		Size:     filter.Size,
+		Sort:     filter.Sort,
+		Limit:    filter.Limit,
 	})
 }
 
