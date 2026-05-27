@@ -20,6 +20,10 @@ aside {
   overflow-y: auto;
 }
 
+main{
+    flex-grow: 1;
+}
+
 .disable-layer{
     z-index: 1;
     position: fixed;
@@ -40,6 +44,13 @@ aside {
 
 header button{
     display: none;
+}
+
+footer{
+    background-color: #aca8d718;
+    padding: 16px 24px;
+    width: 100%;
+    text-align: center;
 }
 
 @media (max-width: 900px){
