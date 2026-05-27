@@ -32,7 +32,10 @@ type CreateBoardInput struct {
 }
 
 func (s *Boards) List(ctx context.Context, filter BoardListFilter) ([]generated.Board, error) {
-	return s.boards.List(ctx, repository.BoardListFilter(filter))
+	return s.boards.List(ctx, repository.BoardListFilter{
+		AuthorID: filter.AuthorID,
+		Size:     filter.Size,
+	})
 }
 
 func (s *Boards) Get(ctx context.Context, boardID pgtype.UUID) (generated.Board, error) {

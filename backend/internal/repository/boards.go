@@ -20,6 +20,8 @@ type Boards struct {
 type BoardListFilter struct {
 	AuthorID string
 	Size     int32
+	Sort     string
+	Limit    int32
 }
 
 type CreateBoardInput struct {
@@ -29,13 +31,63 @@ type CreateBoardInput struct {
 	AuthorID    pgtype.UUID
 }
 
+// sortMode classifies the requested sort into the kind of FROM clause and
+// ORDER BY expression it needs.
+type sortMode struct {
+	join    string // optional LEFT JOIN ... clause
+	groupBy bool   // whether GROUP BY b.id is required
+	orderBy string // ORDER BY expression (without "ORDER BY" prefix)
+}
+
+func resolveSort(sort string) sortMode {
+	switch sort {
+	case "oldest":
+		return sortMode{orderBy: "b.created_at ASC"}
+	case "most-liked":
+		return sortMode{
+			join:    "LEFT JOIN votes v ON v.board_id = b.id",
+			groupBy: true,
+			orderBy: "COALESCE(SUM(v.vote_value), 0) DESC, b.created_at DESC",
+		}
+	case "least-liked":
+		return sortMode{
+			join:    "LEFT JOIN votes v ON v.board_id = b.id",
+			groupBy: true,
+			orderBy: "COALESCE(SUM(v.vote_value), 0) ASC, b.created_at DESC",
+		}
+	case "most-played":
+		return sortMode{
+			join:    "LEFT JOIN games g ON g.board_id = b.id",
+			groupBy: true,
+			orderBy: "COUNT(g.id) DESC, b.created_at DESC",
+		}
+	case "least-played":
+		return sortMode{
+			join:    "LEFT JOIN games g ON g.board_id = b.id",
+			groupBy: true,
+			orderBy: "COUNT(g.id) ASC, b.created_at DESC",
+		}
+	default:
+		// "newest" and any unknown value fall back to newest-first.
+		return sortMode{orderBy: "b.created_at DESC"}
+	}
+}
+
 func (r *Boards) List(ctx context.Context, f BoardListFilter) ([]generated.Board, error) {
 	var (
 		query strings.Builder
 		args  []any
 		i     = 1
 	)
-	query.WriteString("SELECT id, title, size, author_id, created_at, updated_at, description FROM boards WHERE 1=1")
+
+	mode := resolveSort(f.Sort)
+
+	query.WriteString("SELECT b.id, b.title, b.size, b.author_id, b.created_at, b.updated_at, b.description FROM boards b")
+	if mode.join != "" {
+		query.WriteString(" ")
+		query.WriteString(mode.join)
+	}
+	query.WriteString(" WHERE 1=1")
 
 	if f.AuthorID != "" {
 		var authorUUID pgtype.UUID
@@ -43,17 +95,29 @@ func (r *Boards) List(ctx context.Context, f BoardListFilter) ([]generated.Board
 		if err != nil {
 			return nil, fmt.Errorf("invalid author_id: %w", domain.ErrBadInput)
 		}
-		fmt.Fprintf(&query, " AND author_id = $%d", i)
+		fmt.Fprintf(&query, " AND b.author_id = $%d", i)
 		args = append(args, authorUUID)
 		i++
 	}
 
 	if f.Size != 0 {
-		fmt.Fprintf(&query, " AND size = $%d", i)
+		fmt.Fprintf(&query, " AND b.size = $%d", i)
 		args = append(args, f.Size)
+		i++
 	}
 
-	query.WriteString(" ORDER BY created_at DESC")
+	if mode.groupBy {
+		query.WriteString(" GROUP BY b.id")
+	}
+
+	query.WriteString(" ORDER BY ")
+	query.WriteString(mode.orderBy)
+
+	if f.Limit > 0 {
+		fmt.Fprintf(&query, " LIMIT $%d", i)
+		args = append(args, f.Limit)
+		i++
+	}
 
 	rows, err := r.db.Query(ctx, query.String(), args...)
 	if err != nil {
