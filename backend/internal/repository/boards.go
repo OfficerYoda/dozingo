@@ -114,13 +114,28 @@ func (r *Boards) List(ctx context.Context, f BoardListFilter) ([]BoardWithStats,
 	}
 
 	if f.Search != "" {
-		fmt.Fprintf(&query, " AND b.title ILIKE $%d", i)
-		args = append(args, "%"+f.Search+"%")
-		i++
-	}
+		// Two-pronged match: ILIKE catches literal substring hits
+		// (including matches shorter than a trigram, e.g. 2-char queries)
+		// while the trigram similarity operator (%) catches typo-tolerant
+		// fuzzy matches. Both are accelerated by the GIN(title gin_trgm_ops)
+		// index installed by migration 000009.
+		//
+		// We bind the term twice: once wrapped in % wildcards for ILIKE,
+		// once bare for similarity(). Note: %% in the format string is the
+		// fmt-escaped literal % character; the SQL operator is a single %.
+		fmt.Fprintf(&query, " AND (b.title ILIKE $%d OR b.title %% $%d::text)", i, i+1)
+		args = append(args, "%"+f.Search+"%", f.Search)
+		searchBareIdx := i + 1
+		i += 2
 
-	query.WriteString(" ORDER BY ")
-	query.WriteString(orderByForSort(f.Sort))
+		// When the caller is searching, relevance trumps the requested sort:
+		// rank by trigram similarity to the query, with a deterministic
+		// created_at tiebreaker for equal-similarity rows.
+		fmt.Fprintf(&query, " ORDER BY similarity(b.title, $%d) DESC, b.created_at DESC", searchBareIdx)
+	} else {
+		query.WriteString(" ORDER BY ")
+		query.WriteString(orderByForSort(f.Sort))
+	}
 
 	if f.Limit > 0 {
 		fmt.Fprintf(&query, " LIMIT $%d", i)
