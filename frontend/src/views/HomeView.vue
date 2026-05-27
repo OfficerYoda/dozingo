@@ -21,51 +21,21 @@
             <h2 class="mb-0 heading">Most Liked Cards</h2>
             <small class="subheading">The community's current favorites</small>
           </div>
-          <RouterLink to="/cards?filter=most-liked">See all &rarr;</RouterLink>
+          <RouterLink to="/cards?sort=most-liked">See all &rarr;</RouterLink>
         </div>
 
         <div class="grid">
-          <button class="card card-border-blue col-4 md-6 sm-12">
+          <button v-for="board in mostLikedBoards" :key="board.board_id" class="card card-border-blue col-4 md-6 sm-12">
             <div class="card-body">
-              <h3>Desktop Chaos</h3>
-              <small>Screen shows 400 different windows</small>
+              <h3>{{ board.title }}</h3>
+              <small>{{ board.description ?? '—' }}</small>
             </div>
             <hr class="mb-2">
             <div class="card-footer">
-              <span class="card-meta-text">999 times</span>
+              <span class="card-meta-text">{{ formatCount(board.play_count) }} times</span>
               <div class="like-group">
                 <Heart :size="20" />
-                <span class="card-meta-text">99k</span>
-              </div>
-            </div>
-          </button>
-
-          <button class="card card-border-blue col-4 md-6 sm-12">
-            <div class="card-body">
-              <h3>Desktop Chaos</h3>
-              <small>Screen shows 400 different windows</small>
-            </div>
-            <hr class="mb-2">
-            <div class="card-footer">
-              <span class="card-meta-text">999 times</span>
-              <div class="like-group">
-                <Heart :size="20" />
-                <span class="card-meta-text">99k</span>
-              </div>
-            </div>
-          </button>
-
-          <button class="card card-border-blue col-4 md-6 sm-12">
-            <div class="card-body">
-              <h3>Desktop Chaos</h3>
-              <small>Screen shows 400 different windows</small>
-            </div>
-            <hr class="mb-2">
-            <div class="card-footer">
-              <span class="card-meta-text">999 times</span>
-              <div class="like-group">
-                <Heart :size="20" />
-                <span class="card-meta-text">99k</span>
+                <span class="card-meta-text">{{ formatCount(board.score) }}</span>
               </div>
             </div>
           </button>
@@ -78,51 +48,21 @@
             <h2 class="mb-0 heading">Recently Added Cards</h2>
             <small class="subheading">Fresh bingo cards from the community</small>
           </div>
-          <RouterLink to="/cards?filter=newest">See all &rarr;</RouterLink>
+          <RouterLink to="/cards?sort=newest">See all &rarr;</RouterLink>
         </div>
 
         <div class="grid">
-          <button class="card card-border-blue col-4 md-6 sm-12">
+          <button v-for="board in newestBoards" :key="board.board_id" class="card card-border-blue col-4 md-6 sm-12">
             <div class="card-body">
-              <h3>Desktop Chaos</h3>
-              <small>Screen shows 400 different windows</small>
+              <h3>{{ board.title }}</h3>
+              <small>{{ board.description ?? '—' }}</small>
             </div>
             <hr class="mb-2">
             <div class="card-footer">
-              <span class="card-meta-text">999 times</span>
-              <div class="like-group">
-                <Heart :size="20"/>
-                <span class="card-meta-text">99k</span>
-              </div>
-            </div>
-          </button>
-
-          <button class="card card-border-blue col-4 md-6 sm-12">
-            <div class="card-body">
-              <h3>Desktop Chaos</h3>
-              <small>Screen shows 400 different windows</small>
-            </div>
-            <hr class="mb-2">
-            <div class="card-footer">
-              <span class="card-meta-text">999 times</span>
+              <span class="card-meta-text">{{ formatCount(board.play_count) }} times</span>
               <div class="like-group">
                 <Heart :size="20" />
-                <span class="card-meta-text">99k</span>
-              </div>
-            </div>
-          </button>
-
-          <button class="card card-border-blue col-4 md-6 sm-12">
-            <div class="card-body">
-              <h3>Desktop Chaos</h3>
-              <small>Screen shows 400 different windows</small>
-            </div>
-            <hr class="mb-2">
-            <div class="card-footer">
-              <span class="card-meta-text">999 times</span>
-              <div class="like-group">
-                <Heart :size="20" />
-                <span class="card-meta-text">99k</span>
+                <span class="card-meta-text">{{ formatCount(board.score) }}</span>
               </div>
             </div>
           </button>
@@ -133,7 +73,39 @@
 </template>
 
 <script setup lang="ts">
+import { ref, onMounted } from 'vue'
 import { Heart } from 'lucide-vue-next'
+
+interface Board {
+  board_id: string
+  title: string
+  description: string | null
+  size: number
+  author_id: string
+  score: number
+  vote_count: number
+  play_count: number
+}
+
+const mostLikedBoards = ref<Board[]>([])
+const newestBoards = ref<Board[]>([])
+
+function formatCount(n: number): string {
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`
+  return String(n)
+}
+
+async function fetchBoards() {
+  const [likedRes, newestRes] = await Promise.all([
+    fetch('/api/boards?sort=most-liked&limit=3', { credentials: 'include' }),
+    fetch('/api/boards?sort=newest&limit=3', { credentials: 'include' }),
+  ])
+
+  if (likedRes.ok) mostLikedBoards.value = await likedRes.json()
+  if (newestRes.ok) newestBoards.value = await newestRes.json()
+}
+
+onMounted(fetchBoards)
 </script>
 
 <style>
