@@ -70,12 +70,27 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
+          # The remote user's login shell may be fish, which does not
+          # support POSIX heredocs / VAR=$(...) syntax. Hand the whole
+          # script off to bash via `bash -c '...'` so the body is parsed
+          # by bash regardless of the login shell.
           script: |
             bash -c '
             set -euo pipefail
             cd /opt/services/dozingo
 
             docker compose pull
+
+            # Apply DB migrations using the migrate CLI baked into the
+            # backend image. Runs as a one-shot container, exits 0 on
+            # success or "no change". DATABASE_URL is loaded by compose
+            # from the dozingo service env_file. We invoke /bin/sh -c
+            # inside the container so $DATABASE_URL is expanded there,
+            # using the container env, not the host env.
+            echo "Running database migrations..."
+            docker compose run --rm --entrypoint /bin/sh dozingo -c \
+              "migrate -path /app/migrations -database \"\$DATABASE_URL\" up"
+
             docker compose up -d --remove-orphans
 
             echo "Waiting for dozingo to become healthy..."
@@ -91,6 +106,5 @@ jobs:
 
             echo "Container did not become healthy in time"
             docker compose logs --tail=100 dozingo || true
-            docker compose logs --tail=100 migrate || true
             exit 1
             '
