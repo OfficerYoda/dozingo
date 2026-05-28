@@ -49,16 +49,16 @@ type meOutput struct {
 	Body userOutputBody
 }
 
-type updatePasswordInputBody struct {
+type newPasswordInputBody struct {
 	Token       string `json:"token" required:"true"`
 	NewPassword string `json:"new_password" required:"true" minLength:"8" maxLength:"72"`
 }
 
-type updatePasswordInput struct {
-	Body updatePasswordInputBody
+type newPasswordInput struct {
+	Body newPasswordInputBody
 }
 
-type updatePasswordOutput struct {
+type newPasswordOutput struct {
 	Body userOutputBody
 }
 
@@ -126,12 +126,12 @@ func (h *AuthHandler) Register(api huma.API) {
 	}, h.me)
 
 	huma.Register(api, huma.Operation{
-		OperationID: "update-password",
+		OperationID: "new-password",
 		Method:      http.MethodPost,
-		Path:        "/auth/update-password",
-		Summary:     "Update the password",
+		Path:        "/auth/new-password",
+		Summary:     "Set a new password after reset",
 		Tags:        []string{"Auth"},
-	}, h.updatePassword)
+	}, h.newPassword)
 
 	huma.Register(api, huma.Operation{
 		OperationID: "send-email-verification",
@@ -193,8 +193,8 @@ func (h *AuthHandler) me(ctx context.Context, _ *struct{}) (*meOutput, error) {
 	return &meOutput{Body: userToOutput(user)}, nil
 }
 
-func (h *AuthHandler) updatePassword(ctx context.Context, in *updatePasswordInput) (*updatePasswordOutput, error) {
-	user, err := h.svc.UpdatePassword(ctx, service.UpdatePasswordInput{
+func (h *AuthHandler) newPassword(ctx context.Context, in *newPasswordInput) (*newPasswordOutput, error) {
+	user, err := h.svc.NewPassword(ctx, service.NewPasswordInput{
 		Token:       in.Body.Token,
 		NewPassword: in.Body.NewPassword,
 	})
@@ -202,7 +202,7 @@ func (h *AuthHandler) updatePassword(ctx context.Context, in *updatePasswordInpu
 		return nil, toHumaErr(err, "", "failed to update password")
 	}
 
-	return &updatePasswordOutput{Body: userToOutput(user)}, nil
+	return &newPasswordOutput{Body: userToOutput(user)}, nil
 }
 
 func (h *AuthHandler) sendEmailVerification(ctx context.Context, _ *struct{}) (*sendEmailVerificationOutput, error) {

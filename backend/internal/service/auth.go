@@ -48,7 +48,7 @@ type LoginInput struct {
 	Password string
 }
 
-type UpdatePasswordInput struct {
+type NewPasswordInput struct {
 	Token       string
 	NewPassword string
 }
@@ -129,7 +129,7 @@ func (s *Auth) Me(ctx context.Context) (generated.User, error) {
 	}, nil
 }
 
-func (s *Auth) UpdatePassword(ctx context.Context, in UpdatePasswordInput) (generated.User, error) {
+func (s *Auth) NewPassword(ctx context.Context, in NewPasswordInput) (generated.User, error) {
 	token, err := s.verificationTokens.GetByToken(ctx, in.Token)
 	if err != nil {
 		return generated.User{}, fmt.Errorf("retrieve verification token: %w", err)
