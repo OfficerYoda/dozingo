@@ -91,5 +91,6 @@ jobs:
 
             echo "Container did not become healthy in time"
             docker compose logs --tail=100 dozingo || true
+            docker compose logs --tail=100 migrate || true
             exit 1
             '
