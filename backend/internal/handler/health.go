@@ -2,27 +2,36 @@ package handler
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/danielgtaylor/huma/v2"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+const healthDBTimeout = 2 * time.Second
 
 // ===== Input/Output types =====
 
 type healthOutputBody struct {
-	Status string `json:"status"`
+	Status   string `json:"status"`
+	Database string `json:"database"`
 }
 
 type healthOutput struct {
-	Body healthOutputBody
+	Status int `json:"-"`
+	Body   healthOutputBody
 }
 
 // ===== Handler =====
 
-type HealthHandler struct{}
+type HealthHandler struct {
+	pool *pgxpool.Pool
+}
 
-func NewHealthHandler() *HealthHandler {
-	return &HealthHandler{}
+func NewHealthHandler(pool *pgxpool.Pool) *HealthHandler {
+	return &HealthHandler{pool: pool}
 }
 
 func (h *HealthHandler) Register(api huma.API) {
@@ -35,5 +44,25 @@ func (h *HealthHandler) Register(api huma.API) {
 }
 
 func (h *HealthHandler) handleHealth(ctx context.Context, _ *struct{}) (*healthOutput, error) {
-	return &healthOutput{Body: healthOutputBody{Status: "ok"}}, nil
+	pingCtx, cancel := context.WithTimeout(ctx, healthDBTimeout)
+	defer cancel()
+
+	if err := h.pool.Ping(pingCtx); err != nil {
+		slog.Warn("health: db ping failed", "error", err)
+		return &healthOutput{
+			Status: http.StatusServiceUnavailable,
+			Body: healthOutputBody{
+				Status:   "degraded",
+				Database: "down",
+			},
+		}, nil
+	}
+
+	return &healthOutput{
+		Status: http.StatusOK,
+		Body: healthOutputBody{
+			Status:   "ok",
+			Database: "ok",
+		},
+	}, nil
 }

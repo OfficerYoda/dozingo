@@ -119,7 +119,7 @@ func registerRoutes(router *chi.Mux, repos repository.Repos, pool *pgxpool.Pool,
 	votesSvc := service.NewVotes(repos.Votes, queries)
 	authSvc := service.NewAuth(repos, emailSender, queries, txRunner)
 
-	handler.NewHealthHandler().Register(apiGroup)
+	handler.NewHealthHandler(pool).Register(apiGroup)
 	handler.NewBoardsHandler(boardsSvc).Register(apiGroup)
 	handler.NewCellsHandler(cellsSvc).Register(apiGroup)
 	handler.NewGameCellsHandler(gameCellsSvc).Register(apiGroup)
