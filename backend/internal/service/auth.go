@@ -139,8 +139,8 @@ func (s *Auth) UpdatePassword(ctx context.Context, in UpdatePasswordInput) (gene
 		return generated.User{}, fmt.Errorf("invalid token type: %w", domain.ErrBadInput)
 	}
 
-	if token.ExpiresAt.Time.After(time.Now()) {
-		return generated.User{}, fmt.Errorf("invalid expired: %w", domain.ErrGone)
+	if token.ExpiresAt.Time.Before(time.Now()) {
+		return generated.User{}, fmt.Errorf("expired token: %w", domain.ErrGone)
 	}
 
 	passwordHash, err := auth.HashPassword(in.NewPassword)
@@ -149,9 +149,8 @@ func (s *Auth) UpdatePassword(ctx context.Context, in UpdatePasswordInput) (gene
 	}
 
 	err = s.txRunner.WithTx(ctx, func(r repository.Repos) error {
-		err = r.VerificationTokens.Delete(ctx, token.Token)
-		if err != nil {
-			return fmt.Errorf("delete verification token : %w", err)
+		if err = r.VerificationTokens.Delete(ctx, token.Token); err != nil {
+			return fmt.Errorf("delete verification token: %w", err)
 		}
 
 		if err = r.Sessions.DeleteByUserID(ctx, token.UserID); err != nil {
@@ -205,10 +204,44 @@ func (s *Auth) SendEmailVerification(ctx context.Context) error {
 
 	err = s.emailSender.SendEmailVerification(sessionUser.Email.String, token)
 	if err != nil {
-		return fmt.Errorf("send mail: %w", err)
+		return fmt.Errorf("sent mail: %w", err)
 	}
 
 	return nil
+}
+
+func (s *Auth) VerifyEmail(ctx context.Context, token string) (generated.User, error) {
+	verificationToken, err := s.verificationTokens.GetByToken(ctx, token)
+	if err != nil {
+		return generated.User{}, fmt.Errorf("retrieve verification token: %w", err)
+	}
+
+	if verificationToken.Type != generated.TokenTypeEmailVerification {
+		return generated.User{}, fmt.Errorf("invalid token type: %w", domain.ErrBadInput)
+	}
+
+	if verificationToken.ExpiresAt.Time.Before(time.Now()) {
+		return generated.User{}, fmt.Errorf("expired token: %w", domain.ErrGone)
+	}
+
+	now := time.Now()
+	var user generated.User
+	err = s.txRunner.WithTx(ctx, func(r repository.Repos) error {
+		if err = r.VerificationTokens.Delete(ctx, verificationToken.Token); err != nil {
+			return fmt.Errorf("delete verification token : %w", err)
+		}
+
+		user, err = r.Users.SetEmailVerifiedAt(ctx, verificationToken.UserID, &now)
+		if err != nil {
+			return fmt.Errorf("set email valid: %w", err)
+		}
+		return nil
+	})
+	if err != nil {
+		return generated.User{}, err
+	}
+
+	return user, nil
 }
 
 func (s *Auth) generateUser(ctx context.Context, in RegisterInput) (generated.User, error) {

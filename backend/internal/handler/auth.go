@@ -70,6 +70,18 @@ type sendEmailVerificationOutputBody struct {
 	Status string `json:"status"`
 }
 
+type verifyEmailInputBody struct {
+	Token string `json:"token" required:"true"`
+}
+
+type verifyEmailInput struct {
+	Body verifyEmailInputBody
+}
+
+type verifyEmailOutput struct {
+	Body userOutputBody
+}
+
 // ===== Handler =====
 
 type AuthHandler struct {
@@ -128,6 +140,14 @@ func (h *AuthHandler) Register(api huma.API) {
 		Summary:     "Send a verification mail",
 		Tags:        []string{"Auth"},
 	}, h.sendEmailVerification)
+
+	huma.Register(api, huma.Operation{
+		OperationID: "verify-email",
+		Method:      http.MethodPost,
+		Path:        "/auth/verify-email",
+		Summary:     "Verify an email",
+		Tags:        []string{"Auth"},
+	}, h.verifyEmail)
 }
 
 func (h *AuthHandler) register(ctx context.Context, in *registerInput) (*registerOutput, error) {
@@ -188,10 +208,19 @@ func (h *AuthHandler) updatePassword(ctx context.Context, in *updatePasswordInpu
 func (h *AuthHandler) sendEmailVerification(ctx context.Context, _ *struct{}) (*sendEmailVerificationOutput, error) {
 	err := h.svc.SendEmailVerification(ctx)
 	if err != nil {
-		return nil, toHumaErr(err, "", "failed to send validation email")
+		return nil, toHumaErr(err, "", "failed to sent verification email")
 	}
 
-	return &sendEmailVerificationOutput{Body: validateEmailOutputBody{Status: "verification email sent"}}, nil
+	return &sendEmailVerificationOutput{Body: sendEmailVerificationOutputBody{Status: "verification email sent"}}, nil
+}
+
+func (h *AuthHandler) verifyEmail(ctx context.Context, in *verifyEmailInput) (*verifyEmailOutput, error) {
+	user, err := h.svc.VerifyEmail(ctx, in.Body.Token)
+	if err != nil {
+		return nil, toHumaErr(err, "", "failed to verify email")
+	}
+
+	return &verifyEmailOutput{Body: userToOutput(user)}, nil
 }
 
 func userToOutput(user generated.User) userOutputBody {
