@@ -55,6 +55,13 @@ async function logout(): Promise<void> {
 }
 
 async function pwRequest(email: string): Promise<number | null> {
+    const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email }),
+    })
+    if (!res.ok) return res.status
     return null
 }
 
