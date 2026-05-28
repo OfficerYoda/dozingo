@@ -71,7 +71,8 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            set -e
+            bash -c '
+            set -euo pipefail
             cd /opt/services/dozingo
 
             docker compose pull
@@ -79,12 +80,16 @@ jobs:
 
             echo "Waiting for dozingo to become healthy..."
             for i in $(seq 1 12); do
-              STATUS=$(docker inspect --format='{{.State.Health.Status}}' dozingo 2>/dev/null || echo "missing")
-              echo "  attempt $i/12 — status: $STATUS"
-              [ "$STATUS" = "healthy" ] && echo "✓ Healthy" && exit 0
+              STATUS=$(docker inspect --format="{{.State.Health.Status}}" dozingo 2>/dev/null || echo "missing")
+              echo "  attempt $i/12 - status: $STATUS"
+              if [ "$STATUS" = "healthy" ]; then
+                echo "Healthy"
+                exit 0
+              fi
               sleep 5
             done
 
-            echo "✗ Container did not become healthy in time"
+            echo "Container did not become healthy in time"
             docker compose logs --tail=100 dozingo || true
             exit 1
+            '
