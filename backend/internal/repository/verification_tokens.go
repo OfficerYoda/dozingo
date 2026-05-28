@@ -16,21 +16,20 @@ type VerificationTokens struct {
 type CreateVerificationTokenInput struct {
 	UserID    pgtype.UUID
 	Token     string
-	TokenType string
+	TokenType generated.TokenType
 	ExpiresAt time.Time
 }
 
 type GetByTokenForUserInput struct {
 	UserID    pgtype.UUID
-	TokenType string
+	TokenType generated.TokenType
 }
 
 func (r *VerificationTokens) Create(ctx context.Context, in CreateVerificationTokenInput) (generated.VerificationToken, error) {
-	tokenType := generated.TokenType(in.TokenType)
 	token, err := r.queries.CreateVerificationToken(ctx, generated.CreateVerificationTokenParams{
 		UserID:    in.UserID,
 		Token:     in.Token,
-		Type:      tokenType,
+		Type:      in.TokenType,
 		ExpiresAt: pgmap.PgTimestamptzFromTime(&in.ExpiresAt),
 	})
 	if err != nil {

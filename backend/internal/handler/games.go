@@ -97,7 +97,6 @@ func (h *GamesHandler) Register(api huma.API) {
 		Tags:        []string{"Games"},
 	}, h.listByPlayer)
 
-
 	huma.Register(api, huma.Operation{
 		OperationID: "list-games-by-current-session",
 		Method:      http.MethodGet,
@@ -210,6 +209,6 @@ func gameToOutput(game generated.Game) gameOutput {
 		BoardID:   pgmap.StringFromPgUUID(game.BoardID),
 		PlayerID:  pgmap.StringFromPgUUID(game.PlayerID),
 		SessionID: pgmap.StringFromPgUUID(game.SessionID),
-		Status:    game.Status,
+		Status:    string(game.Status),
 	}
 }

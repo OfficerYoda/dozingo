@@ -49,17 +49,25 @@ type meOutput struct {
 	Body userOutputBody
 }
 
-type updatePasswordInput struct {
-	Body updatePasswordInputBody
-}
-
 type updatePasswordInputBody struct {
 	Token       string `json:"token" required:"true"`
 	NewPassword string `json:"new_password" required:"true" minLength:"8" maxLength:"72"`
 }
 
+type updatePasswordInput struct {
+	Body updatePasswordInputBody
+}
+
 type updatePasswordOutput struct {
 	Body userOutputBody
+}
+
+type sendEmailVerificationOutput struct {
+	Body sendEmailVerificationOutputBody
+}
+
+type sendEmailVerificationOutputBody struct {
+	Status string `json:"status"`
 }
 
 // ===== Handler =====
@@ -101,7 +109,7 @@ func (h *AuthHandler) Register(api huma.API) {
 		OperationID: "me",
 		Method:      http.MethodGet,
 		Path:        "/auth/me",
-		Summary:     "Information about the current user",
+		Summary:     "Information about current user",
 		Tags:        []string{"Auth"},
 	}, h.me)
 
@@ -112,6 +120,14 @@ func (h *AuthHandler) Register(api huma.API) {
 		Summary:     "Update the password",
 		Tags:        []string{"Auth"},
 	}, h.updatePassword)
+
+	huma.Register(api, huma.Operation{
+		OperationID: "send-email-verification",
+		Method:      http.MethodPost,
+		Path:        "/auth/send-email-verification",
+		Summary:     "Send a verification mail",
+		Tags:        []string{"Auth"},
+	}, h.sendEmailVerification)
 }
 
 func (h *AuthHandler) register(ctx context.Context, in *registerInput) (*registerOutput, error) {
@@ -167,6 +183,15 @@ func (h *AuthHandler) updatePassword(ctx context.Context, in *updatePasswordInpu
 	}
 
 	return &updatePasswordOutput{Body: userToOutput(user)}, nil
+}
+
+func (h *AuthHandler) sendEmailVerification(ctx context.Context, _ *struct{}) (*sendEmailVerificationOutput, error) {
+	err := h.svc.SendEmailVerification(ctx)
+	if err != nil {
+		return nil, toHumaErr(err, "", "failed to send validation email")
+	}
+
+	return &sendEmailVerificationOutput{Body: validateEmailOutputBody{Status: "verification email sent"}}, nil
 }
 
 func userToOutput(user generated.User) userOutputBody {

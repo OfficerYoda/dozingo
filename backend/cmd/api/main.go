@@ -17,6 +17,7 @@ import (
 	chimw "github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/officeryoda/dozingo/internal/config"
+	"github.com/officeryoda/dozingo/internal/email"
 	"github.com/officeryoda/dozingo/internal/generated"
 	"github.com/officeryoda/dozingo/internal/handler"
 	"github.com/officeryoda/dozingo/internal/middleware"
@@ -102,6 +103,7 @@ func rootHandler(port int) http.HandlerFunc {
 
 // registerRoutes sets up the Huma API and registers all handler groups.
 func registerRoutes(router *chi.Mux, repos repository.Repos, pool *pgxpool.Pool, cfg *config.Config) {
+	emailSender := email.New(cfg)
 	queries := generated.New(pool)
 
 	api := humachi.New(router, huma.DefaultConfig("Dozingo API", "0.2.0"))
@@ -115,7 +117,7 @@ func registerRoutes(router *chi.Mux, repos repository.Repos, pool *pgxpool.Pool,
 	gameCellsSvc := service.NewGameCells(repos.GameCells, repos.Games, queries)
 	gamesSvc := service.NewGames(repos.Games, queries)
 	votesSvc := service.NewVotes(repos.Votes, queries)
-	authSvc := service.NewAuth(repos, queries, txRunner)
+	authSvc := service.NewAuth(repos, emailSender, queries, txRunner)
 
 	handler.NewHealthHandler().Register(apiGroup)
 	handler.NewBoardsHandler(boardsSvc).Register(apiGroup)

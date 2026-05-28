@@ -348,7 +348,7 @@ func createTestUserWithRegister(t *testing.T, username, password string, email *
 func mintAnonSession(t *testing.T, ttl time.Duration) (token string, cookie *http.Cookie) {
 	t.Helper()
 	q := generated.New(testPool)
-	tok := auth.GenerateSessionToken()
+	tok := auth.GenerateToken()
 	_, err := q.CreateSession(context.Background(), generated.CreateSessionParams{
 		UserID: pgtype.UUID{Valid: false},
 		Token:  tok,

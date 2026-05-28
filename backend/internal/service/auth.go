@@ -7,8 +7,9 @@ import (
 	"log/slog"
 	"time"
 
-	authpkg "github.com/officeryoda/dozingo/internal/auth"
+	"github.com/officeryoda/dozingo/internal/auth"
 	"github.com/officeryoda/dozingo/internal/domain"
+	"github.com/officeryoda/dozingo/internal/email"
 	"github.com/officeryoda/dozingo/internal/generated"
 	"github.com/officeryoda/dozingo/internal/middleware"
 	"github.com/officeryoda/dozingo/internal/repository"
@@ -19,16 +20,18 @@ type Auth struct {
 	passwords          *repository.UserPasswords
 	sessions           *repository.Sessions
 	verificationTokens *repository.VerificationTokens
+	emailSender        *email.Sender
 	queries            *generated.Queries
 	txRunner           repository.TxRunner
 }
 
-func NewAuth(repos repository.Repos, queries *generated.Queries, txRunner repository.TxRunner) *Auth {
+func NewAuth(repos repository.Repos, emailSender *email.Sender, queries *generated.Queries, txRunner repository.TxRunner) *Auth {
 	return &Auth{
 		users:              repos.Users,
 		passwords:          repos.Passwords,
 		sessions:           repos.Sessions,
 		verificationTokens: repos.VerificationTokens,
+		emailSender:        emailSender,
 		txRunner:           txRunner,
 		queries:            queries,
 	}
@@ -70,13 +73,13 @@ func (s *Auth) Login(ctx context.Context, in LoginInput) (generated.User, error)
 	user, err := s.users.GetForPasswordLogin(ctx, in.Username)
 	if err != nil {
 		if errors.Is(err, domain.ErrNotFound) {
-			authpkg.CheckPasswordAgainstDummy(in.Password)
+			auth.CheckPasswordAgainstDummy(in.Password)
 			return generated.User{}, domain.ErrUnauthorized
 		}
 		return generated.User{}, fmt.Errorf("user retrieval for login: %w", err)
 	}
 
-	err = authpkg.CheckPassword(in.Password, user.PasswordHash)
+	err = auth.CheckPassword(in.Password, user.PasswordHash)
 	if err != nil {
 		return generated.User{}, domain.ErrUnauthorized
 	}
@@ -132,7 +135,7 @@ func (s *Auth) UpdatePassword(ctx context.Context, in UpdatePasswordInput) (gene
 		return generated.User{}, fmt.Errorf("retrieve verification token: %w", err)
 	}
 
-	if token.Type != generated.TokenType("password_reset") {
+	if token.Type != generated.TokenTypePasswordReset {
 		return generated.User{}, fmt.Errorf("invalid token type: %w", domain.ErrBadInput)
 	}
 
@@ -140,7 +143,7 @@ func (s *Auth) UpdatePassword(ctx context.Context, in UpdatePasswordInput) (gene
 		return generated.User{}, fmt.Errorf("invalid expired: %w", domain.ErrGone)
 	}
 
-	passwordHash, err := authpkg.HashPassword(in.NewPassword)
+	passwordHash, err := auth.HashPassword(in.NewPassword)
 	if err != nil {
 		return generated.User{}, fmt.Errorf("hash password: %w", err)
 	}
@@ -173,8 +176,43 @@ func (s *Auth) UpdatePassword(ctx context.Context, in UpdatePasswordInput) (gene
 	return user, nil
 }
 
+const emailVerificationTokenTTL = 12 * time.Hour
+
+func (s *Auth) SendEmailVerification(ctx context.Context) error {
+	sessionUser, err := requiresSessionUser(ctx, s.queries)
+	if err != nil {
+		return fmt.Errorf("require session: %w", err)
+	}
+
+	if !sessionUser.Email.Valid {
+		return fmt.Errorf("missing email: %w", domain.ErrUnauthorized)
+	}
+
+	if sessionUser.EmailVerifiedAt.Valid {
+		return fmt.Errorf("email already verified: %w", domain.ErrConflict)
+	}
+
+	token := auth.GenerateToken()
+	_, err = s.verificationTokens.Create(ctx, repository.CreateVerificationTokenInput{
+		UserID:    sessionUser.UserID,
+		Token:     token,
+		TokenType: generated.TokenTypeEmailVerification,
+		ExpiresAt: time.Now().Add(emailVerificationTokenTTL),
+	})
+	if err != nil {
+		return fmt.Errorf("create token: %w", err)
+	}
+
+	err = s.emailSender.SendEmailVerification(sessionUser.Email.String, token)
+	if err != nil {
+		return fmt.Errorf("send mail: %w", err)
+	}
+
+	return nil
+}
+
 func (s *Auth) generateUser(ctx context.Context, in RegisterInput) (generated.User, error) {
-	passwordHash, err := authpkg.HashPassword(in.Password)
+	passwordHash, err := auth.HashPassword(in.Password)
 	if err != nil {
 		return generated.User{}, err
 	}

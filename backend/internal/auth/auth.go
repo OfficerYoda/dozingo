@@ -52,7 +52,7 @@ func CheckPassword(password, hash string) error {
 	return nil
 }
 
-func GenerateSessionToken() string {
+func GenerateToken() string {
 	bytes := make([]byte, 32)
 	if _, err := rand.Read(bytes); err != nil {
 		return "" // rand.Read never returns an error

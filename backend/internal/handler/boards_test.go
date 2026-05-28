@@ -230,7 +230,8 @@ func TestDeleteBoard_NotFound(t *testing.T) {
 
 	userID := createTestUser(t, "delnoboard", "delnoboard@example.com")
 
-	w := doRequestWithCookies(http.MethodDelete,
+	w := doRequestWithCookies(
+		http.MethodDelete,
 		"/api/boards/00000000-0000-0000-0000-000000000000",
 		nil,
 		cookiesFor(userID),
@@ -831,7 +832,7 @@ func TestGetTotalGamesPlayed_IncludesAnonymousSessionGames(t *testing.T) {
 	q := generated.New(testPool)
 	sess, err := q.CreateSession(ctx, generated.CreateSessionParams{
 		UserID: pgtype.UUID{Valid: false},
-		Token:  auth.GenerateSessionToken(),
+		Token:  auth.GenerateToken(),
 		ExpiresAt: pgtype.Timestamptz{
 			Time:  time.Now().Add(30 * 24 * time.Hour),
 			Valid: true,
