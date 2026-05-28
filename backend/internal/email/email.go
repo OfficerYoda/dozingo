@@ -13,19 +13,26 @@ import (
 // emails.
 const frontendURL = "https://dozingo.de"
 
-type Sender struct {
+// Sender is the abstract interface used by services that need to send mail.
+// Production code wires up *ResendSender; tests substitute a fake.
+type Sender interface {
+	SendResetPassword(receiverAddress, token string) error
+	SendEmailVerification(receiverAddress, token string) error
+}
+
+type ResendSender struct {
 	client        *resend.Client
 	senderAddress string
 }
 
-func New(cfg *config.Config) *Sender {
-	return &Sender{
+func New(cfg *config.Config) Sender {
+	return &ResendSender{
 		client:        resend.NewClient(cfg.ResendAPIKey),
 		senderAddress: cfg.MailSenderAddress,
 	}
 }
 
-func (s *Sender) SendResetPassword(receiverAddress, token string) error {
+func (s *ResendSender) SendResetPassword(receiverAddress, token string) error {
 	actionURL := fmt.Sprintf(
 		"%s/reset-password?token=%s",
 		frontendURL,
@@ -61,7 +68,7 @@ func (s *Sender) SendResetPassword(receiverAddress, token string) error {
 	return nil
 }
 
-func (s *Sender) SendEmailVerification(receiverAddress, token string) error {
+func (s *ResendSender) SendEmailVerification(receiverAddress, token string) error {
 	actionURL := fmt.Sprintf(
 		"%s/verify-email?token=%s",
 		frontendURL,

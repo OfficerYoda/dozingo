@@ -27,12 +27,12 @@ type Auth struct {
 	passwords          *repository.UserPasswords
 	sessions           *repository.Sessions
 	verificationTokens *repository.VerificationTokens
-	emailSender        *email.Sender
+	emailSender        email.Sender
 	queries            *generated.Queries
 	txRunner           repository.TxRunner
 }
 
-func NewAuth(repos repository.Repos, emailSender *email.Sender, queries *generated.Queries, txRunner repository.TxRunner) *Auth {
+func NewAuth(repos repository.Repos, emailSender email.Sender, queries *generated.Queries, txRunner repository.TxRunner) *Auth {
 	return &Auth{
 		users:              repos.Users,
 		passwords:          repos.Passwords,
