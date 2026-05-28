@@ -8,17 +8,14 @@ import (
 	"github.com/officeryoda/dozingo/internal/domain"
 )
 
-// Stable, user-facing messages for each domain sentinel. Using fixed
-// strings here (instead of err.Error()) keeps internal details such as
-// pgmap-wrapped Postgres constraint names from leaking to clients. The
-// underlying error is still logged with full context for debugging.
 const (
-	msgNotFound              = "not found"
-	msgConflict              = "conflict"
-	msgUnauthorized          = "unauthorized"
-	msgForbidden             = "forbidden"
-	msgBadRequest            = "bad request"
-	msgUnprocessableEntity   = "unprocessable entity"
+	msgNotFound            = "not found"
+	msgConflict            = "conflict"
+	msgUnauthorized        = "unauthorized"
+	msgForbidden           = "forbidden"
+	msgBadRequest          = "bad request"
+	msgUnprocessableEntity = "unprocessable entity"
+	msgGone                = "gone"
 )
 
 // toHumaErr maps a domain error to a huma HTTP error. Sentinel-matched
@@ -54,6 +51,9 @@ func toHumaErr(err error, notFoundMsg, opMsg string) error {
 	case errors.Is(err, domain.ErrUnprocessableEntity):
 		slog.Warn(opMsg, "error", err)
 		return huma.Error422UnprocessableEntity(msgUnprocessableEntity)
+	case errors.Is(err, domain.ErrGone):
+		slog.Warn(opMsg, "error", err)
+		return huma.Error410Gone(msgGone)
 	}
 
 	slog.Error(opMsg, "error", err)

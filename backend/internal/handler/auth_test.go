@@ -276,7 +276,7 @@ func TestRegister_PasswordTooLong_Rejected(t *testing.T) {
 	}
 }
 
-func TestRegister_EmailWhitespaceTreatedAsNull(t *testing.T) {
+func TestRegister_EmailWhitespaceOnly_Rejected(t *testing.T) {
 	setupTest(t)
 
 	w := doRequest(http.MethodPost, "/api/auth/register", map[string]any{
@@ -284,12 +284,10 @@ func TestRegister_EmailWhitespaceTreatedAsNull(t *testing.T) {
 		"password": "mypassword123",
 		"email":    "   ",
 	})
-	assertStatus(t, w, http.StatusOK)
-
-	var resp map[string]any
-	decodeJSON(t, w, &resp)
-	if resp["email"] != nil {
-		t.Errorf("expected whitespace-only email to be normalised to null, got %v", resp["email"])
+	// Whitespace-only is not a valid RFC 5322 address; Huma's
+	// format:"email" validator must reject it before the handler runs.
+	if w.Code != http.StatusUnprocessableEntity && w.Code != http.StatusBadRequest {
+		t.Errorf("expected 422/400 for whitespace-only email, got %d (body: %s)", w.Code, w.Body.String())
 	}
 }
 

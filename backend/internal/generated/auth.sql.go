@@ -18,7 +18,8 @@ SELECT
   s.token,
   s.expires_at,
   u.username,
-  u.email
+  u.email,
+  u.email_verified_at
 FROM sessions s
 LEFT JOIN users u ON u.id = s.user_id
 WHERE s.token = $1
@@ -26,12 +27,13 @@ WHERE s.token = $1
 `
 
 type GetSessionUserByTokenRow struct {
-	SessionID pgtype.UUID        `json:"session_id"`
-	UserID    pgtype.UUID        `json:"user_id"`
-	Token     string             `json:"token"`
-	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
-	Username  pgtype.Text        `json:"username"`
-	Email     pgtype.Text        `json:"email"`
+	SessionID       pgtype.UUID        `json:"session_id"`
+	UserID          pgtype.UUID        `json:"user_id"`
+	Token           string             `json:"token"`
+	ExpiresAt       pgtype.Timestamptz `json:"expires_at"`
+	Username        pgtype.Text        `json:"username"`
+	Email           pgtype.Text        `json:"email"`
+	EmailVerifiedAt pgtype.Timestamptz `json:"email_verified_at"`
 }
 
 // user_id may be NULL for anon sessions
@@ -45,6 +47,7 @@ func (q *Queries) GetSessionUserByToken(ctx context.Context, token string) (GetS
 		&i.ExpiresAt,
 		&i.Username,
 		&i.Email,
+		&i.EmailVerifiedAt,
 	)
 	return i, err
 }

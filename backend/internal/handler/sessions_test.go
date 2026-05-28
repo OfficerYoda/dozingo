@@ -17,7 +17,7 @@ import (
 func insertSessionWithExpiry(t *testing.T, expiresIn time.Duration) (token string) {
 	t.Helper()
 	q := generated.New(testPool)
-	tok := auth.GenerateSessionToken()
+	tok := auth.GenerateToken()
 	_, err := q.CreateSession(context.Background(), generated.CreateSessionParams{
 		UserID: pgtype.UUID{Valid: false},
 		Token:  tok,

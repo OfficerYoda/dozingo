@@ -234,7 +234,7 @@ func createNewSession(queries *generated.Queries, ctx huma.Context) (generated.S
 			InfinityModifier: pgtype.Finite,
 			Valid:            true,
 		},
-		Token: auth.GenerateSessionToken(),
+		Token: auth.GenerateToken(),
 	})
 	if err != nil {
 		return generated.Session{}, err

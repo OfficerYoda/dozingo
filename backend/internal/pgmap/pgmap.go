@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"time"
+	timepkg "time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -35,9 +35,17 @@ func StringFromPgUUID(uuid pgtype.UUID) *string {
 	return &s
 }
 
-func PgTimestamptzFromTime(time time.Time) pgtype.Timestamptz {
+func PgTimestamptzFromTime(time *timepkg.Time) pgtype.Timestamptz {
+	if time == nil {
+		return pgtype.Timestamptz{
+			Time:             timepkg.Time{},
+			InfinityModifier: pgtype.Finite,
+			Valid:            false,
+		}
+	}
+
 	return pgtype.Timestamptz{
-		Time:             time,
+		Time:             *time,
 		InfinityModifier: pgtype.Finite,
 		Valid:            true,
 	}

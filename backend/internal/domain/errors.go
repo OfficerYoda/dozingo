@@ -20,4 +20,7 @@ var (
 
 	// ErrUnprocessableEntity indicates the input field could be parsed but fails validation.
 	ErrUnprocessableEntity = errors.New("unprocessable entity")
+
+	// ErrGone indicates the resource is no longer valid because it expired.
+	ErrGone = errors.New("gone")
 )

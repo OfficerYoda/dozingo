@@ -85,7 +85,7 @@ func TestCheckPassword_MalformedHash(t *testing.T) {
 }
 
 func TestGenerateSessionToken_Format(t *testing.T) {
-	token := GenerateSessionToken()
+	token := GenerateToken()
 	if token == "" {
 		t.Fatal("GenerateSessionToken returned empty string")
 	}
@@ -102,7 +102,7 @@ func TestGenerateSessionToken_Uniqueness(t *testing.T) {
 	const n = 1000
 	seen := make(map[string]struct{}, n)
 	for i := 0; i < n; i++ {
-		tok := GenerateSessionToken()
+		tok := GenerateToken()
 		if _, dup := seen[tok]; dup {
 			t.Fatalf("duplicate token after %d iterations: %q", i, tok)
 		}

@@ -23,7 +23,7 @@ func (r *Sessions) Create(ctx context.Context, in CreateSessionInput) (generated
 	session, err := r.queries.CreateSession(ctx, generated.CreateSessionParams{
 		UserID:    in.UserID,
 		Token:     in.Token,
-		ExpiresAt: pgmap.PgTimestamptzFromTime(in.ExpiresAt),
+		ExpiresAt: pgmap.PgTimestamptzFromTime(&in.ExpiresAt),
 	})
 	if err != nil {
 		return generated.Session{}, pgmap.TranslatePgErr(err)
@@ -34,7 +34,7 @@ func (r *Sessions) Create(ctx context.Context, in CreateSessionInput) (generated
 func (r *Sessions) Extend(ctx context.Context, token string, expiresAt time.Time) (generated.Session, error) {
 	session, err := r.queries.ExtendSessionByToken(ctx, generated.ExtendSessionByTokenParams{
 		Token:     token,
-		ExpiresAt: pgmap.PgTimestamptzFromTime(expiresAt),
+		ExpiresAt: pgmap.PgTimestamptzFromTime(&expiresAt),
 	})
 	if err != nil {
 		return generated.Session{}, pgmap.TranslatePgErr(err)
@@ -55,6 +55,14 @@ func (r *Sessions) AttachUser(ctx context.Context, token string, userID pgtype.U
 
 func (r *Sessions) Delete(ctx context.Context, token string) error {
 	err := r.queries.DeleteSessionByToken(ctx, token)
+	if err != nil {
+		return pgmap.TranslatePgErr(err)
+	}
+	return nil
+}
+
+func (r *Sessions) DeleteByUserID(ctx context.Context, userID pgtype.UUID) error {
+	err := r.queries.DeleteSessionByUserID(ctx, userID)
 	if err != nil {
 		return pgmap.TranslatePgErr(err)
 	}

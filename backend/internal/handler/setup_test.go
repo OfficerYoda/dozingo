@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -37,7 +38,90 @@ var (
 	// the caller from middleware.SessionUserFromContext see the right user.
 	// Cleared in cleanupTables alongside the sessions table truncation.
 	userCookies = map[string]*http.Cookie{}
+
+	// fakeMailer is the email.Sender implementation wired into the test
+	// service.Auth. Tests inspect its recorded calls to assert that mail
+	// was (or was not) sent and to capture issued tokens for end-to-end
+	// flows. Reset between tests in cleanupTables.
+	fakeMailer = &fakeEmailSender{}
 )
+
+// fakeEmailSender records every Send* call. Safe for concurrent use; tests
+// run sequentially by default but a single test may make concurrent
+// requests so guard the slices anyway.
+type fakeEmailSender struct {
+	mu           sync.Mutex
+	resetCalls   []sentMail
+	verifyCalls  []sentMail
+	failNextSend error
+}
+
+type sentMail struct {
+	To    string
+	Token string
+}
+
+func (f *fakeEmailSender) SendResetPassword(to, token string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.failNextSend != nil {
+		err := f.failNextSend
+		f.failNextSend = nil
+		return err
+	}
+	f.resetCalls = append(f.resetCalls, sentMail{To: to, Token: token})
+	return nil
+}
+
+func (f *fakeEmailSender) SendEmailVerification(to, token string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.failNextSend != nil {
+		err := f.failNextSend
+		f.failNextSend = nil
+		return err
+	}
+	f.verifyCalls = append(f.verifyCalls, sentMail{To: to, Token: token})
+	return nil
+}
+
+func (f *fakeEmailSender) reset() {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.resetCalls = nil
+	f.verifyCalls = nil
+	f.failNextSend = nil
+}
+
+func (f *fakeEmailSender) lastReset() (sentMail, bool) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if len(f.resetCalls) == 0 {
+		return sentMail{}, false
+	}
+	return f.resetCalls[len(f.resetCalls)-1], true
+}
+
+func (f *fakeEmailSender) lastVerify() (sentMail, bool) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if len(f.verifyCalls) == 0 {
+		return sentMail{}, false
+	}
+	return f.verifyCalls[len(f.verifyCalls)-1], true
+}
+
+func (f *fakeEmailSender) resetCount() int {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return len(f.resetCalls)
+}
+
+func (f *fakeEmailSender) verifyCount() int {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return len(f.verifyCalls)
+}
 
 // cookiesFor returns the session cookie associated with userID, or nil if no
 // cookie was captured (e.g. the user was created outside the auth API).
@@ -127,7 +211,7 @@ func TestMain(m *testing.M) {
 	NewGameCellsHandler(service.NewGameCells(repos.GameCells, repos.Games, queries)).Register(apiGroup)
 	NewGamesHandler(service.NewGames(repos.Games, queries)).Register(apiGroup)
 	NewVotesHandler(service.NewVotes(repos.Votes, queries)).Register(apiGroup)
-	NewAuthHandler(service.NewAuth(repos, queries, txRunner)).Register(apiGroup)
+	NewAuthHandler(service.NewAuth(repos, fakeMailer, queries, txRunner)).Register(apiGroup)
 
 	// Clean tables before running tests to ensure a fresh state
 	truncateAllTables()
@@ -156,14 +240,14 @@ func setupTest(t *testing.T) {
 // order. Used by both TestMain (for a clean baseline) and cleanupTables.
 func truncateAllTables() {
 	_, _ = testPool.Exec(context.Background(),
-		"TRUNCATE TABLE game_cells, games, votes, cells, boards, sessions, user_passwords, users RESTART IDENTITY CASCADE")
+		"TRUNCATE TABLE game_cells, games, votes, cells, boards, sessions, verification_tokens, user_passwords, users RESTART IDENTITY CASCADE")
 }
 
 // cleanupTables truncates all tables in the correct order (respecting foreign keys).
 func cleanupTables(t *testing.T) {
 	t.Helper()
 	_, err := testPool.Exec(context.Background(),
-		"TRUNCATE TABLE game_cells, games, votes, cells, boards, sessions, user_passwords, users RESTART IDENTITY CASCADE")
+		"TRUNCATE TABLE game_cells, games, votes, cells, boards, sessions, verification_tokens, user_passwords, users RESTART IDENTITY CASCADE")
 	if err != nil {
 		t.Fatalf("failed to clean up tables: %v", err)
 	}
@@ -172,6 +256,8 @@ func cleanupTables(t *testing.T) {
 	for k := range userCookies {
 		delete(userCookies, k)
 	}
+	// Fake mailer captures cross every test boundary, drop them too.
+	fakeMailer.reset()
 }
 
 /// ===== HTTP helpers =====
@@ -348,7 +434,7 @@ func createTestUserWithRegister(t *testing.T, username, password string, email *
 func mintAnonSession(t *testing.T, ttl time.Duration) (token string, cookie *http.Cookie) {
 	t.Helper()
 	q := generated.New(testPool)
-	tok := auth.GenerateSessionToken()
+	tok := auth.GenerateToken()
 	_, err := q.CreateSession(context.Background(), generated.CreateSessionParams{
 		UserID: pgtype.UUID{Valid: false},
 		Token:  tok,

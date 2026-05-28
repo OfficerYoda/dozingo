@@ -5,29 +5,42 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"time"
 
-	authpkg "github.com/officeryoda/dozingo/internal/auth"
+	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/officeryoda/dozingo/internal/auth"
 	"github.com/officeryoda/dozingo/internal/domain"
+	"github.com/officeryoda/dozingo/internal/email"
 	"github.com/officeryoda/dozingo/internal/generated"
 	"github.com/officeryoda/dozingo/internal/middleware"
+	"github.com/officeryoda/dozingo/internal/pgmap"
 	"github.com/officeryoda/dozingo/internal/repository"
 )
 
+const (
+	emailVerificationTokenTTL = 12 * time.Hour
+	passwordResetTokenTTL     = 30 * time.Minute
+)
+
 type Auth struct {
-	users     *repository.Users
-	passwords *repository.UserPasswords
-	sessions  *repository.Sessions
-	queries   *generated.Queries
-	txRunner  repository.TxRunner
+	users              *repository.Users
+	passwords          *repository.UserPasswords
+	sessions           *repository.Sessions
+	verificationTokens *repository.VerificationTokens
+	emailSender        email.Sender
+	queries            *generated.Queries
+	txRunner           repository.TxRunner
 }
 
-func NewAuth(repos repository.Repos, queries *generated.Queries, txRunner repository.TxRunner) *Auth {
+func NewAuth(repos repository.Repos, emailSender email.Sender, queries *generated.Queries, txRunner repository.TxRunner) *Auth {
 	return &Auth{
-		users:     repos.Users,
-		passwords: repos.Passwords,
-		sessions:  repos.Sessions,
-		txRunner:  txRunner,
-		queries:   queries,
+		users:              repos.Users,
+		passwords:          repos.Passwords,
+		sessions:           repos.Sessions,
+		verificationTokens: repos.VerificationTokens,
+		emailSender:        emailSender,
+		txRunner:           txRunner,
+		queries:            queries,
 	}
 }
 
@@ -40,6 +53,11 @@ type RegisterInput struct {
 type LoginInput struct {
 	Username string
 	Password string
+}
+
+type NewPasswordInput struct {
+	Token       string
+	NewPassword string
 }
 
 func (s *Auth) Register(ctx context.Context, in RegisterInput) (generated.User, error) {
@@ -62,13 +80,13 @@ func (s *Auth) Login(ctx context.Context, in LoginInput) (generated.User, error)
 	user, err := s.users.GetForPasswordLogin(ctx, in.Username)
 	if err != nil {
 		if errors.Is(err, domain.ErrNotFound) {
-			authpkg.CheckPasswordAgainstDummy(in.Password)
+			auth.CheckPasswordAgainstDummy(in.Password)
 			return generated.User{}, domain.ErrUnauthorized
 		}
 		return generated.User{}, fmt.Errorf("user retrieval for login: %w", err)
 	}
 
-	err = authpkg.CheckPassword(in.Password, user.PasswordHash)
+	err = auth.CheckPassword(in.Password, user.PasswordHash)
 	if err != nil {
 		return generated.User{}, domain.ErrUnauthorized
 	}
@@ -105,7 +123,12 @@ func (s *Auth) Logout(ctx context.Context) error {
 	return nil
 }
 
-func (s *Auth) Me(ctx context.Context, session generated.GetSessionUserByTokenRow) (generated.User, error) {
+func (s *Auth) Me(ctx context.Context) (generated.User, error) {
+	session, ok := middleware.SessionUserFromContext(ctx)
+	if !ok || !session.UserID.Valid {
+		return generated.User{}, fmt.Errorf("not logged in: %w", domain.ErrUnauthorized)
+	}
+
 	return generated.User{
 		ID:       session.UserID,
 		Username: session.Username.String,
@@ -113,8 +136,146 @@ func (s *Auth) Me(ctx context.Context, session generated.GetSessionUserByTokenRo
 	}, nil
 }
 
+func (s *Auth) ForgotPassword(ctx context.Context, email string) error {
+	user, err := s.users.GetByEmail(ctx, email)
+	if err != nil {
+		return fmt.Errorf("retrieve user: %w", err)
+	}
+
+	token, err := upsertToken(
+		ctx,
+		s.txRunner,
+		user.ID,
+		generated.TokenTypePasswordReset,
+		passwordResetTokenTTL,
+	)
+	if err != nil {
+		return err
+	}
+
+	err = s.emailSender.SendResetPassword(email, token)
+	if err != nil {
+		return fmt.Errorf("send mail: %w", err)
+	}
+
+	return nil
+}
+
+func (s *Auth) NewPassword(ctx context.Context, in NewPasswordInput) (generated.User, error) {
+	token, err := s.verificationTokens.GetByToken(ctx, in.Token)
+	if err != nil {
+		return generated.User{}, fmt.Errorf("retrieve verification token: %w", err)
+	}
+
+	if token.Type != generated.TokenTypePasswordReset {
+		return generated.User{}, fmt.Errorf("invalid token type: %w", domain.ErrBadInput)
+	}
+
+	if token.ExpiresAt.Time.Before(time.Now()) {
+		return generated.User{}, fmt.Errorf("expired token: %w", domain.ErrGone)
+	}
+
+	passwordHash, err := auth.HashPassword(in.NewPassword)
+	if err != nil {
+		return generated.User{}, fmt.Errorf("hash password: %w", err)
+	}
+
+	err = s.txRunner.WithTx(ctx, func(r repository.Repos) error {
+		if err = r.VerificationTokens.Delete(ctx, token.Token); err != nil {
+			return fmt.Errorf("delete verification token: %w", err)
+		}
+
+		if err = r.Sessions.DeleteByUserID(ctx, token.UserID); err != nil {
+			return fmt.Errorf("delete user sessions: %w", err)
+		}
+
+		if _, err = r.Passwords.Upsert(ctx, token.UserID, passwordHash); err != nil {
+			return fmt.Errorf("update password: %w", err)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return generated.User{}, err
+	}
+
+	user, err := s.users.GetByID(ctx, token.UserID)
+	if err != nil {
+		return generated.User{}, fmt.Errorf("retrieve user: %w", err)
+	}
+
+	return user, nil
+}
+
+func (s *Auth) SendEmailVerification(ctx context.Context) error {
+	sessionUser, err := requiresSessionUser(ctx, s.queries)
+	if err != nil {
+		return fmt.Errorf("require session: %w", err)
+	}
+
+	if !sessionUser.Email.Valid {
+		return fmt.Errorf("missing email: %w", domain.ErrUnauthorized)
+	}
+
+	if sessionUser.EmailVerifiedAt.Valid {
+		return fmt.Errorf("email already verified: %w", domain.ErrConflict)
+	}
+
+	token, err := upsertToken(
+		ctx,
+		s.txRunner,
+		sessionUser.UserID,
+		generated.TokenTypeEmailVerification,
+		emailVerificationTokenTTL,
+	)
+	if err != nil {
+		return err
+	}
+
+	err = s.emailSender.SendEmailVerification(sessionUser.Email.String, token)
+	if err != nil {
+		return fmt.Errorf("send mail: %w", err)
+	}
+
+	return nil
+}
+
+func (s *Auth) VerifyEmail(ctx context.Context, token string) (generated.User, error) {
+	verificationToken, err := s.verificationTokens.GetByToken(ctx, token)
+	if err != nil {
+		return generated.User{}, fmt.Errorf("retrieve verification token: %w", err)
+	}
+
+	if verificationToken.Type != generated.TokenTypeEmailVerification {
+		return generated.User{}, fmt.Errorf("invalid token type: %w", domain.ErrBadInput)
+	}
+
+	if verificationToken.ExpiresAt.Time.Before(time.Now()) {
+		return generated.User{}, fmt.Errorf("expired token: %w", domain.ErrGone)
+	}
+
+	now := time.Now()
+	var user generated.User
+	err = s.txRunner.WithTx(ctx, func(r repository.Repos) error {
+		if err = r.VerificationTokens.Delete(ctx, verificationToken.Token); err != nil {
+			return fmt.Errorf("delete verification token : %w", err)
+		}
+
+		user, err = r.Users.SetEmailVerifiedAt(ctx, verificationToken.UserID, &now)
+		if err != nil {
+			return fmt.Errorf("set email valid: %w", err)
+		}
+		return nil
+	})
+	if err != nil {
+		return generated.User{}, err
+	}
+
+	return user, nil
+}
+
 func (s *Auth) generateUser(ctx context.Context, in RegisterInput) (generated.User, error) {
-	passwordHash, err := authpkg.HashPassword(in.Password)
+	passwordHash, err := auth.HashPassword(in.Password)
 	if err != nil {
 		return generated.User{}, err
 	}
@@ -159,4 +320,48 @@ func (s *Auth) attachUserToSession(ctx context.Context, user generated.User) err
 		return fmt.Errorf("attach user to session: %w", err)
 	}
 	return nil
+}
+
+func upsertToken(
+	ctx context.Context,
+	txRunner repository.TxRunner,
+	userID pgtype.UUID,
+	tokenType generated.TokenType,
+	tokenTTL time.Duration,
+) (string, error) {
+	token := auth.GenerateToken()
+	err := txRunner.WithTx(ctx, func(r repository.Repos) error {
+		existingToken, err := r.VerificationTokens.GetValidTokenForUser(ctx, repository.GetByTokenForUserInput{
+			UserID:    userID,
+			TokenType: tokenType,
+		})
+		// "no existing valid token" is the normal first-issuance case;
+		// only bail on other errors.
+		if err != nil && !errors.Is(err, domain.ErrNotFound) {
+			return pgmap.TranslatePgErr(err)
+		}
+
+		if existingToken.UserID.Valid {
+			err := r.VerificationTokens.Delete(ctx, existingToken.Token)
+			if err != nil {
+				return fmt.Errorf("delete existing token: %w", err)
+			}
+		}
+
+		_, err = r.VerificationTokens.Create(ctx, repository.CreateVerificationTokenInput{
+			UserID:    userID,
+			Token:     token,
+			TokenType: tokenType,
+			ExpiresAt: time.Now().Add(tokenTTL),
+		})
+		if err != nil {
+			return fmt.Errorf("create token: %w", err)
+		}
+		return nil
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return token, nil
 }

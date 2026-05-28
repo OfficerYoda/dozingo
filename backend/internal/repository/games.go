@@ -13,9 +13,9 @@ type Games struct {
 }
 
 type CreateGameInput struct {
-	PlayerID pgtype.UUID
+	PlayerID  pgtype.UUID
 	SessionID pgtype.UUID
-	BoardID  pgtype.UUID
+	BoardID   pgtype.UUID
 }
 
 type UpdateGameStatusInput struct {
@@ -59,9 +59,9 @@ func (r *Games) ListByBoard(ctx context.Context, boardID pgtype.UUID) ([]generat
 
 func (r *Games) Create(ctx context.Context, in CreateGameInput) (generated.Game, error) {
 	game, err := r.queries.CreateGame(ctx, generated.CreateGameParams{
-		PlayerID: in.PlayerID,
+		PlayerID:  in.PlayerID,
 		SessionID: in.SessionID,
-		BoardID:  in.BoardID,
+		BoardID:   in.BoardID,
 	})
 	if err != nil {
 		return generated.Game{}, pgmap.TranslatePgErr(err)
@@ -74,7 +74,7 @@ func (r *Games) UpdateStatus(ctx context.Context, in UpdateGameStatusInput) (gen
 		ID:        in.GameID,
 		PlayerID:  in.PlayerID,
 		SessionID: in.SessionID,
-		Status:    in.Status,
+		Status:    generated.GameStatus(in.Status),
 	})
 	if err != nil {
 		return generated.Game{}, pgmap.TranslatePgErr(err)

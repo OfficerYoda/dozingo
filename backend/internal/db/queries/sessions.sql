@@ -20,6 +20,10 @@ RETURNING *;
 DELETE FROM sessions
 WHERE token = $1;
 
+-- name: DeleteSessionByUserID :exec
+DELETE FROM sessions
+WHERE user_id = $1;
+
 -- name: DeleteExpiredSessions :exec
 DELETE FROM sessions
 WHERE expires_at < now();

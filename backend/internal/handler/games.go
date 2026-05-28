@@ -14,11 +14,11 @@ import (
 // ===== Input/Output types =====
 
 type gameOutput struct {
-	GameID   string  `json:"game_id" format:"uuid"`
-	BoardID  *string `json:"board_id" format:"uuid"`
-	PlayerID *string  `json:"player_id" format:"uuid"`
-	SessionID *string  `json:"session_id" format:"uuid"`
-	Status   string  `json:"status"`
+	GameID    string  `json:"game_id" format:"uuid"`
+	BoardID   *string `json:"board_id" format:"uuid"`
+	PlayerID  *string `json:"player_id" format:"uuid"`
+	SessionID *string `json:"session_id" format:"uuid"`
+	Status    string  `json:"status"`
 }
 
 type getGameByIDInput struct {
@@ -96,7 +96,6 @@ func (h *GamesHandler) Register(api huma.API) {
 		Summary:     "List all games by a player",
 		Tags:        []string{"Games"},
 	}, h.listByPlayer)
-
 
 	huma.Register(api, huma.Operation{
 		OperationID: "list-games-by-current-session",
@@ -206,10 +205,10 @@ func (h *GamesHandler) delete(ctx context.Context, in *deleteGameInput) (*struct
 
 func gameToOutput(game generated.Game) gameOutput {
 	return gameOutput{
-		GameID:   game.ID.String(),
-		BoardID:  pgmap.StringFromPgUUID(game.BoardID),
+		GameID:    game.ID.String(),
+		BoardID:   pgmap.StringFromPgUUID(game.BoardID),
 		PlayerID:  pgmap.StringFromPgUUID(game.PlayerID),
-		SessionID:  pgmap.StringFromPgUUID(game.SessionID),
-		Status:   game.Status,
+		SessionID: pgmap.StringFromPgUUID(game.SessionID),
+		Status:    string(game.Status),
 	}
 }

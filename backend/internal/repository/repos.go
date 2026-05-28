@@ -7,14 +7,15 @@ import (
 
 // Repos is the bundle of all repositories wired to a single DBTX
 type Repos struct {
-	Boards    *Boards
-	Cells     *Cells
-	GameCells *GameCells
-	Games     *Games
-	Passwords *UserPasswords
-	Sessions  *Sessions
-	Users     *Users
-	Votes     *Votes
+	Boards             *Boards
+	Cells              *Cells
+	GameCells          *GameCells
+	Games              *Games
+	Passwords          *UserPasswords
+	Sessions           *Sessions
+	Users              *Users
+	VerificationTokens *VerificationTokens
+	Votes              *Votes
 }
 
 // New returns a Repos bundle backed by the given pool.
@@ -26,13 +27,14 @@ func New(pool *pgxpool.Pool) Repos {
 func NewWithDBTX(db generated.DBTX) Repos {
 	queries := generated.New(db)
 	return Repos{
-		Boards:    &Boards{queries: queries, db: db},
-		Cells:     &Cells{queries: queries},
-		GameCells: &GameCells{queries: queries},
-		Games:     &Games{queries: queries},
-		Passwords: &UserPasswords{queries: queries},
-		Sessions:  &Sessions{queries: queries},
-		Users:     &Users{queries: queries},
-		Votes:     &Votes{queries: queries},
+		Boards:             &Boards{queries: queries, db: db},
+		Cells:              &Cells{queries: queries},
+		GameCells:          &GameCells{queries: queries},
+		Games:              &Games{queries: queries},
+		Passwords:          &UserPasswords{queries: queries},
+		Sessions:           &Sessions{queries: queries},
+		Users:              &Users{queries: queries},
+		VerificationTokens: &VerificationTokens{queries: queries},
+		Votes:              &Votes{queries: queries},
 	}
 }

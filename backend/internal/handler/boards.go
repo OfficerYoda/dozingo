@@ -32,6 +32,12 @@ type getBoardsInput struct {
 	Search   string `query:"search"`
 }
 
+type getBoardsBySessionInput struct {
+	Size  int32  `query:"size"`
+	Sort  string `query:"sort" enum:"newest,oldest,most-liked,least-liked,most-played,least-played" default:"newest"`
+	Limit int32  `query:"limit" minimum:"1" default:"20"`
+}
+
 type getBoardsOutput struct {
 	Body []boardOutput
 }
@@ -96,6 +102,14 @@ func (h *BoardsHandler) Register(api huma.API) {
 	}, h.list)
 
 	huma.Register(api, huma.Operation{
+		OperationID: "get-boards-from-session",
+		Method:      http.MethodGet,
+		Path:        "/me/boards",
+		Summary:     "Get all boards of current user",
+		Tags:        []string{"Boards"},
+	}, h.listBySession)
+
+	huma.Register(api, huma.Operation{
 		OperationID: "get-board-by-id",
 		Method:      http.MethodGet,
 		Path:        "/boards/{board_id}",
@@ -135,6 +149,19 @@ func (h *BoardsHandler) list(ctx context.Context, in *getBoardsInput) (*getBoard
 		Sort:     in.Sort,
 		Limit:    in.Limit,
 		Search:   in.Search,
+	})
+	if err != nil {
+		return nil, toHumaErr(err, "", "failed to list boards")
+	}
+
+	return &getBoardsOutput{Body: mapSlice(boards, boardToOutput)}, nil
+}
+
+func (h *BoardsHandler) listBySession(ctx context.Context, in *getBoardsBySessionInput) (*getBoardsOutput, error) {
+	boards, err := h.svc.ListBySession(ctx, service.BoardListFilter{
+		Size:  in.Size,
+		Sort:  in.Sort,
+		Limit: in.Limit,
 	})
 	if err != nil {
 		return nil, toHumaErr(err, "", "failed to list boards")

@@ -12,7 +12,8 @@ SELECT
   s.token,
   s.expires_at,
   u.username,
-  u.email
+  u.email,
+  u.email_verified_at
 FROM sessions s
 LEFT JOIN users u ON u.id = s.user_id
 WHERE s.token = $1
