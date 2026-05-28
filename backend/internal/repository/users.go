@@ -37,6 +37,14 @@ func (r *Users) GetByUsername(ctx context.Context, username string) (generated.U
 	return user, nil
 }
 
+func (r *Users) GetByEmail(ctx context.Context, email string) (generated.User, error) {
+	user, err := r.queries.GetUserByEmail(ctx, pgmap.PgTextFromString(&email))
+	if err != nil {
+		return generated.User{}, pgmap.TranslatePgErr(err)
+	}
+	return user, nil
+}
+
 func (r *Users) Create(ctx context.Context, username string, email *string) (generated.User, error) {
 	user, err := r.queries.CreateUser(ctx, generated.CreateUserParams{
 		Username: username,

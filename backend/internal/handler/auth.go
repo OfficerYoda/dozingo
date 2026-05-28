@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -21,7 +22,7 @@ type userOutputBody struct {
 type registerInputBody struct {
 	Username string  `json:"username" required:"true" maxLength:"200"`
 	Password string  `json:"password" required:"true" minLength:"8" maxLength:"72"`
-	Email    *string `json:"email,omitempty" maxLength:"200"`
+	Email    *string `json:"email,omitempty" format:"email" maxLength:"200"`
 }
 
 type registerInput struct {
@@ -49,6 +50,14 @@ type meOutput struct {
 	Body userOutputBody
 }
 
+type forgotPasswordInputBody struct {
+	Email string `json:"email" format:"email" required:"true" maxLength:"200"`
+}
+
+type forgotPasswordInput struct {
+	Body forgotPasswordInputBody
+}
+
 type newPasswordInputBody struct {
 	Token       string `json:"token" required:"true"`
 	NewPassword string `json:"new_password" required:"true" minLength:"8" maxLength:"72"`
@@ -62,11 +71,11 @@ type newPasswordOutput struct {
 	Body userOutputBody
 }
 
-type sendEmailVerificationOutput struct {
-	Body sendEmailVerificationOutputBody
+type emailSentOutput struct {
+	Body emailSentOutputBody
 }
 
-type sendEmailVerificationOutputBody struct {
+type emailSentOutputBody struct {
 	Status string `json:"status"`
 }
 
@@ -124,6 +133,14 @@ func (h *AuthHandler) Register(api huma.API) {
 		Summary:     "Information about current user",
 		Tags:        []string{"Auth"},
 	}, h.me)
+
+	huma.Register(api, huma.Operation{
+		OperationID: "forgot-password",
+		Method:      http.MethodPost,
+		Path:        "/auth/forgot-password",
+		Summary:     "Request a password reset mail",
+		Tags:        []string{"Auth"},
+	}, h.forgotPassword)
 
 	huma.Register(api, huma.Operation{
 		OperationID: "new-password",
@@ -193,6 +210,16 @@ func (h *AuthHandler) me(ctx context.Context, _ *struct{}) (*meOutput, error) {
 	return &meOutput{Body: userToOutput(user)}, nil
 }
 
+func (h *AuthHandler) forgotPassword(ctx context.Context, in *forgotPasswordInput) (*emailSentOutput, error) {
+	err := h.svc.ForgotPassword(ctx, in.Body.Email)
+	if err != nil {
+		slog.Warn("failed to send password reset email", "error", err)
+		// swallow the error so attackers can't test for existing emails
+	}
+
+	return &emailSentOutput{Body: emailSentOutputBody{Status: "password reset email sent"}}, nil
+}
+
 func (h *AuthHandler) newPassword(ctx context.Context, in *newPasswordInput) (*newPasswordOutput, error) {
 	user, err := h.svc.NewPassword(ctx, service.NewPasswordInput{
 		Token:       in.Body.Token,
@@ -205,13 +232,13 @@ func (h *AuthHandler) newPassword(ctx context.Context, in *newPasswordInput) (*n
 	return &newPasswordOutput{Body: userToOutput(user)}, nil
 }
 
-func (h *AuthHandler) sendEmailVerification(ctx context.Context, _ *struct{}) (*sendEmailVerificationOutput, error) {
+func (h *AuthHandler) sendEmailVerification(ctx context.Context, _ *struct{}) (*emailSentOutput, error) {
 	err := h.svc.SendEmailVerification(ctx)
 	if err != nil {
-		return nil, toHumaErr(err, "", "failed to sent verification email")
+		return nil, toHumaErr(err, "", "failed to send verification email")
 	}
 
-	return &sendEmailVerificationOutput{Body: sendEmailVerificationOutputBody{Status: "verification email sent"}}, nil
+	return &emailSentOutput{Body: emailSentOutputBody{Status: "verification email sent"}}, nil
 }
 
 func (h *AuthHandler) verifyEmail(ctx context.Context, in *verifyEmailInput) (*verifyEmailOutput, error) {

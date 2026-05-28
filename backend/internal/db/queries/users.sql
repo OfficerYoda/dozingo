@@ -6,6 +6,10 @@ WHERE id = $1;
 SELECT * FROM users
 WHERE username = $1;
 
+-- name: GetUserByEmail :one
+SELECT * FROM users
+WHERE email = $1;
+
 -- name: CreateUser :one
 INSERT INTO users (username, email)
 VALUES ($1, sqlc.narg('email'))

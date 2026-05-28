@@ -23,8 +23,8 @@ func (s *Sender) SendResetPassword(receiverAddress, token string) error {
 	params := &resend.SendEmailRequest{
 		From:    fmt.Sprintf("Dozingo <%s>", s.senderAddress),
 		To:      []string{receiverAddress},
-		Html:    "<strong>hello world</strong> the reset token is: " + token,
-		Subject: "Hello from Dozingo",
+		Html:    "Well well well... look who forgot their password again.. the reset token is: " + token,
+		Subject: "[Dozingo] Password Reset",
 	}
 
 	_, err := s.client.Emails.Send(params)

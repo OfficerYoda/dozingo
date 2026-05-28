@@ -7,12 +7,19 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/officeryoda/dozingo/internal/auth"
 	"github.com/officeryoda/dozingo/internal/domain"
 	"github.com/officeryoda/dozingo/internal/email"
 	"github.com/officeryoda/dozingo/internal/generated"
 	"github.com/officeryoda/dozingo/internal/middleware"
+	"github.com/officeryoda/dozingo/internal/pgmap"
 	"github.com/officeryoda/dozingo/internal/repository"
+)
+
+const (
+	emailVerificationTokenTTL = 12 * time.Hour
+	passwordResetTokenTTL     = 30 * time.Minute
 )
 
 type Auth struct {
@@ -129,6 +136,31 @@ func (s *Auth) Me(ctx context.Context) (generated.User, error) {
 	}, nil
 }
 
+func (s *Auth) ForgotPassword(ctx context.Context, email string) error {
+	user, err := s.users.GetByEmail(ctx, email)
+	if err != nil {
+		return fmt.Errorf("retrieve user: %w", err)
+	}
+
+	token, err := upsertToken(
+		ctx,
+		s.txRunner,
+		user.ID,
+		generated.TokenTypePasswordReset,
+		passwordResetTokenTTL,
+	)
+	if err != nil {
+		return err
+	}
+
+	err = s.emailSender.SendResetPassword(email, token)
+	if err != nil {
+		return fmt.Errorf("send mail: %w", err)
+	}
+
+	return nil
+}
+
 func (s *Auth) NewPassword(ctx context.Context, in NewPasswordInput) (generated.User, error) {
 	token, err := s.verificationTokens.GetByToken(ctx, in.Token)
 	if err != nil {
@@ -175,8 +207,6 @@ func (s *Auth) NewPassword(ctx context.Context, in NewPasswordInput) (generated.
 	return user, nil
 }
 
-const emailVerificationTokenTTL = 12 * time.Hour
-
 func (s *Auth) SendEmailVerification(ctx context.Context) error {
 	sessionUser, err := requiresSessionUser(ctx, s.queries)
 	if err != nil {
@@ -191,20 +221,20 @@ func (s *Auth) SendEmailVerification(ctx context.Context) error {
 		return fmt.Errorf("email already verified: %w", domain.ErrConflict)
 	}
 
-	token := auth.GenerateToken()
-	_, err = s.verificationTokens.Create(ctx, repository.CreateVerificationTokenInput{
-		UserID:    sessionUser.UserID,
-		Token:     token,
-		TokenType: generated.TokenTypeEmailVerification,
-		ExpiresAt: time.Now().Add(emailVerificationTokenTTL),
-	})
+	token, err := upsertToken(
+		ctx,
+		s.txRunner,
+		sessionUser.UserID,
+		generated.TokenTypeEmailVerification,
+		emailVerificationTokenTTL,
+	)
 	if err != nil {
-		return fmt.Errorf("create token: %w", err)
+		return err
 	}
 
 	err = s.emailSender.SendEmailVerification(sessionUser.Email.String, token)
 	if err != nil {
-		return fmt.Errorf("sent mail: %w", err)
+		return fmt.Errorf("send mail: %w", err)
 	}
 
 	return nil
@@ -290,4 +320,46 @@ func (s *Auth) attachUserToSession(ctx context.Context, user generated.User) err
 		return fmt.Errorf("attach user to session: %w", err)
 	}
 	return nil
+}
+
+func upsertToken(
+	ctx context.Context,
+	txRunner repository.TxRunner,
+	userID pgtype.UUID,
+	tokenType generated.TokenType,
+	tokenTTL time.Duration,
+) (string, error) {
+	token := auth.GenerateToken()
+	err := txRunner.WithTx(ctx, func(r repository.Repos) error {
+		existingToken, err := r.VerificationTokens.GetValidTokenForUser(ctx, repository.GetByTokenForUserInput{
+			UserID:    userID,
+			TokenType: tokenType,
+		})
+		if err != nil {
+			return pgmap.TranslatePgErr(err)
+		}
+
+		if existingToken.UserID.Valid {
+			err := r.VerificationTokens.Delete(ctx, existingToken.Token)
+			if err != nil {
+				return fmt.Errorf("delete existing token: %w", err)
+			}
+		}
+
+		_, err = r.VerificationTokens.Create(ctx, repository.CreateVerificationTokenInput{
+			UserID:    userID,
+			Token:     token,
+			TokenType: tokenType,
+			ExpiresAt: time.Now().Add(tokenTTL),
+		})
+		if err != nil {
+			return fmt.Errorf("create token: %w", err)
+		}
+		return nil
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return token, nil
 }
