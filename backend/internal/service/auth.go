@@ -335,7 +335,9 @@ func upsertToken(
 			UserID:    userID,
 			TokenType: tokenType,
 		})
-		if err != nil {
+		// "no existing valid token" is the normal first-issuance case;
+		// only bail on other errors.
+		if err != nil && !errors.Is(err, domain.ErrNotFound) {
 			return pgmap.TranslatePgErr(err)
 		}
 

@@ -154,7 +154,7 @@ func (h *AuthHandler) Register(api huma.API) {
 		OperationID: "send-email-verification",
 		Method:      http.MethodPost,
 		Path:        "/auth/send-email-verification",
-		Summary:     "Send a verification mail",
+		Summary:     "Send email verification mail",
 		Tags:        []string{"Auth"},
 	}, h.sendEmailVerification)
 
