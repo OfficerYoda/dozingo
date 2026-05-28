@@ -1,0 +1,26 @@
+# VCS
+.git
+.gitignore
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Local build artifacts
+bin/
+tmp/
+dist/
+*.log
+
+# Docs / IDE
+*.md
+.vscode/
+.idea/
+
+# Compose-related SQL only used by Postgres init, not the Go build
+docker/
+
+# Avoid recursive Dockerfile copy churn
+Dockerfile
+.dockerignore

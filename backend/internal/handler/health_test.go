@@ -15,4 +15,7 @@ func TestHealthCheck(t *testing.T) {
 	if body["status"] != "ok" {
 		t.Errorf("expected status = \"ok\", got %q", body["status"])
 	}
+	if body["database"] != "ok" {
+		t.Errorf("expected database = \"ok\", got %q", body["database"])
+	}
 }

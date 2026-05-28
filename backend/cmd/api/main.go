@@ -28,6 +28,7 @@ import (
 
 const (
 	sessionCleanupInterval = 1 * time.Hour
+	tokenCleanupInterval   = 1 * time.Hour
 	shutdownTimeout        = 10 * time.Second
 )
 
@@ -55,8 +56,10 @@ func run() error {
 
 	repos := repository.New(pool)
 
-	cleaner := worker.NewSessionCleaner(repos.Sessions, sessionCleanupInterval)
-	cleaner.Start(ctx)
+	worker.NewPeriodic("session_cleanup", sessionCleanupInterval,
+		repos.Sessions.DeleteExpiredSessions).Start(ctx)
+	worker.NewPeriodic("verification_token_cleanup", tokenCleanupInterval,
+		repos.VerificationTokens.DeleteExpired).Start(ctx)
 
 	router := createRouter(cfg)
 	registerRoutes(router, repos, pool, cfg)
@@ -119,7 +122,7 @@ func registerRoutes(router *chi.Mux, repos repository.Repos, pool *pgxpool.Pool,
 	votesSvc := service.NewVotes(repos.Votes, queries)
 	authSvc := service.NewAuth(repos, emailSender, queries, txRunner)
 
-	handler.NewHealthHandler().Register(apiGroup)
+	handler.NewHealthHandler(pool).Register(apiGroup)
 	handler.NewBoardsHandler(boardsSvc).Register(apiGroup)
 	handler.NewCellsHandler(cellsSvc).Register(apiGroup)
 	handler.NewGameCellsHandler(gameCellsSvc).Register(apiGroup)

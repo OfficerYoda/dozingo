@@ -205,7 +205,7 @@ func TestMain(m *testing.M) {
 
 	repos := repository.New(testPool)
 	txRunner := repository.NewTxRunner(testPool)
-	NewHealthHandler().Register(apiGroup)
+	NewHealthHandler(testPool).Register(apiGroup)
 	NewBoardsHandler(service.NewBoards(repos.Boards, queries)).Register(apiGroup)
 	NewCellsHandler(service.NewCells(repos.Cells, repos.Boards, queries)).Register(apiGroup)
 	NewGameCellsHandler(service.NewGameCells(repos.GameCells, repos.Games, queries)).Register(apiGroup)

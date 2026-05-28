@@ -10,6 +10,7 @@ on:
     paths:
       - 'backend/**'
       - '.github/workflows/backend.yml'
+  workflow_call:
 
 concurrency:
   group: backend-${{ github.ref }}
