@@ -26,7 +26,7 @@ function closeMenu(){
           <ul>
             <li><RouterLink to="/" class="sidebar-buttons upper-buttons"><Home :size="20" />{{ $t('nav.home') }}</RouterLink></li>
             <li><RouterLink to="/cardeditor" class="sidebar-buttons upper-buttons"><SquarePen :size="20"/>{{ $t('nav.cardEditor') }}</RouterLink></li>
-            <li><RouterLink to="/bords" class="sidebar-buttons upper-buttons"><SquarePen :size="20"/>Bords</RouterLink></li>
+            <li><RouterLink to="/boards" class="sidebar-buttons upper-buttons"><SquarePen :size="20"/>Boards</RouterLink></li>
             <li><RouterLink to="/components" class="sidebar-buttons upper-buttons"><Computer :size="20"/>Components(only for dev)</RouterLink></li>
           </ul>
         </nav>
