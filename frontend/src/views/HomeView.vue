@@ -7,7 +7,7 @@
             <h2 class="hero-title">Ready for your next lecture win?</h2>
             <p class="hero-subtitle">Quick-start a bingo grid for today's lecture and join other students currently
               playing.</p>
-            <RouterLink to="/cards" class="hero-button">Browse Cards</RouterLink>
+            <RouterLink to="/boards" class="hero-button">Browse Cards</RouterLink>
           </div>
         </div>
 
@@ -63,7 +63,7 @@
             <h2 class="mb-0 heading">Most Liked Cards</h2>
             <small class="subheading">The community's current favorites</small>
           </div>
-          <RouterLink to="/cards?sort=most-liked">See all &rarr;</RouterLink>
+          <RouterLink to="/boards?sort=most-liked">See all &rarr;</RouterLink>
         </div>
 
         <div class="grid">
@@ -90,7 +90,7 @@
             <h2 class="mb-0 heading">Recently Added Cards</h2>
             <small class="subheading">Fresh bingo cards from the community</small>
           </div>
-          <RouterLink to="/cards?sort=newest">See all &rarr;</RouterLink>
+          <RouterLink to="/boards?sort=newest">See all &rarr;</RouterLink>
         </div>
 
         <div class="grid">
