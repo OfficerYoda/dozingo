@@ -28,6 +28,7 @@ import (
 
 const (
 	sessionCleanupInterval = 1 * time.Hour
+	tokenCleanupInterval   = 1 * time.Hour
 	shutdownTimeout        = 10 * time.Second
 )
 
@@ -55,8 +56,10 @@ func run() error {
 
 	repos := repository.New(pool)
 
-	cleaner := worker.NewSessionCleaner(repos.Sessions, sessionCleanupInterval)
-	cleaner.Start(ctx)
+	worker.NewPeriodic("session_cleanup", sessionCleanupInterval,
+		repos.Sessions.DeleteExpiredSessions).Start(ctx)
+	worker.NewPeriodic("verification_token_cleanup", tokenCleanupInterval,
+		repos.VerificationTokens.DeleteExpired).Start(ctx)
 
 	router := createRouter(cfg)
 	registerRoutes(router, repos, pool, cfg)
