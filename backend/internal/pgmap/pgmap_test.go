@@ -108,7 +108,7 @@ func TestStringFromPgUUID_Invalid(t *testing.T) {
 
 func TestPgTimestamptzFromTime_Valid(t *testing.T) {
 	now := time.Now().UTC().Truncate(time.Microsecond)
-	got := PgTimestamptzFromTime(now)
+	got := PgTimestamptzFromTime(&now)
 
 	if !got.Valid {
 		t.Fatal("expected Valid=true")
@@ -122,7 +122,7 @@ func TestPgTimestamptzFromTime_Valid(t *testing.T) {
 }
 
 func TestPgTimestamptzFromTime_ZeroTime(t *testing.T) {
-	got := PgTimestamptzFromTime(time.Time{})
+	got := PgTimestamptzFromTime(&time.Time{})
 	if !got.Valid {
 		t.Fatal("expected Valid=true even for the zero time")
 	}

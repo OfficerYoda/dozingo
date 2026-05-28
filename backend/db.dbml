@@ -18,6 +18,7 @@ Table users {
   id uuid [pk, default: `gen_random_uuid()`]
   username text [unique, not null]
   email text [unique]
+  email_verified_at timestamptz [note: 'null means unverified or no email']
   ~timestamps
 }
 
@@ -58,11 +59,16 @@ Table sessions {
 
 Ref: sessions.user_id > users.id [delete: cascade]
 
+enum token_type {
+    "password_reset"
+    "email_verification"
+}
+
 Table verification_tokens {
   id uuid [pk, default: `gen_random_uuid()`]
   user_id uuid [not null]
   token text [unique, not null]
-  type text [not null, note: '"password_reset" or "email_verification"']
+  type token_type [not null]
   expires_at timestamptz [not null]
   ~timestamps
 
@@ -131,12 +137,18 @@ Ref: votes.board_id > boards.id [delete: cascade]
 //// GAMES
 //// ============================================
 
+enum game_status {
+  "active"
+  "completed"
+  "abandoned"
+}
+
 Table games {
   id uuid [pk, default: `gen_random_uuid()`]
   player_id uuid [note: 'null for anonymous players; set on login/signup']
   session_id uuid [note: 'null when session expired']
   board_id uuid [note: 'null if board was deleted']
-  status text [not null, default: 'active', note: 'active | completed | abandoned']
+  status game_status [not null, default: 'active']
   ~timestamps
 
   checks {

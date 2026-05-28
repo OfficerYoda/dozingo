@@ -31,7 +31,7 @@ func (r *VerificationTokens) Create(ctx context.Context, in CreateVerificationTo
 		UserID:    in.UserID,
 		Token:     in.Token,
 		Type:      tokenType,
-		ExpiresAt: pgmap.PgTimestamptzFromTime(in.ExpiresAt),
+		ExpiresAt: pgmap.PgTimestamptzFromTime(&in.ExpiresAt),
 	})
 	if err != nil {
 		return generated.VerificationToken{}, pgmap.TranslatePgErr(err)

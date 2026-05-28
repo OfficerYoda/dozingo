@@ -226,7 +226,7 @@ RETURNING id, player_id, board_id, status, created_at, updated_at, session_id
 `
 
 type UpdateGameStatusParams struct {
-	Status    string      `json:"status"`
+	Status    GameStatus  `json:"status"`
 	ID        pgtype.UUID `json:"id"`
 	PlayerID  pgtype.UUID `json:"player_id"`
 	SessionID pgtype.UUID `json:"session_id"`

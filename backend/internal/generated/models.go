@@ -11,6 +11,49 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type GameStatus string
+
+const (
+	GameStatusActive    GameStatus = "active"
+	GameStatusCompleted GameStatus = "completed"
+	GameStatusAbandoned GameStatus = "abandoned"
+)
+
+func (e *GameStatus) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = GameStatus(s)
+	case string:
+		*e = GameStatus(s)
+	default:
+		return fmt.Errorf("unsupported scan type for GameStatus: %T", src)
+	}
+	return nil
+}
+
+type NullGameStatus struct {
+	GameStatus GameStatus `json:"game_status"`
+	Valid      bool       `json:"valid"` // Valid is true if GameStatus is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullGameStatus) Scan(value interface{}) error {
+	if value == nil {
+		ns.GameStatus, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.GameStatus.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullGameStatus) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.GameStatus), nil
+}
+
 type TokenType string
 
 const (
@@ -77,7 +120,7 @@ type Game struct {
 	ID        pgtype.UUID        `json:"id"`
 	PlayerID  pgtype.UUID        `json:"player_id"`
 	BoardID   pgtype.UUID        `json:"board_id"`
-	Status    string             `json:"status"`
+	Status    GameStatus         `json:"status"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 	SessionID pgtype.UUID        `json:"session_id"`
@@ -104,11 +147,12 @@ type Session struct {
 }
 
 type User struct {
-	ID        pgtype.UUID        `json:"id"`
-	Username  string             `json:"username"`
-	Email     pgtype.Text        `json:"email"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	ID              pgtype.UUID        `json:"id"`
+	Username        string             `json:"username"`
+	Email           pgtype.Text        `json:"email"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+	EmailVerifiedAt pgtype.Timestamptz `json:"email_verified_at"`
 }
 
 type UserAuthentication struct {

@@ -14,7 +14,7 @@ import (
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (username, email)
 VALUES ($1, $2)
-RETURNING id, username, email, created_at, updated_at
+RETURNING id, username, email, created_at, updated_at, email_verified_at
 `
 
 type CreateUserParams struct {
@@ -31,6 +31,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.Email,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.EmailVerifiedAt,
 	)
 	return i, err
 }
@@ -38,7 +39,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 const deleteUser = `-- name: DeleteUser :one
 DELETE FROM users
 WHERE id = $1
-RETURNING id, username, email, created_at, updated_at
+RETURNING id, username, email, created_at, updated_at, email_verified_at
 `
 
 func (q *Queries) DeleteUser(ctx context.Context, id pgtype.UUID) (User, error) {
@@ -50,12 +51,13 @@ func (q *Queries) DeleteUser(ctx context.Context, id pgtype.UUID) (User, error) 
 		&i.Email,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.EmailVerifiedAt,
 	)
 	return i, err
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, username, email, created_at, updated_at FROM users
+SELECT id, username, email, created_at, updated_at, email_verified_at FROM users
 WHERE id = $1
 `
 
@@ -68,12 +70,13 @@ func (q *Queries) GetUserByID(ctx context.Context, id pgtype.UUID) (User, error)
 		&i.Email,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.EmailVerifiedAt,
 	)
 	return i, err
 }
 
 const getUserByUsername = `-- name: GetUserByUsername :one
-SELECT id, username, email, created_at, updated_at FROM users
+SELECT id, username, email, created_at, updated_at, email_verified_at FROM users
 WHERE username = $1
 `
 
@@ -86,6 +89,33 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User,
 		&i.Email,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.EmailVerifiedAt,
+	)
+	return i, err
+}
+
+const setUserEmailVerifiedAt = `-- name: SetUserEmailVerifiedAt :one
+UPDATE users
+SET email_verified_at = $2
+WHERE id = $1
+RETURNING id, username, email, created_at, updated_at, email_verified_at
+`
+
+type SetUserEmailVerifiedAtParams struct {
+	ID              pgtype.UUID        `json:"id"`
+	EmailVerifiedAt pgtype.Timestamptz `json:"email_verified_at"`
+}
+
+func (q *Queries) SetUserEmailVerifiedAt(ctx context.Context, arg SetUserEmailVerifiedAtParams) (User, error) {
+	row := q.db.QueryRow(ctx, setUserEmailVerifiedAt, arg.ID, arg.EmailVerifiedAt)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.EmailVerifiedAt,
 	)
 	return i, err
 }
