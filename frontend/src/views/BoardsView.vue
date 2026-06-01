@@ -64,12 +64,11 @@
                 <hr class="mb-3">
 
 
-                <div class="background-seperate-cells"
-                    :style="{ gridTemplateColumns: `repeat(${selecetedBoard?.size ?? 5}, 1fr)` }">
-                    <button v-for="cell in selectedCells" :key="cell.cell_id" class="card cell-btn" @click="selectedCell = cell">
+                <ul class="background-seperate-cells">
+                    <li v-for="cell in selectedCells" :key="cell.cell_id" class="card cell-btn">
                         <p>{{ cell.content }}</p>
-                    </button>
-                </div>
+                    </li>
+                </ul>
 
                 <hr>
 
@@ -92,24 +91,13 @@
             </div>
         </div>
     </Teleport>
-
-    <Teleport to="body">
-        <div v-if="selectedCell" class="modal-overlay modal-overlay-cell" @click.self="selectedCell = null">
-            <div class="card cell-detail-card">
-                <div class="cell-detail-header">
-                    <X :size="20" @click="selectedCell = null" />
-                </div>
-                <p class="cell-detail-text">{{ selectedCell.content }}</p>
-            </div>
-        </div>
-    </Teleport>
 </template>
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
-import { Heart, Variable, X, Dices, LayoutGrid, Play } from 'lucide-vue-next'
+import { Heart, X, Dices, LayoutGrid, Play } from 'lucide-vue-next'
 
 interface Board {
     board_id: string
@@ -172,7 +160,6 @@ watch([appliedFiler, search], () => {
 }, { immediate: true })
 
 const showModal = ref(false)
-const selectedCell = ref<Cell | null>(null)
 
 function shuffle() {
     const numberOfCells = (selecetedBoard.value?.size ?? 0) ** 2
@@ -320,21 +307,28 @@ function clickBoard(boardID: string) {
     border-radius: var(--radius-sm);
     padding: 8px;
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
-    grid-auto-rows: 1fr;
+    grid-template-columns: 1fr 1fr;
     gap: 8px;
     flex: 1;
     min-height: 0;
-    overflow: hidden;
+    overflow-y: auto;
+}
+
+@media (max-width: 600px) {
+    .background-seperate-cells {
+        grid-template-columns: 1fr;
+    }
 }
 
 .background-seperate-cells > .card.cell-btn {
-    padding: 2px;
     min-height: 0;
     overflow: hidden;
     cursor: pointer;
     width: 100%;
     text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .cell-detail-card {
