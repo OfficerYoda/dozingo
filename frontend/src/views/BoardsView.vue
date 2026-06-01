@@ -56,9 +56,9 @@
 
                 <div class="background-seperate-cells"
                     :style="{ gridTemplateColumns: `repeat(${selecetedBoard?.size ?? 5}, 1fr)` }">
-                    <div v-for="cell in selectedCells" :key="cell.cell_id" class="card">
+                    <button v-for="cell in selectedCells" :key="cell.cell_id" class="card cell-btn" @click="selectedCell = cell">
                         <p>{{ cell.content }}</p>
-                    </div>
+                    </button>
                 </div>
 
 
@@ -79,6 +79,17 @@
                         </button>
                     </div>
                 </div>
+            </div>
+        </div>
+    </Teleport>
+
+    <Teleport to="body">
+        <div v-if="selectedCell" class="modal-overlay modal-overlay-cell" @click.self="selectedCell = null">
+            <div class="card cell-detail-card">
+                <div class="cell-detail-header">
+                    <X :size="20" @click="selectedCell = null" />
+                </div>
+                <p class="cell-detail-text">{{ selectedCell.content }}</p>
             </div>
         </div>
     </Teleport>
@@ -151,6 +162,7 @@ watch([appliedFiler, search], () => {
 }, { immediate: true })
 
 const showModal = ref(false)
+const selectedCell = ref<Cell | null>(null)
 
 function clickBoard(boardID: string) {
     console.log("Statet loading the cells for board with boardid " + boardID)
@@ -220,7 +232,8 @@ function clickBoard(boardID: string) {
     width: 100%;
     max-width: 720px;
     max-height: 90vh;
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
 }
 
 .header-modal {
@@ -266,9 +279,53 @@ function clickBoard(boardID: string) {
     padding: 8px;
     display: grid;
     grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+    grid-auto-rows: 1fr;
     gap: 8px;
-    overflow-x: auto;
-    min-width: 0;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.background-seperate-cells > .card.cell-btn {
+    min-height: 0;
+    overflow: hidden;
+    cursor: pointer;
+    width: 100%;
+    text-align: center;
+}
+
+.cell-detail-card {
+    width: 100%;
+    max-width: 400px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+
+.cell-detail-header {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+    cursor: pointer;
+}
+
+.cell-detail-text {
+    font-size: 2rem;
+    font-weight: 700;
+    text-align: center;
+    margin: 0;
+    color: #2C2A51;
+    word-break: break-word;
+}
+
+.background-seperate-cells > .cell-btn p {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin: 0;
 }
 
 .right-buttons-bottom {
