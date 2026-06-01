@@ -14,43 +14,95 @@
                         <option value="least-liked">Least liked</option>
                         <option value="least-played">Least played</option>
                     </select>
+                    <button class="btn btn-primary" @click="showModal = true">Open Modal</button>
                 </div>
             </div>
 
             <p v-if="error" class="error-text">{{ error }}</p>
 
             <div class="grid">
-                <button v-for="board in boards" :key="board.board_id" class="card card-border-blue col-4 md-6 sm-12">
+                <button v-for="board in boards" :key="board.board_id" @click="clickBoard(board.board_id)"
+                    class="card card-border-blue col-4 md-6 sm-12">
                     <div class="card-body">
                         <h3>{{ board.title }}</h3>
                         <small>{{ board.description }}</small>
                     </div>
                     <hr class="mb-2">
                     <div class="card-footer">
-                        <span class="card-meta-text">Played {{ board.vote_count}} times</span>
+                        <span class="card-meta-text">Played {{ board.play_count }} times</span>
                         <div class="like-group">
                             <Heart :size="20" />
-                            <span class="card-meta-text">{{ board.vote_count}}</span>
+                            <span class="card-meta-text">{{ board.score }}</span>
                         </div>
                     </div>
                 </button>
             </div>
         </div>
     </section>
+
+    <Teleport to="body">
+        <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
+            <div class="card">
+                <div class="header-modal">
+                    <div>
+                        <h2 class="mb-0 header-modal-title">{{ selecetedBoard?.title }}</h2>
+                        <small class="header-modal-subtitle">{{ selecetedBoard?.description }}</small>
+                        <small>{{ selecetedBoard?.play_count }} , {{ selecetedBoard?.score }}, {{ selecetedBoard?.size
+                        }}</small>
+                    </div>
+                    <X :size="20" @click="showModal = false" />
+                </div>
+
+
+                <div class="background-seperate-cells"
+                    :style="{ gridTemplateColumns: `repeat(${selecetedBoard?.size ?? 5}, 1fr)` }">
+                    <div v-for="cell in selectedCells" :key="cell.cell_id" class="card">
+                        <p>{{ cell.content }}</p>
+                    </div>
+                </div>
+
+
+                <hr>
+                <div class="bottom-bar">
+                    <div class="bottom-bar-text">
+                        <small>Createt by</small>
+                        <span>Hier Author eintragen</span>
+                    </div>
+                    <div class="right-buttons-bottom">
+                        <button class="btn btn-secondary button-bottom-row">
+                            <Dices :size="20" />
+                            <p class="mb-0">Shuffle</p>
+                        </button>
+                        <button class="btn btn-primary button-bottom-row">
+                            <Play :size="20" />
+                            <p class="mb-0">Start the game</p>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </Teleport>
 </template>
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
-import { Heart, Variable } from 'lucide-vue-next'
+import { Heart, Variable, X, Dices, Play } from 'lucide-vue-next'
 
 interface Board {
     board_id: string
     title: string
     description: string
     play_count: number
-    vote_count: number
+    score: number
+    size: number
+}
+
+interface Cell {
+    cell_id: string,
+    content: string,
+    value: 0,
 }
 
 useI18n()
@@ -58,8 +110,11 @@ const route = useRoute()
 
 const error = ref<string | null>(null)
 const boards = ref<Board[]>([])
+const cells = ref<Cell[]>([])
+const selecetedBoard = ref<Board>()
+const selectedCells = ref<Cell[]>()
 
-async function fetchAllCells() {
+async function fetchAllBoards() {
     const params = new URLSearchParams()
     if (appliedFiler.value) params.set('sort', appliedFiler.value)
     if (search.value) params.set('search', search.value)
@@ -74,12 +129,34 @@ async function fetchAllCells() {
     boards.value = await boardsRes.json()
 }
 
+async function fetchAllCellsForBoard(boardID: string) {
+    const cellsRes = await fetch('/api/boards/' + boardID + '/cells')
+    if (!cellsRes.ok) {
+        error.value = 'Failed to load cells for board ' + boardID
+        return
+    }
+
+    cells.value = await cellsRes.json()
+    selecetedBoard.value = boards.value.find(b => b.board_id === boardID)
+    const numberOfCells = (selecetedBoard.value?.size ?? 0) ** 2
+    selectedCells.value = [...cells.value].sort(() => Math.random() - 0.5).slice(0, numberOfCells)
+    showModal.value = true
+}
+
 const appliedFiler = ref(route.query.sort ? String(route.query.sort) : '')
 const search = ref('')
 
 watch([appliedFiler, search], () => {
-    fetchAllCells()
+    fetchAllBoards()
 }, { immediate: true })
+
+const showModal = ref(false)
+
+function clickBoard(boardID: string) {
+    console.log("Statet loading the cells for board with boardid " + boardID)
+    fetchAllCellsForBoard(boardID)
+}
+
 
 </script>
 
@@ -123,5 +200,80 @@ watch([appliedFiler, search], () => {
     color: #5A5781;
     font-weight: 600;
     font-size: 13px;
+}
+
+
+
+
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 16px;
+}
+
+.modal-overlay > .card {
+    width: 100%;
+    max-width: 720px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.header-modal {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.header-modal-title {
+    color: #2C2A51;
+}
+
+.header-modal-subtitle {
+    color: #4052B6;
+    font-weight: 600;
+}
+
+.bottom-bar {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.bottom-bar-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.button-bottom-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+}
+
+.background-seperate-cells {
+    background-color: #E3DFFF;
+    border-radius: var(--radius-sm);
+    padding: 8px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+    gap: 8px;
+    overflow-x: auto;
+    min-width: 0;
+}
+
+.right-buttons-bottom {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
 }
 </style>
