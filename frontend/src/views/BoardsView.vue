@@ -14,7 +14,6 @@
                         <option value="least-liked">Least liked</option>
                         <option value="least-played">Least played</option>
                     </select>
-                    <button class="btn btn-primary" @click="showModal = true">Open Modal</button>
                 </div>
             </div>
 
@@ -47,11 +46,22 @@
                     <div>
                         <h2 class="mb-0 header-modal-title">{{ selecetedBoard?.title }}</h2>
                         <small class="header-modal-subtitle">{{ selecetedBoard?.description }}</small>
-                        <small>{{ selecetedBoard?.play_count }} , {{ selecetedBoard?.score }}, {{ selecetedBoard?.size
-                        }}</small>
+                        <div class="modal-stats">
+                            <span class="stat-item stat-plays">
+                                <Play :size="15"/> {{ selecetedBoard?.play_count }}
+                            </span>
+                            <span class="stat-item stat-likes">
+                                <Heart :size="15"/> {{ selecetedBoard?.score }}
+                            </span>
+                            <span class="stat-item stat-size">
+                                <LayoutGrid :size="15"/> {{ selecetedBoard?.size }}x{{ selecetedBoard?.size }}
+                            </span>
+                        </div>
                     </div>
                     <X :size="20" @click="showModal = false" />
                 </div>
+
+                <hr class="mb-3">
 
 
                 <div class="background-seperate-cells"
@@ -61,15 +71,15 @@
                     </button>
                 </div>
 
-
                 <hr>
+
                 <div class="bottom-bar">
                     <div class="bottom-bar-text">
                         <small>Createt by</small>
                         <span>Hier Author eintragen</span>
                     </div>
                     <div class="right-buttons-bottom">
-                        <button class="btn btn-secondary button-bottom-row">
+                        <button class="btn btn-secondary button-bottom-row" @click="shuffle">
                             <Dices :size="20" />
                             <p class="mb-0">Shuffle</p>
                         </button>
@@ -99,7 +109,7 @@
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
-import { Heart, Variable, X, Dices, Play } from 'lucide-vue-next'
+import { Heart, Variable, X, Dices, LayoutGrid, Play } from 'lucide-vue-next'
 
 interface Board {
     board_id: string
@@ -163,6 +173,11 @@ watch([appliedFiler, search], () => {
 
 const showModal = ref(false)
 const selectedCell = ref<Cell | null>(null)
+
+function shuffle() {
+    const numberOfCells = (selecetedBoard.value?.size ?? 0) ** 2
+    selectedCells.value = [...cells.value].sort(() => Math.random() - 0.5).slice(0, numberOfCells)
+}
 
 function clickBoard(boardID: string) {
     console.log("Statet loading the cells for board with boardid " + boardID)
@@ -240,7 +255,7 @@ function clickBoard(boardID: string) {
     display: flex;
     flex-direction: row;
     justify-content: space-between;
-    align-items: center;
+    align-items: start;
 }
 
 .header-modal-title {
@@ -250,6 +265,33 @@ function clickBoard(boardID: string) {
 .header-modal-subtitle {
     color: #4052B6;
     font-weight: 600;
+}
+
+.modal-stats {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    margin-top: 6px;
+}
+
+.stat-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.stat-plays {
+    color: #4052B6;
+}
+
+.stat-likes {
+    color: #C0185A;
+}
+
+.stat-size {
+    color: #2E7D32;
 }
 
 .bottom-bar {
@@ -287,6 +329,7 @@ function clickBoard(boardID: string) {
 }
 
 .background-seperate-cells > .card.cell-btn {
+    padding: 2px;
     min-height: 0;
     overflow: hidden;
     cursor: pointer;
