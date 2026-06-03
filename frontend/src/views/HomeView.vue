@@ -60,7 +60,7 @@
       <div class="mb-3">
         <div class="section-header mb-3">
           <div>
-            <h2 class="mb-0 heading">Most Liked Cards</h2>
+            <h2 class="mb-0">Most Liked Cards</h2>
             <small class="subheading">The community's current favorites</small>
           </div>
           <RouterLink to="/boards?sort=most-liked">See all &rarr;</RouterLink>
@@ -87,7 +87,7 @@
       <div>
         <div class="section-header mb-3">
           <div>
-            <h2 class="mb-0 heading">Recently Added Cards</h2>
+            <h2 class="mb-0">Recently Added Cards</h2>
             <small class="subheading">Fresh bingo cards from the community</small>
           </div>
           <RouterLink to="/boards?sort=newest">See all &rarr;</RouterLink>
