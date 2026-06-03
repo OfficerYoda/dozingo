@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strings"
@@ -8,6 +9,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/officeryoda/dozingo/internal/generated"
 )
 
 /// ===== /users/me =====
@@ -137,5 +140,266 @@ func TestUserByID_DoesNotLeakInternalDetails(t *testing.T) {
 		if strings.Contains(strings.ToLower(rawBody), strings.ToLower(leak)) {
 			t.Errorf("response body must not leak %q, got: %s", leak, rawBody)
 		}
+	}
+}
+
+/// ===== PATCH /users/{user_id} =====
+
+// loadUserByID reads a user row directly via the test pool. Used as ground
+// truth for assertions that need to peek past the API surface (e.g. that
+// email_verified_at really did get cleared).
+func loadUserByID(t *testing.T, userID string) generated.User {
+	t.Helper()
+	id := pgtype.UUID{}
+	if err := id.Scan(userID); err != nil {
+		t.Fatalf("invalid user id %q: %v", userID, err)
+	}
+	q := generated.New(testPool)
+	user, err := q.GetUserByID(context.Background(), id)
+	if err != nil {
+		t.Fatalf("failed to load user %s: %v", userID, err)
+	}
+	return user
+}
+
+func TestUpdateUser_Success_Username(t *testing.T) {
+	setupTest(t)
+
+	resp := createTestUserWithRegister(t, "renameme", "mypassword123", stringPtr("rename@example.com"))
+	userID := (*resp)["user_id"].(string)
+
+	w := doRequestWithCookies(http.MethodPatch, fmt.Sprintf("/api/users/%s", userID),
+		map[string]any{"username": "renamed"}, cookiesFor(userID))
+	assertStatus(t, w, http.StatusOK)
+
+	var got map[string]any
+	decodeJSON(t, w, &got)
+	assertJSONField(t, got, "user_id", userID)
+	assertJSONField(t, got, "username", "renamed")
+	assertJSONField(t, got, "email", "rename@example.com")
+
+	// Username change must not have triggered a verification mail.
+	if fakeMailer.verifyCount() != 0 {
+		t.Errorf("expected 0 verification mails for a pure username change, got %d", fakeMailer.verifyCount())
+	}
+}
+
+func TestUpdateUser_Success_Email_SendsVerificationAndClearsVerifiedAt(t *testing.T) {
+	setupTest(t)
+
+	resp := createTestUserWithRegister(t, "emailchange", "mypassword123", stringPtr("old@example.com"))
+	userID := (*resp)["user_id"].(string)
+
+	// Mark the user as already verified so we can assert email_verified_at
+	// gets cleared by the update.
+	id := pgtype.UUID{}
+	if err := id.Scan(userID); err != nil {
+		t.Fatalf("invalid user id: %v", err)
+	}
+	now := time.Now()
+	q := generated.New(testPool)
+	if _, err := q.SetUserEmailVerifiedAt(context.Background(), generated.SetUserEmailVerifiedAtParams{
+		ID:              id,
+		EmailVerifiedAt: pgtype.Timestamptz{Time: now, Valid: true},
+	}); err != nil {
+		t.Fatalf("seed email_verified_at: %v", err)
+	}
+
+	w := doRequestWithCookies(http.MethodPatch, fmt.Sprintf("/api/users/%s", userID),
+		map[string]any{"email": "new@example.com"}, cookiesFor(userID))
+	assertStatus(t, w, http.StatusOK)
+
+	var got map[string]any
+	decodeJSON(t, w, &got)
+	assertJSONField(t, got, "email", "new@example.com")
+
+	// Ground truth: row reflects the new address and verified_at is NULL.
+	user := loadUserByID(t, userID)
+	if !user.Email.Valid || user.Email.String != "new@example.com" {
+		t.Errorf("expected stored email 'new@example.com', got Valid=%v String=%q", user.Email.Valid, user.Email.String)
+	}
+	if user.EmailVerifiedAt.Valid {
+		t.Errorf("expected email_verified_at to be NULL after email change, got %v", user.EmailVerifiedAt.Time)
+	}
+
+	// A verification mail must have been sent to the new address.
+	if fakeMailer.verifyCount() != 1 {
+		t.Fatalf("expected exactly 1 verification mail, got %d", fakeMailer.verifyCount())
+	}
+	last, _ := fakeMailer.lastVerify()
+	if last.To != "new@example.com" {
+		t.Errorf("expected mail to 'new@example.com', got %q", last.To)
+	}
+	if last.Token == "" {
+		t.Error("expected verification token to be non-empty")
+	}
+}
+
+func TestUpdateUser_ClearEmail(t *testing.T) {
+	setupTest(t)
+
+	resp := createTestUserWithRegister(t, "clearmail", "mypassword123", stringPtr("clear@example.com"))
+	userID := (*resp)["user_id"].(string)
+
+	// Send `"email": null` to clear the column.
+	w := doRequestWithCookies(http.MethodPatch, fmt.Sprintf("/api/users/%s", userID),
+		map[string]any{"email": nil}, cookiesFor(userID))
+	assertStatus(t, w, http.StatusOK)
+
+	var got map[string]any
+	decodeJSON(t, w, &got)
+	if got["email"] != nil {
+		t.Errorf("expected email to be null in response, got %v", got["email"])
+	}
+
+	user := loadUserByID(t, userID)
+	if user.Email.Valid {
+		t.Errorf("expected stored email to be NULL after clear, got %q", user.Email.String)
+	}
+
+	// Clearing the email must not send a verification mail (there's no
+	// address to verify).
+	if fakeMailer.verifyCount() != 0 {
+		t.Errorf("expected 0 verification mails for an email clear, got %d", fakeMailer.verifyCount())
+	}
+}
+
+func TestUpdateUser_NoOpEmptyBody(t *testing.T) {
+	setupTest(t)
+
+	resp := createTestUserWithRegister(t, "noopuser", "mypassword123", stringPtr("noop@example.com"))
+	userID := (*resp)["user_id"].(string)
+	preEmail := (*resp)["email"]
+	preUsername := (*resp)["username"]
+
+	w := doRequestWithCookies(http.MethodPatch, fmt.Sprintf("/api/users/%s", userID),
+		map[string]any{}, cookiesFor(userID))
+	assertStatus(t, w, http.StatusOK)
+
+	var got map[string]any
+	decodeJSON(t, w, &got)
+	if got["username"] != preUsername {
+		t.Errorf("expected username unchanged %v, got %v", preUsername, got["username"])
+	}
+	if got["email"] != preEmail {
+		t.Errorf("expected email unchanged %v, got %v", preEmail, got["email"])
+	}
+
+	if fakeMailer.verifyCount() != 0 {
+		t.Errorf("expected 0 verification mails for a no-op patch, got %d", fakeMailer.verifyCount())
+	}
+}
+
+func TestUpdateUser_SameEmail_DoesNotResendVerification(t *testing.T) {
+	setupTest(t)
+
+	resp := createTestUserWithRegister(t, "sameemail", "mypassword123", stringPtr("same@example.com"))
+	userID := (*resp)["user_id"].(string)
+
+	// Patch with the exact same email value. The service must detect that
+	// nothing actually changed and skip the verification mail.
+	w := doRequestWithCookies(http.MethodPatch, fmt.Sprintf("/api/users/%s", userID),
+		map[string]any{"email": "same@example.com"}, cookiesFor(userID))
+	assertStatus(t, w, http.StatusOK)
+
+	if fakeMailer.verifyCount() != 0 {
+		t.Errorf("expected 0 verification mails when email is unchanged, got %d", fakeMailer.verifyCount())
+	}
+}
+
+func TestUpdateUser_NotLoggedIn_401(t *testing.T) {
+	setupTest(t)
+
+	w := doRequest(http.MethodPatch, fmt.Sprintf("/api/users/%s", uuid.NewString()),
+		map[string]any{"username": "x"})
+	assertStatus(t, w, http.StatusUnauthorized)
+}
+
+func TestUpdateUser_OtherUser_403(t *testing.T) {
+	setupTest(t)
+
+	a := createTestUserWithRegister(t, "userA", "mypassword123", stringPtr("a@example.com"))
+	b := createTestUserWithRegister(t, "userB", "mypassword123", stringPtr("b@example.com"))
+	aID := (*a)["user_id"].(string)
+	bID := (*b)["user_id"].(string)
+
+	// A's cookie tries to PATCH B's row.
+	w := doRequestWithCookies(http.MethodPatch, fmt.Sprintf("/api/users/%s", bID),
+		map[string]any{"username": "hacked"}, cookiesFor(aID))
+	assertStatus(t, w, http.StatusForbidden)
+
+	// B's row is untouched.
+	user := loadUserByID(t, bID)
+	if user.Username != "userB" {
+		t.Errorf("expected B's username unchanged 'userB', got %q", user.Username)
+	}
+}
+
+func TestUpdateUser_InvalidUUID_422(t *testing.T) {
+	setupTest(t)
+
+	w := doRequest(http.MethodPatch, "/api/users/not-a-uuid",
+		map[string]any{"username": "x"})
+	assertStatus(t, w, http.StatusUnprocessableEntity)
+}
+
+func TestUpdateUser_DuplicateUsername_409(t *testing.T) {
+	setupTest(t)
+
+	createTestUserWithRegister(t, "taken", "mypassword123", stringPtr("taken@example.com"))
+	b := createTestUserWithRegister(t, "tryingto", "mypassword123", stringPtr("b@example.com"))
+	bID := (*b)["user_id"].(string)
+
+	w := doRequestWithCookies(http.MethodPatch, fmt.Sprintf("/api/users/%s", bID),
+		map[string]any{"username": "taken"}, cookiesFor(bID))
+	assertStatus(t, w, http.StatusConflict)
+
+	rawBody := w.Body.String()
+	for _, leak := range []string{
+		"users_username_key",
+		"_key",
+		"constraint",
+		"users_username",
+		"23505",
+	} {
+		if strings.Contains(rawBody, leak) {
+			t.Errorf("response body must not leak %q, got: %s", leak, rawBody)
+		}
+	}
+
+	var got map[string]any
+	decodeJSON(t, w, &got)
+	assertJSONField(t, got, "detail", "conflict")
+
+	// B's row is untouched.
+	user := loadUserByID(t, bID)
+	if user.Username != "tryingto" {
+		t.Errorf("expected B's username unchanged 'tryingto', got %q", user.Username)
+	}
+}
+
+func TestUpdateUser_UsernameTooLong_422(t *testing.T) {
+	setupTest(t)
+
+	resp := createTestUserWithRegister(t, "longname", "mypassword123", nil)
+	userID := (*resp)["user_id"].(string)
+
+	w := doRequestWithCookies(http.MethodPatch, fmt.Sprintf("/api/users/%s", userID),
+		map[string]any{"username": strings.Repeat("a", 201)}, cookiesFor(userID))
+	if w.Code != http.StatusUnprocessableEntity && w.Code != http.StatusBadRequest {
+		t.Errorf("expected 422/400 for >200 char username, got %d (body: %s)", w.Code, w.Body.String())
+	}
+}
+
+func TestUpdateUser_InvalidEmailFormat_422(t *testing.T) {
+	setupTest(t)
+
+	resp := createTestUserWithRegister(t, "bademail", "mypassword123", nil)
+	userID := (*resp)["user_id"].(string)
+
+	w := doRequestWithCookies(http.MethodPatch, fmt.Sprintf("/api/users/%s", userID),
+		map[string]any{"email": "not-an-email"}, cookiesFor(userID))
+	if w.Code != http.StatusUnprocessableEntity && w.Code != http.StatusBadRequest {
+		t.Errorf("expected 422/400 for malformed email, got %d (body: %s)", w.Code, w.Body.String())
 	}
 }
