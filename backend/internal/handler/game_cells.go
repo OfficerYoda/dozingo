@@ -6,6 +6,7 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/officeryoda/dozingo/internal/generated"
+	"github.com/officeryoda/dozingo/internal/middleware"
 	"github.com/officeryoda/dozingo/internal/pgmap"
 	"github.com/officeryoda/dozingo/internal/service"
 	"github.com/officeryoda/dozingo/internal/types"
@@ -76,6 +77,7 @@ func (h *GameCellsHandler) Register(api huma.API) {
 		Path:        "/games/{game_id}/cells",
 		Summary:     "Get all cells for a game",
 		Tags:        []string{"Game Cells"},
+		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.ReadLimiter)},
 	}, h.list)
 
 	huma.Register(api, huma.Operation{
@@ -84,6 +86,7 @@ func (h *GameCellsHandler) Register(api huma.API) {
 		Path:        "/games/{game_id}/cells",
 		Summary:     "Bulk create game cells",
 		Tags:        []string{"Game Cells"},
+		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.WriteHeavyLimiter)},
 	}, h.create)
 
 	huma.Register(api, huma.Operation{
@@ -92,6 +95,7 @@ func (h *GameCellsHandler) Register(api huma.API) {
 		Path:        "/games/{game_id}/cells/{game_cell_id}",
 		Summary:     "Update game cell mark",
 		Tags:        []string{"Game Cells"},
+		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.GameplayLimiter)},
 	}, h.updateMark)
 }
 

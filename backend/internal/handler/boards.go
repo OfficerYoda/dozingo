@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
+	"github.com/officeryoda/dozingo/internal/middleware"
 	"github.com/officeryoda/dozingo/internal/pgmap"
 	"github.com/officeryoda/dozingo/internal/repository"
 	"github.com/officeryoda/dozingo/internal/service"
@@ -99,6 +100,7 @@ func (h *BoardsHandler) Register(api huma.API) {
 		Path:        "/boards",
 		Summary:     "Get all boards with optional filters",
 		Tags:        []string{"Boards"},
+		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.ReadListLimiter)},
 	}, h.list)
 
 	huma.Register(api, huma.Operation{
@@ -107,6 +109,7 @@ func (h *BoardsHandler) Register(api huma.API) {
 		Path:        "/me/boards",
 		Summary:     "Get all boards of current user",
 		Tags:        []string{"Boards"},
+		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.ReadListLimiter)},
 	}, h.listBySession)
 
 	huma.Register(api, huma.Operation{
@@ -115,6 +118,7 @@ func (h *BoardsHandler) Register(api huma.API) {
 		Path:        "/boards/{board_id}",
 		Summary:     "Get a board by ID",
 		Tags:        []string{"Boards"},
+		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.ReadLimiter)},
 	}, h.get)
 
 	huma.Register(api, huma.Operation{
@@ -123,6 +127,7 @@ func (h *BoardsHandler) Register(api huma.API) {
 		Path:        "/boards",
 		Summary:     "Create a board",
 		Tags:        []string{"Boards"},
+		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.WriteLimiter)},
 	}, h.create)
 
 	huma.Register(api, huma.Operation{
@@ -131,6 +136,7 @@ func (h *BoardsHandler) Register(api huma.API) {
 		Path:        "/boards/{board_id}",
 		Summary:     "Delete a board",
 		Tags:        []string{"Boards"},
+		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.WriteLimiter)},
 	}, h.delete)
 
 	huma.Register(api, huma.Operation{
@@ -139,6 +145,7 @@ func (h *BoardsHandler) Register(api huma.API) {
 		Path:        "/boards/{board_id}/total-played-games",
 		Summary:     "Get total count of played games",
 		Tags:        []string{"Boards"},
+		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.ReadLimiter)},
 	}, h.totalPlayedGames)
 }
 

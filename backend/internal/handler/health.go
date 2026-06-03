@@ -8,6 +8,7 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/officeryoda/dozingo/internal/middleware"
 )
 
 const healthDBTimeout = 2 * time.Second
@@ -40,6 +41,7 @@ func (h *HealthHandler) Register(api huma.API) {
 		Method:      http.MethodGet,
 		Path:        "/health",
 		Summary:     "Health check",
+		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.HealthLimiter)},
 	}, h.handleHealth)
 }
 

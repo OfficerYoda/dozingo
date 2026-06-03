@@ -7,6 +7,7 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/officeryoda/dozingo/internal/generated"
+	"github.com/officeryoda/dozingo/internal/middleware"
 	"github.com/officeryoda/dozingo/internal/pgmap"
 	"github.com/officeryoda/dozingo/internal/service"
 )
@@ -92,6 +93,7 @@ func (h *AuthHandler) Register(api huma.API) {
 		Path:        "/auth/register",
 		Summary:     "Register new User",
 		Tags:        []string{"Auth"},
+		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.StrictAuthLimiter)},
 	}, h.register)
 
 	huma.Register(api, huma.Operation{
@@ -100,6 +102,7 @@ func (h *AuthHandler) Register(api huma.API) {
 		Path:        "/auth/login",
 		Summary:     "Login with existing User",
 		Tags:        []string{"Auth"},
+		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.HeavyAuthLimiter)},
 	}, h.login)
 
 	huma.Register(api, huma.Operation{
@@ -108,6 +111,7 @@ func (h *AuthHandler) Register(api huma.API) {
 		Path:        "/auth/logout",
 		Summary:     "Logout from current User",
 		Tags:        []string{"Auth"},
+		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.WriteLimiter)},
 	}, h.logout)
 
 	huma.Register(api, huma.Operation{
@@ -116,6 +120,7 @@ func (h *AuthHandler) Register(api huma.API) {
 		Path:        "/auth/forgot-password",
 		Summary:     "Request a password reset mail",
 		Tags:        []string{"Auth"},
+		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.StrictAuthLimiter)},
 	}, h.forgotPassword)
 
 	huma.Register(api, huma.Operation{
@@ -124,6 +129,7 @@ func (h *AuthHandler) Register(api huma.API) {
 		Path:        "/auth/new-password",
 		Summary:     "Set a new password after reset",
 		Tags:        []string{"Auth"},
+		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.StrictAuthLimiter)},
 	}, h.newPassword)
 
 	huma.Register(api, huma.Operation{
@@ -132,6 +138,7 @@ func (h *AuthHandler) Register(api huma.API) {
 		Path:        "/auth/send-email-verification",
 		Summary:     "Send email verification mail",
 		Tags:        []string{"Auth"},
+		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.StrictAuthLimiter)},
 	}, h.sendEmailVerification)
 
 	huma.Register(api, huma.Operation{
@@ -140,6 +147,7 @@ func (h *AuthHandler) Register(api huma.API) {
 		Path:        "/auth/verify-email",
 		Summary:     "Verify an email",
 		Tags:        []string{"Auth"},
+		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.StrictAuthLimiter)},
 	}, h.verifyEmail)
 }
 
