@@ -42,7 +42,7 @@
     <Teleport to="body">
         <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
             <div class="card">
-                <div class="header-modal">
+                <div class="header-modal mb-0">
                     <div>
                         <h2 class="mb-0 header-modal-title">{{ selecetedBoard?.title }}</h2>
                         <small class="header-modal-subtitle">{{ selecetedBoard?.description }}</small>
@@ -63,14 +63,13 @@
 
                 <hr class="mb-3">
 
-
-                <ul class="background-seperate-cells">
+                <ul class="background-seperate-cells ">
                     <li v-for="cell in selectedCells" :key="cell.cell_id" class="card cell-btn">
                         <p>{{ cell.content }}</p>
                     </li>
                 </ul>
 
-                <hr>
+                <hr class="mb-3">
 
                 <div class="bottom-bar">
                     <div class="bottom-bar-text">
@@ -312,6 +311,7 @@ function clickBoard(boardID: string) {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
+    border-block: 5px solid var(--card-blue);
 }
 
 @media (max-width: 600px) {
