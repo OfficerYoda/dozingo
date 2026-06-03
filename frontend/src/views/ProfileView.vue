@@ -1,15 +1,13 @@
 <template>
   <div className="container">
-    <h1>Profile</h1>
     <div v-if="!auth.state.ready">Loading...</div>
     <div v-else-if="!auth.state.user">Not logged in.</div>
     <div v-else>
-      <h2>Welcome, {{ auth.state.user.username }}!</h2>
-      <p v-if="auth.state.user.email">{{ auth.state.user.email }}</p>
+      <h1>Welcome, {{ auth.state.user.username }}!</h1>
     </div>
     <div class="container" style="padding-right: 0%; padding-left: 0%;">
       <div class="list-header mb-4">
-          <h2 class="mb-0">Explore your {{boards.length}} Cards</h2>
+          <h2 class="mb-0">Explore your {{boards.length}} boards</h2>
           <div class="header-actions">
               <input class="btn btn-secondary" type="search" placeholder="Search.." v-model="search">
               <select class="btn btn-secondary" v-model="appliedFiler">
@@ -50,7 +48,7 @@
     </div>
     <div class="container" style="padding-right: 0%; padding-left: 0%; padding-top: 2%;">
       <div class="list-header mb-4">
-          <h2 class="mb-0">Explore your {{ likedBoards.length }} liked Cards</h2>
+          <h2 class="mb-0">Explore your {{ likedBoards.length }} liked boards</h2>
       </div>
 
       <div class="carousel-wrapper">
