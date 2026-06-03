@@ -310,7 +310,7 @@ func upsertToken(
 
 		_, err = r.VerificationTokens.Create(ctx, repository.CreateVerificationTokenInput{
 			UserID:    userID,
-			Token:     token,
+			TokenHash: token,
 			TokenType: tokenType,
 			ExpiresAt: time.Now().Add(tokenTTL),
 		})
