@@ -832,7 +832,7 @@ func TestGetTotalGamesPlayed_IncludesAnonymousSessionGames(t *testing.T) {
 	q := generated.New(testPool)
 	sess, err := q.CreateSession(ctx, generated.CreateSessionParams{
 		UserID: pgtype.UUID{Valid: false},
-		Token:  auth.GenerateToken(),
+		Token:  auth.HashToken(auth.GenerateToken()),
 		ExpiresAt: pgtype.Timestamptz{
 			Time:  time.Now().Add(30 * 24 * time.Hour),
 			Valid: true,
