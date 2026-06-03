@@ -1,0 +1,1584 @@
+components:
+  schemas:
+    BoardOutput:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/BoardOutput.json
+          format: uri
+          readOnly: true
+          type: string
+        author_id:
+          format: uuid
+          type: string
+        board_id:
+          format: uuid
+          type: string
+        description:
+          type:
+            - string
+            - "null"
+        play_count:
+          format: int64
+          type: integer
+        score:
+          format: int64
+          type: integer
+        size:
+          format: int32
+          type: integer
+        title:
+          type: string
+        vote_count:
+          format: int64
+          type: integer
+      required:
+        - board_id
+        - title
+        - description
+        - size
+        - author_id
+        - score
+        - vote_count
+        - play_count
+      type: object
+    CellOutput:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/CellOutput.json
+          format: uri
+          readOnly: true
+          type: string
+        author_id:
+          format: uuid
+          type:
+            - string
+            - "null"
+        board_id:
+          format: uuid
+          type: string
+        cell_id:
+          format: uuid
+          type: string
+        content:
+          type: string
+        value:
+          format: int32
+          type: integer
+      required:
+        - cell_id
+        - board_id
+        - content
+        - author_id
+        - value
+      type: object
+    CreateBoardInputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/CreateBoardInputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        description:
+          maxLength: 500
+          type: string
+        size:
+          format: int32
+          maximum: 7
+          minimum: 3
+          type: integer
+        title:
+          maxLength: 200
+          type: string
+      required:
+        - title
+        - size
+      type: object
+    CreateCellInputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/CreateCellInputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        content:
+          maxLength: 200
+          type: string
+        value:
+          format: int32
+          type: integer
+      required:
+        - content
+      type: object
+    CreateGameCellsItem:
+      additionalProperties: false
+      properties:
+        cell_id:
+          format: uuid
+          type: string
+        content:
+          maxLength: 200
+          type: string
+        position:
+          format: int32
+          type: integer
+      required:
+        - cell_id
+        - content
+        - position
+      type: object
+    EmailSentOutputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/EmailSentOutputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        status:
+          type: string
+      required:
+        - status
+      type: object
+    ErrorDetail:
+      additionalProperties: false
+      properties:
+        location:
+          description: Where the error occurred, e.g. 'body.items[3].tags' or 'path.thing-id'
+          type: string
+        message:
+          description: Error message text
+          type: string
+        value:
+          description: The value at the given location
+      type: object
+    ErrorModel:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/ErrorModel.json
+          format: uri
+          readOnly: true
+          type: string
+        detail:
+          description: A human-readable explanation specific to this occurrence of the problem.
+          examples:
+            - Property foo is required but is missing.
+          type: string
+        errors:
+          description: Optional list of individual error details
+          items:
+            $ref: "#/components/schemas/ErrorDetail"
+          type:
+            - array
+            - "null"
+        instance:
+          description: A URI reference that identifies the specific occurrence of the problem.
+          examples:
+            - https://example.com/error-log/abc123
+          format: uri
+          type: string
+        status:
+          description: HTTP status code
+          examples:
+            - 400
+          format: int64
+          type: integer
+        title:
+          description: A short, human-readable summary of the problem type. This value should not change between occurrences of the error.
+          examples:
+            - Bad Request
+          type: string
+        type:
+          default: about:blank
+          description: A URI reference to human-readable documentation for the error.
+          examples:
+            - https://example.com/errors/example
+          format: uri
+          type: string
+      type: object
+    ForgotPasswordInputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/ForgotPasswordInputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        email:
+          format: email
+          maxLength: 200
+          type: string
+      required:
+        - email
+      type: object
+    GameCellOutput:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/GameCellOutput.json
+          format: uri
+          readOnly: true
+          type: string
+        cell_id:
+          format: uuid
+          type:
+            - string
+            - "null"
+        content:
+          type: string
+        game_cell_id:
+          format: uuid
+          type: string
+        game_id:
+          format: uuid
+          type: string
+        is_marked:
+          type: boolean
+        position:
+          format: int32
+          type: integer
+      required:
+        - game_cell_id
+        - game_id
+        - cell_id
+        - content
+        - position
+        - is_marked
+      type: object
+    GameOutput:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/GameOutput.json
+          format: uri
+          readOnly: true
+          type: string
+        board_id:
+          format: uuid
+          type:
+            - string
+            - "null"
+        game_id:
+          format: uuid
+          type: string
+        player_id:
+          format: uuid
+          type:
+            - string
+            - "null"
+        session_id:
+          format: uuid
+          type:
+            - string
+            - "null"
+        status:
+          type: string
+      required:
+        - game_id
+        - board_id
+        - player_id
+        - session_id
+        - status
+      type: object
+    GetTotalGamesPlayedBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/GetTotalGamesPlayedBody.json
+          format: uri
+          readOnly: true
+          type: string
+        board_id:
+          format: uuid
+          type: string
+        board_title:
+          type: string
+        total_games:
+          format: int64
+          type: integer
+      required:
+        - board_id
+        - board_title
+        - total_games
+      type: object
+    GetVotesByBoardIDBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/GetVotesByBoardIDBody.json
+          format: uri
+          readOnly: true
+          type: string
+        score:
+          format: int32
+          type: integer
+        user_vote:
+          format: int32
+          type:
+            - integer
+            - "null"
+        vote_count:
+          format: int32
+          type: integer
+      required:
+        - score
+        - vote_count
+        - user_vote
+      type: object
+    HealthOutputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/HealthOutputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        database:
+          type: string
+        status:
+          type: string
+      required:
+        - status
+        - database
+      type: object
+    LoginInputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/LoginInputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        password:
+          maxLength: 72
+          minLength: 8
+          type: string
+        username:
+          maxLength: 200
+          type: string
+      required:
+        - username
+        - password
+      type: object
+    NewPasswordInputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/NewPasswordInputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        new_password:
+          maxLength: 72
+          minLength: 8
+          type: string
+        token:
+          type: string
+      required:
+        - token
+        - new_password
+      type: object
+    RegisterInputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/RegisterInputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        email:
+          format: email
+          maxLength: 200
+          type: string
+        password:
+          maxLength: 72
+          minLength: 8
+          type: string
+        username:
+          maxLength: 200
+          type: string
+      required:
+        - username
+        - password
+      type: object
+    UpdateCellInputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/UpdateCellInputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        content:
+          maxLength: 200
+          type: string
+        value:
+          format: int32
+          type: integer
+      type: object
+    UpdateGameCellMarkInputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/UpdateGameCellMarkInputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        is_marked:
+          type: boolean
+      required:
+        - is_marked
+      type: object
+    UpdateGameStatusInputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/UpdateGameStatusInputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        status:
+          description: "must be any of those: 'active', 'completed' or 'abandoned'"
+          maxLength: 20
+          type: string
+      required:
+        - status
+      type: object
+    UpdateUserInputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/UpdateUserInputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        email:
+          format: email
+          maxLength: 200
+          type:
+            - string
+            - "null"
+        username:
+          maxLength: 200
+          type: string
+      type: object
+    UpsertVoteInputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/UpsertVoteInputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        vote_value:
+          format: int32
+          maximum: 1
+          minimum: -1
+          type: integer
+      required:
+        - vote_value
+      type: object
+    UserOutputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/UserOutputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        email:
+          format: email
+          type:
+            - string
+            - "null"
+        user_id:
+          format: uuid
+          type: string
+        username:
+          pattern: ^[^\s\x00-\x1F\x7F]+$
+          type: string
+      required:
+        - user_id
+        - username
+        - email
+      type: object
+    VerifyEmailInputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/VerifyEmailInputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        token:
+          type: string
+      required:
+        - token
+      type: object
+    VoteOutput:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/VoteOutput.json
+          format: uri
+          readOnly: true
+          type: string
+        board_id:
+          format: uuid
+          type: string
+        user_id:
+          format: uuid
+          type: string
+        vote_id:
+          format: uuid
+          type: string
+        vote_value:
+          format: int32
+          type: integer
+      required:
+        - vote_id
+        - user_id
+        - board_id
+        - vote_value
+      type: object
+info:
+  title: Dozingo API
+  version: 0.2.0
+openapi: 3.1.0
+paths:
+  /api/auth/forgot-password:
+    post:
+      operationId: forgot-password
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ForgotPasswordInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmailSentOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Request a password reset mail
+      tags:
+        - Auth
+  /api/auth/login:
+    post:
+      operationId: login
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Login with existing User
+      tags:
+        - Auth
+  /api/auth/logout:
+    post:
+      operationId: logout
+      responses:
+        "204":
+          description: No Content
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Logout from current User
+      tags:
+        - Auth
+  /api/auth/new-password:
+    post:
+      operationId: new-password
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewPasswordInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Set a new password after reset
+      tags:
+        - Auth
+  /api/auth/register:
+    post:
+      operationId: register
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Register new User
+      tags:
+        - Auth
+  /api/auth/send-email-verification:
+    post:
+      operationId: send-email-verification
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmailSentOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Send email verification mail
+      tags:
+        - Auth
+  /api/auth/verify-email:
+    post:
+      operationId: verify-email
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyEmailInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Verify an email
+      tags:
+        - Auth
+  /api/boards:
+    get:
+      operationId: get-boards
+      parameters:
+        - explode: false
+          in: query
+          name: author_id
+          schema:
+            type: string
+        - explode: false
+          in: query
+          name: size
+          schema:
+            format: int32
+            type: integer
+        - explode: false
+          in: query
+          name: sort
+          schema:
+            default: newest
+            enum:
+              - newest
+              - oldest
+              - most-liked
+              - least-liked
+              - most-played
+              - least-played
+            type: string
+        - explode: false
+          in: query
+          name: limit
+          schema:
+            default: 20
+            format: int32
+            minimum: 1
+            type: integer
+        - explode: false
+          in: query
+          name: search
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/BoardOutput"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Get all boards with optional filters
+      tags:
+        - Boards
+    post:
+      operationId: create-board
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateBoardInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BoardOutput"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Create a board
+      tags:
+        - Boards
+  /api/boards/{board_id}:
+    delete:
+      operationId: delete-board
+      parameters:
+        - in: path
+          name: board_id
+          required: true
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "204":
+          description: No Content
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Delete a board
+      tags:
+        - Boards
+    get:
+      operationId: get-board-by-id
+      parameters:
+        - in: path
+          name: board_id
+          required: true
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BoardOutput"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Get a board by ID
+      tags:
+        - Boards
+  /api/boards/{board_id}/cells:
+    get:
+      operationId: get-cells-by-board-id
+      parameters:
+        - in: path
+          name: board_id
+          required: true
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/CellOutput"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Get all cells for a Board
+      tags:
+        - Cells
+    post:
+      operationId: create-cell
+      parameters:
+        - in: path
+          name: board_id
+          required: true
+          schema:
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCellInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CellOutput"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Create a cell
+      tags:
+        - Cells
+  /api/boards/{board_id}/cells/{cell_id}:
+    delete:
+      operationId: delete-cell
+      parameters:
+        - in: path
+          name: board_id
+          required: true
+          schema:
+            format: uuid
+            type: string
+        - in: path
+          name: cell_id
+          required: true
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "204":
+          description: No Content
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Delete a cell
+      tags:
+        - Cells
+    put:
+      operationId: update-cell
+      parameters:
+        - in: path
+          name: board_id
+          required: true
+          schema:
+            format: uuid
+            type: string
+        - in: path
+          name: cell_id
+          required: true
+          schema:
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCellInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CellOutput"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Update a cell
+      tags:
+        - Cells
+  /api/boards/{board_id}/games:
+    get:
+      operationId: list-games-by-board
+      parameters:
+        - in: path
+          name: board_id
+          required: true
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/GameOutput"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: List all games played on a board
+      tags:
+        - Games
+    post:
+      operationId: create-game
+      parameters:
+        - in: path
+          name: board_id
+          required: true
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GameOutput"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Create a game
+      tags:
+        - Games
+  /api/boards/{board_id}/total-played-games:
+    get:
+      operationId: total-played-games
+      parameters:
+        - in: path
+          name: board_id
+          required: true
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetTotalGamesPlayedBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Get total count of played games
+      tags:
+        - Boards
+  /api/boards/{board_id}/vote:
+    delete:
+      operationId: delete-vote
+      parameters:
+        - in: path
+          name: board_id
+          required: true
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "204":
+          description: No Content
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Delete a vote
+      tags:
+        - Votes
+    get:
+      operationId: get-votes-by-board-id
+      parameters:
+        - in: path
+          name: board_id
+          required: true
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetVotesByBoardIDBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Get all votes for a Board
+      tags:
+        - Votes
+    put:
+      description: Update or Create a vote
+      operationId: upsert-vote
+      parameters:
+        - in: path
+          name: board_id
+          required: true
+          schema:
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpsertVoteInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VoteOutput"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Upsert a vote
+      tags:
+        - Votes
+  /api/games/{game_id}:
+    delete:
+      operationId: delete-game
+      parameters:
+        - in: path
+          name: game_id
+          required: true
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "204":
+          description: No Content
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Delete a game
+      tags:
+        - Games
+    get:
+      operationId: get-game-by-id
+      parameters:
+        - in: path
+          name: game_id
+          required: true
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GameOutput"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Get a Game by ID
+      tags:
+        - Games
+  /api/games/{game_id}/cells:
+    get:
+      operationId: get-game-cells-by-game-id
+      parameters:
+        - in: path
+          name: game_id
+          required: true
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/GameCellOutput"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Get all cells for a game
+      tags:
+        - Game Cells
+    post:
+      operationId: create-game-cells
+      parameters:
+        - in: path
+          name: game_id
+          required: true
+          schema:
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              items:
+                $ref: "#/components/schemas/CreateGameCellsItem"
+              type:
+                - array
+                - "null"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/GameCellOutput"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Bulk create game cells
+      tags:
+        - Game Cells
+  /api/games/{game_id}/cells/{game_cell_id}:
+    put:
+      operationId: update-game-cell-mark
+      parameters:
+        - in: path
+          name: game_id
+          required: true
+          schema:
+            format: uuid
+            type: string
+        - in: path
+          name: game_cell_id
+          required: true
+          schema:
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateGameCellMarkInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GameCellOutput"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Update game cell mark
+      tags:
+        - Game Cells
+  /api/games/{game_id}/status:
+    put:
+      operationId: update-game-status
+      parameters:
+        - in: path
+          name: game_id
+          required: true
+          schema:
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateGameStatusInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GameOutput"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Update game status
+      tags:
+        - Games
+  /api/health:
+    get:
+      operationId: health-check
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Health check
+  /api/me/boards:
+    get:
+      operationId: get-boards-from-session
+      parameters:
+        - explode: false
+          in: query
+          name: size
+          schema:
+            format: int32
+            type: integer
+        - explode: false
+          in: query
+          name: sort
+          schema:
+            default: newest
+            enum:
+              - newest
+              - oldest
+              - most-liked
+              - least-liked
+              - most-played
+              - least-played
+            type: string
+        - explode: false
+          in: query
+          name: limit
+          schema:
+            default: 20
+            format: int32
+            minimum: 1
+            type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/BoardOutput"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Get all boards of current user
+      tags:
+        - Boards
+  /api/me/games:
+    get:
+      operationId: list-games-by-current-session
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/GameOutput"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: List all games from current session
+      tags:
+        - Games
+  /api/users/me:
+    get:
+      operationId: get-current-user
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Information about current user
+      tags:
+        - Users
+    patch:
+      description: "Convenience alias for PATCH /users/{user_id} that resolves the user id from the session cookie. The `email` field is tri-state: omit the key to leave the column unchanged, send `null` to clear it, or send a new address to set it (which also resets verification and triggers a verification mail)."
+      operationId: update-current-user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Update the current User's username and/or email
+      tags:
+        - Users
+  /api/users/{player_id}/games:
+    get:
+      operationId: list-games-by-player
+      parameters:
+        - in: path
+          name: player_id
+          required: true
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/GameOutput"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: List all games by a player
+      tags:
+        - Games
+  /api/users/{user_id}:
+    get:
+      operationId: get-user-by-id
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Get User by ID
+      tags:
+        - Users
+    patch:
+      description: "Partial update. Only the user themselves may edit their own row. The `email` field is tri-state: omit the key to leave the column unchanged, send `null` to clear it, or send a new address to set it (which also resets verification and triggers a verification mail)."
+      operationId: update-user
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Update a User's username and/or email
+      tags:
+        - Users
