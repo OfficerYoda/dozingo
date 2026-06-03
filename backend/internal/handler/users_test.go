@@ -97,7 +97,12 @@ func TestUserByID_Success(t *testing.T) {
 
 	assertJSONField(t, got, "user_id", userID)
 	assertJSONField(t, got, "username", "byiduser")
-	assertJSONField(t, got, "email", "byid@example.com")
+
+	// Email must be stripped from the public-by-id response so other users
+	// can't enumerate addresses; see users.go userByID handler.
+	if got["email"] != nil {
+		t.Errorf("expected email to be null on public GET /users/{id}, got %v", got["email"])
+	}
 }
 
 func TestUserByID_NotFound(t *testing.T) {
