@@ -91,6 +91,14 @@ type verifyEmailOutput struct {
 	Body userOutputBody
 }
 
+type userByIDInput struct {
+	UserID string `path:"user_id"  format:"uuid"`
+}
+
+type userByIDOutput struct {
+	Body userOutputBody
+}
+
 // ===== Handler =====
 
 type AuthHandler struct {
@@ -165,6 +173,14 @@ func (h *AuthHandler) Register(api huma.API) {
 		Summary:     "Verify an email",
 		Tags:        []string{"Auth"},
 	}, h.verifyEmail)
+
+	huma.Register(api, huma.Operation{
+		OperationID: "get-user-by-id",
+		Method:      http.MethodGet,
+		Path:        "/users/{user_id}",
+		Summary:     "Get User by ID",
+		Tags:        []string{"Auth"},
+	}, h.userByID)
 }
 
 func (h *AuthHandler) register(ctx context.Context, in *registerInput) (*registerOutput, error) {
@@ -248,6 +264,15 @@ func (h *AuthHandler) verifyEmail(ctx context.Context, in *verifyEmailInput) (*v
 	}
 
 	return &verifyEmailOutput{Body: userToOutput(user)}, nil
+}
+
+func (h *AuthHandler) userByID(ctx context.Context, in *userByIDInput) (*userByIDOutput, error) {
+	user, err := h.svc.UserByID(ctx, in.UserID)
+	if err != nil {
+		return nil, toHumaErr(err, "", "failed to get user by ID")
+	}
+
+	return &userByIDOutput{Body: userToOutput(user)}, nil
 }
 
 func userToOutput(user generated.User) userOutputBody {

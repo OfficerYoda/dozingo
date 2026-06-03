@@ -274,6 +274,20 @@ func (s *Auth) VerifyEmail(ctx context.Context, token string) (generated.User, e
 	return user, nil
 }
 
+func (s *Auth) UserByID(ctx context.Context, userIDStr string) (generated.User, error) {
+	userID := pgmap.PgUUIDFromString(&userIDStr)
+	if !userID.Valid {
+		return generated.User{}, fmt.Errorf("invalid UUID: %w", domain.ErrBadInput)
+	}
+
+	user, err := s.users.GetByID(ctx, userID)
+	if err != nil {
+		return generated.User{}, fmt.Errorf("get user by id: %w", err)
+	}
+
+	return user, nil
+}
+
 func (s *Auth) generateUser(ctx context.Context, in RegisterInput) (generated.User, error) {
 	passwordHash, err := auth.HashPassword(in.Password)
 	if err != nil {
