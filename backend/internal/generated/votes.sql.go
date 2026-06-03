@@ -63,6 +63,81 @@ func (q *Queries) GetVotesByBoardID(ctx context.Context, arg GetVotesByBoardIDPa
 	return i, err
 }
 
+const listVotesFromUser = `-- name: ListVotesFromUser :many
+SELECT
+    v.id          AS vote_id,
+    v.vote_value,
+    b.id          AS board_id,
+    b.title,
+    b.description,
+    b.size,
+    b.author_id   AS board_author_id,
+    COALESCE(SUM(all_v.vote_value), 0)::bigint AS score,
+    COUNT(all_v.id)::bigint                    AS vote_count,
+    COUNT(DISTINCT g.id)::bigint               AS play_count
+FROM votes v
+JOIN boards b
+    ON b.id = v.board_id
+LEFT JOIN votes all_v
+    ON all_v.board_id = b.id
+LEFT JOIN games g
+    ON g.board_id = b.id
+WHERE v.user_id = $1
+GROUP BY
+    v.id,
+    v.vote_value,
+    b.id,
+    b.title,
+    b.description,
+    b.size,
+    b.author_id
+ORDER BY v.created_at DESC
+`
+
+type ListVotesFromUserRow struct {
+	VoteID        pgtype.UUID `json:"vote_id"`
+	VoteValue     int32       `json:"vote_value"`
+	BoardID       pgtype.UUID `json:"board_id"`
+	Title         string      `json:"title"`
+	Description   pgtype.Text `json:"description"`
+	Size          int32       `json:"size"`
+	BoardAuthorID pgtype.UUID `json:"board_author_id"`
+	Score         int64       `json:"score"`
+	VoteCount     int64       `json:"vote_count"`
+	PlayCount     int64       `json:"play_count"`
+}
+
+func (q *Queries) ListVotesFromUser(ctx context.Context, userID pgtype.UUID) ([]ListVotesFromUserRow, error) {
+	rows, err := q.db.Query(ctx, listVotesFromUser, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListVotesFromUserRow{}
+	for rows.Next() {
+		var i ListVotesFromUserRow
+		if err := rows.Scan(
+			&i.VoteID,
+			&i.VoteValue,
+			&i.BoardID,
+			&i.Title,
+			&i.Description,
+			&i.Size,
+			&i.BoardAuthorID,
+			&i.Score,
+			&i.VoteCount,
+			&i.PlayCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const upsertVote = `-- name: UpsertVote :one
 INSERT INTO votes (user_id, board_id, vote_value)
 VALUES ($1, $2, $3)

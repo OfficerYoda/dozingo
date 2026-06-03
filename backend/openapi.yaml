@@ -369,6 +369,46 @@ components:
         - status
         - database
       type: object
+    ListVotesFromUserOutputBody:
+      additionalProperties: false
+      properties:
+        board_author_id:
+          type: string
+        board_id:
+          type: string
+        description:
+          type: string
+        play_count:
+          format: int64
+          type: integer
+        size:
+          format: int32
+          type: integer
+        title:
+          type: string
+        vote_count:
+          format: int64
+          type: integer
+        vote_id:
+          type: string
+        vote_score:
+          format: int64
+          type: integer
+        vote_value:
+          format: int32
+          type: integer
+      required:
+        - vote_id
+        - vote_value
+        - board_id
+        - title
+        - description
+        - size
+        - board_author_id
+        - vote_score
+        - vote_count
+        - play_count
+      type: object
     LoginInputBody:
       additionalProperties: false
       properties:
@@ -1494,6 +1534,29 @@ paths:
       summary: Update the current User's username and/or email
       tags:
         - Users
+  /api/users/me/votes:
+    get:
+      operationId: list-votes-for-current-user
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/ListVotesFromUserOutputBody"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: List votes for current User
+      tags:
+        - Users
   /api/users/{player_id}/games:
     get:
       operationId: list-games-by-player
@@ -1580,5 +1643,35 @@ paths:
                 $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Update a User's username and/or email
+      tags:
+        - Users
+  /api/users/{user_id}/votes:
+    get:
+      operationId: list-votes-for-a-user
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/ListVotesFromUserOutputBody"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: List votes for a User
       tags:
         - Users
