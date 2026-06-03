@@ -197,7 +197,7 @@ func (s *Auth) NewPassword(ctx context.Context, in NewPasswordInput) (generated.
 func (s *Auth) SendEmailVerification(ctx context.Context) error {
 	sessionUser, err := requiresSessionUser(ctx, s.queries)
 	if err != nil {
-		return fmt.Errorf("require session: %w", err)
+		return fmt.Errorf("session required: %w", err)
 	}
 
 	if !sessionUser.Email.Valid {
