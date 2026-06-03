@@ -10,17 +10,13 @@
         <div class="form-top mb-3">
           <div class="form-title">
             <h3>{{ $t('cardEditor.sessionTitle') }}</h3>
-            <input type="text" class="form-input title-input" v-model="title" :placeholder="$t('cardEditor.titlePlaceholder')">
+            <input type="text" class="form-input title-input" :class="{ 'input-error': submitted && !title.trim() }" v-model="title" :placeholder="$t('cardEditor.titlePlaceholder')">
           </div>
 
           <div class="form-boardsize">
             <h3>{{ $t('cardEditor.layoutSelection') }}</h3>
 
             <div role="radiogroup" class="layout-options">
-              <label :class="['btn', selectedSize === '3x3' ? 'btn-primary' : 'btn-secondary']">
-                <input type="radio" name="boardsize" value="3x3" v-model="selectedSize" class="sr-only" />
-                3x3
-              </label>
               <label :class="['btn', selectedSize === '4x4' ? 'btn-primary' : 'btn-secondary']">
                 <input type="radio" name="boardsize" value="4x4" v-model="selectedSize" class="sr-only" />
                 4x4
@@ -28,6 +24,10 @@
               <label :class="['btn', selectedSize === '5x5' ? 'btn-primary' : 'btn-secondary']">
                 <input type="radio" name="boardsize" value="5x5" v-model="selectedSize" class="sr-only" />
                 5x5
+              </label>
+              <label :class="['btn', selectedSize === '6x6' ? 'btn-primary' : 'btn-secondary']">
+                <input type="radio" name="boardsize" value="6x6" v-model="selectedSize" class="sr-only" />
+                6x6
               </label>
             </div>
           </div>
@@ -43,9 +43,7 @@
           <div class="entries-header mb-3">
             <div>
               <h3 class="mb-0">{{ $t('cardEditor.entries') }}</h3>
-              <small class="entry-count-hint">8 entries added. You need 17 more for a 5x5 layout.(Nicht übersetzt bzw.
-                keine
-                dynamische Anpassung)</small>
+              <small :class="['entry-count-hint', entryHintReady ? 'hint-ready' : 'hint-warn']">{{ entryHintText }}</small>
             </div>
             <button class="btn btn-secondary add-entry-btn" @click="addRow">
               <CirclePlus :size="20" />
@@ -65,7 +63,7 @@
             <tbody>
               <tr v-for="(entry, index) in entries" :key="index">
                 <td class="td-term">
-                  <input type="text" class="entry-term-input" v-model="entry.term"
+                  <input type="text" :class="['entry-term-input', submitted && !entry.term.trim() ? 'input-error' : '']" v-model="entry.term"
                     :placeholder="$t('cardEditor.termPlaceholder')" />
                 </td>
                 <td class="td-rarity">
@@ -86,6 +84,22 @@
           </table>
         </div>
 
+        <div v-if="saveSuccess" class="alert alert-success mt-3">
+          {{ $t('cardEditor.saveSuccess') }}
+        </div>
+
+        <div v-if="saveError" class="alert alert-danger mt-3">
+          {{ $t('cardEditor.saveError') }}
+        </div>
+
+        <div v-if="validationError" class="alert alert-danger mt-3">
+          {{ $t('cardEditor.validationError') }}
+        </div>
+
+        <div v-if="notEnoughEntriesError" class="alert alert-danger mt-3">
+          {{ $t('cardEditor.notEnoughEntriesError') }}
+        </div>
+
         <div class="save-btn-row">
           <button type="submit" class="btn btn-primary" @click="saveBoard">{{ $t('cardEditor.save') }}</button>
         </div>
@@ -95,7 +109,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { FilePlus, CirclePlus, Trash2 } from 'lucide-vue-next';
 
@@ -108,8 +122,31 @@ interface Entry {
 
 const title = ref('')
 const description = ref('')
+const saveSuccess = ref(false)
+const saveError = ref(false)
+const validationError = ref(false)
+const notEnoughEntriesError = ref(false)
+const submitted = ref(false)
 const entries = ref<Entry[]>([{ term: '', rarity: 'common' }, { term: '', rarity: 'common' }, { term: '', rarity: 'common' }])
-const selectedSize = ref('4x4')
+const selectedSize = ref('5x5')
+
+const { t } = useI18n()
+
+const requiredEntries = computed(() => {
+  const n = parseInt(selectedSize.value)
+  return n * n
+})
+
+const entryHintReady = computed(() => entries.value.filter(e => e.term.trim()).length >= requiredEntries.value)
+
+const entryHintText = computed(() => {
+  const count = entries.value.filter(e => e.term.trim()).length
+  const size = selectedSize.value
+  if (entryHintReady.value) {
+    return t('cardEditor.entryCountHintReady', { count, size })
+  }
+  return t('cardEditor.entryCountHint', { count, needed: requiredEntries.value - count, size })
+})
 
 const rarityValue: Record<string, number> = { common: 1, uncommon: 2, rare: 3, legendary: 4 }
 
@@ -122,6 +159,25 @@ function removeRow(index: number) {
 }
 
 async function saveBoard() {
+  submitted.value = true
+  saveSuccess.value = false
+  saveError.value = false
+  validationError.value = false
+  notEnoughEntriesError.value = false
+
+  const titleEmpty = !title.value.trim()
+  const hasEmptyEntries = entries.value.some(e => !e.term.trim())
+  const notEnoughEntries = entries.value.filter(e => e.term.trim()).length < requiredEntries.value
+
+  if (titleEmpty || hasEmptyEntries) {
+    validationError.value = true
+    return
+  }
+  if (notEnoughEntries) {
+    notEnoughEntriesError.value = true
+    return
+  }
+
   const size = parseInt(selectedSize.value)
 
   const boardRes = await fetch('/api/boards', {
@@ -130,7 +186,11 @@ async function saveBoard() {
     credentials: 'include',
     body: JSON.stringify({ title: title.value, description: description.value || undefined, size }),
   })
-  if (!boardRes.ok) return console.error('Failed to create board', await boardRes.text())
+  if (!boardRes.ok) {
+    saveError.value = true
+    saveSuccess.value = false
+    return
+  }
   const board = await boardRes.json()
 
   await Promise.all(
@@ -147,6 +207,7 @@ async function saveBoard() {
   )
 
   console.log('Board created:', board.board_id)
+  saveSuccess.value = true
 }
 </script>
 
@@ -328,8 +389,20 @@ h3 {
 /* === Other === */
 
 .entry-count-hint {
-  color: var(--color-accent-red);
   font-weight: 500;
+}
+
+.hint-warn {
+  color: var(--color-accent-red);
+}
+
+.hint-ready {
+  color: var(--color-accent-green, green);
+}
+
+.input-error {
+  border-color: var(--color-accent-red) !important;
+  background-color: #fff0f0;
 }
 
 .card {
