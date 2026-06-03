@@ -109,3 +109,41 @@ func TestGenerateSessionToken_Uniqueness(t *testing.T) {
 		seen[tok] = struct{}{}
 	}
 }
+
+func TestHashToken_Deterministic(t *testing.T) {
+	token := "some-plaintext-token"
+	a := HashToken(token)
+	b := HashToken(token)
+	if a != b {
+		t.Fatalf("expected HashToken to be deterministic, got %q and %q", a, b)
+	}
+}
+
+func TestHashToken_Format(t *testing.T) {
+	hash := HashToken("anything")
+	// SHA-256 hex digest: exactly 64 lowercase hex chars.
+	if len(hash) != 64 {
+		t.Fatalf("expected 64-char hash, got %d (%q)", len(hash), hash)
+	}
+	for _, r := range hash {
+		isHex := (r >= '0' && r <= '9') || (r >= 'a' && r <= 'f')
+		if !isHex {
+			t.Fatalf("expected lowercase hex digest, got non-hex char %q in %q", r, hash)
+		}
+	}
+}
+
+func TestHashToken_DifferentInputsDifferentOutputs(t *testing.T) {
+	a := HashToken("token-a")
+	b := HashToken("token-b")
+	if a == b {
+		t.Fatalf("expected distinct hashes for distinct inputs, both produced %q", a)
+	}
+}
+
+func TestHashToken_NotPlaintext(t *testing.T) {
+	plaintext := GenerateToken()
+	if HashToken(plaintext) == plaintext {
+		t.Fatal("HashToken returned the plaintext")
+	}
+}

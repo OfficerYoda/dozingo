@@ -48,7 +48,7 @@ Ref: user_authentications.user_id > users.id [delete: cascade]
 Table sessions {
   id uuid [pk, default: `gen_random_uuid()`]
   user_id uuid [note: 'null for anonymous sessions']
-  token text [unique, not null]
+  token text [unique, not null, note: 'SHA-256 hex digest; plaintext lives only in the session_token cookie']
   expires_at timestamptz [not null]
   ~timestamps
 
@@ -67,7 +67,7 @@ enum token_type {
 Table verification_tokens {
   id uuid [pk, default: `gen_random_uuid()`]
   user_id uuid [not null]
-  token text [unique, not null]
+  token text [unique, not null, note: 'SHA-256 hex digest; plaintext lives only in the email link']
   type token_type [not null]
   expires_at timestamptz [not null]
   ~timestamps

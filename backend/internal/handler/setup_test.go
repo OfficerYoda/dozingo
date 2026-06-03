@@ -440,13 +440,16 @@ func createTestUserWithRegister(t *testing.T, username, password string, email *
 // cookie that can be replayed against the test router. This is the only way
 // to obtain a pre-existing anon session because no anon-friendly handler
 // currently calls RequireSessionCtx.
+//
+// The cookie carries plaintext; the DB row stores the SHA-256 hex digest, so
+// callers see a working session through the middleware.
 func mintAnonSession(t *testing.T, ttl time.Duration) (token string, cookie *http.Cookie) {
 	t.Helper()
 	q := generated.New(testPool)
 	tok := auth.GenerateToken()
 	_, err := q.CreateSession(context.Background(), generated.CreateSessionParams{
 		UserID: pgtype.UUID{Valid: false},
-		Token:  tok,
+		Token:  auth.HashToken(tok),
 		ExpiresAt: pgtype.Timestamptz{
 			Time:  time.Now().Add(ttl),
 			Valid: true,
@@ -459,11 +462,12 @@ func mintAnonSession(t *testing.T, ttl time.Duration) (token string, cookie *htt
 }
 
 // loadSessionByToken fetches the session row (joined with the user) for the
-// given token. The bool is false when no row exists.
+// given plaintext token (the cookie value). The bool is false when no row
+// exists.
 func loadSessionByToken(t *testing.T, token string) (generated.GetSessionUserByTokenRow, bool) {
 	t.Helper()
 	q := generated.New(testPool)
-	row, err := q.GetSessionUserByToken(context.Background(), token)
+	row, err := q.GetSessionUserByToken(context.Background(), auth.HashToken(token))
 	if err != nil {
 		return generated.GetSessionUserByTokenRow{}, false
 	}
