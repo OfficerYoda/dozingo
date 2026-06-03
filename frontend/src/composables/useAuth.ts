@@ -16,7 +16,7 @@ const state = reactive<{
 
 async function fetchUser(): Promise<void> {
     try {
-        const res = await fetch('/api/auth/me', { credentials: 'include' })
+        const res = await fetch('/api/users/me', { credentials: 'include' })
         state.user = res.ok ? await res.json() : null
     } catch {
         state.user = null

@@ -75,10 +75,6 @@ type verifyEmailInput struct {
 	Body verifyEmailInputBody
 }
 
-type userByIDInput struct {
-	UserID string `path:"user_id"  format:"uuid"`
-}
-
 // ===== Handler =====
 
 type AuthHandler struct {
@@ -115,14 +111,6 @@ func (h *AuthHandler) Register(api huma.API) {
 	}, h.logout)
 
 	huma.Register(api, huma.Operation{
-		OperationID: "me",
-		Method:      http.MethodGet,
-		Path:        "/auth/me",
-		Summary:     "Information about current user",
-		Tags:        []string{"Auth"},
-	}, h.me)
-
-	huma.Register(api, huma.Operation{
 		OperationID: "forgot-password",
 		Method:      http.MethodPost,
 		Path:        "/auth/forgot-password",
@@ -153,14 +141,6 @@ func (h *AuthHandler) Register(api huma.API) {
 		Summary:     "Verify an email",
 		Tags:        []string{"Auth"},
 	}, h.verifyEmail)
-
-	huma.Register(api, huma.Operation{
-		OperationID: "get-user-by-id",
-		Method:      http.MethodGet,
-		Path:        "/users/{user_id}",
-		Summary:     "Get User by ID",
-		Tags:        []string{"Auth"},
-	}, h.userByID)
 }
 
 func (h *AuthHandler) register(ctx context.Context, in *registerInput) (*userOutput, error) {
@@ -195,15 +175,6 @@ func (h *AuthHandler) logout(ctx context.Context, _ *struct{}) (*struct{}, error
 	}
 
 	return &struct{}{}, nil
-}
-
-func (h *AuthHandler) me(ctx context.Context, _ *struct{}) (*userOutput, error) {
-	user, err := h.svc.Me(ctx)
-	if err != nil {
-		return nil, toHumaErr(err, "", "failed to get me")
-	}
-
-	return &userOutput{Body: userToOutput(user)}, nil
 }
 
 func (h *AuthHandler) forgotPassword(ctx context.Context, in *forgotPasswordInput) (*emailSentOutput, error) {
@@ -241,15 +212,6 @@ func (h *AuthHandler) verifyEmail(ctx context.Context, in *verifyEmailInput) (*u
 	user, err := h.svc.VerifyEmail(ctx, in.Body.Token)
 	if err != nil {
 		return nil, toHumaErr(err, "", "failed to verify email")
-	}
-
-	return &userOutput{Body: userToOutput(user)}, nil
-}
-
-func (h *AuthHandler) userByID(ctx context.Context, in *userByIDInput) (*userOutput, error) {
-	user, err := h.svc.UserByID(ctx, in.UserID)
-	if err != nil {
-		return nil, toHumaErr(err, "", "failed to get user by ID")
 	}
 
 	return &userOutput{Body: userToOutput(user)}, nil

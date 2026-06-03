@@ -123,19 +123,6 @@ func (s *Auth) Logout(ctx context.Context) error {
 	return nil
 }
 
-func (s *Auth) Me(ctx context.Context) (generated.User, error) {
-	session, ok := middleware.SessionUserFromContext(ctx)
-	if !ok || !session.UserID.Valid {
-		return generated.User{}, fmt.Errorf("not logged in: %w", domain.ErrUnauthorized)
-	}
-
-	return generated.User{
-		ID:       session.UserID,
-		Username: session.Username.String,
-		Email:    session.Email,
-	}, nil
-}
-
 func (s *Auth) ForgotPassword(ctx context.Context, email string) error {
 	user, err := s.users.GetByEmail(ctx, email)
 	if err != nil {
@@ -274,20 +261,6 @@ func (s *Auth) VerifyEmail(ctx context.Context, token string) (generated.User, e
 	return user, nil
 }
 
-func (s *Auth) UserByID(ctx context.Context, userIDStr string) (generated.User, error) {
-	userID := pgmap.PgUUIDFromString(&userIDStr)
-	if !userID.Valid {
-		return generated.User{}, fmt.Errorf("invalid UUID: %w", domain.ErrBadInput)
-	}
-
-	user, err := s.users.GetByID(ctx, userID)
-	if err != nil {
-		return generated.User{}, fmt.Errorf("get user by id: %w", err)
-	}
-
-	return user, nil
-}
-
 func (s *Auth) generateUser(ctx context.Context, in RegisterInput) (generated.User, error) {
 	passwordHash, err := auth.HashPassword(in.Password)
 	if err != nil {
@@ -311,17 +284,6 @@ func (s *Auth) generateUser(ctx context.Context, in RegisterInput) (generated.Us
 		return generated.User{}, err
 	}
 	return user, nil
-}
-
-func requiresSessionUser(ctx context.Context, queries *generated.Queries) (generated.GetSessionUserByTokenRow, error) {
-	sessionUser, err := middleware.RequireSession(ctx, queries)
-	if err != nil {
-		return generated.GetSessionUserByTokenRow{}, fmt.Errorf("session required: %w", err)
-	}
-	if !sessionUser.UserID.Valid {
-		return generated.GetSessionUserByTokenRow{}, fmt.Errorf("authenticated user required: %w", domain.ErrUnauthorized)
-	}
-	return sessionUser, nil
 }
 
 func (s *Auth) attachUserToSession(ctx context.Context, user generated.User) error {

@@ -242,7 +242,7 @@ func TestNewPassword_Success(t *testing.T) {
 
 	// The previously-issued session cookie must be invalidated by
 	// DeleteByUserID inside the NewPassword tx.
-	me := doRequestWithCookies(http.MethodGet, "/api/auth/me", nil, []*http.Cookie{preCookie})
+	me := doRequestWithCookies(http.MethodGet, "/api/users/me", nil, []*http.Cookie{preCookie})
 	assertStatus(t, me, http.StatusUnauthorized)
 }
 
@@ -365,7 +365,7 @@ func TestNewPassword_InvalidatesAllSessions(t *testing.T) {
 
 	// Both pre-existing sessions must now be unauthorized on /me.
 	for label, c := range map[string]*http.Cookie{"A": cookieA, "B": cookieB} {
-		w := doRequestWithCookies(http.MethodGet, "/api/auth/me", nil, []*http.Cookie{c})
+		w := doRequestWithCookies(http.MethodGet, "/api/users/me", nil, []*http.Cookie{c})
 		if w.Code != http.StatusUnauthorized {
 			t.Errorf("session %s: expected 401 after password reset, got %d (body: %s)", label, w.Code, w.Body.String())
 		}

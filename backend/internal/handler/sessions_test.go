@@ -82,7 +82,7 @@ func TestSession_ExpiredCookie_TreatedAsUnknown(t *testing.T) {
 	tok := insertSessionWithExpiry(t, -1*time.Hour)
 	cookie := &http.Cookie{Name: "session_token", Value: tok}
 
-	w := doRequestWithCookies(http.MethodGet, "/api/auth/me", nil, []*http.Cookie{cookie})
+	w := doRequestWithCookies(http.MethodGet, "/api/users/me", nil, []*http.Cookie{cookie})
 	assertStatus(t, w, http.StatusUnauthorized)
 
 	c := extractSessionCookie(w)
