@@ -79,7 +79,7 @@ func (s *Users) UpdateUser(ctx context.Context, userIDStr string, in UpdateUserI
 
 	sessionUser, err := requiresSessionUser(ctx, s.queries)
 	if err != nil {
-		return generated.User{}, fmt.Errorf("require session: %w", err)
+		return generated.User{}, fmt.Errorf("session required: %w", err)
 	}
 
 	if sessionUser.UserID.Bytes != userID.Bytes {
@@ -133,7 +133,7 @@ func requiresSessionUser(ctx context.Context, queries *generated.Queries) (gener
 		return generated.GetSessionUserByTokenRow{}, fmt.Errorf("session required: %w", err)
 	}
 	if !sessionUser.UserID.Valid {
-		return generated.GetSessionUserByTokenRow{}, fmt.Errorf("authenticated user required: %w", domain.ErrUnauthorized)
+		return generated.GetSessionUserByTokenRow{}, fmt.Errorf("requires authenticated user: %w", domain.ErrUnauthorized)
 	}
 	return sessionUser, nil
 }

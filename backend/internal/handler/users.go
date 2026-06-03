@@ -115,12 +115,20 @@ func (h *UsersHandler) Register(api huma.API) {
 	}, h.updateMe)
 
 	huma.Register(api, huma.Operation{
-		OperationID: "list-votes-for-user",
+		OperationID: "list-votes-for-a-user",
 		Method:      http.MethodGet,
 		Path:        "/users/{user_id}/votes",
 		Summary:     "List votes for a User",
 		Tags:        []string{"Users"},
 	}, h.listVotesFromUser)
+
+	huma.Register(api, huma.Operation{
+		OperationID: "list-votes-for-current-user",
+		Method:      http.MethodGet,
+		Path:        "/users/me/votes",
+		Summary:     "List votes for current User",
+		Tags:        []string{"Users"},
+	}, h.listVotesFromMe)
 }
 
 func (h *UsersHandler) me(ctx context.Context, _ *struct{}) (*userOutput, error) {
@@ -171,6 +179,31 @@ func (h *UsersHandler) listVotesFromUser(ctx context.Context, in *listVotesFromU
 	votes, err := h.votes.ListVotesFromUser(ctx, in.UserID.Value)
 	if err != nil {
 		return nil, toHumaErr(err, "", "failed to list votes for user")
+	}
+
+	body := make([]listVotesFromUserOutputBody, len(votes))
+	for i, vote := range votes {
+		body[i] = listVotesFromUserOutputBody{
+			VoteID:        vote.VoteID.String(),
+			VoteValue:     vote.VoteValue,
+			BoardID:       vote.BoardID.String(),
+			Title:         vote.Title,
+			Description:   vote.Description.String,
+			Size:          vote.Size,
+			BoardAuthorID: vote.BoardAuthorID.String(),
+			Score:         vote.Score,
+			VoteCount:     vote.VoteCount,
+			PlayCount:     vote.PlayCount,
+		}
+	}
+
+	return &listVotesFromUserOutput{Body: body}, nil
+}
+
+func (h *UsersHandler) listVotesFromMe(ctx context.Context, _ *struct{}) (*listVotesFromUserOutput, error) {
+	votes, err := h.votes.ListVotesFromMe(ctx)
+	if err != nil {
+		return nil, toHumaErr(err, "", "failed to list votes for current user")
 	}
 
 	body := make([]listVotesFromUserOutputBody, len(votes))

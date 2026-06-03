@@ -71,3 +71,12 @@ func (s *Votes) ListVotesFromUser(ctx context.Context, userID pgtype.UUID) ([]ge
 
 	return votes, nil
 }
+
+func (s *Votes) ListVotesFromMe(ctx context.Context) ([]generated.ListVotesFromUserRow, error) {
+	sessionUser, err := requiresSessionUser(ctx, s.queries)
+	if err != nil {
+		return []generated.ListVotesFromUserRow{}, err
+	}
+
+	return s.ListVotesFromUser(ctx, sessionUser.UserID)
+}
