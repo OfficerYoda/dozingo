@@ -35,6 +35,18 @@ func StringFromPgUUID(uuid pgtype.UUID) *string {
 	return &s
 }
 
+func PgUUIDFromString(s *string) pgtype.UUID {
+	if s == nil {
+		return pgtype.UUID{Valid: false}
+	}
+	var uuid pgtype.UUID
+	err := uuid.Scan(*s)
+	if err != nil {
+		return pgtype.UUID{Valid: false}
+	}
+	return uuid
+}
+
 func PgTimestamptzFromTime(time *timepkg.Time) pgtype.Timestamptz {
 	if time == nil {
 		return pgtype.Timestamptz{

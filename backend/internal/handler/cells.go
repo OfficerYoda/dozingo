@@ -6,6 +6,7 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/officeryoda/dozingo/internal/generated"
+	"github.com/officeryoda/dozingo/internal/middleware"
 	"github.com/officeryoda/dozingo/internal/pgmap"
 	"github.com/officeryoda/dozingo/internal/service"
 	"github.com/officeryoda/dozingo/internal/types"
@@ -80,6 +81,7 @@ func (h *CellsHandler) Register(api huma.API) {
 		Path:        "/boards/{board_id}/cells",
 		Summary:     "Get all cells for a Board",
 		Tags:        []string{"Cells"},
+		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.ReadLimiter)},
 	}, h.list)
 
 	huma.Register(api, huma.Operation{
@@ -88,6 +90,7 @@ func (h *CellsHandler) Register(api huma.API) {
 		Path:        "/boards/{board_id}/cells",
 		Summary:     "Create a cell",
 		Tags:        []string{"Cells"},
+		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.WriteLimiter)},
 	}, h.create)
 
 	huma.Register(api, huma.Operation{
@@ -96,6 +99,7 @@ func (h *CellsHandler) Register(api huma.API) {
 		Path:        "/boards/{board_id}/cells/{cell_id}",
 		Summary:     "Update a cell",
 		Tags:        []string{"Cells"},
+		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.WriteLimiter)},
 	}, h.update)
 
 	huma.Register(api, huma.Operation{
@@ -104,6 +108,7 @@ func (h *CellsHandler) Register(api huma.API) {
 		Path:        "/boards/{board_id}/cells/{cell_id}",
 		Summary:     "Delete a cell",
 		Tags:        []string{"Cells"},
+		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.WriteLimiter)},
 	}, h.delete)
 }
 

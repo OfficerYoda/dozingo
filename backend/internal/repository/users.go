@@ -67,6 +67,25 @@ func (r *Users) SetEmailVerifiedAt(ctx context.Context, userID pgtype.UUID, emai
 	return user, nil
 }
 
+type UpdateUserParams struct {
+	Username *string
+	EmailSet bool
+	Email    *string // only consulted when EmailSet
+}
+
+func (r *Users) Update(ctx context.Context, userID pgtype.UUID, in UpdateUserParams) (generated.User, error) {
+	user, err := r.queries.UpdateUser(ctx, generated.UpdateUserParams{
+		ID:       userID,
+		Username: pgmap.PgTextFromString(in.Username),
+		EmailSet: in.EmailSet,
+		Email:    pgmap.PgTextFromString(in.Email),
+	})
+	if err != nil {
+		return generated.User{}, pgmap.TranslatePgErr(err)
+	}
+	return user, nil
+}
+
 func (r *Users) Delete(ctx context.Context, userID pgtype.UUID) (generated.User, error) {
 	user, err := r.queries.DeleteUser(ctx, userID)
 	if err != nil {

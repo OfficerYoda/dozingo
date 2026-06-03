@@ -6,6 +6,7 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/officeryoda/dozingo/internal/generated"
+	"github.com/officeryoda/dozingo/internal/middleware"
 	"github.com/officeryoda/dozingo/internal/pgmap"
 	"github.com/officeryoda/dozingo/internal/service"
 	"github.com/officeryoda/dozingo/internal/types"
@@ -87,6 +88,7 @@ func (h *GamesHandler) Register(api huma.API) {
 		Path:        "/games/{game_id}",
 		Summary:     "Get a Game by ID",
 		Tags:        []string{"Games"},
+		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.ReadLimiter)},
 	}, h.get)
 
 	huma.Register(api, huma.Operation{
@@ -95,6 +97,7 @@ func (h *GamesHandler) Register(api huma.API) {
 		Path:        "/users/{player_id}/games",
 		Summary:     "List all games by a player",
 		Tags:        []string{"Games"},
+		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.ReadLimiter)},
 	}, h.listByPlayer)
 
 	huma.Register(api, huma.Operation{
@@ -103,6 +106,7 @@ func (h *GamesHandler) Register(api huma.API) {
 		Path:        "/me/games",
 		Summary:     "List all games from current session",
 		Tags:        []string{"Games"},
+		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.ReadLimiter)},
 	}, h.listByCurrentSession)
 
 	huma.Register(api, huma.Operation{
@@ -111,6 +115,7 @@ func (h *GamesHandler) Register(api huma.API) {
 		Path:        "/boards/{board_id}/games",
 		Summary:     "List all games played on a board",
 		Tags:        []string{"Games"},
+		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.ReadLimiter)},
 	}, h.listByBoard)
 
 	huma.Register(api, huma.Operation{
@@ -119,6 +124,7 @@ func (h *GamesHandler) Register(api huma.API) {
 		Path:        "/boards/{board_id}/games",
 		Summary:     "Create a game",
 		Tags:        []string{"Games"},
+		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.WriteLimiter)},
 	}, h.create)
 
 	huma.Register(api, huma.Operation{
@@ -127,6 +133,7 @@ func (h *GamesHandler) Register(api huma.API) {
 		Path:        "/games/{game_id}/status",
 		Summary:     "Update game status",
 		Tags:        []string{"Games"},
+		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.WriteLimiter)},
 	}, h.updateStatus)
 
 	huma.Register(api, huma.Operation{
@@ -135,6 +142,7 @@ func (h *GamesHandler) Register(api huma.API) {
 		Path:        "/games/{game_id}",
 		Summary:     "Delete a game",
 		Tags:        []string{"Games"},
+		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.WriteLimiter)},
 	}, h.delete)
 }
 

@@ -61,3 +61,12 @@ func (r *Votes) Delete(ctx context.Context, in DeleteVoteInput) (generated.Vote,
 	}
 	return vote, nil
 }
+
+func (r *Votes) ListVotesFromUser(ctx context.Context, userID pgtype.UUID) ([]generated.ListVotesFromUserRow, error) {
+	votes, err := r.queries.ListVotesFromUser(ctx, userID)
+	if err != nil {
+		return []generated.ListVotesFromUserRow{}, pgmap.TranslatePgErr(err)
+	}
+
+	return votes, nil
+}

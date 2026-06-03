@@ -104,6 +104,51 @@ func TestStringFromPgUUID_Invalid(t *testing.T) {
 	}
 }
 
+// ── PgUUIDFromString ──────────────────────────────────────────────────────────
+
+func TestPgUUIDFromString_Valid(t *testing.T) {
+	const raw = "da78a8e3-506f-4e79-a50c-75c2b95156cc"
+	s := raw
+	got := PgUUIDFromString(&s)
+	if !got.Valid {
+		t.Fatal("expected Valid=true for a well-formed UUID string")
+	}
+
+	// Round-trip through StringFromPgUUID to assert the bytes match the
+	// canonical input. Comparing strings dodges the awkward [16]byte
+	// formatting and matches how callers consume the value.
+	round := StringFromPgUUID(got)
+	if round == nil {
+		t.Fatal("expected round-trip pointer to be non-nil")
+	}
+	if *round != raw {
+		t.Errorf("expected round-trip %q, got %q", raw, *round)
+	}
+}
+
+func TestPgUUIDFromString_Nil(t *testing.T) {
+	got := PgUUIDFromString(nil)
+	if got.Valid {
+		t.Fatal("expected Valid=false for a nil pointer")
+	}
+}
+
+func TestPgUUIDFromString_Invalid(t *testing.T) {
+	s := "not-a-uuid"
+	got := PgUUIDFromString(&s)
+	if got.Valid {
+		t.Fatal("expected Valid=false for an unparseable UUID string")
+	}
+}
+
+func TestPgUUIDFromString_EmptyString(t *testing.T) {
+	s := ""
+	got := PgUUIDFromString(&s)
+	if got.Valid {
+		t.Fatal("expected Valid=false for an empty string")
+	}
+}
+
 // ── PgTimestamptzFromTime ─────────────────────────────────────────────────────
 
 func TestPgTimestamptzFromTime_Valid(t *testing.T) {

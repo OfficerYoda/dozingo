@@ -121,6 +121,7 @@ func registerRoutes(router *chi.Mux, repos repository.Repos, pool *pgxpool.Pool,
 	gamesSvc := service.NewGames(repos.Games, queries)
 	votesSvc := service.NewVotes(repos.Votes, queries)
 	authSvc := service.NewAuth(repos, emailSender, queries, txRunner)
+	usersSvc := service.NewUsers(repos, queries, emailSender, txRunner)
 
 	handler.NewHealthHandler(pool).Register(apiGroup)
 	handler.NewBoardsHandler(boardsSvc).Register(apiGroup)
@@ -129,6 +130,17 @@ func registerRoutes(router *chi.Mux, repos repository.Repos, pool *pgxpool.Pool,
 	handler.NewGamesHandler(gamesSvc).Register(apiGroup)
 	handler.NewVotesHandler(votesSvc).Register(apiGroup)
 	handler.NewAuthHandler(authSvc).Register(apiGroup)
+	handler.NewUsersHandler(usersSvc, votesSvc).Register(apiGroup)
+
+	createOpenAPIFile(api)
+}
+
+func createOpenAPIFile(api huma.API) {
+	yamlData, _ := api.OpenAPI().YAML()
+	err := os.WriteFile("openapi.yaml", yamlData, 0o644)
+	if err != nil {
+		slog.Warn("failed to write OpenAPI file", "error", err)
+	}
 }
 
 func createServer(port int, handler http.Handler) *http.Server {
