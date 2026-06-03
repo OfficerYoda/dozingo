@@ -27,8 +27,8 @@ func RateLimit(
 		// Combine session/IP with the endpoint so limits are per-route.
 		key = key + ":" + ctx.Operation().Path
 
-		if rl.OnLimit(w, r, key) {
-			// OnLimit already wrote 429 + headers; stop the chain.
+		if rl.RespondOnLimit(w, r, key) {
+			// RespondOnLimit wrote 429 + headers; stop the chain.
 			return
 		}
 
