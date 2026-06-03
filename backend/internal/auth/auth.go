@@ -2,7 +2,9 @@ package auth
 
 import (
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"errors"
 
 	"golang.org/x/crypto/bcrypt"
@@ -58,6 +60,11 @@ func GenerateToken() string {
 		return "" // rand.Read never returns an error
 	}
 	return base64.URLEncoding.EncodeToString(bytes)
+}
+
+func HashToken(token string) string {
+	hash := sha256.Sum256([]byte(token))
+	return hex.EncodeToString(hash[:])
 }
 
 func CheckPasswordAgainstDummy(password string) {
