@@ -1,4 +1,4 @@
-<template>
+<template> 
   <section>
     <div class="grid container">
       <article class="card col-6 md-12">
