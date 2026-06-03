@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
+	"github.com/officeryoda/dozingo/internal/middleware"
 	"github.com/officeryoda/dozingo/internal/pgmap"
 	"github.com/officeryoda/dozingo/internal/service"
 	"github.com/officeryoda/dozingo/internal/types"
@@ -56,6 +57,7 @@ func (h *UsersHandler) Register(api huma.API) {
 		Path:        "/users/me",
 		Summary:     "Information about current user",
 		Tags:        []string{"Users"},
+		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.ReadLimiter)},
 	}, h.me)
 
 	huma.Register(api, huma.Operation{
@@ -64,6 +66,7 @@ func (h *UsersHandler) Register(api huma.API) {
 		Path:        "/users/{user_id}",
 		Summary:     "Get User by ID",
 		Tags:        []string{"Users"},
+		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.ReadLimiter)},
 	}, h.userByID)
 
 	huma.Register(api, huma.Operation{
@@ -76,7 +79,8 @@ func (h *UsersHandler) Register(api huma.API) {
 			"the column unchanged, send `null` to clear it, or send a new " +
 			"address to set it (which also resets verification and triggers " +
 			"a verification mail).",
-		Tags: []string{"Users"},
+		Tags:        []string{"Users"},
+		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.WriteLimiter)},
 	}, h.update)
 
 	huma.Register(api, huma.Operation{
@@ -90,7 +94,8 @@ func (h *UsersHandler) Register(api huma.API) {
 			"unchanged, send `null` to clear it, or send a new address to " +
 			"set it (which also resets verification and triggers a " +
 			"verification mail).",
-		Tags: []string{"Users"},
+		Tags:        []string{"Users"},
+		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.WriteLimiter)},
 	}, h.updateMe)
 }
 

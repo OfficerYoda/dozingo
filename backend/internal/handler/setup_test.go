@@ -16,6 +16,7 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humachi"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/httprate"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
@@ -193,6 +194,12 @@ func TestMain(m *testing.M) {
 	// Set up the router with all handlers registered
 	testRouter = chi.NewMux()
 	api := humachi.New(testRouter, huma.DefaultConfig("Dozingo Test API", "0.1.0"))
+
+	// Disable rate limiting in tests by swapping the package-level limiters
+	// with permissive ones BEFORE handlers register and capture them. The
+	// handlers store the *httprate.RateLimiter pointer at registration time,
+	// so this must happen before any *.Register(apiGroup) call.
+	disableRateLimitsForTests()
 
 	// SessionUser middleware is required by /auth/* and any handler calling
 	// RequireSessionCtx. Tests run over plain HTTP via httptest, so disable
@@ -558,4 +565,27 @@ func createAnonGame(t *testing.T, cookie *http.Cookie, boardID string) string {
 	var resp map[string]any
 	decodeJSON(t, w, &resp)
 	return resp["game_id"].(string)
+}
+
+// disableRateLimitsForTests swaps the package-level rate limiters with
+// permissive limiters that will not fire during a test run. Must be called
+// before handlers register operations, since handlers capture the
+// *httprate.RateLimiter pointer at huma.Register time.
+//
+// Tests run many requests in rapid succession from the same RemoteAddr
+// (httptest.NewRequest defaults to 192.0.2.1:1234) and share session ids
+// across factories, so production limits would otherwise trip and turn the
+// suite red regardless of correctness.
+func disableRateLimitsForTests() {
+	huge := func() *httprate.RateLimiter {
+		return httprate.NewRateLimiter(1_000_000, time.Minute)
+	}
+	middleware.StrictAuthLimiter = huge()
+	middleware.HeavyAuthLimiter = huge()
+	middleware.WriteLimiter = huge()
+	middleware.WriteHeavyLimiter = huge()
+	middleware.ReadLimiter = huge()
+	middleware.ReadListLimiter = huge()
+	middleware.GameplayLimiter = huge()
+	middleware.HealthLimiter = huge()
 }

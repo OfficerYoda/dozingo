@@ -68,6 +68,7 @@ func (h *VotesHandler) Register(api huma.API) {
 		Path:        "/boards/{board_id}/vote",
 		Summary:     "Get all votes for a Board",
 		Tags:        []string{"Votes"},
+		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.ReadLimiter)},
 	}, h.get)
 
 	huma.Register(api, huma.Operation{
@@ -77,6 +78,7 @@ func (h *VotesHandler) Register(api huma.API) {
 		Summary:     "Upsert a vote",
 		Description: "Update or Create a vote",
 		Tags:        []string{"Votes"},
+		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.WriteLimiter)},
 	}, h.upsert)
 
 	huma.Register(api, huma.Operation{
@@ -85,6 +87,7 @@ func (h *VotesHandler) Register(api huma.API) {
 		Path:        "/boards/{board_id}/vote",
 		Summary:     "Delete a vote",
 		Tags:        []string{"Votes"},
+		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.WriteLimiter)},
 	}, h.delete)
 }
 
