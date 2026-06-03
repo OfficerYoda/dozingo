@@ -126,6 +126,7 @@ func (h *UsersHandler) Register(api huma.API) {
 		Path:        "/users/{user_id}/votes",
 		Summary:     "List votes for a User",
 		Tags:        []string{"Users"},
+		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.ReadListLimiter)},
 	}, h.listVotesFromUser)
 
 	huma.Register(api, huma.Operation{
@@ -134,6 +135,7 @@ func (h *UsersHandler) Register(api huma.API) {
 		Path:        "/users/me/votes",
 		Summary:     "List votes for current User",
 		Tags:        []string{"Users"},
+		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.ReadListLimiter)},
 	}, h.listVotesFromMe)
 }
 

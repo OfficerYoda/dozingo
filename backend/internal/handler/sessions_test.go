@@ -14,13 +14,16 @@ import (
 // insertSessionWithExpiry inserts a session row directly with the given
 // expires_at offset relative to now. UserID is NULL (anonymous) -- that's all
 // the middleware tests need.
+//
+// Returns the plaintext token (the cookie value). The DB row stores the
+// SHA-256 hex digest so the middleware can find it.
 func insertSessionWithExpiry(t *testing.T, expiresIn time.Duration) (token string) {
 	t.Helper()
 	q := generated.New(testPool)
 	tok := auth.GenerateToken()
 	_, err := q.CreateSession(context.Background(), generated.CreateSessionParams{
 		UserID: pgtype.UUID{Valid: false},
-		Token:  tok,
+		Token:  auth.HashToken(tok),
 		ExpiresAt: pgtype.Timestamptz{
 			Time:  time.Now().Add(expiresIn),
 			Valid: true,
@@ -32,12 +35,13 @@ func insertSessionWithExpiry(t *testing.T, expiresIn time.Duration) (token strin
 	return tok
 }
 
-// fetchSessionExpiry returns the expires_at for a session token, or false if
-// the row is gone (or already expired -- GetSessionUserByToken filters those).
+// fetchSessionExpiry returns the expires_at for a session token (plaintext,
+// the cookie value), or false if the row is gone (or already expired --
+// GetSessionUserByToken filters those).
 func fetchSessionExpiry(t *testing.T, token string) (time.Time, bool) {
 	t.Helper()
 	q := generated.New(testPool)
-	row, err := q.GetSessionUserByToken(context.Background(), token)
+	row, err := q.GetSessionUserByToken(context.Background(), auth.HashToken(token))
 	if err != nil {
 		return time.Time{}, false
 	}

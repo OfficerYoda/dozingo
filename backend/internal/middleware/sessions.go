@@ -88,7 +88,8 @@ func (m *SessionMiddleware) Handler(api huma.API) func(huma.Context, func(huma.C
 			return
 		}
 
-		sessionUser, err := m.queries.GetSessionUserByToken(ctx.Context(), sessionToken)
+		// The cookie carries plaintext; the DB stores SHA-256 hex.
+		sessionUser, err := m.queries.GetSessionUserByToken(ctx.Context(), auth.HashToken(sessionToken))
 		if err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
 				ClearSessionTokenCookie(ctx.Context())
@@ -143,13 +144,13 @@ func RequireSession(ctx context.Context, queries *generated.Queries) (generated.
 		return slot.row, nil
 	}
 
-	session, err := createNewSession(queries, humaCtx)
+	session, plaintext, err := createNewSession(queries, humaCtx)
 	if err != nil {
 		slog.Error("failed to create new session", "error", err)
 		return generated.GetSessionUserByTokenRow{}, err
 	}
 
-	mw.setSessionTokenCookie(humaCtx, session.Token)
+	mw.setSessionTokenCookie(humaCtx, plaintext)
 
 	row := generated.GetSessionUserByTokenRow{
 		SessionID: session.ID,
@@ -210,6 +211,9 @@ func ClearSessionTokenCookie(ctx context.Context) error {
 func extendCloseToExpiredSessions(sessionUser *generated.GetSessionUserByTokenRow, queries *generated.Queries, ctx huma.Context) {
 	sessionExpirationTime := sessionUser.ExpiresAt.Time
 	if time.Now().Add(sessionExtensionThreshold).After(sessionExpirationTime) {
+		// sessionUser.Token is already the SHA-256 hex digest stored in the
+		// DB (returned by GetSessionUserByToken), so no further hashing is
+		// needed before passing it back to ExtendSessionByToken.
 		session, err := queries.ExtendSessionByToken(ctx.Context(), generated.ExtendSessionByTokenParams{
 			Token: sessionUser.Token,
 			ExpiresAt: pgtype.Timestamptz{
@@ -226,7 +230,12 @@ func extendCloseToExpiredSessions(sessionUser *generated.GetSessionUserByTokenRo
 	}
 }
 
-func createNewSession(queries *generated.Queries, ctx huma.Context) (generated.Session, error) {
+// createNewSession mints a new anonymous session. It generates a plaintext
+// session token (which the caller must place in the Set-Cookie header) and
+// stores the SHA-256 hex digest in the database. The plaintext is never
+// persisted.
+func createNewSession(queries *generated.Queries, ctx huma.Context) (generated.Session, string, error) {
+	plaintext := auth.GenerateToken()
 	session, err := queries.CreateSession(ctx.Context(), generated.CreateSessionParams{
 		UserID: pgtype.UUID{Valid: false},
 		ExpiresAt: pgtype.Timestamptz{
@@ -234,13 +243,13 @@ func createNewSession(queries *generated.Queries, ctx huma.Context) (generated.S
 			InfinityModifier: pgtype.Finite,
 			Valid:            true,
 		},
-		Token: auth.GenerateToken(),
+		Token: auth.HashToken(plaintext),
 	})
 	if err != nil {
-		return generated.Session{}, err
+		return generated.Session{}, "", err
 	}
 
-	return session, nil
+	return session, plaintext, nil
 }
 
 // humaContextFrom returns the huma.Context stashed by Session middleware.

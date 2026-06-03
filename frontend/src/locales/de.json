@@ -60,7 +60,13 @@
     "termColumn": "Zitat / Begriff",
     "rarityColumn": "Rarität",
     "termPlaceholder": "Zitat oder Begriff eingeben",
+    "entryCountHint": "{count} Einträge hinzugefügt. Noch {needed} mehr für ein {size}-Layout.",
+    "entryCountHintReady": "Bereit! {count} Einträge für ein {size}-Layout.",
     "save": "Als Vorlage speichern",
+    "saveSuccess": "Board erfolgreich erstellt!",
+    "saveError": "Board konnte nicht erstellt werden. Bitte versuche es erneut.",
+    "validationError": "Bitte fülle den Titel und alle Einträge aus, bevor du speicherst.",
+    "notEnoughEntriesError": "Nicht genügend Einträge für das gewählte Layout. Bitte füge weitere hinzu.",
     "rarity": {
       "common": "Gewöhnlich",
       "uncommon": "Selten",

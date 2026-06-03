@@ -9,13 +9,19 @@ import (
 	"github.com/officeryoda/dozingo/internal/pgmap"
 )
 
+// All token-typed parameters and fields in this package are SHA-256 hex
+// digests, never plaintext. Callers (the service layer) are responsible
+// for hashing the user-supplied token via auth.HashToken before invoking
+// any of these methods. Token-typed fields on returned rows likewise
+// hold the hash and can be passed back to other methods as-is.
+
 type VerificationTokens struct {
 	queries *generated.Queries
 }
 
 type CreateVerificationTokenInput struct {
 	UserID    pgtype.UUID
-	Token     string
+	TokenHash string
 	TokenType generated.TokenType
 	ExpiresAt time.Time
 }
@@ -28,7 +34,7 @@ type GetByTokenForUserInput struct {
 func (r *VerificationTokens) Create(ctx context.Context, in CreateVerificationTokenInput) (generated.VerificationToken, error) {
 	token, err := r.queries.CreateVerificationToken(ctx, generated.CreateVerificationTokenParams{
 		UserID:    in.UserID,
-		Token:     in.Token,
+		Token:     in.TokenHash,
 		Type:      in.TokenType,
 		ExpiresAt: pgmap.PgTimestamptzFromTime(&in.ExpiresAt),
 	})
@@ -39,8 +45,8 @@ func (r *VerificationTokens) Create(ctx context.Context, in CreateVerificationTo
 	return token, nil
 }
 
-func (r *VerificationTokens) GetByToken(ctx context.Context, token string) (generated.VerificationToken, error) {
-	verificationToken, err := r.queries.GetVerificationTokenByToken(ctx, token)
+func (r *VerificationTokens) GetByToken(ctx context.Context, tokenHash string) (generated.VerificationToken, error) {
+	verificationToken, err := r.queries.GetVerificationTokenByToken(ctx, tokenHash)
 	if err != nil {
 		return generated.VerificationToken{}, pgmap.TranslatePgErr(err)
 	}
@@ -61,8 +67,8 @@ func (r *VerificationTokens) GetValidTokenForUser(ctx context.Context, in GetByT
 	return token, nil
 }
 
-func (r *VerificationTokens) Delete(ctx context.Context, token string) error {
-	err := r.queries.DeleteVerificationToken(ctx, token)
+func (r *VerificationTokens) Delete(ctx context.Context, tokenHash string) error {
+	err := r.queries.DeleteVerificationToken(ctx, tokenHash)
 	if err != nil {
 		return pgmap.TranslatePgErr(err)
 	}

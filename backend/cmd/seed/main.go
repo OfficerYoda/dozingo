@@ -169,7 +169,9 @@ func seedSessions(ctx context.Context, q *generated.Queries, userIDs []pgtype.UU
 
 		sess, err := q.CreateSession(ctx, generated.CreateSessionParams{
 			UserID: userID,
-			Token:  s.Token,
+			// s.Token is the plaintext value a developer pastes into the
+			// session_token cookie; the DB stores its SHA-256 hex digest.
+			Token: auth.HashToken(s.Token),
 			ExpiresAt: pgtype.Timestamptz{
 				Time:  time.Now().Add(time.Duration(s.ExpiresInHours) * time.Hour),
 				Valid: true,

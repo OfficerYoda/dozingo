@@ -16,7 +16,8 @@ import (
 
 // insertVerificationToken inserts a row into verification_tokens directly
 // for the given user. Pass a negative TTL to mint an already-expired token.
-// Returns the raw token string so the test can replay it against the API.
+// Returns the plaintext token string so the test can replay it against the
+// API; the row stores the SHA-256 hex digest.
 func insertVerificationToken(
 	t *testing.T,
 	userID pgtype.UUID,
@@ -28,7 +29,7 @@ func insertVerificationToken(
 	tok := auth.GenerateToken()
 	_, err := q.CreateVerificationToken(context.Background(), generated.CreateVerificationTokenParams{
 		UserID: userID,
-		Token:  tok,
+		Token:  auth.HashToken(tok),
 		Type:   tokenType,
 		ExpiresAt: pgtype.Timestamptz{
 			Time:  time.Now().Add(ttl),
