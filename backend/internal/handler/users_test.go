@@ -403,3 +403,186 @@ func TestUpdateUser_InvalidEmailFormat_422(t *testing.T) {
 		t.Errorf("expected 422/400 for malformed email, got %d (body: %s)", w.Code, w.Body.String())
 	}
 }
+
+/// ===== PATCH /users/me =====
+
+func TestUpdateMe_Success_Username(t *testing.T) {
+	setupTest(t)
+
+	resp := createTestUserWithRegister(t, "merename", "mypassword123", stringPtr("merename@example.com"))
+	userID := (*resp)["user_id"].(string)
+
+	w := doRequestWithCookies(http.MethodPatch, "/api/users/me",
+		map[string]any{"username": "merenamed"}, cookiesFor(userID))
+	assertStatus(t, w, http.StatusOK)
+
+	var got map[string]any
+	decodeJSON(t, w, &got)
+	assertJSONField(t, got, "user_id", userID)
+	assertJSONField(t, got, "username", "merenamed")
+	assertJSONField(t, got, "email", "merename@example.com")
+
+	if fakeMailer.verifyCount() != 0 {
+		t.Errorf("expected 0 verification mails for a pure username change, got %d", fakeMailer.verifyCount())
+	}
+}
+
+func TestUpdateMe_Success_Email_SendsVerificationAndClearsVerifiedAt(t *testing.T) {
+	setupTest(t)
+
+	resp := createTestUserWithRegister(t, "meemail", "mypassword123", stringPtr("meold@example.com"))
+	userID := (*resp)["user_id"].(string)
+
+	id := pgtype.UUID{}
+	if err := id.Scan(userID); err != nil {
+		t.Fatalf("invalid user id: %v", err)
+	}
+	now := time.Now()
+	q := generated.New(testPool)
+	if _, err := q.SetUserEmailVerifiedAt(context.Background(), generated.SetUserEmailVerifiedAtParams{
+		ID:              id,
+		EmailVerifiedAt: pgtype.Timestamptz{Time: now, Valid: true},
+	}); err != nil {
+		t.Fatalf("seed email_verified_at: %v", err)
+	}
+
+	w := doRequestWithCookies(http.MethodPatch, "/api/users/me",
+		map[string]any{"email": "menew@example.com"}, cookiesFor(userID))
+	assertStatus(t, w, http.StatusOK)
+
+	var got map[string]any
+	decodeJSON(t, w, &got)
+	assertJSONField(t, got, "email", "menew@example.com")
+
+	user := loadUserByID(t, userID)
+	if !user.Email.Valid || user.Email.String != "menew@example.com" {
+		t.Errorf("expected stored email 'menew@example.com', got Valid=%v String=%q", user.Email.Valid, user.Email.String)
+	}
+	if user.EmailVerifiedAt.Valid {
+		t.Errorf("expected email_verified_at to be NULL after email change, got %v", user.EmailVerifiedAt.Time)
+	}
+
+	if fakeMailer.verifyCount() != 1 {
+		t.Fatalf("expected exactly 1 verification mail, got %d", fakeMailer.verifyCount())
+	}
+	last, _ := fakeMailer.lastVerify()
+	if last.To != "menew@example.com" {
+		t.Errorf("expected mail to 'menew@example.com', got %q", last.To)
+	}
+}
+
+func TestUpdateMe_ClearEmail(t *testing.T) {
+	setupTest(t)
+
+	resp := createTestUserWithRegister(t, "meclear", "mypassword123", stringPtr("meclear@example.com"))
+	userID := (*resp)["user_id"].(string)
+
+	w := doRequestWithCookies(http.MethodPatch, "/api/users/me",
+		map[string]any{"email": nil}, cookiesFor(userID))
+	assertStatus(t, w, http.StatusOK)
+
+	var got map[string]any
+	decodeJSON(t, w, &got)
+	if got["email"] != nil {
+		t.Errorf("expected email to be null in response, got %v", got["email"])
+	}
+
+	user := loadUserByID(t, userID)
+	if user.Email.Valid {
+		t.Errorf("expected stored email to be NULL after clear, got %q", user.Email.String)
+	}
+
+	if fakeMailer.verifyCount() != 0 {
+		t.Errorf("expected 0 verification mails for an email clear, got %d", fakeMailer.verifyCount())
+	}
+}
+
+func TestUpdateMe_NoOpEmptyBody(t *testing.T) {
+	setupTest(t)
+
+	resp := createTestUserWithRegister(t, "menoop", "mypassword123", stringPtr("menoop@example.com"))
+	userID := (*resp)["user_id"].(string)
+	preEmail := (*resp)["email"]
+	preUsername := (*resp)["username"]
+
+	w := doRequestWithCookies(http.MethodPatch, "/api/users/me",
+		map[string]any{}, cookiesFor(userID))
+	assertStatus(t, w, http.StatusOK)
+
+	var got map[string]any
+	decodeJSON(t, w, &got)
+	if got["username"] != preUsername {
+		t.Errorf("expected username unchanged %v, got %v", preUsername, got["username"])
+	}
+	if got["email"] != preEmail {
+		t.Errorf("expected email unchanged %v, got %v", preEmail, got["email"])
+	}
+
+	if fakeMailer.verifyCount() != 0 {
+		t.Errorf("expected 0 verification mails for a no-op patch, got %d", fakeMailer.verifyCount())
+	}
+}
+
+func TestUpdateMe_NotLoggedIn_401(t *testing.T) {
+	setupTest(t)
+
+	w := doRequest(http.MethodPatch, "/api/users/me", map[string]any{"username": "x"})
+	assertStatus(t, w, http.StatusUnauthorized)
+}
+
+func TestUpdateMe_AnonymousSessionOnly_401(t *testing.T) {
+	setupTest(t)
+
+	_, cookie := mintAnonSession(t, 30*24*time.Hour)
+
+	w := doRequestWithCookies(http.MethodPatch, "/api/users/me",
+		map[string]any{"username": "x"}, []*http.Cookie{cookie})
+	assertStatus(t, w, http.StatusUnauthorized)
+}
+
+func TestUpdateMe_DuplicateUsername_409(t *testing.T) {
+	setupTest(t)
+
+	createTestUserWithRegister(t, "metaken", "mypassword123", stringPtr("metaken@example.com"))
+	b := createTestUserWithRegister(t, "metryingto", "mypassword123", stringPtr("metryingto@example.com"))
+	bID := (*b)["user_id"].(string)
+
+	w := doRequestWithCookies(http.MethodPatch, "/api/users/me",
+		map[string]any{"username": "metaken"}, cookiesFor(bID))
+	assertStatus(t, w, http.StatusConflict)
+
+	rawBody := w.Body.String()
+	for _, leak := range []string{
+		"users_username_key",
+		"_key",
+		"constraint",
+		"users_username",
+		"23505",
+	} {
+		if strings.Contains(rawBody, leak) {
+			t.Errorf("response body must not leak %q, got: %s", leak, rawBody)
+		}
+	}
+
+	var got map[string]any
+	decodeJSON(t, w, &got)
+	assertJSONField(t, got, "detail", "conflict")
+
+	user := loadUserByID(t, bID)
+	if user.Username != "metryingto" {
+		t.Errorf("expected username unchanged 'metryingto', got %q", user.Username)
+	}
+}
+
+func TestUpdateMe_InvalidEmailFormat_422(t *testing.T) {
+	setupTest(t)
+
+	resp := createTestUserWithRegister(t, "mebademail", "mypassword123", nil)
+	userID := (*resp)["user_id"].(string)
+
+	w := doRequestWithCookies(http.MethodPatch, "/api/users/me",
+		map[string]any{"email": "not-an-email"}, cookiesFor(userID))
+	if w.Code != http.StatusUnprocessableEntity && w.Code != http.StatusBadRequest {
+		t.Errorf("expected 422/400 for malformed email, got %d (body: %s)", w.Code, w.Body.String())
+	}
+}

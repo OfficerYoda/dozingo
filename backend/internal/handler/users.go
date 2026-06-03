@@ -34,6 +34,10 @@ type updateUserInput struct {
 	Body   updateUserInputBody
 }
 
+type updateMeInput struct {
+	Body updateUserInputBody
+}
+
 // ===== Handler =====
 
 type UsersHandler struct {
@@ -73,6 +77,20 @@ func (h *UsersHandler) Register(api huma.API) {
 			"a verification mail).",
 		Tags: []string{"Users"},
 	}, h.update)
+
+	huma.Register(api, huma.Operation{
+		OperationID: "update-current-user",
+		Method:      http.MethodPatch,
+		Path:        "/users/me",
+		Summary:     "Update the current User's username and/or email",
+		Description: "Convenience alias for PATCH /users/{user_id} that " +
+			"resolves the user id from the session cookie. The `email` " +
+			"field is tri-state: omit the key to leave the column " +
+			"unchanged, send `null` to clear it, or send a new address to " +
+			"set it (which also resets verification and triggers a " +
+			"verification mail).",
+		Tags: []string{"Users"},
+	}, h.updateMe)
 }
 
 func (h *UsersHandler) me(ctx context.Context, _ *struct{}) (*userOutput, error) {
@@ -101,6 +119,19 @@ func (h *UsersHandler) update(ctx context.Context, in *updateUserInput) (*userOu
 	})
 	if err != nil {
 		return nil, toHumaErr(err, "", "failed to update user")
+	}
+
+	return &userOutput{Body: userToOutput(user)}, nil
+}
+
+func (h *UsersHandler) updateMe(ctx context.Context, in *updateMeInput) (*userOutput, error) {
+	user, err := h.svc.UpdateMe(ctx, service.UpdateUserInput{
+		Username: in.Body.Username,
+		EmailSet: in.Body.Email.Set,
+		Email:    in.Body.Email.Value,
+	})
+	if err != nil {
+		return nil, toHumaErr(err, "", "failed to update current user")
 	}
 
 	return &userOutput{Body: userToOutput(user)}, nil
