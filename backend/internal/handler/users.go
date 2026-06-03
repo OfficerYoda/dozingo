@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
+	"github.com/officeryoda/dozingo/internal/pgmap"
 	"github.com/officeryoda/dozingo/internal/service"
 	"github.com/officeryoda/dozingo/internal/types"
 )
@@ -107,6 +108,9 @@ func (h *UsersHandler) userByID(ctx context.Context, in *userByIDInput) (*userOu
 	if err != nil {
 		return nil, toHumaErr(err, "", "failed to get user by ID")
 	}
+
+	// Clean email so no personal information is publicly accessible
+	user.Email = pgmap.PgTextFromString(nil)
 
 	return &userOutput{Body: userToOutput(user)}, nil
 }
