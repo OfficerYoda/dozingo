@@ -2,13 +2,21 @@
 default:
     @just --list
 
-# Serve the frontend locally
+# Run the Vite dev server (proxies /api -> localhost:4242)
 run:
-    python3 -m http.server 3000
+    npm run dev
 
-# Placeholder for future build step
+# Type-check and build the production bundle into dist/
 build:
-    @echo "No build step configured yet."
+    npm run build
+
+# Type-check only (vue-tsc), no build
+type-check:
+    npm run type-check
+
+# Serve the production build locally for smoke testing
+preview:
+    npm run preview
 
 # Placeholder for future test step
 test:
