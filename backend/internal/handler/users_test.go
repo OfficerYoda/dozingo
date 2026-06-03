@@ -2,8 +2,10 @@ package handler
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -585,4 +587,178 @@ func TestUpdateMe_InvalidEmailFormat_422(t *testing.T) {
 	if w.Code != http.StatusUnprocessableEntity && w.Code != http.StatusBadRequest {
 		t.Errorf("expected 422/400 for malformed email, got %d (body: %s)", w.Code, w.Body.String())
 	}
+}
+
+/// ===== GET /users/{user_id}/votes =====
+
+// decodeJSONArray decodes a JSON array response body into a slice of maps.
+func decodeJSONArray(t *testing.T, w *httptest.ResponseRecorder) []map[string]any {
+	t.Helper()
+	var out []map[string]any
+	if err := json.NewDecoder(w.Body).Decode(&out); err != nil {
+		t.Fatalf("failed to decode JSON array: %v\nbody: %s", err, w.Body.String())
+	}
+	return out
+}
+
+func TestListVotesFromUser_Success_SingleVote(t *testing.T) {
+	setupTest(t)
+
+	authorID := createTestUser(t, "boardauthor", "ba@example.com")
+	desc := "a description"
+	boardID := createTestBoard(t, "Title One", 5, authorID, &desc)
+
+	voterID := createTestUser(t, "singlevoter", "sv@example.com")
+	voteResp := createTestVote(t, boardID, voterID, 1)
+	voteID := voteResp["vote_id"].(string)
+
+	w := doRequest(http.MethodGet, fmt.Sprintf("/api/users/%s/votes", voterID), nil)
+	assertStatus(t, w, http.StatusOK)
+
+	got := decodeJSONArray(t, w)
+	if len(got) != 1 {
+		t.Fatalf("expected 1 vote, got %d: %v", len(got), got)
+	}
+	row := got[0]
+	assertJSONField(t, row, "vote_id", voteID)
+	assertJSONField(t, row, "board_id", boardID)
+	assertJSONField(t, row, "title", "Title One")
+	assertJSONField(t, row, "description", "a description")
+	assertJSONField(t, row, "board_author_id", authorID)
+	assertJSONInt(t, row, "vote_value", 1)
+	assertJSONInt(t, row, "size", 5)
+	assertJSONInt(t, row, "vote_score", 1)
+	assertJSONInt(t, row, "vote_count", 1)
+	assertJSONInt(t, row, "play_count", 0)
+}
+
+func TestListVotesFromUser_Success_MultipleBoardsAndAggregates(t *testing.T) {
+	setupTest(t)
+
+	authorID := createTestUser(t, "multiauthor", "ma@example.com")
+	board1 := createTestBoard(t, "Board One", 5, authorID, nil)
+	board2 := createTestBoard(t, "Board Two", 4, authorID, nil)
+
+	userA := createTestUser(t, "userA_multi", "a_multi@example.com")
+	userB := createTestUser(t, "userB_multi", "b_multi@example.com")
+
+	// userA votes on both boards.
+	createTestVote(t, board1, userA, 1)
+	createTestVote(t, board2, userA, -1)
+	// userB also votes on board1 (so aggregates on board1 should include both).
+	createTestVote(t, board1, userB, 1)
+
+	// Create a game on board1 to bump play_count to 1.
+	createTestGame(t, userA, board1)
+
+	w := doRequest(http.MethodGet, fmt.Sprintf("/api/users/%s/votes", userA), nil)
+	assertStatus(t, w, http.StatusOK)
+
+	got := decodeJSONArray(t, w)
+	if len(got) != 2 {
+		t.Fatalf("expected 2 votes for userA, got %d: %v", len(got), got)
+	}
+
+	byBoard := map[string]map[string]any{}
+	for _, row := range got {
+		byBoard[row["board_id"].(string)] = row
+	}
+
+	row1, ok := byBoard[board1]
+	if !ok {
+		t.Fatalf("expected a row for board1=%s, got %v", board1, got)
+	}
+	// board1 aggregates: 1 (userA) + 1 (userB) = score 2, vote_count 2, play_count 1.
+	assertJSONInt(t, row1, "vote_value", 1)
+	assertJSONInt(t, row1, "vote_score", 2)
+	assertJSONInt(t, row1, "vote_count", 2)
+	assertJSONInt(t, row1, "play_count", 1)
+
+	row2, ok := byBoard[board2]
+	if !ok {
+		t.Fatalf("expected a row for board2=%s, got %v", board2, got)
+	}
+	// board2 aggregates: only userA's -1 vote, no games.
+	assertJSONInt(t, row2, "vote_value", -1)
+	assertJSONInt(t, row2, "vote_score", -1)
+	assertJSONInt(t, row2, "vote_count", 1)
+	assertJSONInt(t, row2, "play_count", 0)
+}
+
+func TestListVotesFromUser_NotFoundUser_EmptyList(t *testing.T) {
+	setupTest(t)
+
+	missing := uuid.NewString()
+	w := doRequest(http.MethodGet, fmt.Sprintf("/api/users/%s/votes", missing), nil)
+	assertStatus(t, w, http.StatusOK)
+
+	got := decodeJSONArray(t, w)
+	if len(got) != 0 {
+		t.Errorf("expected empty list for unknown user, got %d entries: %v", len(got), got)
+	}
+}
+
+func TestListVotesFromUser_InvalidUUID_422(t *testing.T) {
+	setupTest(t)
+
+	w := doRequest(http.MethodGet, "/api/users/not-a-uuid/votes", nil)
+	assertStatus(t, w, http.StatusUnprocessableEntity)
+}
+
+/// ===== GET /users/me/votes =====
+
+func TestListVotesFromMe_NoCookie_401(t *testing.T) {
+	setupTest(t)
+
+	w := doRequest(http.MethodGet, "/api/users/me/votes", nil)
+	assertStatus(t, w, http.StatusUnauthorized)
+}
+
+func TestListVotesFromMe_AnonymousSessionOnly_401(t *testing.T) {
+	setupTest(t)
+
+	_, cookie := mintAnonSession(t, 30*24*time.Hour)
+
+	w := doRequestWithCookies(http.MethodGet, "/api/users/me/votes", nil, []*http.Cookie{cookie})
+	assertStatus(t, w, http.StatusUnauthorized)
+}
+
+func TestListVotesFromMe_Success_Empty(t *testing.T) {
+	setupTest(t)
+
+	userID := createTestUser(t, "menovotes", "menovotes@example.com")
+
+	w := doRequestWithCookies(http.MethodGet, "/api/users/me/votes", nil, cookiesFor(userID))
+	assertStatus(t, w, http.StatusOK)
+
+	got := decodeJSONArray(t, w)
+	if len(got) != 0 {
+		t.Errorf("expected 0 votes, got %d: %v", len(got), got)
+	}
+}
+
+func TestListVotesFromMe_Success_OnlyOwnVotes(t *testing.T) {
+	setupTest(t)
+
+	authorID := createTestUser(t, "meauthor", "meauth@example.com")
+	boardID := createTestBoard(t, "Shared Board", 5, authorID, nil)
+
+	userA := createTestUser(t, "meownA", "meA@example.com")
+	userB := createTestUser(t, "meownB", "meB@example.com")
+
+	voteA := createTestVote(t, boardID, userA, 1)
+	createTestVote(t, boardID, userB, -1)
+	voteAID := voteA["vote_id"].(string)
+
+	w := doRequestWithCookies(http.MethodGet, "/api/users/me/votes", nil, cookiesFor(userA))
+	assertStatus(t, w, http.StatusOK)
+
+	got := decodeJSONArray(t, w)
+	if len(got) != 1 {
+		t.Fatalf("expected 1 vote (userA's only), got %d: %v", len(got), got)
+	}
+	assertJSONField(t, got[0], "vote_id", voteAID)
+	assertJSONField(t, got[0], "board_id", boardID)
+	// Aggregates over the board still see both votes.
+	assertJSONInt(t, got[0], "vote_count", 2)
 }
