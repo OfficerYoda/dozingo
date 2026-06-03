@@ -74,7 +74,7 @@
                 <div class="bottom-bar">
                     <div class="bottom-bar-text">
                         <small>Createt by</small>
-                        <span>Hier Author eintragen</span>
+                        <span>{{ authorName ?? '…' }}</span>
                     </div>
                     <div class="right-buttons-bottom">
                         <button class="btn btn-secondary button-bottom-row" @click="shuffle">
@@ -105,6 +105,7 @@ interface Board {
     play_count: number
     score: number
     size: number
+    author_id: string
 }
 
 interface Cell {
@@ -121,6 +122,7 @@ const boards = ref<Board[]>([])
 const cells = ref<Cell[]>([])
 const selecetedBoard = ref<Board>()
 const selectedCells = ref<Cell[]>()
+const authorName = ref<string | null>(null)
 
 async function fetchAllBoards() {
     const params = new URLSearchParams()
@@ -148,6 +150,16 @@ async function fetchAllCellsForBoard(boardID: string) {
     selecetedBoard.value = boards.value.find(b => b.board_id === boardID)
     const numberOfCells = (selecetedBoard.value?.size ?? 0) ** 2
     selectedCells.value = [...cells.value].sort(() => Math.random() - 0.5).slice(0, numberOfCells)
+
+    authorName.value = null
+    if (selecetedBoard.value?.author_id) {
+        const userRes = await fetch('/api/users/' + selecetedBoard.value.author_id)
+        if (userRes.ok) {
+            const user = await userRes.json()
+            authorName.value = user.username
+        }
+    }
+
     showModal.value = true
 }
 
