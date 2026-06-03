@@ -208,23 +208,7 @@ func (s *Auth) SendEmailVerification(ctx context.Context) error {
 		return fmt.Errorf("email already verified: %w", domain.ErrConflict)
 	}
 
-	token, err := upsertToken(
-		ctx,
-		s.txRunner,
-		sessionUser.UserID,
-		generated.TokenTypeEmailVerification,
-		emailVerificationTokenTTL,
-	)
-	if err != nil {
-		return err
-	}
-
-	err = s.emailSender.SendEmailVerification(sessionUser.Email.String, token)
-	if err != nil {
-		return fmt.Errorf("send mail: %w", err)
-	}
-
-	return nil
+	return issueAndSendEmailVerification(ctx, s.txRunner, s.emailSender, sessionUser.UserID, sessionUser.Email.String)
 }
 
 func (s *Auth) VerifyEmail(ctx context.Context, token string) (generated.User, error) {

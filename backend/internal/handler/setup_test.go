@@ -212,7 +212,7 @@ func TestMain(m *testing.M) {
 	NewGamesHandler(service.NewGames(repos.Games, queries)).Register(apiGroup)
 	NewVotesHandler(service.NewVotes(repos.Votes, queries)).Register(apiGroup)
 	NewAuthHandler(service.NewAuth(repos, fakeMailer, queries, txRunner)).Register(apiGroup)
-	NewUsersHandler(service.NewUsers(repos, queries)).Register(apiGroup)
+	NewUsersHandler(service.NewUsers(repos, queries, fakeMailer, txRunner)).Register(apiGroup)
 
 	// Clean tables before running tests to ensure a fresh state
 	truncateAllTables()

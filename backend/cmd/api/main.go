@@ -121,7 +121,7 @@ func registerRoutes(router *chi.Mux, repos repository.Repos, pool *pgxpool.Pool,
 	gamesSvc := service.NewGames(repos.Games, queries)
 	votesSvc := service.NewVotes(repos.Votes, queries)
 	authSvc := service.NewAuth(repos, emailSender, queries, txRunner)
-	usersSvc := service.NewUsers(repos, queries)
+	usersSvc := service.NewUsers(repos, queries, emailSender, txRunner)
 
 	handler.NewHealthHandler(pool).Register(apiGroup)
 	handler.NewBoardsHandler(boardsSvc).Register(apiGroup)
