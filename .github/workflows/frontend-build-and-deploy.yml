@@ -91,7 +91,13 @@ jobs:
             # Atomic symlink swap. `ln -sfn` alone is not atomic when the
             # target already exists; create the symlink under a temp name
             # and use `mv -Tf` to replace the existing symlink atomically.
-            ln -sfn "$RELEASE" "$CURRENT.new"
+            #
+            # Use a *relative* target so the symlink resolves correctly in
+            # any mount namespace. With an absolute target, a container
+            # bind-mounting only frontend-releases/ (e.g. Caddy) cannot
+            # follow the link, because the absolute host path does not
+            # exist inside the container.
+            ln -sfn "releases/$SHA" "$CURRENT.new"
             mv -Tf "$CURRENT.new" "$CURRENT"
 
             echo "Deployed $SHA -> $CURRENT"
