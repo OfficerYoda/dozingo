@@ -21,6 +21,26 @@ SET email_verified_at = sqlc.narg('email_verified_at')
 WHERE id = $1
 RETURNING *;
 
+-- name: UpdateUser :one
+-- Tri-state PATCH:
+--   * username: NULL means "leave alone", non-NULL means "set"
+--   * email_set=false means "leave email/email_verified_at alone";
+--     email_set=true writes whatever's in email (NULL = clear) and
+--     resets email_verified_at to NULL.
+UPDATE users
+SET
+    username = COALESCE(sqlc.narg('username'), username),
+    email = CASE
+        WHEN sqlc.arg('email_set')::bool THEN sqlc.narg('email')
+        ELSE email
+    END,
+    email_verified_at = CASE
+        WHEN sqlc.arg('email_set')::bool THEN NULL
+        ELSE email_verified_at
+    END
+WHERE id = $1
+RETURNING *;
+
 -- name: DeleteUser :one
 DELETE FROM users
 WHERE id = $1

@@ -138,3 +138,50 @@ func (q *Queries) SetUserEmailVerifiedAt(ctx context.Context, arg SetUserEmailVe
 	)
 	return i, err
 }
+
+const updateUser = `-- name: UpdateUser :one
+UPDATE users
+SET
+    username = COALESCE($2, username),
+    email = CASE
+        WHEN $3::bool THEN $4
+        ELSE email
+    END,
+    email_verified_at = CASE
+        WHEN $3::bool THEN NULL
+        ELSE email_verified_at
+    END
+WHERE id = $1
+RETURNING id, username, email, created_at, updated_at, email_verified_at
+`
+
+type UpdateUserParams struct {
+	ID       pgtype.UUID `json:"id"`
+	Username pgtype.Text `json:"username"`
+	EmailSet bool        `json:"email_set"`
+	Email    pgtype.Text `json:"email"`
+}
+
+// Tri-state PATCH:
+//   - username: NULL means "leave alone", non-NULL means "set"
+//   - email_set=false means "leave email/email_verified_at alone";
+//     email_set=true writes whatever's in email (NULL = clear) and
+//     resets email_verified_at to NULL.
+func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) {
+	row := q.db.QueryRow(ctx, updateUser,
+		arg.ID,
+		arg.Username,
+		arg.EmailSet,
+		arg.Email,
+	)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.EmailVerifiedAt,
+	)
+	return i, err
+}

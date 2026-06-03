@@ -19,6 +19,10 @@ type userOutputBody struct {
 	Email    *string `json:"email"    format:"email"`
 }
 
+type userOutput struct {
+	Body userOutputBody
+}
+
 type registerInputBody struct {
 	Username string  `json:"username" required:"true" maxLength:"200"`
 	Password string  `json:"password" required:"true" minLength:"8" maxLength:"72"`
@@ -29,10 +33,6 @@ type registerInput struct {
 	Body registerInputBody
 }
 
-type registerOutput struct {
-	Body userOutputBody
-}
-
 type loginInputBody struct {
 	Username string `json:"username" required:"true" maxLength:"200"`
 	Password string `json:"password" required:"true" minLength:"8" maxLength:"72"`
@@ -40,14 +40,6 @@ type loginInputBody struct {
 
 type loginInput struct {
 	Body loginInputBody
-}
-
-type loginOutput struct {
-	Body userOutputBody
-}
-
-type meOutput struct {
-	Body userOutputBody
 }
 
 type forgotPasswordInputBody struct {
@@ -67,10 +59,6 @@ type newPasswordInput struct {
 	Body newPasswordInputBody
 }
 
-type newPasswordOutput struct {
-	Body userOutputBody
-}
-
 type emailSentOutput struct {
 	Body emailSentOutputBody
 }
@@ -85,10 +73,6 @@ type verifyEmailInputBody struct {
 
 type verifyEmailInput struct {
 	Body verifyEmailInputBody
-}
-
-type verifyEmailOutput struct {
-	Body userOutputBody
 }
 
 // ===== Handler =====
@@ -127,14 +111,6 @@ func (h *AuthHandler) Register(api huma.API) {
 	}, h.logout)
 
 	huma.Register(api, huma.Operation{
-		OperationID: "me",
-		Method:      http.MethodGet,
-		Path:        "/auth/me",
-		Summary:     "Information about current user",
-		Tags:        []string{"Auth"},
-	}, h.me)
-
-	huma.Register(api, huma.Operation{
 		OperationID: "forgot-password",
 		Method:      http.MethodPost,
 		Path:        "/auth/forgot-password",
@@ -167,7 +143,7 @@ func (h *AuthHandler) Register(api huma.API) {
 	}, h.verifyEmail)
 }
 
-func (h *AuthHandler) register(ctx context.Context, in *registerInput) (*registerOutput, error) {
+func (h *AuthHandler) register(ctx context.Context, in *registerInput) (*userOutput, error) {
 	user, err := h.svc.Register(ctx, service.RegisterInput{
 		Username: in.Body.Username,
 		Password: in.Body.Password,
@@ -177,10 +153,10 @@ func (h *AuthHandler) register(ctx context.Context, in *registerInput) (*registe
 		return nil, toHumaErr(err, "", "failed to register user")
 	}
 
-	return &registerOutput{Body: userToOutput(user)}, nil
+	return &userOutput{Body: userToOutput(user)}, nil
 }
 
-func (h *AuthHandler) login(ctx context.Context, in *loginInput) (*loginOutput, error) {
+func (h *AuthHandler) login(ctx context.Context, in *loginInput) (*userOutput, error) {
 	user, err := h.svc.Login(ctx, service.LoginInput{
 		Username: in.Body.Username,
 		Password: in.Body.Password,
@@ -189,7 +165,7 @@ func (h *AuthHandler) login(ctx context.Context, in *loginInput) (*loginOutput, 
 		return nil, toHumaErr(err, "", "failed to login user")
 	}
 
-	return &loginOutput{Body: userToOutput(user)}, nil
+	return &userOutput{Body: userToOutput(user)}, nil
 }
 
 func (h *AuthHandler) logout(ctx context.Context, _ *struct{}) (*struct{}, error) {
@@ -199,15 +175,6 @@ func (h *AuthHandler) logout(ctx context.Context, _ *struct{}) (*struct{}, error
 	}
 
 	return &struct{}{}, nil
-}
-
-func (h *AuthHandler) me(ctx context.Context, _ *struct{}) (*meOutput, error) {
-	user, err := h.svc.Me(ctx)
-	if err != nil {
-		return nil, toHumaErr(err, "", "failed to get me")
-	}
-
-	return &meOutput{Body: userToOutput(user)}, nil
 }
 
 func (h *AuthHandler) forgotPassword(ctx context.Context, in *forgotPasswordInput) (*emailSentOutput, error) {
@@ -220,7 +187,7 @@ func (h *AuthHandler) forgotPassword(ctx context.Context, in *forgotPasswordInpu
 	return &emailSentOutput{Body: emailSentOutputBody{Status: "password reset email sent"}}, nil
 }
 
-func (h *AuthHandler) newPassword(ctx context.Context, in *newPasswordInput) (*newPasswordOutput, error) {
+func (h *AuthHandler) newPassword(ctx context.Context, in *newPasswordInput) (*userOutput, error) {
 	user, err := h.svc.NewPassword(ctx, service.NewPasswordInput{
 		Token:       in.Body.Token,
 		NewPassword: in.Body.NewPassword,
@@ -229,7 +196,7 @@ func (h *AuthHandler) newPassword(ctx context.Context, in *newPasswordInput) (*n
 		return nil, toHumaErr(err, "", "failed to update password")
 	}
 
-	return &newPasswordOutput{Body: userToOutput(user)}, nil
+	return &userOutput{Body: userToOutput(user)}, nil
 }
 
 func (h *AuthHandler) sendEmailVerification(ctx context.Context, _ *struct{}) (*emailSentOutput, error) {
@@ -241,13 +208,13 @@ func (h *AuthHandler) sendEmailVerification(ctx context.Context, _ *struct{}) (*
 	return &emailSentOutput{Body: emailSentOutputBody{Status: "verification email sent"}}, nil
 }
 
-func (h *AuthHandler) verifyEmail(ctx context.Context, in *verifyEmailInput) (*verifyEmailOutput, error) {
+func (h *AuthHandler) verifyEmail(ctx context.Context, in *verifyEmailInput) (*userOutput, error) {
 	user, err := h.svc.VerifyEmail(ctx, in.Body.Token)
 	if err != nil {
 		return nil, toHumaErr(err, "", "failed to verify email")
 	}
 
-	return &verifyEmailOutput{Body: userToOutput(user)}, nil
+	return &userOutput{Body: userToOutput(user)}, nil
 }
 
 func userToOutput(user generated.User) userOutputBody {

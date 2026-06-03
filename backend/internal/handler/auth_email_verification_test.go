@@ -167,7 +167,7 @@ func TestVerifyEmail_Success(t *testing.T) {
 	}
 
 	// Existing session must still work.
-	me := doRequestWithCookies(http.MethodGet, "/api/auth/me", nil, []*http.Cookie{cookie})
+	me := doRequestWithCookies(http.MethodGet, "/api/users/me", nil, []*http.Cookie{cookie})
 	assertStatus(t, me, http.StatusOK)
 }
 
