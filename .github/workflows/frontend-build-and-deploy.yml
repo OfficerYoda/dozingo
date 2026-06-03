@@ -1,0 +1,109 @@
+name: frontend build & deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "frontend/**"
+      - ".github/workflows/frontend-build-and-deploy.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: frontend-deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    name: build & deploy frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      # `npm run build` runs vue-tsc --build (type-check) and vite build.
+      # Either failing fails the whole pipeline. See frontend/package.json.
+      - name: Type-check and build
+        run: npm run build
+
+      # Pack the build into a single archive so the upload is atomic and
+      # extraction on the VPS is one tar invocation. The archive is flat:
+      # contents of dist/ end up at the root of the tarball.
+      - name: Package build
+        run: tar -czf dist.tar.gz -C dist .
+
+      - name: Upload build to VPS
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: frontend/dist.tar.gz
+          target: /tmp
+          strip_components: 1
+          # Result: /tmp/dist.tar.gz on the VPS.
+
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1
+        env:
+          SHA: ${{ github.sha }}
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          envs: SHA
+          # The remote login shell may be fish, which lacks POSIX heredoc /
+          # VAR=$(...) support. Hand the script to bash so it is parsed by
+          # bash regardless of the login shell. Mirrors backend deploy.
+          script: |
+            bash -c '
+            set -euo pipefail
+
+            ROOT=/opt/services/dozingo/frontend-releases
+            RELEASES="$ROOT/releases"
+            CURRENT="$ROOT/current"
+            RELEASE="$RELEASES/$SHA"
+            TARBALL="/tmp/dist.tar.gz"
+            STAGED="/tmp/dozingo-frontend-$SHA.tar.gz"
+
+            if [ ! -f "$TARBALL" ]; then
+              echo "Tarball $TARBALL not found on VPS"
+              exit 1
+            fi
+
+            # Move the upload to a sha-scoped name so concurrent or retried
+            # runs cannot stomp on each other in /tmp.
+            mv "$TARBALL" "$STAGED"
+
+            mkdir -p "$RELEASE"
+            tar -xzf "$STAGED" -C "$RELEASE"
+
+            # Atomic symlink swap. `ln -sfn` alone is not atomic when the
+            # target already exists; create the symlink under a temp name
+            # and use `mv -Tf` to replace the existing symlink atomically.
+            #
+            # Use a *relative* target so the symlink resolves correctly in
+            # any mount namespace. With an absolute target, a container
+            # bind-mounting only frontend-releases/ (e.g. Caddy) cannot
+            # follow the link, because the absolute host path does not
+            # exist inside the container.
+            ln -sfn "releases/$SHA" "$CURRENT.new"
+            mv -Tf "$CURRENT.new" "$CURRENT"
+
+            echo "Deployed $SHA -> $CURRENT"
+
+            # Keep the 5 most recent releases, prune older ones.
+            ls -1t "$RELEASES" | tail -n +6 | xargs -r -I{} rm -rf -- "$RELEASES/{}"
+
+            rm -f "$STAGED"
+            '

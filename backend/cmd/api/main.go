@@ -109,7 +109,9 @@ func registerRoutes(router *chi.Mux, repos repository.Repos, pool *pgxpool.Pool,
 	emailSender := email.New(cfg)
 	queries := generated.New(pool)
 
-	api := humachi.New(router, huma.DefaultConfig("Dozingo API", "0.2.0"))
+	config := huma.DefaultConfig("Dozingo API", "0.2.0")
+	config.DocsPath = "/api/docs"
+	api := humachi.New(router, config)
 	api.UseMiddleware(middleware.NewSessionMiddleware(cfg, queries).Handler(api))
 
 	apiGroup := huma.NewGroup(api, "/api")
