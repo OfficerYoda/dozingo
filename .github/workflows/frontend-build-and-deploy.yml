@@ -2,7 +2,7 @@ name: frontend build & deploy
 
 on:
   push:
-    branches: [main, feat/frontend-ci]
+    branches: [main]
     paths:
       - "frontend/**"
       - ".github/workflows/frontend-build-and-deploy.yml"
