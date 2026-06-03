@@ -62,3 +62,12 @@ func (s *Votes) Delete(ctx context.Context, boardID pgtype.UUID) error {
 	})
 	return err
 }
+
+func (s *Votes) ListVotesFromUser(ctx context.Context, userID pgtype.UUID) ([]generated.ListVotesFromUserRow, error) {
+	votes, err := s.votes.ListVotesFromUser(ctx, userID)
+	if err != nil {
+		return []generated.ListVotesFromUserRow{}, fmt.Errorf("list user votes: %w", err)
+	}
+
+	return votes, nil
+}

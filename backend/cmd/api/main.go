@@ -130,7 +130,7 @@ func registerRoutes(router *chi.Mux, repos repository.Repos, pool *pgxpool.Pool,
 	handler.NewGamesHandler(gamesSvc).Register(apiGroup)
 	handler.NewVotesHandler(votesSvc).Register(apiGroup)
 	handler.NewAuthHandler(authSvc).Register(apiGroup)
-	handler.NewUsersHandler(usersSvc).Register(apiGroup)
+	handler.NewUsersHandler(usersSvc, votesSvc).Register(apiGroup)
 }
 
 func createServer(port int, handler http.Handler) *http.Server {
