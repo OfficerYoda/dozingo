@@ -27,7 +27,7 @@
       <p v-if="error" class="error-text">{{ error }}</p>
 
       <div class="carousel-wrapper">
-        <button class="carousel-btn" @click="scrollCarousel(-1)">&#8592;</button>
+        <button class="carousel-btn" @click="scrollCarousel(carouselRef, -1)">&#8592;</button>
         <div class="carousel" ref="carouselRef">
           <button v-for="board in boards" :key="board.board_id" @click="clickBoard(board.board_id)"
               class="card card-border-blue carousel-card">
@@ -45,48 +45,33 @@
               </div>
           </button>
         </div>
-        <button class="carousel-btn" @click="scrollCarousel(1)">&#8594;</button>
+        <button class="carousel-btn" @click="scrollCarousel(carouselRef, 1)">&#8594;</button>
       </div>
     </div>
-    <div class="container" style="padding-right: 0%; padding-left: 0%;">
+    <div class="container" style="padding-right: 0%; padding-left: 0%; padding-top: 2%;">
       <div class="list-header mb-4">
-          <h2 class="mb-0">Explore your {{boards.length}} liked Cards</h2>
-          <div class="header-actions">
-              <input class="btn btn-secondary" type="search" placeholder="Search.." v-model="search">
-              <select class="btn btn-secondary" v-model="appliedFiler">
-                  <option value="">No Filter</option>
-                  <option value="newest">Newest</option>
-                  <option value="most-liked">Most liked</option>
-                  <option value="most-played">Most played</option>
-                  <option value="oldest">Oldest</option>
-                  <option value="least-liked">Least liked</option>
-                  <option value="least-played">Least played</option>
-              </select>
-          </div>
+          <h2 class="mb-0">Explore your {{ likedBoards.length }} liked Cards</h2>
       </div>
 
-      <p v-if="error" class="error-text">{{ error }}</p>
-
       <div class="carousel-wrapper">
-        <button class="carousel-btn" @click="scrollCarousel(-1)">&#8592;</button>
-        <div class="carousel" ref="carouselRef">
-          <button v-for="board in boards" :key="board.board_id" @click="clickBoard(board.board_id)"
+        <button class="carousel-btn" @click="scrollCarousel(likedCarouselRef, -1)">&#8592;</button>
+        <div class="carousel" ref="likedCarouselRef">
+          <button v-for="vote in likedBoards" :key="vote.board_id" @click="clickBoard(vote.board_id)"
               class="card card-border-blue carousel-card">
               <div class="card-body">
-                  <h3>{{ board.title }}</h3>
-                  <small>{{ board.description }}</small>
+                  <h3>{{ vote.board_title }}</h3>
+                  <small>{{ vote.board_description }}</small>
               </div>
               <hr class="mb-2">
               <div class="card-footer">
-                  <span class="card-meta-text">Played {{ board.play_count }} times</span>
                   <div class="like-group">
                       <Heart :size="20" />
-                      <span class="card-meta-text">{{ board.score }}</span>
+                      <span class="card-meta-text">{{ vote.vote_score }}</span>
                   </div>
               </div>
           </button>
         </div>
-        <button class="carousel-btn" @click="scrollCarousel(1)">&#8594;</button>
+        <button class="carousel-btn" @click="scrollCarousel(likedCarouselRef, 1)">&#8594;</button>
       </div>
     </div>
       <Teleport to="body">
@@ -172,11 +157,22 @@ interface Cell {
     value: 0,
 }
 
+interface Vote {
+    vote_id: string
+    board_id: string
+    vote_value: number
+    board_title: string
+    board_description: string
+    vote_score: number
+    vote_count: number
+}
+
 useI18n()
 const route = useRoute()
 
 const error = ref<string | null>(null)
 const boards = ref<Board[]>([])
+const likedBoards = ref<Vote[]>([])
 const cells = ref<Cell[]>([])
 const selecetedBoard = ref<Board>()
 const selectedCells = ref<Cell[]>()
@@ -195,6 +191,13 @@ async function fetchAllUserBoards() {
     }
 
     boards.value = await boardsRes.json()
+}
+
+async function fetchLikedBoards() {
+    const res = await fetch('/api/users/me/votes', { credentials: 'include' })
+    if (!res.ok) return
+    const votes: Vote[] = await res.json()
+    likedBoards.value = votes.filter(v => v.vote_value === 1)
 }
 
 async function fetchAllCellsForBoard(boardID: string) {
@@ -218,12 +221,15 @@ watch([appliedFiler, search], () => {
     fetchAllUserBoards()
 }, { immediate: true })
 
+fetchLikedBoards()
+
 const showModal = ref(false)
 
 const carouselRef = useTemplateRef<HTMLElement>('carouselRef')
+const likedCarouselRef = useTemplateRef<HTMLElement>('likedCarouselRef')
 
-function scrollCarousel(direction: 1 | -1) {
-    carouselRef.value?.scrollBy({ left: direction * carouselRef.value.offsetWidth * 0.8, behavior: 'smooth' })
+function scrollCarousel(el: HTMLElement | null, direction: 1 | -1) {
+    el?.scrollBy({ left: direction * (el.offsetWidth * 0.8), behavior: 'smooth' })
 }
 
 function shuffle() {
