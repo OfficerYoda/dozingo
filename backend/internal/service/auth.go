@@ -149,7 +149,8 @@ func (s *Auth) ForgotPassword(ctx context.Context, email string) error {
 }
 
 func (s *Auth) NewPassword(ctx context.Context, in NewPasswordInput) (generated.User, error) {
-	token, err := s.verificationTokens.GetByToken(ctx, in.Token)
+	tokenHash := auth.HashToken(in.Token)
+	token, err := s.verificationTokens.GetByToken(ctx, tokenHash)
 	if err != nil {
 		return generated.User{}, fmt.Errorf("retrieve verification token: %w", err)
 	}
@@ -168,7 +169,7 @@ func (s *Auth) NewPassword(ctx context.Context, in NewPasswordInput) (generated.
 	}
 
 	err = s.txRunner.WithTx(ctx, func(r repository.Repos) error {
-		if err = r.VerificationTokens.Delete(ctx, token.Token); err != nil {
+		if err = r.VerificationTokens.Delete(ctx, tokenHash); err != nil {
 			return fmt.Errorf("delete verification token: %w", err)
 		}
 
@@ -212,7 +213,8 @@ func (s *Auth) SendEmailVerification(ctx context.Context) error {
 }
 
 func (s *Auth) VerifyEmail(ctx context.Context, token string) (generated.User, error) {
-	verificationToken, err := s.verificationTokens.GetByToken(ctx, token)
+	tokenHash := auth.HashToken(token)
+	verificationToken, err := s.verificationTokens.GetByToken(ctx, tokenHash)
 	if err != nil {
 		return generated.User{}, fmt.Errorf("retrieve verification token: %w", err)
 	}
@@ -228,7 +230,7 @@ func (s *Auth) VerifyEmail(ctx context.Context, token string) (generated.User, e
 	now := time.Now()
 	var user generated.User
 	err = s.txRunner.WithTx(ctx, func(r repository.Repos) error {
-		if err = r.VerificationTokens.Delete(ctx, verificationToken.Token); err != nil {
+		if err = r.VerificationTokens.Delete(ctx, tokenHash); err != nil {
 			return fmt.Errorf("delete verification token : %w", err)
 		}
 
@@ -289,7 +291,7 @@ func upsertToken(
 	tokenType generated.TokenType,
 	tokenTTL time.Duration,
 ) (string, error) {
-	token := auth.GenerateToken()
+	plaintext := auth.GenerateToken()
 	err := txRunner.WithTx(ctx, func(r repository.Repos) error {
 		existingToken, err := r.VerificationTokens.GetValidTokenForUser(ctx, repository.GetByTokenForUserInput{
 			UserID:    userID,
@@ -302,6 +304,8 @@ func upsertToken(
 		}
 
 		if existingToken.UserID.Valid {
+			// existingToken.Token is already the SHA-256 hex digest stored
+			// in the DB, so pass it back as-is.
 			err := r.VerificationTokens.Delete(ctx, existingToken.Token)
 			if err != nil {
 				return fmt.Errorf("delete existing token: %w", err)
@@ -310,7 +314,7 @@ func upsertToken(
 
 		_, err = r.VerificationTokens.Create(ctx, repository.CreateVerificationTokenInput{
 			UserID:    userID,
-			TokenHash: token,
+			TokenHash: auth.HashToken(plaintext),
 			TokenType: tokenType,
 			ExpiresAt: time.Now().Add(tokenTTL),
 		})
@@ -323,5 +327,7 @@ func upsertToken(
 		return "", err
 	}
 
-	return token, nil
+	// Return plaintext so the caller can embed it in the verification email
+	// link. It is never persisted.
+	return plaintext, nil
 }
