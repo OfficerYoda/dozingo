@@ -29,9 +29,6 @@ func NewUsers(repos repository.Repos, queries *generated.Queries, emailSender em
 	}
 }
 
-// Me returns the user backing the current session, or ErrUnauthorized if the
-// caller is anonymous / unauthenticated. The data is read off the session row
-// so we avoid an extra DB hit.
 func (s *Users) Me(ctx context.Context) (generated.User, error) {
 	session, ok := middleware.SessionUserFromContext(ctx)
 	if !ok || !session.UserID.Valid {
@@ -45,8 +42,6 @@ func (s *Users) Me(ctx context.Context) (generated.User, error) {
 	}, nil
 }
 
-// UserByID looks up a user by its UUID string. An unparseable UUID surfaces as
-// ErrBadInput; a missing row as ErrNotFound (translated by the repo layer).
 func (s *Users) UserByID(ctx context.Context, userIDStr string) (generated.User, error) {
 	userID := pgmap.PgUUIDFromString(&userIDStr)
 	if !userID.Valid {
@@ -76,9 +71,6 @@ type UpdateUserInput struct {
 	Email    *string
 }
 
-// UpdateUser applies a partial update to a user. Only the user themselves may
-// edit their own row (self-only). Username collisions surface as ErrConflict
-// via the unique-index translation in the repo layer.
 func (s *Users) UpdateUser(ctx context.Context, userIDStr string, in UpdateUserInput) (generated.User, error) {
 	userID := pgmap.PgUUIDFromString(&userIDStr)
 	if !userID.Valid {
@@ -94,10 +86,19 @@ func (s *Users) UpdateUser(ctx context.Context, userIDStr string, in UpdateUserI
 		return generated.User{}, fmt.Errorf("cannot edit another user: %w", domain.ErrForbidden)
 	}
 
-	// Capture the previous email so we only re-send verification when the
-	// address actually changed.
-	prevEmail := sessionUser.Email
+	return s.applyUserUpdate(ctx, userID, sessionUser.Email, in)
+}
 
+func (s *Users) UpdateMe(ctx context.Context, in UpdateUserInput) (generated.User, error) {
+	sessionUser, err := requiresSessionUser(ctx, s.queries)
+	if err != nil {
+		return generated.User{}, fmt.Errorf("require session: %w", err)
+	}
+
+	return s.applyUserUpdate(ctx, sessionUser.UserID, sessionUser.Email, in)
+}
+
+func (s *Users) applyUserUpdate(ctx context.Context, userID pgtype.UUID, prevEmail pgtype.Text, in UpdateUserInput) (generated.User, error) {
 	user, err := s.users.Update(ctx, userID, repository.UpdateUserParams{
 		Username: in.Username,
 		EmailSet: in.EmailSet,
@@ -116,8 +117,6 @@ func (s *Users) UpdateUser(ctx context.Context, userIDStr string, in UpdateUserI
 	return user, nil
 }
 
-// pgTextEqual compares two pgtype.Text values: equal iff both are NULL, or
-// both Valid and have the same string content.
 func pgTextEqual(a, b pgtype.Text) bool {
 	if a.Valid != b.Valid {
 		return false
@@ -128,8 +127,6 @@ func pgTextEqual(a, b pgtype.Text) bool {
 	return a.String == b.String
 }
 
-// requiresSessionUser is the shared "must be a logged-in user" guard for
-// service methods. Used by both Auth and Users.
 func requiresSessionUser(ctx context.Context, queries *generated.Queries) (generated.GetSessionUserByTokenRow, error) {
 	sessionUser, err := middleware.RequireSession(ctx, queries)
 	if err != nil {
