@@ -13,5 +13,27 @@ services:
       - dozingo-pgdata:/var/lib/postgresql/data
       - ./backend/docker/init.sql:/docker-entrypoint-initdb.d/init.sql
 
+  garage:
+    image: dxflrs/garage:v2.3.0
+    container_name: garage-server
+    restart: unless-stopped
+    # DOZINGO: On your live VPS, change "127.0.0.1:3900" to "0.0.0.0:3900" so Nginx can reverse-proxy to it from outside the Docker network.
+    ports:
+      - "127.0.0.1:3900:3900" # S3 API Port
+      - "127.0.0.1:3901:3901" # RPC Port
+      - "127.0.0.1:3902:3902" # Web Port
+    volumes:
+      - ./garage.toml:/etc/garage.toml:ro
+      - garage_meta:/meta
+      - garage_data:/data
+    environment:
+      # DOZINGO: Change these keys to proper credentials for your live deployment
+      - GARAGE_DEFAULT_ACCESS_KEY=GK_LOCAL_DEV_KEY_12345
+      - GARAGE_DEFAULT_SECRET_KEY=LOCAL_DEV_SECRET_PASSWORD_DO_NOT_USE_IN_PROD
+      - GARAGE_DEFAULT_BUCKET=profile-pictures
+    command: /garage server --single-node --default-bucket
+
 volumes:
   dozingo-pgdata:
+  garage_meta:
+  garage_data:

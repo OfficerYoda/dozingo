@@ -23,6 +23,7 @@ import (
 	"github.com/officeryoda/dozingo/internal/middleware"
 	"github.com/officeryoda/dozingo/internal/repository"
 	"github.com/officeryoda/dozingo/internal/service"
+	"github.com/officeryoda/dozingo/internal/storage"
 	"github.com/officeryoda/dozingo/internal/worker"
 )
 
@@ -44,6 +45,9 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
+
+	// Testing uploads to garage
+	storage.TestGarageUpload(cfg)
 
 	pool, err := connectDB(cfg.DatabaseURL)
 	if err != nil {
