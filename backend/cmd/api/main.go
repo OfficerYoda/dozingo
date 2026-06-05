@@ -112,9 +112,9 @@ func registerRoutes(router *chi.Mux, repos repository.Repos, pool *pgxpool.Pool,
 	config := huma.DefaultConfig("Dozingo API", "0.2.0")
 	config.DocsPath = "/api/docs"
 	api := humachi.New(router, config)
-	api.UseMiddleware(middleware.NewSessionMiddleware(cfg, queries).Handler(api))
 
 	apiGroup := huma.NewGroup(api, "/api")
+	apiGroup.UseMiddleware(middleware.NewSessionMiddleware(cfg, queries).Handler(api))
 	txRunner := repository.NewTxRunner(pool)
 
 	boardsSvc := service.NewBoards(repos.Boards, queries)
@@ -125,7 +125,7 @@ func registerRoutes(router *chi.Mux, repos repository.Repos, pool *pgxpool.Pool,
 	authSvc := service.NewAuth(repos, emailSender, queries, txRunner)
 	usersSvc := service.NewUsers(repos, queries, emailSender, txRunner)
 
-	handler.NewHealthHandler(pool).Register(apiGroup)
+	handler.NewHealthHandler(pool).Register(api) // Don't use apiGroup here to get around middleware
 	handler.NewBoardsHandler(boardsSvc).Register(apiGroup)
 	handler.NewCellsHandler(cellsSvc).Register(apiGroup)
 	handler.NewGameCellsHandler(gameCellsSvc).Register(apiGroup)

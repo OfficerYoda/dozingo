@@ -1399,23 +1399,6 @@ paths:
       summary: Update game status
       tags:
         - Games
-  /api/health:
-    get:
-      operationId: health-check
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/HealthOutputBody"
-          description: OK
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      summary: Health check
   /api/me/boards:
     get:
       operationId: get-boards-from-session
@@ -1675,3 +1658,20 @@ paths:
       summary: List votes for a User
       tags:
         - Users
+  /health:
+    get:
+      operationId: health-check
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Health check
