@@ -92,8 +92,8 @@ components:
           type: string
         size:
           format: int32
-          maximum: 7
-          minimum: 3
+          maximum: 6
+          minimum: 4
           type: integer
         title:
           maxLength: 200

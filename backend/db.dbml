@@ -93,7 +93,7 @@ Table boards {
   ~timestamps
 
   checks {
-    `size >= 3 AND size <= 7`
+    `size >= 4 AND size <= 6`
   }
 }
 
