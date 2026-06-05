@@ -6,7 +6,6 @@
                 <div class="header-actions">
                     <input class="btn btn-secondary" type="search" placeholder="Search.." v-model="search">
                     <select class="btn btn-secondary" v-model="appliedFiler">
-                        <option value="">No Filter</option>
                         <option value="newest">Newest</option>
                         <option value="most-liked">Most liked</option>
                         <option value="most-played">Most played</option>
