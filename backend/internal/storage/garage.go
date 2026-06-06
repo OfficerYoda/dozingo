@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	s3cfg "github.com/aws/aws-sdk-go-v2/config"
@@ -52,25 +51,4 @@ func (g *Garage) Upload(ctx context.Context, objectKey string, img *Image) error
 		return fmt.Errorf("failed to put object: %w", err)
 	}
 	return nil
-}
-
-func TestGarageUpload(dzgCfg *config.Config) {
-	ctx := context.Background()
-	garage := NewGarage(ctx, dzgCfg)
-
-	// Fetch random avatar
-	seed := fmt.Sprint(time.Now().UnixMilli())
-	img, _ := RandomProfilePictureBots(seed)
-	targetFilename := fmt.Sprintf("%s%s", seed, img.Extension)
-
-	// Upload to Garage
-	err := garage.Upload(ctx, targetFilename, img)
-	if err != nil {
-		slog.Error("upload failed", "error", err)
-	}
-
-	// Generate the public URL that your frontend will use
-	// DOZINGO: In production, change port 3902 to your public web proxy endpoint layout
-	publicURL := fmt.Sprintf("http://%s.web.garage.localhost:3902/%s", dzgCfg.GarageBucketName, targetFilename)
-	slog.Info("Upload successful! Access your file anonymously at ", "url", publicURL)
 }

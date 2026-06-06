@@ -46,8 +46,6 @@ func run() error {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
 
-	storage.TestGarageUpload(cfg)
-
 	pool, err := connectDB(cfg.DatabaseURL)
 	if err != nil {
 		return fmt.Errorf("connecting to database: %w", err)
