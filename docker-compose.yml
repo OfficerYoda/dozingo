@@ -32,6 +32,27 @@ services:
       - GARAGE_DEFAULT_SECRET_KEY=LOCAL_DEV_SECRET_PASSWORD_DO_NOT_USE_IN_PROD
       - GARAGE_DEFAULT_BUCKET=profile-pictures
     command: /garage server --single-node --default-bucket
+    healthcheck:
+      test: ["CMD", "/garage", "status"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+
+  # Idempotent: safe to run on every `docker compose up`.
+  garage-init:
+    image: dxflrs/garage:v2.3.0
+    container_name: garage-init
+    depends_on:
+      garage:
+        condition: service_healthy
+    network_mode: "service:garage"
+    volumes:
+      - ./garage.toml:/etc/garage.toml:ro
+      - garage_meta:/meta
+    restart: "no"
+    entrypoint: ["/garage"]
+    command: ["bucket", "website", "--allow", "profile-pictures"]
 
 volumes:
   dozingo-pgdata:
