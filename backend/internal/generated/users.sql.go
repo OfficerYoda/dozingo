@@ -14,7 +14,7 @@ import (
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (username, email)
 VALUES ($1, $2)
-RETURNING id, username, email, created_at, updated_at, email_verified_at
+RETURNING id, username, email, created_at, updated_at, email_verified_at, avatar_key
 `
 
 type CreateUserParams struct {
@@ -32,6 +32,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.EmailVerifiedAt,
+		&i.AvatarKey,
 	)
 	return i, err
 }
@@ -39,7 +40,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 const deleteUser = `-- name: DeleteUser :one
 DELETE FROM users
 WHERE id = $1
-RETURNING id, username, email, created_at, updated_at, email_verified_at
+RETURNING id, username, email, created_at, updated_at, email_verified_at, avatar_key
 `
 
 func (q *Queries) DeleteUser(ctx context.Context, id pgtype.UUID) (User, error) {
@@ -52,12 +53,13 @@ func (q *Queries) DeleteUser(ctx context.Context, id pgtype.UUID) (User, error) 
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.EmailVerifiedAt,
+		&i.AvatarKey,
 	)
 	return i, err
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, username, email, created_at, updated_at, email_verified_at FROM users
+SELECT id, username, email, created_at, updated_at, email_verified_at, avatar_key FROM users
 WHERE email = $1
 `
 
@@ -71,12 +73,13 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email pgtype.Text) (User, 
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.EmailVerifiedAt,
+		&i.AvatarKey,
 	)
 	return i, err
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, username, email, created_at, updated_at, email_verified_at FROM users
+SELECT id, username, email, created_at, updated_at, email_verified_at, avatar_key FROM users
 WHERE id = $1
 `
 
@@ -90,12 +93,13 @@ func (q *Queries) GetUserByID(ctx context.Context, id pgtype.UUID) (User, error)
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.EmailVerifiedAt,
+		&i.AvatarKey,
 	)
 	return i, err
 }
 
 const getUserByUsername = `-- name: GetUserByUsername :one
-SELECT id, username, email, created_at, updated_at, email_verified_at FROM users
+SELECT id, username, email, created_at, updated_at, email_verified_at, avatar_key FROM users
 WHERE username = $1
 `
 
@@ -109,6 +113,7 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.EmailVerifiedAt,
+		&i.AvatarKey,
 	)
 	return i, err
 }
@@ -117,7 +122,7 @@ const setUserEmailVerifiedAt = `-- name: SetUserEmailVerifiedAt :one
 UPDATE users
 SET email_verified_at = $2
 WHERE id = $1
-RETURNING id, username, email, created_at, updated_at, email_verified_at
+RETURNING id, username, email, created_at, updated_at, email_verified_at, avatar_key
 `
 
 type SetUserEmailVerifiedAtParams struct {
@@ -135,6 +140,7 @@ func (q *Queries) SetUserEmailVerifiedAt(ctx context.Context, arg SetUserEmailVe
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.EmailVerifiedAt,
+		&i.AvatarKey,
 	)
 	return i, err
 }
@@ -152,7 +158,7 @@ SET
         ELSE email_verified_at
     END
 WHERE id = $1
-RETURNING id, username, email, created_at, updated_at, email_verified_at
+RETURNING id, username, email, created_at, updated_at, email_verified_at, avatar_key
 `
 
 type UpdateUserParams struct {
@@ -182,6 +188,7 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.EmailVerifiedAt,
+		&i.AvatarKey,
 	)
 	return i, err
 }

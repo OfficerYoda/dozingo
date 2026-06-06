@@ -153,6 +153,7 @@ type User struct {
 	CreatedAt       pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
 	EmailVerifiedAt pgtype.Timestamptz `json:"email_verified_at"`
+	AvatarKey       string             `json:"avatar_key"`
 }
 
 type UserAuthentication struct {
