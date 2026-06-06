@@ -46,7 +46,6 @@ func run() error {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
 
-	// Testing uploads to garage
 	storage.TestGarageUpload(cfg)
 
 	pool, err := connectDB(cfg.DatabaseURL)
@@ -66,7 +65,7 @@ func run() error {
 		repos.VerificationTokens.DeleteExpired).Start(ctx)
 
 	router := createRouter(cfg)
-	registerRoutes(router, repos, pool, cfg)
+	registerRoutes(router, repos, pool, cfg, ctx)
 
 	return serveHTTP(ctx, createServer(cfg.Port, router))
 }
@@ -109,8 +108,15 @@ func rootHandler(port int) http.HandlerFunc {
 }
 
 // registerRoutes sets up the Huma API and registers all handler groups.
-func registerRoutes(router *chi.Mux, repos repository.Repos, pool *pgxpool.Pool, cfg *config.Config) {
+func registerRoutes(
+	router *chi.Mux,
+	repos repository.Repos,
+	pool *pgxpool.Pool,
+	cfg *config.Config,
+	ctx context.Context,
+) {
 	emailSender := email.New(cfg)
+	garage := storage.NewGarage(ctx, cfg)
 	queries := generated.New(pool)
 
 	config := huma.DefaultConfig("Dozingo API", "0.2.0")
@@ -127,7 +133,7 @@ func registerRoutes(router *chi.Mux, repos repository.Repos, pool *pgxpool.Pool,
 	gamesSvc := service.NewGames(repos.Games, queries)
 	votesSvc := service.NewVotes(repos.Votes, queries)
 	authSvc := service.NewAuth(repos, emailSender, queries, txRunner)
-	usersSvc := service.NewUsers(repos, queries, emailSender, txRunner)
+	usersSvc := service.NewUsers(repos, queries, emailSender, txRunner, garage)
 
 	handler.NewHealthHandler(pool).Register(api) // Don't use apiGroup here to get around middleware
 	handler.NewBoardsHandler(boardsSvc).Register(apiGroup)

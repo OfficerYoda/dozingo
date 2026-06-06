@@ -118,6 +118,33 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User,
 	return i, err
 }
 
+const setAvatar = `-- name: SetAvatar :one
+UPDATE users
+SET avatar_key = $1
+WHERE id = $2
+RETURNING id, username, email, created_at, updated_at, email_verified_at, avatar_key
+`
+
+type SetAvatarParams struct {
+	AvatarKey string      `json:"avatar_key"`
+	UserID    pgtype.UUID `json:"user_id"`
+}
+
+func (q *Queries) SetAvatar(ctx context.Context, arg SetAvatarParams) (User, error) {
+	row := q.db.QueryRow(ctx, setAvatar, arg.AvatarKey, arg.UserID)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.EmailVerifiedAt,
+		&i.AvatarKey,
+	)
+	return i, err
+}
+
 const setUserEmailVerifiedAt = `-- name: SetUserEmailVerifiedAt :one
 UPDATE users
 SET email_verified_at = $2

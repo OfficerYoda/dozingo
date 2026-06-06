@@ -18,6 +18,7 @@ type userOutputBody struct {
 	UserID   string  `json:"user_id"  format:"uuid"`
 	Username string  `json:"username" pattern:"^[^\\s\\x00-\\x1F\\x7F]+$"`
 	Email    *string `json:"email"    format:"email"`
+	// TODO: Add url here and parse always
 }
 
 type userOutput struct {

@@ -1,9 +1,14 @@
 package service
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
+	"path/filepath"
 
+	"github.com/danielgtaylor/huma/v2"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/officeryoda/dozingo/internal/domain"
 	"github.com/officeryoda/dozingo/internal/email"
@@ -11,6 +16,7 @@ import (
 	"github.com/officeryoda/dozingo/internal/middleware"
 	"github.com/officeryoda/dozingo/internal/pgmap"
 	"github.com/officeryoda/dozingo/internal/repository"
+	"github.com/officeryoda/dozingo/internal/storage"
 )
 
 type Users struct {
@@ -18,14 +24,22 @@ type Users struct {
 	queries     *generated.Queries
 	emailSender email.Sender
 	txRunner    repository.TxRunner
+	garage      *storage.Garage
 }
 
-func NewUsers(repos repository.Repos, queries *generated.Queries, emailSender email.Sender, txRunner repository.TxRunner) *Users {
+func NewUsers(
+	repos repository.Repos,
+	queries *generated.Queries,
+	emailSender email.Sender,
+	txRunner repository.TxRunner,
+	garage *storage.Garage,
+) *Users {
 	return &Users{
 		users:       repos.Users,
 		queries:     queries,
 		emailSender: emailSender,
 		txRunner:    txRunner,
+		garage:      garage,
 	}
 }
 
@@ -96,6 +110,49 @@ func (s *Users) UpdateMe(ctx context.Context, in UpdateUserInput) (generated.Use
 	}
 
 	return s.applyUserUpdate(ctx, sessionUser.UserID, sessionUser.Email, in)
+}
+
+func (s *Users) UploadAvatar(ctx context.Context, in huma.FormFile) (generated.User, error) {
+	sessionUser, err := requiresSessionUser(ctx, s.queries)
+	if err != nil {
+		return generated.User{}, fmt.Errorf("require session: %w", err)
+	}
+
+	img, err := convertFormFileToImage(in)
+	if err != nil {
+		return generated.User{}, err
+	}
+
+	uuid, err := uuid.NewRandom()
+	if err != nil {
+		return generated.User{}, fmt.Errorf("generate uuid: %w", err)
+	}
+
+	objectKey := fmt.Sprintf("%s%s", uuid, img.Extension)
+	err = s.garage.Upload(ctx, objectKey, img)
+	if err != nil {
+		return generated.User{}, fmt.Errorf("upload avatar: %w", err)
+	}
+
+	user, err := s.users.SetAvatar(ctx, sessionUser.UserID, objectKey)
+	if err != nil {
+		return generated.User{}, fmt.Errorf("set avatar key: %w", err)
+	}
+
+	return user, nil
+}
+
+func convertFormFileToImage(in huma.FormFile) (*storage.Image, error) {
+	extension := filepath.Ext(in.Filename)
+
+	fileBytes, err := io.ReadAll(in.File)
+	if err != nil {
+		return nil, fmt.Errorf("read file: %w", err)
+	}
+	bytesReader := bytes.NewReader(fileBytes)
+
+	img := storage.NewImage(bytesReader, in.ContentType, extension)
+	return img, nil
 }
 
 func (s *Users) applyUserUpdate(ctx context.Context, userID pgtype.UUID, prevEmail pgtype.Text, in UpdateUserInput) (generated.User, error) {

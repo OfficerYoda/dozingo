@@ -229,6 +229,24 @@ components:
       required:
         - email
       type: object
+    FormFile:
+      additionalProperties: false
+      properties:
+        ContentType:
+          type: string
+        Filename:
+          type: string
+        IsSet:
+          type: boolean
+        Size:
+          format: int64
+          type: integer
+      required:
+        - ContentType
+        - IsSet
+        - Size
+        - Filename
+      type: object
     GameCellOutput:
       additionalProperties: false
       properties:
@@ -543,6 +561,8 @@ components:
         username:
           maxLength: 200
           type: string
+      required:
+        - email
       type: object
     UpsertVoteInputBody:
       additionalProperties: false
@@ -1399,6 +1419,23 @@ paths:
       summary: Update game status
       tags:
         - Games
+  /api/health:
+    get:
+      operationId: health-check
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Health check
   /api/me/boards:
     get:
       operationId: get-boards-from-session
@@ -1515,6 +1552,42 @@ paths:
                 $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Update the current User's username and/or email
+      tags:
+        - Users
+  /api/users/me/avatar:
+    put:
+      operationId: update-current-user-avatar
+      requestBody:
+        content:
+          multipart/form-data:
+            encoding:
+              avatar:
+                contentType: application/octet-stream
+            schema:
+              properties:
+                avatar:
+                  contentEncoding: binary
+                  contentMediaType: application/octet-stream
+                  description: The avatar image file (PNG, JPEG, WEBP, SVG)
+                  format: binary
+                  type: string
+              required:
+                - avatar
+              type: object
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Upload a new profile picture
       tags:
         - Users
   /api/users/me/votes:
@@ -1658,20 +1731,3 @@ paths:
       summary: List votes for a User
       tags:
         - Users
-  /health:
-    get:
-      operationId: health-check
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/HealthOutputBody"
-          description: OK
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      summary: Health check

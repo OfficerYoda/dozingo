@@ -19,7 +19,8 @@ SELECT
   s.expires_at,
   u.username,
   u.email,
-  u.email_verified_at
+  u.email_verified_at,
+  u.avatar_key
 FROM sessions s
 LEFT JOIN users u ON u.id = s.user_id
 WHERE s.token = $1
@@ -34,6 +35,7 @@ type GetSessionUserByTokenRow struct {
 	Username        pgtype.Text        `json:"username"`
 	Email           pgtype.Text        `json:"email"`
 	EmailVerifiedAt pgtype.Timestamptz `json:"email_verified_at"`
+	AvatarKey       pgtype.Text        `json:"avatar_key"`
 }
 
 // user_id may be NULL for anon sessions
@@ -48,6 +50,7 @@ func (q *Queries) GetSessionUserByToken(ctx context.Context, token string) (GetS
 		&i.Username,
 		&i.Email,
 		&i.EmailVerifiedAt,
+		&i.AvatarKey,
 	)
 	return i, err
 }

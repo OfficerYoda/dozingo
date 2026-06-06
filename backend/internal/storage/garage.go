@@ -18,11 +18,13 @@ type Garage struct {
 	s3Client   *s3.Client
 }
 
-func New(ctx context.Context, dzgCfg *config.Config) Garage {
-	cfg, err := s3cfg.LoadDefaultConfig(ctx,
+func NewGarage(ctx context.Context, dzgCfg *config.Config) *Garage {
+	cfg, err := s3cfg.LoadDefaultConfig(
+		ctx,
 		s3cfg.WithRegion("garage"), // Garage ignores the region but the SDK requires a string
 		s3cfg.WithCredentialsProvider(
-			credentials.NewStaticCredentialsProvider(dzgCfg.GarageAccessKey, dzgCfg.GarageSecretKey, "")),
+			credentials.NewStaticCredentialsProvider(dzgCfg.GarageAccessKey, dzgCfg.GarageSecretKey, ""),
+		),
 	)
 	if err != nil {
 		slog.Error("loading sdk failed", "error", err)
@@ -33,13 +35,13 @@ func New(ctx context.Context, dzgCfg *config.Config) Garage {
 		o.UsePathStyle = true
 	})
 
-	return Garage{
+	return &Garage{
 		s3Client:   s3Client,
 		bucketName: dzgCfg.GarageBucketName,
 	}
 }
 
-func (g *Garage) Upload(ctx context.Context, objectKey string, img Image) error {
+func (g *Garage) Upload(ctx context.Context, objectKey string, img *Image) error {
 	_, err := g.s3Client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket:      aws.String(g.bucketName),
 		Key:         aws.String(objectKey),
@@ -54,7 +56,7 @@ func (g *Garage) Upload(ctx context.Context, objectKey string, img Image) error 
 
 func TestGarageUpload(dzgCfg *config.Config) {
 	ctx := context.Background()
-	garage := New(ctx, dzgCfg)
+	garage := NewGarage(ctx, dzgCfg)
 
 	// Fetch random avatar
 	seed := fmt.Sprint(time.Now().UnixMilli())

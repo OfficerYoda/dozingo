@@ -28,7 +28,7 @@ type userByIDInput struct {
 //     mail to the new address.
 type updateUserInputBody struct {
 	Username *string              `json:"username,omitempty" maxLength:"200"`
-	Email    types.NullableString `json:"email,omitempty" format:"email" maxLength:"200"`
+	Email    types.NullableString `json:"email" format:"email" maxLength:"200"`
 }
 
 type updateUserInput struct {
@@ -59,6 +59,12 @@ type listVotesFromUserOutputBody struct {
 
 type listVotesFromUserOutput struct {
 	Body []listVotesFromUserOutputBody
+}
+
+type avatarUploadInput struct {
+	RawBody huma.MultipartFormFiles[struct {
+		Avatar huma.FormFile `form:"avatar" required:"true" doc:"The avatar image file (PNG, JPEG, WEBP, SVG)"`
+	}]
 }
 
 // ===== Handler =====
@@ -137,6 +143,15 @@ func (h *UsersHandler) Register(api huma.API) {
 		Tags:        []string{"Users"},
 		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.ReadListLimiter)},
 	}, h.listVotesFromMe)
+
+	huma.Register(api, huma.Operation{
+		OperationID: "update-current-user-avatar",
+		Method:      http.MethodPut,
+		Path:        "/users/me/avatar",
+		Summary:     "Upload a new profile picture",
+		Tags:        []string{"Users"},
+		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.WriteHeavyLimiter)},
+	}, h.uploadAvatar)
 }
 
 func (h *UsersHandler) me(ctx context.Context, _ *struct{}) (*userOutput, error) {
@@ -234,4 +249,13 @@ func (h *UsersHandler) listVotesFromMe(ctx context.Context, _ *struct{}) (*listV
 	}
 
 	return &listVotesFromUserOutput{Body: body}, nil
+}
+
+func (h *UsersHandler) uploadAvatar(ctx context.Context, in *avatarUploadInput) (*userOutput, error) {
+	user, err := h.users.UploadAvatar(ctx, in.RawBody.Data().Avatar)
+	if err != nil {
+		return nil, toHumaErr(err, "", "failed to upload avatar")
+	}
+
+	return &userOutput{Body: userToOutput(user)}, nil
 }
