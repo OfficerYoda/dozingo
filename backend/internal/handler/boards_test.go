@@ -110,7 +110,7 @@ func TestGetBoards(t *testing.T) {
 	userID := createTestUser(t, "listauthor", "listauthor@example.com")
 
 	createTestBoard(t, "Board A", 5, userID, nil)
-	createTestBoard(t, "Board B", 3, userID, nil)
+	createTestBoard(t, "Board B", 4, userID, nil)
 
 	w := doRequest(http.MethodGet, "/api/boards", nil)
 	assertStatus(t, w, http.StatusOK)
@@ -164,10 +164,10 @@ func TestGetBoards_FilterBySize(t *testing.T) {
 
 	userID := createTestUser(t, "sizeauthor", "sizeauthor@example.com")
 
-	createTestBoard(t, "Small Board", 3, userID, nil)
-	createTestBoard(t, "Large Board", 7, userID, nil)
+	createTestBoard(t, "Small Board", 4, userID, nil)
+	createTestBoard(t, "Large Board", 6, userID, nil)
 
-	w := doRequest(http.MethodGet, "/api/boards?size=3", nil)
+	w := doRequest(http.MethodGet, "/api/boards?size=4", nil)
 	assertStatus(t, w, http.StatusOK)
 
 	var resp []map[string]any
@@ -254,7 +254,7 @@ func TestGetBoards_CombinedFilters(t *testing.T) {
 
 	createTestBoard(t, "Match", 5, user1, nil)
 	createTestBoard(t, "Wrong Author", 5, user2, nil)
-	createTestBoard(t, "Wrong Size", 3, user1, nil)
+	createTestBoard(t, "Wrong Size", 4, user1, nil)
 
 	w := doRequest(http.MethodGet, fmt.Sprintf("/api/boards?author_id=%s&size=5", user1), nil)
 	assertStatus(t, w, http.StatusOK)

@@ -282,9 +282,11 @@ func TestMain(m *testing.M) {
 	// the Secure cookie flag to let cookies round-trip.
 	testCfg := &config.Config{SecureCookie: false}
 	queries := generated.New(testPool)
-	api.UseMiddleware(middleware.NewSessionMiddleware(testCfg, queries).Handler(api))
 
 	apiGroup := huma.NewGroup(api, "/api")
+	// Mirror production (cmd/api/main.go): session middleware lives on the
+	// /api group so health (registered on the bare api) bypasses it.
+	apiGroup.UseMiddleware(middleware.NewSessionMiddleware(testCfg, queries).Handler(api))
 
 	repos := repository.New(testPool)
 	txRunner := repository.NewTxRunner(testPool)
@@ -298,7 +300,9 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
-	NewHealthHandler(testPool).Register(apiGroup)
+	// Health is registered on the bare api (not apiGroup) to bypass session
+	// middleware; its operation Path is the absolute "/api/health".
+	NewHealthHandler(testPool).Register(api)
 	NewBoardsHandler(service.NewBoards(repos.Boards, queries)).Register(apiGroup)
 	NewCellsHandler(service.NewCells(repos.Cells, repos.Boards, queries)).Register(apiGroup)
 	NewGameCellsHandler(service.NewGameCells(repos.GameCells, repos.Games, queries)).Register(apiGroup)

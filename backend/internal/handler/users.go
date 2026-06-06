@@ -29,7 +29,7 @@ type userByIDInput struct {
 //     mail to the new address.
 type updateUserInputBody struct {
 	Username *string              `json:"username,omitempty" maxLength:"200"`
-	Email    types.NullableString `json:"email" format:"email" maxLength:"200"`
+	Email    types.NullableString `json:"email,omitempty" format:"email" maxLength:"200"`
 }
 
 type updateUserInput struct {

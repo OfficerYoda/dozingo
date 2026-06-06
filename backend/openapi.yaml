@@ -561,8 +561,6 @@ components:
         username:
           maxLength: 200
           type: string
-      required:
-        - email
       type: object
     UpsertVoteInputBody:
       additionalProperties: false
