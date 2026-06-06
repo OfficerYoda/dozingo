@@ -50,9 +50,10 @@ func (s *Users) Me(ctx context.Context) (generated.User, error) {
 	}
 
 	return generated.User{
-		ID:       session.UserID,
-		Username: session.Username.String,
-		Email:    session.Email,
+		ID:        session.UserID,
+		Username:  session.Username.String,
+		Email:     session.Email,
+		AvatarKey: session.AvatarKey.String,
 	}, nil
 }
 

@@ -592,6 +592,9 @@ components:
           format: uri
           readOnly: true
           type: string
+        avatar_url:
+          format: uri
+          type: string
         email:
           format: email
           type:

@@ -16,6 +16,7 @@ type Config struct {
 	MailSenderAddress string `env:"MAIL_SENDER_ADDRESS" required:"true"`
 
 	GarageEndpoint   string `env:"GARAGE_ENDPOINT" required:"true"`
+	GaragePublicURL  string `env:"GARAGE_PUBLIC_URL" required:"true"`
 	GarageAccessKey  string `env:"GARAGE_ACCESS_KEY" required:"true"`
 	GarageSecretKey  string `env:"GARAGE_SECRET_KEY" required:"true"`
 	GarageBucketName string `env:"GARAGE_BUCKET_NAME" envDefault:"profile-pictures"`

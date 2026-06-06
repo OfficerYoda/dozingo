@@ -16,6 +16,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	chimw "github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/officeryoda/dozingo/internal/avatar"
 	"github.com/officeryoda/dozingo/internal/config"
 	"github.com/officeryoda/dozingo/internal/email"
 	"github.com/officeryoda/dozingo/internal/generated"
@@ -57,13 +58,18 @@ func run() error {
 
 	repos := repository.New(pool)
 
+	avatarURLs, err := avatar.NewURLBuilder(cfg.GaragePublicURL, cfg.GarageBucketName)
+	if err != nil {
+		return fmt.Errorf("building avatar URL builder: %w", err)
+	}
+
 	worker.NewPeriodic("session_cleanup", sessionCleanupInterval,
 		repos.Sessions.DeleteExpiredSessions).Start(ctx)
 	worker.NewPeriodic("verification_token_cleanup", tokenCleanupInterval,
 		repos.VerificationTokens.DeleteExpired).Start(ctx)
 
 	router := createRouter(cfg)
-	registerRoutes(router, repos, pool, cfg, ctx)
+	registerRoutes(router, repos, pool, cfg, ctx, avatarURLs)
 
 	return serveHTTP(ctx, createServer(cfg.Port, router))
 }
@@ -112,6 +118,7 @@ func registerRoutes(
 	pool *pgxpool.Pool,
 	cfg *config.Config,
 	ctx context.Context,
+	avatarURLs *avatar.URLBuilder,
 ) {
 	emailSender := email.New(cfg)
 	garage := storage.NewGarage(ctx, cfg)
@@ -139,8 +146,8 @@ func registerRoutes(
 	handler.NewGameCellsHandler(gameCellsSvc).Register(apiGroup)
 	handler.NewGamesHandler(gamesSvc).Register(apiGroup)
 	handler.NewVotesHandler(votesSvc).Register(apiGroup)
-	handler.NewAuthHandler(authSvc).Register(apiGroup)
-	handler.NewUsersHandler(usersSvc, votesSvc).Register(apiGroup)
+	handler.NewAuthHandler(authSvc, avatarURLs).Register(apiGroup)
+	handler.NewUsersHandler(usersSvc, votesSvc, avatarURLs).Register(apiGroup)
 
 	createOpenAPIFile(api)
 }

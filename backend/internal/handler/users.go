@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
+	"github.com/officeryoda/dozingo/internal/avatar"
 	"github.com/officeryoda/dozingo/internal/middleware"
 	"github.com/officeryoda/dozingo/internal/pgmap"
 	"github.com/officeryoda/dozingo/internal/service"
@@ -70,12 +71,13 @@ type avatarUploadInput struct {
 // ===== Handler =====
 
 type UsersHandler struct {
-	users *service.Users
-	votes *service.Votes
+	users      *service.Users
+	votes      *service.Votes
+	avatarURLs *avatar.URLBuilder
 }
 
-func NewUsersHandler(users *service.Users, votes *service.Votes) *UsersHandler {
-	return &UsersHandler{users: users, votes: votes}
+func NewUsersHandler(users *service.Users, votes *service.Votes, avatarURLs *avatar.URLBuilder) *UsersHandler {
+	return &UsersHandler{users: users, votes: votes, avatarURLs: avatarURLs}
 }
 
 func (h *UsersHandler) Register(api huma.API) {
@@ -160,7 +162,7 @@ func (h *UsersHandler) me(ctx context.Context, _ *struct{}) (*userOutput, error)
 		return nil, toHumaErr(err, "", "failed to get me")
 	}
 
-	return &userOutput{Body: userToOutput(user)}, nil
+	return &userOutput{Body: userToOutput(user, h.avatarURLs)}, nil
 }
 
 func (h *UsersHandler) userByID(ctx context.Context, in *userByIDInput) (*userOutput, error) {
@@ -172,7 +174,7 @@ func (h *UsersHandler) userByID(ctx context.Context, in *userByIDInput) (*userOu
 	// Clean email so no personal information is publicly accessible
 	user.Email = pgmap.PgTextFromString(nil)
 
-	return &userOutput{Body: userToOutput(user)}, nil
+	return &userOutput{Body: userToOutput(user, h.avatarURLs)}, nil
 }
 
 func (h *UsersHandler) update(ctx context.Context, in *updateUserInput) (*userOutput, error) {
@@ -185,7 +187,7 @@ func (h *UsersHandler) update(ctx context.Context, in *updateUserInput) (*userOu
 		return nil, toHumaErr(err, "", "failed to update user")
 	}
 
-	return &userOutput{Body: userToOutput(user)}, nil
+	return &userOutput{Body: userToOutput(user, h.avatarURLs)}, nil
 }
 
 func (h *UsersHandler) updateMe(ctx context.Context, in *updateMeInput) (*userOutput, error) {
@@ -198,7 +200,7 @@ func (h *UsersHandler) updateMe(ctx context.Context, in *updateMeInput) (*userOu
 		return nil, toHumaErr(err, "", "failed to update current user")
 	}
 
-	return &userOutput{Body: userToOutput(user)}, nil
+	return &userOutput{Body: userToOutput(user, h.avatarURLs)}, nil
 }
 
 func (h *UsersHandler) listVotesFromUser(ctx context.Context, in *listVotesFromUserInput) (*listVotesFromUserOutput, error) {
@@ -257,5 +259,5 @@ func (h *UsersHandler) uploadAvatar(ctx context.Context, in *avatarUploadInput) 
 		return nil, toHumaErr(err, "", "failed to upload avatar")
 	}
 
-	return &userOutput{Body: userToOutput(user)}, nil
+	return &userOutput{Body: userToOutput(user, h.avatarURLs)}, nil
 }
