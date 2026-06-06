@@ -19,12 +19,19 @@ import (
 	"github.com/officeryoda/dozingo/internal/storage"
 )
 
+// ObjectUploader is the minimal contract Users.UploadAvatar needs from the
+// underlying object storage. *storage.Garage satisfies it in production; tests
+// inject a fake to record uploads without talking to a real S3 backend.
+type ObjectUploader interface {
+	Upload(ctx context.Context, objectKey string, img *storage.Image) error
+}
+
 type Users struct {
 	users       *repository.Users
 	queries     *generated.Queries
 	emailSender email.Sender
 	txRunner    repository.TxRunner
-	garage      *storage.Garage
+	uploader    ObjectUploader
 }
 
 func NewUsers(
@@ -32,14 +39,14 @@ func NewUsers(
 	queries *generated.Queries,
 	emailSender email.Sender,
 	txRunner repository.TxRunner,
-	garage *storage.Garage,
+	uploader ObjectUploader,
 ) *Users {
 	return &Users{
 		users:       repos.Users,
 		queries:     queries,
 		emailSender: emailSender,
 		txRunner:    txRunner,
-		garage:      garage,
+		uploader:    uploader,
 	}
 }
 
@@ -130,7 +137,7 @@ func (s *Users) UploadAvatar(ctx context.Context, in huma.FormFile) (generated.U
 	}
 
 	objectKey := fmt.Sprintf("%s%s", uuid, img.Extension)
-	err = s.garage.Upload(ctx, objectKey, img)
+	err = s.uploader.Upload(ctx, objectKey, img)
 	if err != nil {
 		return generated.User{}, fmt.Errorf("upload avatar: %w", err)
 	}

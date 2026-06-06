@@ -105,6 +105,13 @@ func TestUserByID_Success(t *testing.T) {
 	if got["email"] != nil {
 		t.Errorf("expected email to be null on public GET /users/{id}, got %v", got["email"])
 	}
+
+	// Fresh users get the default avatar URL because avatar_key defaults
+	// to 'default.svg' at the DB level, so avatar_url is always set on
+	// the public-by-id response too.
+	if got["avatar_url"] == nil {
+		t.Errorf("expected avatar_url to be set on public GET /users/{id} for user without custom avatar, got nil")
+	}
 }
 
 func TestUserByID_NotFound(t *testing.T) {

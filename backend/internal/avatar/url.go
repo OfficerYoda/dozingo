@@ -27,11 +27,9 @@ func NewURLBuilder(publicURL, bucket string) (*URLBuilder, error) {
 
 func (b *URLBuilder) URL(avatarKey string) *string {
 	if b == nil {
-		fmt.Println("b is nil")
 		return nil
 	}
 	if strings.TrimSpace(avatarKey) == "" {
-		fmt.Println("akey is empty")
 		return nil
 	}
 	u := url.URL{
@@ -40,7 +38,5 @@ func (b *URLBuilder) URL(avatarKey string) *string {
 		Path:   "/" + avatarKey,
 	}
 	s := u.String()
-
-	fmt.Println("s: " + s)
 	return &s
 }
