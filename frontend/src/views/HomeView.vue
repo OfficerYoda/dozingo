@@ -57,17 +57,24 @@
         </div>
       </div>
 
-      <div class="mb-3">
-        <div class="section-header mb-3">
-          <div>
-            <h2 class="mb-0">Most Liked Boards</h2>
-            <small class="subheading">The community's current favorites</small>
-          </div>
-          <RouterLink to="/boards?sort=most-liked">See all &rarr;</RouterLink>
+      <div class="section-header mb-2">
+        <div>
+          <h2 class="mb-0">Most Liked Boards</h2>
+          <small class="subheading">The community's current favorites</small>
         </div>
+        <RouterLink to="/boards?sort=most-liked">See all &rarr;</RouterLink>
+      </div>
 
-        <div class="grid">
-          <button v-for="board in mostLikedBoards" :key="board.board_id" class="card card-border-blue col-4 md-6 sm-12">
+      <SliderSection
+        :items="mostLikedBoards"
+        :per-page="3"
+        :per-page-md="2"
+        :per-page-sm="1"
+        :type="'slide'"
+        class="mb-3"
+      >
+        <template #slide="{ item: board }">
+          <button class="card card-border-blue slider-board-card">
             <div class="card-body">
               <h3>{{ board.title }}</h3>
               <small>{{ board.description ?? '—' }}</small>
@@ -81,20 +88,25 @@
               </div>
             </div>
           </button>
+        </template>
+      </SliderSection>
+
+      <div class="section-header mb-2">
+        <div>
+          <h2 class="mb-0">Recently Added Boards</h2>
+          <small class="subheading">Fresh bingo cards from the community</small>
         </div>
+        <RouterLink to="/boards?sort=newest">See all &rarr;</RouterLink>
       </div>
 
-      <div>
-        <div class="section-header mb-3">
-          <div>
-            <h2 class="mb-0">Recently Added Boards</h2>
-            <small class="subheading">Fresh bingo cards from the community</small>
-          </div>
-          <RouterLink to="/boards?sort=newest">See all &rarr;</RouterLink>
-        </div>
-
-        <div class="grid">
-          <button v-for="board in newestBoards" :key="board.board_id" class="card card-border-blue col-4 md-6 sm-12">
+      <SliderSection
+        :items="newestBoards"
+        :per-page="3"
+        :per-page-md="2"
+        :per-page-sm="1"
+      >
+        <template #slide="{ item: board }">
+          <button class="card card-border-blue slider-board-card">
             <div class="card-body">
               <h3>{{ board.title }}</h3>
               <small>{{ board.description ?? '—' }}</small>
@@ -108,8 +120,8 @@
               </div>
             </div>
           </button>
-        </div>
-      </div>
+        </template>
+      </SliderSection>
     </div>
   </section>
 </template>
@@ -117,6 +129,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { Heart, GamepadDirectional, SquarePlus, LayoutGrid, Medal } from 'lucide-vue-next'
+import SliderSection from '@/components/SliderSection.vue'
 
 interface Board {
   board_id: string
@@ -139,8 +152,8 @@ function formatCount(n: number): string {
 
 async function fetchBoards() {
   const [likedRes, newestRes] = await Promise.all([
-    fetch('/api/boards?sort=most-liked&limit=3', { credentials: 'include' }),
-    fetch('/api/boards?sort=newest&limit=3', { credentials: 'include' }),
+    fetch('/api/boards?sort=most-liked&limit=5', { credentials: 'include' }),
+    fetch('/api/boards?sort=newest&limit=5', { credentials: 'include' }),
   ])
 
   if (likedRes.ok) mostLikedBoards.value = await likedRes.json()
@@ -311,5 +324,11 @@ onMounted(fetchBoards)
   display: flex;
   justify-content: space-evenly;
   align-items: space-evenly;
+}
+
+.slider-board-card {
+  width: 100%;
+  height: 100%;
+  text-align: left;
 }
 </style>
