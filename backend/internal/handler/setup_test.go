@@ -21,11 +21,13 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	"github.com/officeryoda/dozingo/internal/auth"
+	"github.com/officeryoda/dozingo/internal/avatar"
 	"github.com/officeryoda/dozingo/internal/config"
 	"github.com/officeryoda/dozingo/internal/generated"
 	"github.com/officeryoda/dozingo/internal/middleware"
 	"github.com/officeryoda/dozingo/internal/repository"
 	"github.com/officeryoda/dozingo/internal/service"
+	"github.com/officeryoda/dozingo/internal/storage"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -45,6 +47,17 @@ var (
 	// was (or was not) sent and to capture issued tokens for end-to-end
 	// flows. Reset between tests in cleanupTables.
 	fakeMailer = &fakeEmailSender{}
+
+	// fakeUploader is the service.ObjectUploader implementation wired into
+	// the test service.Users. Tests inspect its recorded uploads and can
+	// configure failNext to simulate a storage outage. Reset between tests
+	// in cleanupTables.
+	fakeUploader = &fakeObjectUploader{}
+
+	// testAvatarURLs is the avatar.URLBuilder used by handlers under test.
+	// Configured in TestMain with a deterministic public URL so tests can
+	// assert on the avatar_url field shape.
+	testAvatarURLs *avatar.URLBuilder
 )
 
 // fakeEmailSender records every Send* call. Safe for concurrent use; tests
@@ -122,6 +135,69 @@ func (f *fakeEmailSender) verifyCount() int {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	return len(f.verifyCalls)
+}
+
+// fakeObjectUploader records every Upload call. Safe for concurrent use; tests
+// run sequentially by default but a single test may make concurrent
+// requests so guard the slice anyway.
+type fakeObjectUploader struct {
+	mu       sync.Mutex
+	uploads  []recordedUpload
+	failNext error
+}
+
+// recordedUpload captures everything the service handed to the uploader so
+// tests can assert on key/content-type/extension/byte-payload roundtrips
+// without reaching into the real S3 client.
+type recordedUpload struct {
+	Key         string
+	ContentType string
+	Extension   string
+	Bytes       []byte
+}
+
+func (f *fakeObjectUploader) Upload(_ context.Context, objectKey string, img *storage.Image) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.failNext != nil {
+		err := f.failNext
+		f.failNext = nil
+		return err
+	}
+	// Drain the reader so tests can inspect what was uploaded. The
+	// service hands us a *bytes.Reader, so we don't need to worry about
+	// network errors here.
+	buf := make([]byte, img.File.Len())
+	_, _ = img.File.Read(buf)
+	f.uploads = append(f.uploads, recordedUpload{
+		Key:         objectKey,
+		ContentType: img.ContentType,
+		Extension:   img.Extension,
+		Bytes:       buf,
+	})
+	return nil
+}
+
+func (f *fakeObjectUploader) reset() {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.uploads = nil
+	f.failNext = nil
+}
+
+func (f *fakeObjectUploader) uploadCount() int {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return len(f.uploads)
+}
+
+func (f *fakeObjectUploader) lastUpload() (recordedUpload, bool) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if len(f.uploads) == 0 {
+		return recordedUpload{}, false
+	}
+	return f.uploads[len(f.uploads)-1], true
 }
 
 // cookiesFor returns the session cookie associated with userID, or nil if no
@@ -206,21 +282,35 @@ func TestMain(m *testing.M) {
 	// the Secure cookie flag to let cookies round-trip.
 	testCfg := &config.Config{SecureCookie: false}
 	queries := generated.New(testPool)
-	api.UseMiddleware(middleware.NewSessionMiddleware(testCfg, queries).Handler(api))
 
 	apiGroup := huma.NewGroup(api, "/api")
+	// Mirror production (cmd/api/main.go): session middleware lives on the
+	// /api group so health (registered on the bare api) bypasses it.
+	apiGroup.UseMiddleware(middleware.NewSessionMiddleware(testCfg, queries).Handler(api))
 
 	repos := repository.New(testPool)
 	txRunner := repository.NewTxRunner(testPool)
-	NewHealthHandler(testPool).Register(apiGroup)
+
+	// Build a deterministic avatar.URLBuilder for tests. With this config
+	// avatar URLs come out as http://profile-pictures.garage.test/<key>.
+	var err2 error
+	testAvatarURLs, err2 = avatar.NewURLBuilder("http://garage.test", "profile-pictures")
+	if err2 != nil {
+		slog.Error("failed to build test avatar URL builder", "error", err2)
+		os.Exit(1)
+	}
+
+	// Health is registered on the bare api (not apiGroup) to bypass session
+	// middleware; its operation Path is the absolute "/api/health".
+	NewHealthHandler(testPool).Register(api)
 	NewBoardsHandler(service.NewBoards(repos.Boards, queries)).Register(apiGroup)
 	NewCellsHandler(service.NewCells(repos.Cells, repos.Boards, queries)).Register(apiGroup)
 	NewGameCellsHandler(service.NewGameCells(repos.GameCells, repos.Games, queries)).Register(apiGroup)
 	NewGamesHandler(service.NewGames(repos.Games, queries)).Register(apiGroup)
 	votesSvc := service.NewVotes(repos.Votes, queries)
 	NewVotesHandler(votesSvc).Register(apiGroup)
-	NewAuthHandler(service.NewAuth(repos, fakeMailer, queries, txRunner)).Register(apiGroup)
-	NewUsersHandler(service.NewUsers(repos, queries, fakeMailer, txRunner), votesSvc).Register(apiGroup)
+	NewAuthHandler(service.NewAuth(repos, fakeMailer, queries, txRunner), testAvatarURLs).Register(apiGroup)
+	NewUsersHandler(service.NewUsers(repos, queries, fakeMailer, txRunner, fakeUploader), votesSvc, testAvatarURLs).Register(apiGroup)
 
 	// Clean tables before running tests to ensure a fresh state
 	truncateAllTables()
@@ -267,6 +357,9 @@ func cleanupTables(t *testing.T) {
 	}
 	// Fake mailer captures cross every test boundary, drop them too.
 	fakeMailer.reset()
+	// Fake uploader recorded uploads also span test boundaries; reset so
+	// the next test starts with an empty slice.
+	fakeUploader.reset()
 }
 
 /// ===== HTTP helpers =====

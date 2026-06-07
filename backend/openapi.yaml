@@ -92,8 +92,8 @@ components:
           type: string
         size:
           format: int32
-          maximum: 7
-          minimum: 3
+          maximum: 6
+          minimum: 4
           type: integer
         title:
           maxLength: 200
@@ -228,6 +228,24 @@ components:
           type: string
       required:
         - email
+      type: object
+    FormFile:
+      additionalProperties: false
+      properties:
+        ContentType:
+          type: string
+        Filename:
+          type: string
+        IsSet:
+          type: boolean
+        Size:
+          format: int64
+          type: integer
+      required:
+        - ContentType
+        - IsSet
+        - Size
+        - Filename
       type: object
     GameCellOutput:
       additionalProperties: false
@@ -571,6 +589,9 @@ components:
             - https://example.com/schemas/UserOutputBody.json
           format: uri
           readOnly: true
+          type: string
+        avatar_url:
+          format: uri
           type: string
         email:
           format: email
@@ -1532,6 +1553,42 @@ paths:
                 $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Update the current User's username and/or email
+      tags:
+        - Users
+  /api/users/me/avatar:
+    put:
+      operationId: update-current-user-avatar
+      requestBody:
+        content:
+          multipart/form-data:
+            encoding:
+              avatar:
+                contentType: application/octet-stream
+            schema:
+              properties:
+                avatar:
+                  contentEncoding: binary
+                  contentMediaType: application/octet-stream
+                  description: The avatar image file (PNG, JPEG, WEBP, SVG)
+                  format: binary
+                  type: string
+              required:
+                - avatar
+              type: object
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Upload a new profile picture
       tags:
         - Users
   /api/users/me/votes:

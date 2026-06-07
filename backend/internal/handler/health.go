@@ -39,7 +39,7 @@ func (h *HealthHandler) Register(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID: "health-check",
 		Method:      http.MethodGet,
-		Path:        "/health",
+		Path:        "/api/health",
 		Summary:     "Health check",
 		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.HealthLimiter)},
 	}, h.handleHealth)

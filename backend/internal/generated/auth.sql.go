@@ -19,7 +19,8 @@ SELECT
   s.expires_at,
   u.username,
   u.email,
-  u.email_verified_at
+  u.email_verified_at,
+  u.avatar_key
 FROM sessions s
 LEFT JOIN users u ON u.id = s.user_id
 WHERE s.token = $1
@@ -34,6 +35,7 @@ type GetSessionUserByTokenRow struct {
 	Username        pgtype.Text        `json:"username"`
 	Email           pgtype.Text        `json:"email"`
 	EmailVerifiedAt pgtype.Timestamptz `json:"email_verified_at"`
+	AvatarKey       pgtype.Text        `json:"avatar_key"`
 }
 
 // user_id may be NULL for anon sessions
@@ -48,12 +50,13 @@ func (q *Queries) GetSessionUserByToken(ctx context.Context, token string) (GetS
 		&i.Username,
 		&i.Email,
 		&i.EmailVerifiedAt,
+		&i.AvatarKey,
 	)
 	return i, err
 }
 
 const getUserForPasswordLogin = `-- name: GetUserForPasswordLogin :one
-SELECT u.id, u.username, u.email, up.password_hash
+SELECT u.id, u.username, u.email, u.avatar_key, up.password_hash
 FROM users u
 INNER JOIN user_passwords up ON up.user_id = u.id
 WHERE u.username = $1
@@ -63,6 +66,7 @@ type GetUserForPasswordLoginRow struct {
 	ID           pgtype.UUID `json:"id"`
 	Username     string      `json:"username"`
 	Email        pgtype.Text `json:"email"`
+	AvatarKey    string      `json:"avatar_key"`
 	PasswordHash string      `json:"password_hash"`
 }
 
@@ -73,6 +77,7 @@ func (q *Queries) GetUserForPasswordLogin(ctx context.Context, username string) 
 		&i.ID,
 		&i.Username,
 		&i.Email,
+		&i.AvatarKey,
 		&i.PasswordHash,
 	)
 	return i, err

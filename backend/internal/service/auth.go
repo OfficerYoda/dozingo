@@ -92,9 +92,10 @@ func (s *Auth) Login(ctx context.Context, in LoginInput) (generated.User, error)
 	}
 
 	vanillaUser := generated.User{
-		ID:       user.ID,
-		Username: user.Username,
-		Email:    user.Email,
+		ID:        user.ID,
+		Username:  user.Username,
+		Email:     user.Email,
+		AvatarKey: user.AvatarKey,
 	}
 	err = s.attachUserToSession(ctx, vanillaUser)
 	if err != nil {

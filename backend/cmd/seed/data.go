@@ -80,46 +80,36 @@ var users = []userData{
 	{Username: "admin", Email: "admin@dozingo.de"},
 }
 
-// boards defines 15 boards with mixed sizes (3-7), each linked to an author.
+// boards defines 18 boards with mixed sizes (4-6), each linked to an author.
+// Size distribution: 4 boards size 4, 10 boards size 5, 4 boards size 6
+// (~22% / 56% / 22%, approximating a 20/60/20 split).
 var boards = []boardData{
-	// Size 3 boards (n²=9, pool=12 cells each)
-	{Title: "Mathe 1 Bingo", Description: "Klassiker aus der Mathe 1 Vorlesung", Size: 3, AuthorIdx: 0},
-	{Title: "Lineare Algebra Klassiker", Description: "Die besten Momente aus LinAlg", Size: 3, AuthorIdx: 1},
-	{Title: "Statistik Grundlagen", Description: "Statistik Vorlesung Bingo", Size: 3, AuthorIdx: 4},
-
-	// Size 4 boards (n²=16, pool=21 cells each)
-	{Title: "Theoretische Informatik", Description: "Turingmaschinen und mehr", Size: 4, AuthorIdx: 2},
-	{Title: "Physik Vorlesung", Description: "Experimente die schiefgehen", Size: 4, AuthorIdx: 3},
-	{Title: "BWL Einführung", Description: "PowerPoint-Schlachten und Buzzwords", Size: 4, AuthorIdx: 5},
-
-	// Size 5 boards (n²=25, pool=32 cells each)
-	{Title: "Algorithmen und Datenstrukturen", Description: "O-Notation und Rekursion", Size: 5, AuthorIdx: 6},
-	{Title: "Softwaretechnik Bingo", Description: "UML und Agile Methoden", Size: 5, AuthorIdx: 7},
-	{Title: "Datenbanken Vorlesung", Description: "SQL, Normalformen und Joins", Size: 5, AuthorIdx: 0},
-
-	// Size 6 boards (n²=36, pool=45 cells each)
-	{Title: "Betriebssysteme Chaos", Description: "Deadlocks und Race Conditions", Size: 6, AuthorIdx: 8},
-	{Title: "Rechnernetze Marathon", Description: "OSI-Modell und TCP/IP", Size: 6, AuthorIdx: 9},
-	{Title: "Digitaltechnik Vorlesung", Description: "Flip-Flops und Gatter", Size: 6, AuthorIdx: 1},
-
-	// Size 7 boards (n²=49, pool=62 cells each)
-	{Title: "Compilerbau Endgegner", Description: "Parser, Lexer und Optimierung", Size: 7, AuthorIdx: 3},
-	{Title: "Verteilte Systeme Bingo", Description: "CAP-Theorem und Konsens", Size: 7, AuthorIdx: 6},
-	{Title: "Maschinelles Lernen Bingo", Description: "Gradient Descent und Overfitting", Size: 7, AuthorIdx: 2},
+	{Title: "Mathe 1 Bingo", Description: "Klassiker aus der Mathe 1 Vorlesung", Size: 4, AuthorIdx: 0},                    // idx 0  (size 4)
+	{Title: "Lineare Algebra Klassiker", Description: "Die besten Momente aus LinAlg", Size: 5, AuthorIdx: 1},              // idx 1  (size 5)
+	{Title: "Statistik Grundlagen", Description: "Statistik Vorlesung Bingo", Size: 5, AuthorIdx: 4},                       // idx 2  (size 5)
+	{Title: "Theoretische Informatik", Description: "Turingmaschinen und mehr", Size: 4, AuthorIdx: 2},                     // idx 3  (size 4)
+	{Title: "Physik Vorlesung", Description: "Experimente die schiefgehen", Size: 5, AuthorIdx: 3},                         // idx 4  (size 5)
+	{Title: "BWL Einführung", Description: "PowerPoint-Schlachten und Buzzwords", Size: 5, AuthorIdx: 5},                   // idx 5  (size 5)
+	{Title: "Algorithmen und Datenstrukturen", Description: "O-Notation und Rekursion", Size: 5, AuthorIdx: 6},             // idx 6  (size 5)
+	{Title: "Softwaretechnik Bingo", Description: "UML und Agile Methoden", Size: 5, AuthorIdx: 7},                         // idx 7  (size 5)
+	{Title: "Datenbanken Vorlesung", Description: "SQL, Normalformen und Joins", Size: 5, AuthorIdx: 0},                    // idx 8  (size 5)
+	{Title: "Betriebssysteme Chaos", Description: "Deadlocks und Race Conditions", Size: 6, AuthorIdx: 8},                  // idx 9  (size 6)
+	{Title: "Rechnernetze Marathon", Description: "OSI-Modell und TCP/IP", Size: 6, AuthorIdx: 9},                          // idx 10 (size 6)
+	{Title: "Digitaltechnik Vorlesung", Description: "Flip-Flops und Gatter", Size: 6, AuthorIdx: 1},                       // idx 11 (size 6)
+	{Title: "Compilerbau Endgegner", Description: "Parser, Lexer und Optimierung", Size: 6, AuthorIdx: 3},                  // idx 12 (size 6)
+	{Title: "Verteilte Systeme Bingo", Description: "CAP-Theorem und Konsens", Size: 5, AuthorIdx: 6},                      // idx 13 (size 5)
+	{Title: "Maschinelles Lernen Bingo", Description: "Gradient Descent und Overfitting", Size: 5, AuthorIdx: 2},           // idx 14 (size 5)
 
 	// Admin-authored boards (AuthorIdx: 12)
-	// Board 15: Size 4 -> 21 cells in pool
-	{Title: "Programmierkurs Klassiker", Description: "Live-Coding-Fails und Stack Traces", Size: 4, AuthorIdx: 12},
-	// Board 16: Size 5 -> 32 cells in pool
-	{Title: "Webtechnologien Bingo", Description: "HTTP, REST und CSS-Spezifität", Size: 5, AuthorIdx: 12},
-	// Board 17: Size 4 -> 21 cells in pool (English / admin themed)
-	{Title: "Admin Debug Bingo", Description: "QA hits, prod fires, and questionable commits", Size: 4, AuthorIdx: 12},
+	{Title: "Programmierkurs Klassiker", Description: "Live-Coding-Fails und Stack Traces", Size: 4, AuthorIdx: 12},        // idx 15 (size 4)
+	{Title: "Webtechnologien Bingo", Description: "HTTP, REST und CSS-Spezifität", Size: 5, AuthorIdx: 12},                 // idx 16 (size 5)
+	{Title: "Admin Debug Bingo", Description: "QA hits, prod fires, and questionable commits", Size: 4, AuthorIdx: 12},     // idx 17 (size 4)
 }
 
 // cellPhrases contains German lecture bingo phrases for each board index.
-// Pool sizes: size 3 -> 12, size 4 -> 21, size 5 -> 32, size 6 -> 45, size 7 -> 62
+// Pool sizes: size 4 -> 21, size 5 -> 32, size 6 -> 45
 var cellPhrases = map[int][]string{
-	// Board 0: "Mathe 1 Bingo" (size 3, 12 cells)
+	// Board 0: "Mathe 1 Bingo" (size 4, 21 cells)
 	0: {
 		"Prof sagt 'trivial'",
 		"Beweis wird übersprungen",
@@ -133,9 +123,18 @@ var cellPhrases = map[int][]string{
 		"Prof verwechselt Plus und Minus",
 		"Studenten schauen verwirrt",
 		"'Das hatten wir schon letzte Woche'",
+		"Tippfehler auf der Folie",
+		"Prof sucht den Tafellappen",
+		"Hörsaal-Mikrofon rauscht",
+		"Tutor wird widersprochen",
+		"'Mit vollständiger Induktion'",
+		"Beamer flackert kurz",
+		"Prof zeichnet Cantor-Mengen",
+		"Grenzwert wird hingeschrieben",
+		"'Die Klausur wird fair'",
 	},
 
-	// Board 1: "Lineare Algebra Klassiker" (size 3, 12 cells)
+	// Board 1: "Lineare Algebra Klassiker" (size 5, 32 cells)
 	1: {
 		"Matrix wird falsch multipliziert",
 		"'Der Beweis ist elegant'",
@@ -149,9 +148,29 @@ var cellPhrases = map[int][]string{
 		"Gauß-Algorithmus zum dritten Mal",
 		"Prof dreht sich zur falschen Tafel",
 		"Inverse existiert nicht",
+		"Basiswechsel verwirrt alle",
+		"Skalarprodukt falsch berechnet",
+		"'Diagonalisierbar oder nicht?'",
+		"Prof verliert die Kreide",
+		"Jordan-Normalform erwähnt",
+		"Orthogonale Projektion an der Tafel",
+		"'Das ist linear unabhängig'",
+		"Prof vergisst Index",
+		"Kern und Bild verwechselt",
+		"Eigenvektor wird berechnet",
+		"Spur einer Matrix erwähnt",
+		"Lineare Abbildung gezeichnet",
+		"Cramersche Regel angewendet",
+		"Prof verwechselt Zeile und Spalte",
+		"Householder-Spiegelung erwähnt",
+		"Untervektorraum-Beispiel",
+		"Prof zeichnet R³-Koordinaten",
+		"Singulärwertzerlegung kurz angerissen",
+		"'Das ist eine Bilinearform'",
+		"Prof rechnet Kreuzprodukt vor",
 	},
 
-	// Board 2: "Statistik Grundlagen" (size 3, 12 cells)
+	// Board 2: "Statistik Grundlagen" (size 5, 32 cells)
 	2: {
 		"Normalverteilung wird gezeichnet",
 		"'Korrelation ist nicht Kausalität'",
@@ -165,6 +184,26 @@ var cellPhrases = map[int][]string{
 		"'In der Praxis sieht das anders aus'",
 		"Bayes wird erwähnt",
 		"Prof sagt 'signifikant'",
+		"Hypothesentest formuliert",
+		"Zentraler Grenzwertsatz zitiert",
+		"Boxplot wird gezeichnet",
+		"'Ausreißer ignorieren wir'",
+		"Prof verwechselt Median und Mittelwert",
+		"Stichprobenumfang zu klein",
+		"Chi-Quadrat-Test erwähnt",
+		"Streudiagramm auf der Folie",
+		"'Das ist nur deskriptive Statistik'",
+		"Kovarianzmatrix an der Tafel",
+		"Schiefe und Kurtosis erwähnt",
+		"Lineare Regression gezeichnet",
+		"Prof zeigt R-Output",
+		"Dichtefunktion skizziert",
+		"'Das ist nur ein Schätzer'",
+		"Bootstrap-Verfahren genannt",
+		"Poissonverteilung als Beispiel",
+		"Prof verwechselt Varianz und Standardabweichung",
+		"Q-Q-Plot erwähnt",
+		"'Statistik lügt nicht, Statistiker schon'",
 	},
 
 	// Board 3: "Theoretische Informatik" (size 4, 21 cells)
@@ -192,7 +231,7 @@ var cellPhrases = map[int][]string{
 		"Prof löscht die Tafel zu früh",
 	},
 
-	// Board 4: "Physik Vorlesung" (size 4, 21 cells)
+	// Board 4: "Physik Vorlesung" (size 5, 32 cells)
 	4: {
 		"Prof lässt Experiment fallen",
 		"'In der Realität vernachlässigen wir Reibung'",
@@ -215,9 +254,20 @@ var cellPhrases = map[int][]string{
 		"Maxwell-Gleichung wird hingeschrieben",
 		"Prof sagt 'Das ist Schulstoff'",
 		"Taschenrechner gibt falsches Ergebnis",
+		"Lagrange-Formalismus erwähnt",
+		"Drehimpulserhaltung diskutiert",
+		"Doppelspalt-Experiment skizziert",
+		"Prof verwechselt c und v",
+		"Coulomb-Gesetz hingeschrieben",
+		"Resonanzkurve gezeichnet",
+		"'Das gilt nur im Vakuum'",
+		"Prof rechnet mit kleinem Winkel",
+		"Drehmoment falsch gerechnet",
+		"Phasenraum erwähnt",
+		"'Energie geht nie verloren'",
 	},
 
-	// Board 5: "BWL Einführung" (size 4, 21 cells)
+	// Board 5: "BWL Einführung" (size 5, 32 cells)
 	5: {
 		"PowerPoint hat zu viel Text",
 		"'In der Praxis ist das anders'",
@@ -240,6 +290,17 @@ var cellPhrases = map[int][]string{
 		"'Der Markt regelt das'",
 		"Bilanz wird erklärt",
 		"Prof sagt 'Win-Win-Situation'",
+		"KPI-Folie wird gezeigt",
+		"Cashflow-Berechnung an der Tafel",
+		"Marktanalyse aus 2018",
+		"B2B vs B2C Diskussion",
+		"Prof sagt 'Skaleneffekte'",
+		"Porter's Five Forces erwähnt",
+		"'Disruption' fällt mindestens dreimal",
+		"Lieferkette wird gezeichnet",
+		"Prof zeigt Excel-Pivot-Tabelle",
+		"Innovationsmanagement-Buzzword",
+		"'Wir denken outside the box'",
 	},
 
 	// Board 6: "Algorithmen und Datenstrukturen" (size 5, 32 cells)
@@ -497,7 +558,7 @@ var cellPhrases = map[int][]string{
 		"Prof zeichnet Blockschaltbild",
 	},
 
-	// Board 12: "Compilerbau Endgegner" (size 7, 62 cells)
+	// Board 12: "Compilerbau Endgegner" (size 6, 45 cells)
 	12: {
 		"Lexer vs Parser erklärt",
 		"'Das ist ein Token'",
@@ -544,26 +605,9 @@ var cellPhrases = map[int][]string{
 		"Prof zeigt generierten Assembler",
 		"Constant Folding Beispiel",
 		"'Das sind implizite Typkonvertierungen'",
-		"Prof zeichnet DFA für Scanner",
-		"Backpatching erklärt",
-		"'Das ist ein Spill'",
-		"Prof sagt 'Calling Convention'",
-		"Instruction Selection Phase",
-		"'Da brauchen wir einen Fixpunkt'",
-		"Prof vergisst Epsilon-Übergang",
-		"Inline-Expansion erwähnt",
-		"'Das ist Data Flow Analysis'",
-		"Prof schreibt Abstract Machine Code",
-		"Tail-Call-Optimierung erklärt",
-		"'Das ist Strength Reduction'",
-		"Jemand schläft ein beim Parsertabelle-Ausfüllen",
-		"Prof sagt 'Das ist der schwierigste Teil'",
-		"Closure einer Itemmenge berechnet",
-		"'Das handle ich in der Übung'",
-		"Prof zeichnet Abhängigkeitsgraph",
 	},
 
-	// Board 13: "Verteilte Systeme Bingo" (size 7, 62 cells)
+	// Board 13: "Verteilte Systeme Bingo" (size 5, 32 cells)
 	13: {
 		"CAP-Theorem wird erklärt",
 		"'Das ist ein verteilter Konsens'",
@@ -597,39 +641,9 @@ var cellPhrases = map[int][]string{
 		"Prof zeigt Architektur-Diagramm",
 		"'Das braucht ein Message-Queue'",
 		"Saga-Pattern wird erwähnt",
-		"Prof sagt 'Retry mit Backoff'",
-		"'Das ist ein Ordering-Problem'",
-		"Sharding wird erklärt",
-		"Prof zeichnet Partitionierung",
-		"'Exactly-Once-Delivery gibt es nicht'",
-		"CRDT wird vorgestellt",
-		"Prof sagt 'Causal Consistency'",
-		"'Das ist ein Hot-Spot-Problem'",
-		"Jemand fragt nach Blockchain",
-		"Prof seufzt",
-		"Quorum-basierte Replikation erklärt",
-		"'N/2 + 1 für Mehrheit'",
-		"Prof zeigt Latenz-Diagramm",
-		"'Das Netzwerk ist nicht zuverlässig'",
-		"Failover-Strategie diskutiert",
-		"Prof sagt 'Graceful Degradation'",
-		"'Das ist ein Thundering-Herd-Problem'",
-		"Event Sourcing erwähnt",
-		"Prof zeichnet Zustandsmaschine",
-		"'Das braucht ein Distributed Lock'",
-		"Lease-Mechanismus erklärt",
-		"Prof sagt 'Observability ist wichtig'",
-		"'Distributed Tracing hilft'",
-		"Bulkhead-Pattern vorgestellt",
-		"Prof vergisst Pfeil im Diagramm",
-		"'Das ist ein Consistency-Latency-Tradeoff'",
-		"Jemand fragt 'Reicht nicht eine Datenbank?'",
-		"Prof sagt 'Es kommt darauf an'",
-		"Chaos Engineering erwähnt",
-		"'Netflix hat das erfunden'",
 	},
 
-	// Board 14: "Maschinelles Lernen Bingo" (size 7, 62 cells)
+	// Board 14: "Maschinelles Lernen Bingo" (size 5, 32 cells)
 	14: {
 		"'Das ist ein Klassifikationsproblem'",
 		"Prof zeichnet Entscheidungsgrenze",
@@ -663,36 +677,6 @@ var cellPhrases = map[int][]string{
 		"'Das Modell konvergiert'",
 		"Aktivierungsfunktion erklärt",
 		"'ReLU statt Sigmoid'",
-		"Prof sagt 'Vanishing Gradient'",
-		"CNN für Bilderkennung erwähnt",
-		"'Das ist Transfer Learning'",
-		"Prof zeigt vortrainiertes Modell",
-		"'Preprocessing ist 80% der Arbeit'",
-		"One-Hot-Encoding für Kategorien",
-		"Prof sagt 'Ensemble-Methoden'",
-		"Precision vs Recall diskutiert",
-		"'F1-Score als Kompromiss'",
-		"Prof zeichnet ROC-Kurve",
-		"'AUC sollte nahe 1 sein'",
-		"Jemand fragt nach ChatGPT",
-		"Prof sagt 'Das ist ein anderes Thema'",
-		"Recurrent Neural Network erwähnt",
-		"'Attention is All You Need'",
-		"Prof zeigt MNIST-Beispiel",
-		"'Das sind zu viele Epochen'",
-		"Data Augmentation erklärt",
-		"Prof sagt 'Generalisierung ist das Ziel'",
-		"'Das Modell ist unterbestimmt'",
-		"Feature Engineering diskutiert",
-		"Prof zeigt Heatmap",
-		"'Korrelation der Features prüfen'",
-		"Gradient Boosting vorgestellt",
-		"'XGBoost gewinnt Kaggle-Wettbewerbe'",
-		"Prof sagt 'Explainability'",
-		"SHAP-Values erwähnt",
-		"'Das ist ein Black-Box-Modell'",
-		"Prof zeichnet Decision Boundary",
-		"'Nächste Woche: Deep Learning'",
 	},
 
 	// Board 15: "Programmierkurs Klassiker" (size 4, 21 cells, German)
@@ -851,7 +835,7 @@ var games = []gameData{
 	{PlayerIdx: 5, SessionIdx: -1, BoardIdx: 1, Status: "active"},
 
 	// Game 5: Anonymous (session 0 = "seed-anon-fresh-token-0001") plays board 0
-	// (Mathe 1 Bingo, size 3 -> 9 cells) - active
+	// (Mathe 1 Bingo, size 4 -> 16 cells) - active
 	{PlayerIdx: -1, SessionIdx: 0, BoardIdx: 0, Status: "active"},
 	// Game 6: Anonymous (session 1 = "seed-anon-near-expiry-0002") plays board 3
 	// (Theoretische Informatik, size 4 -> 16 cells) - abandoned
@@ -873,7 +857,7 @@ var games = []gameData{
 // Each game picks n² cells from the board's cell pool and assigns positions.
 // Position is 0-indexed in row-major order.
 var gameCells = map[int][]gameCellData{
-	// Game 0: User 0 on board 0 (Mathe 1, size 3 -> 9 cells, completed with marks)
+	// Game 0: User 0 on board 0 (Mathe 1, size 4 -> 16 cells, completed with marks)
 	0: {
 		{Content: "Prof sagt 'trivial'", Position: 0, IsMarked: true},
 		{Content: "Beweis wird übersprungen", Position: 1, IsMarked: true},
@@ -884,9 +868,16 @@ var gameCells = map[int][]gameCellData{
 		{Content: "Prof rechnet sich an der Tafel vor", Position: 6, IsMarked: true},
 		{Content: "Epsilon-Delta taucht auf", Position: 7, IsMarked: true},
 		{Content: "'Übung für den Leser'", Position: 8, IsMarked: true},
+		{Content: "Prof verwechselt Plus und Minus", Position: 9, IsMarked: true},
+		{Content: "Studenten schauen verwirrt", Position: 10, IsMarked: true},
+		{Content: "'Das hatten wir schon letzte Woche'", Position: 11, IsMarked: false},
+		{Content: "Tippfehler auf der Folie", Position: 12, IsMarked: true},
+		{Content: "Prof sucht den Tafellappen", Position: 13, IsMarked: true},
+		{Content: "Hörsaal-Mikrofon rauscht", Position: 14, IsMarked: false},
+		{Content: "Tutor wird widersprochen", Position: 15, IsMarked: true},
 	},
 
-	// Game 1: User 1 on board 0 (Mathe 1, size 3 -> 9 cells, active with some marks)
+	// Game 1: User 1 on board 0 (Mathe 1, size 4 -> 16 cells, active with some marks)
 	1: {
 		{Content: "'Das sieht man sofort'", Position: 0, IsMarked: true},
 		{Content: "Prof verwechselt Plus und Minus", Position: 1, IsMarked: false},
@@ -897,6 +888,13 @@ var gameCells = map[int][]gameCellData{
 		{Content: "Beweis wird übersprungen", Position: 6, IsMarked: false},
 		{Content: "Epsilon-Delta taucht auf", Position: 7, IsMarked: true},
 		{Content: "Jemand fragt 'Kommt das in der Klausur?'", Position: 8, IsMarked: false},
+		{Content: "'Übung für den Leser'", Position: 9, IsMarked: true},
+		{Content: "Tippfehler auf der Folie", Position: 10, IsMarked: false},
+		{Content: "Beamer flackert kurz", Position: 11, IsMarked: false},
+		{Content: "'Mit vollständiger Induktion'", Position: 12, IsMarked: true},
+		{Content: "Prof zeichnet Cantor-Mengen", Position: 13, IsMarked: false},
+		{Content: "Grenzwert wird hingeschrieben", Position: 14, IsMarked: false},
+		{Content: "'Die Klausur wird fair'", Position: 15, IsMarked: false},
 	},
 
 	// Game 2: User 2 on board 3 (Theoretische Informatik, size 4 -> 16 cells, active)
@@ -948,7 +946,7 @@ var gameCells = map[int][]gameCellData{
 		{Content: "Amortisierte Analyse", Position: 24, IsMarked: false},
 	},
 
-	// Game 4: User 5 on board 1 (Lineare Algebra, size 3 -> 9 cells, active)
+	// Game 4: User 5 on board 1 (Lineare Algebra, size 5 -> 25 cells, active)
 	4: {
 		{Content: "Matrix wird falsch multipliziert", Position: 0, IsMarked: false},
 		{Content: "'Der Beweis ist elegant'", Position: 1, IsMarked: true},
@@ -959,9 +957,25 @@ var gameCells = map[int][]gameCellData{
 		{Content: "Prof sagt 'offensichtlich'", Position: 6, IsMarked: true},
 		{Content: "Rang der Matrix unklar", Position: 7, IsMarked: false},
 		{Content: "'Das ist ein Spezialfall'", Position: 8, IsMarked: false},
+		{Content: "Gauß-Algorithmus zum dritten Mal", Position: 9, IsMarked: true},
+		{Content: "Prof dreht sich zur falschen Tafel", Position: 10, IsMarked: false},
+		{Content: "Inverse existiert nicht", Position: 11, IsMarked: false},
+		{Content: "Basiswechsel verwirrt alle", Position: 12, IsMarked: false},
+		{Content: "Skalarprodukt falsch berechnet", Position: 13, IsMarked: true},
+		{Content: "'Diagonalisierbar oder nicht?'", Position: 14, IsMarked: false},
+		{Content: "Kern und Bild verwechselt", Position: 15, IsMarked: false},
+		{Content: "Eigenvektor wird berechnet", Position: 16, IsMarked: true},
+		{Content: "Spur einer Matrix erwähnt", Position: 17, IsMarked: false},
+		{Content: "Lineare Abbildung gezeichnet", Position: 18, IsMarked: false},
+		{Content: "Cramersche Regel angewendet", Position: 19, IsMarked: false},
+		{Content: "Prof verwechselt Zeile und Spalte", Position: 20, IsMarked: true},
+		{Content: "Untervektorraum-Beispiel", Position: 21, IsMarked: false},
+		{Content: "Prof zeichnet R³-Koordinaten", Position: 22, IsMarked: false},
+		{Content: "'Das ist eine Bilinearform'", Position: 23, IsMarked: false},
+		{Content: "Prof rechnet Kreuzprodukt vor", Position: 24, IsMarked: false},
 	},
 
-	// Game 5: Anonymous on board 0 (Mathe 1, size 3 -> 9 cells, active, a couple of marks)
+	// Game 5: Anonymous on board 0 (Mathe 1, size 4 -> 16 cells, active, a couple of marks)
 	5: {
 		{Content: "Prof sagt 'trivial'", Position: 0, IsMarked: true},
 		{Content: "Beweis wird übersprungen", Position: 1, IsMarked: false},
@@ -972,6 +986,13 @@ var gameCells = map[int][]gameCellData{
 		{Content: "Prof rechnet sich an der Tafel vor", Position: 6, IsMarked: false},
 		{Content: "Epsilon-Delta taucht auf", Position: 7, IsMarked: false},
 		{Content: "'Übung für den Leser'", Position: 8, IsMarked: false},
+		{Content: "Prof verwechselt Plus und Minus", Position: 9, IsMarked: true},
+		{Content: "Studenten schauen verwirrt", Position: 10, IsMarked: false},
+		{Content: "'Das hatten wir schon letzte Woche'", Position: 11, IsMarked: false},
+		{Content: "Tippfehler auf der Folie", Position: 12, IsMarked: false},
+		{Content: "Prof sucht den Tafellappen", Position: 13, IsMarked: false},
+		{Content: "Hörsaal-Mikrofon rauscht", Position: 14, IsMarked: false},
+		{Content: "Tutor wird widersprochen", Position: 15, IsMarked: false},
 	},
 
 	// Game 6: Anonymous on board 3 (Theoretische Informatik, size 4 -> 16 cells, abandoned, a few marks)

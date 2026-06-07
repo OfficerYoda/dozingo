@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
+	"github.com/officeryoda/dozingo/internal/avatar"
 	"github.com/officeryoda/dozingo/internal/middleware"
 	"github.com/officeryoda/dozingo/internal/pgmap"
 	"github.com/officeryoda/dozingo/internal/service"
@@ -61,15 +62,22 @@ type listVotesFromUserOutput struct {
 	Body []listVotesFromUserOutputBody
 }
 
+type avatarUploadInput struct {
+	RawBody huma.MultipartFormFiles[struct {
+		Avatar huma.FormFile `form:"avatar" required:"true" doc:"The avatar image file (PNG, JPEG, WEBP, SVG)"`
+	}]
+}
+
 // ===== Handler =====
 
 type UsersHandler struct {
-	users *service.Users
-	votes *service.Votes
+	users      *service.Users
+	votes      *service.Votes
+	avatarURLs *avatar.URLBuilder
 }
 
-func NewUsersHandler(users *service.Users, votes *service.Votes) *UsersHandler {
-	return &UsersHandler{users: users, votes: votes}
+func NewUsersHandler(users *service.Users, votes *service.Votes, avatarURLs *avatar.URLBuilder) *UsersHandler {
+	return &UsersHandler{users: users, votes: votes, avatarURLs: avatarURLs}
 }
 
 func (h *UsersHandler) Register(api huma.API) {
@@ -137,6 +145,15 @@ func (h *UsersHandler) Register(api huma.API) {
 		Tags:        []string{"Users"},
 		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.ReadListLimiter)},
 	}, h.listVotesFromMe)
+
+	huma.Register(api, huma.Operation{
+		OperationID: "update-current-user-avatar",
+		Method:      http.MethodPut,
+		Path:        "/users/me/avatar",
+		Summary:     "Upload a new profile picture",
+		Tags:        []string{"Users"},
+		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.WriteHeavyLimiter)},
+	}, h.uploadAvatar)
 }
 
 func (h *UsersHandler) me(ctx context.Context, _ *struct{}) (*userOutput, error) {
@@ -145,7 +162,7 @@ func (h *UsersHandler) me(ctx context.Context, _ *struct{}) (*userOutput, error)
 		return nil, toHumaErr(err, "", "failed to get me")
 	}
 
-	return &userOutput{Body: userToOutput(user)}, nil
+	return &userOutput{Body: userToOutput(user, h.avatarURLs)}, nil
 }
 
 func (h *UsersHandler) userByID(ctx context.Context, in *userByIDInput) (*userOutput, error) {
@@ -157,7 +174,7 @@ func (h *UsersHandler) userByID(ctx context.Context, in *userByIDInput) (*userOu
 	// Clean email so no personal information is publicly accessible
 	user.Email = pgmap.PgTextFromString(nil)
 
-	return &userOutput{Body: userToOutput(user)}, nil
+	return &userOutput{Body: userToOutput(user, h.avatarURLs)}, nil
 }
 
 func (h *UsersHandler) update(ctx context.Context, in *updateUserInput) (*userOutput, error) {
@@ -170,7 +187,7 @@ func (h *UsersHandler) update(ctx context.Context, in *updateUserInput) (*userOu
 		return nil, toHumaErr(err, "", "failed to update user")
 	}
 
-	return &userOutput{Body: userToOutput(user)}, nil
+	return &userOutput{Body: userToOutput(user, h.avatarURLs)}, nil
 }
 
 func (h *UsersHandler) updateMe(ctx context.Context, in *updateMeInput) (*userOutput, error) {
@@ -183,7 +200,7 @@ func (h *UsersHandler) updateMe(ctx context.Context, in *updateMeInput) (*userOu
 		return nil, toHumaErr(err, "", "failed to update current user")
 	}
 
-	return &userOutput{Body: userToOutput(user)}, nil
+	return &userOutput{Body: userToOutput(user, h.avatarURLs)}, nil
 }
 
 func (h *UsersHandler) listVotesFromUser(ctx context.Context, in *listVotesFromUserInput) (*listVotesFromUserOutput, error) {
@@ -234,4 +251,13 @@ func (h *UsersHandler) listVotesFromMe(ctx context.Context, _ *struct{}) (*listV
 	}
 
 	return &listVotesFromUserOutput{Body: body}, nil
+}
+
+func (h *UsersHandler) uploadAvatar(ctx context.Context, in *avatarUploadInput) (*userOutput, error) {
+	user, err := h.users.UploadAvatar(ctx, in.RawBody.Data().Avatar)
+	if err != nil {
+		return nil, toHumaErr(err, "", "failed to upload avatar")
+	}
+
+	return &userOutput{Body: userToOutput(user, h.avatarURLs)}, nil
 }
