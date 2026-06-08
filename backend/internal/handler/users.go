@@ -60,7 +60,7 @@ type listVotesFromUserOutput struct {
 
 type avatarUploadInput struct {
 	RawBody huma.MultipartFormFiles[struct {
-		Avatar huma.FormFile `form:"avatar" required:"true" doc:"The avatar image file (PNG, JPEG, WEBP, SVG)"`
+		Avatar huma.FormFile `form:"avatar" required:"true" doc:"The avatar image file. Allowed types: PNG, JPEG, WEBP. Max size: 20MB."`
 	}]
 }
 

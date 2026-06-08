@@ -1569,7 +1569,7 @@ paths:
                 avatar:
                   contentEncoding: binary
                   contentMediaType: application/octet-stream
-                  description: The avatar image file (PNG, JPEG, WEBP, SVG)
+                  description: "The avatar image file. Allowed types: PNG, JPEG, WEBP. Max size: 20MB."
                   format: binary
                   type: string
               required:
