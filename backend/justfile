@@ -58,6 +58,10 @@ test:
 lint:
     golangci-lint run
 
+# Run linter and auto-fix what's auto-fixable (formatters, some style rules)
+lint-fix:
+    golangci-lint run --fix
+
 # === Seeding ===
 
 # Seed the database with sample data (truncates existing data first)
