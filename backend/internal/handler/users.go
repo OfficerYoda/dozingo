@@ -104,9 +104,12 @@ func (h *UsersHandler) Register(api huma.API) {
 			"`email` field is tri-state: omit the key to leave the column " +
 			"unchanged, send `null` to clear it, or send a new address to " +
 			"set it (which also resets verification and triggers a " +
-			"verification mail).",
+			"verification mail). Setting a new email triggers an outbound " +
+			"verification mail, so the route is rate-limited as strictly " +
+			"as the dedicated email/auth endpoints to prevent mail " +
+			"amplification.",
 		Tags:        []string{"Users"},
-		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.WriteLimiter)},
+		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.StrictAuthLimiter)},
 	}, h.updateMe)
 
 	huma.Register(api, huma.Operation{

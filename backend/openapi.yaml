@@ -1531,7 +1531,7 @@ paths:
       tags:
         - Users
     patch:
-      description: "Resolves the user id from the session cookie. The `email` field is tri-state: omit the key to leave the column unchanged, send `null` to clear it, or send a new address to set it (which also resets verification and triggers a verification mail)."
+      description: "Resolves the user id from the session cookie. The `email` field is tri-state: omit the key to leave the column unchanged, send `null` to clear it, or send a new address to set it (which also resets verification and triggers a verification mail). Setting a new email triggers an outbound verification mail, so the route is rate-limited as strictly as the dedicated email/auth endpoints to prevent mail amplification."
       operationId: update-current-user
       requestBody:
         content:
