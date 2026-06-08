@@ -17,6 +17,10 @@ type Garage struct {
 	s3Client   *s3.Client
 }
 
+type ObjectUploader interface {
+	Upload(ctx context.Context, objectKey string, img *Image) error
+}
+
 func NewGarage(ctx context.Context, dzgCfg *config.Config) *Garage {
 	cfg, err := s3cfg.LoadDefaultConfig(
 		ctx,
