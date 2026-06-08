@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
+
 	"github.com/officeryoda/dozingo/internal/generated"
 	"github.com/officeryoda/dozingo/internal/repository"
 )
@@ -69,5 +70,6 @@ func gameCellsToRepoItems(items []CreateGameCellItem) []repository.CreateGameCel
 	for i, item := range items {
 		result[i] = repository.CreateGameCellItem(item)
 	}
+
 	return result
 }

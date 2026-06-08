@@ -1,3 +1,4 @@
+// Package handler exposes the Huma HTTP handlers that translate API requests into service calls.
 package handler
 
 import (
@@ -6,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
+
 	"github.com/officeryoda/dozingo/internal/avatar"
 	"github.com/officeryoda/dozingo/internal/generated"
 	"github.com/officeryoda/dozingo/internal/middleware"

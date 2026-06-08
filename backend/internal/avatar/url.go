@@ -1,3 +1,4 @@
+// Package avatar generates and resolves user avatar images and their public URLs.
 package avatar
 
 import (
@@ -13,14 +14,14 @@ type URLBuilder struct {
 }
 
 func NewURLBuilder(publicURL, bucket string) (*URLBuilder, error) {
-	url, err := url.Parse(publicURL)
+	u, err := url.Parse(publicURL)
 	if err != nil {
 		return nil, fmt.Errorf("avatar: parse public URL %q: %w", publicURL, err)
 	}
 
 	return &URLBuilder{
-		scheme:     url.Scheme,
-		hostSuffix: url.Host,
+		scheme:     u.Scheme,
+		hostSuffix: u.Host,
 		bucket:     bucket,
 	}, nil
 }
@@ -38,5 +39,6 @@ func (b *URLBuilder) URL(avatarKey string) *string {
 		Path:   "/" + avatarKey,
 	}
 	s := u.String()
+
 	return &s
 }

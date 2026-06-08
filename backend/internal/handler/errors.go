@@ -5,6 +5,7 @@ import (
 	"log/slog"
 
 	"github.com/danielgtaylor/huma/v2"
+
 	"github.com/officeryoda/dozingo/internal/domain"
 )
 
@@ -35,6 +36,7 @@ func toHumaErr(err error, notFoundMsg, opMsg string) error {
 		if msg == "" {
 			msg = msgNotFound
 		}
+
 		return huma.Error404NotFound(msg)
 	case errors.Is(err, domain.ErrConflict):
 		slog.Warn(opMsg, "error", err)
@@ -57,6 +59,7 @@ func toHumaErr(err error, notFoundMsg, opMsg string) error {
 	}
 
 	slog.Error(opMsg, "error", err)
+
 	return huma.Error500InternalServerError(opMsg)
 }
 

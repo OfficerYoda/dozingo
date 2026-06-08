@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5/pgtype"
+
 	"github.com/officeryoda/dozingo/internal/domain"
 	"github.com/officeryoda/dozingo/internal/generated"
 	"github.com/officeryoda/dozingo/internal/repository"
@@ -60,6 +61,7 @@ func (s *Votes) Delete(ctx context.Context, boardID pgtype.UUID) error {
 		BoardID: boardID,
 		UserID:  sessionUser.UserID,
 	})
+
 	return err
 }
 

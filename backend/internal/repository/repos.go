@@ -1,7 +1,9 @@
+// Package repository wraps sqlc-generated queries with input/output types and error translation.
 package repository
 
 import (
 	"github.com/jackc/pgx/v5/pgxpool"
+
 	"github.com/officeryoda/dozingo/internal/generated"
 )
 

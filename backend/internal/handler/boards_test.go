@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
+
 	"github.com/officeryoda/dozingo/internal/auth"
 	"github.com/officeryoda/dozingo/internal/generated"
 )
@@ -461,7 +462,7 @@ func TestGetBoards_Limit(t *testing.T) {
 	setupTest(t)
 
 	userID := createTestUser(t, "limitauthor", "limit@example.com")
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		createTestBoard(t, fmt.Sprintf("Board %d", i), 5, userID, nil)
 	}
 
@@ -870,7 +871,7 @@ func TestGetTotalGamesPlayed_OnlyCountsThisBoard(t *testing.T) {
 	// 2 games on A, 5 games on B
 	createTestGame(t, userID, boardA)
 	createTestGame(t, userID, boardA)
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		createTestGame(t, userID, boardB)
 	}
 

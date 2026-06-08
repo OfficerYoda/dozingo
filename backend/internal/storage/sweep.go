@@ -85,6 +85,7 @@ func (g *Garage) buildProtectedKeySet(ctx context.Context, lister InUseKeyLister
 	if len(dbKeys) == 0 {
 		slog.Warn("avatar_orphan_cleanup skipped: no in-use keys returned from DB",
 			"bucket", g.bucketName)
+
 		return nil, nil
 	}
 
@@ -125,6 +126,7 @@ paging:
 				slog.Warn("avatar_orphan_cleanup: bucket does not exist", "bucket", g.bucketName)
 				return nil, nil
 			}
+
 			return nil, fmt.Errorf("list objects: %w", listErr)
 		}
 
@@ -139,6 +141,7 @@ paging:
 				if obj.LastModified != nil && obj.LastModified.After(cutoff) {
 					res.skippedDueToGrace++
 				}
+
 				continue
 			}
 
@@ -169,6 +172,7 @@ func (g *Garage) shouldSkip(key string, lastModified *time.Time, cutoff time.Tim
 	if lastModified != nil && lastModified.After(cutoff) {
 		return true
 	}
+
 	return false
 }
 
@@ -184,6 +188,7 @@ func (g *Garage) warnMissingKeys(inUse, seenInBucket map[string]struct{}) int {
 			missing++
 		}
 	}
+
 	return missing
 }
 

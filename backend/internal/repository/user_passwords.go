@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
+
 	"github.com/officeryoda/dozingo/internal/generated"
 	"github.com/officeryoda/dozingo/internal/pgmap"
 )
@@ -17,6 +18,7 @@ func (r *UserPasswords) GetHashForUserID(ctx context.Context, userID pgtype.UUID
 	if err != nil {
 		return "", pgmap.TranslatePgErr(err)
 	}
+
 	return hash, nil
 }
 
@@ -28,5 +30,6 @@ func (r *UserPasswords) Upsert(ctx context.Context, userID pgtype.UUID, password
 	if err != nil {
 		return generated.UserPassword{}, pgmap.TranslatePgErr(err)
 	}
+
 	return userPassword, nil
 }
