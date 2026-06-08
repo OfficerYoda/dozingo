@@ -536,8 +536,11 @@ components:
           readOnly: true
           type: string
         status:
-          description: "must be any of those: 'active', 'completed' or 'abandoned'"
-          maxLength: 20
+          description: "Game lifecycle state. Must be one of: active, completed, abandoned."
+          enum:
+            - active
+            - completed
+            - abandoned
           type: string
       required:
         - status

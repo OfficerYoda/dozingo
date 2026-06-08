@@ -218,6 +218,31 @@ func TestUpdateGameStatus_Abandoned(t *testing.T) {
 	assertJSONField(t, resp, "status", "abandoned")
 }
 
+// The status field is constrained to a closed enum at the Huma input
+// layer. Off-enum values must be rejected at validation time so they
+// never reach the repository (which would happily forward whatever the
+// underlying Postgres column accepts). This test guards against the
+// enum tag silently disappearing.
+func TestUpdateGameStatus_InvalidValue_Rejected(t *testing.T) {
+	setupTest(t)
+	userID, boardID := setupForGames(t)
+	gameID := createTestGame(t, userID, boardID)
+
+	for _, bad := range []string{"garbage", "", "ACTIVE", "deleted", "pending"} {
+		bad := bad
+		t.Run("status="+bad, func(t *testing.T) {
+			w := doRequestWithCookies(http.MethodPut,
+				fmt.Sprintf("/api/games/%s/status", gameID),
+				map[string]any{"status": bad},
+				cookiesFor(userID),
+			)
+			if w.Code != http.StatusUnprocessableEntity && w.Code != http.StatusBadRequest {
+				t.Errorf("expected 422/400 for status %q, got %d (body: %s)", bad, w.Code, w.Body.String())
+			}
+		})
+	}
+}
+
 func TestUpdateGameStatus_NotFound(t *testing.T) {
 	setupTest(t)
 	userID := createTestUser(t, "ghostplayer", "ghost@example.com")

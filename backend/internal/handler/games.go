@@ -55,7 +55,7 @@ type createGameOutput struct {
 }
 
 type updateGameStatusInputBody struct {
-	Status string `json:"status" maxLength:"20" doc:"must be any of those: 'active', 'completed' or 'abandoned'"`
+	Status string `json:"status" enum:"active,completed,abandoned" doc:"Game lifecycle state. Must be one of: active, completed, abandoned."`
 }
 
 type updateGameStatusInput struct {
