@@ -4,22 +4,21 @@
       <div class="hero-section grid mb-3">
         <div class="hero-banner mb-3 col-8 md-12 sm-12">
           <div class="hero-content">
-            <h2 class="hero-title">Ready for your next lecture win?</h2>
-            <p class="hero-subtitle">Quick-start a bingo grid for today's lecture and join other students currently
-              playing.</p>
-            <RouterLink to="/boards" class="hero-button">Browse Cards</RouterLink>
+            <h2 class="hero-title">{{ t('home.hero.title') }}</h2>
+            <p class="hero-subtitle">{{ t('home.hero.subtitle') }}</p>
+            <RouterLink to="/boards" class="hero-button">{{ t('home.hero.cta') }}</RouterLink>
           </div>
         </div>
 
         <div class="card activity-card col-4 md-12 sm-12">
-          <h3 class="mb-0">Last 24hrs Activity</h3>
+          <h3 class="mb-0">{{ t('home.activity.title') }}</h3>
           <div class="raster-container">
             <div class="icon-div box">
               <div class="icon-circle">
                 <Medal :size="20" />
               </div>
               <div class="icon-text">
-                <small class="category">BINGOS</small>
+                <small class="category">{{ t('home.activity.bingos') }}</small>
                 <span class="category-value">3</span>
               </div>
             </div>
@@ -29,7 +28,7 @@
                 <GamepadDirectional :size="20" />
               </div>
               <div class="icon-text">
-                <small class="category">GAMES</small>
+                <small class="category">{{ t('home.activity.games') }}</small>
                 <span class="category-value">12</span>
               </div>
             </div>
@@ -39,7 +38,7 @@
                 <LayoutGrid :size="20" />
               </div>
               <div class="icon-text">
-                <small class="category">BOARDS</small>
+                <small class="category">{{ t('home.activity.boards') }}</small>
                 <span class="category-value">4</span>
               </div>
             </div>
@@ -49,7 +48,7 @@
                 <SquarePlus :size="18" />
               </div>
               <div class="icon-text">
-                <small class="category">CELLS</small>
+                <small class="category">{{ t('home.activity.cells') }}</small>
                 <span class="category-value">86</span>
               </div>
             </div>
@@ -59,10 +58,10 @@
 
       <div class="section-header mb-2">
         <div>
-          <h2 class="mb-0">Most Liked Boards</h2>
-          <small class="subheading">The community's current favorites</small>
+          <h2 class="mb-0">{{ t('home.mostLiked.title') }}</h2>
+          <small class="subheading">{{ t('home.mostLiked.subtitle') }}</small>
         </div>
-        <RouterLink to="/boards?sort=most-liked">See all &rarr;</RouterLink>
+        <RouterLink to="/boards?sort=most-liked">{{ t('home.mostLiked.seeAll') }} &rarr;</RouterLink>
       </div>
 
       <SliderSection
@@ -81,7 +80,7 @@
             </div>
             <hr class="mb-2">
             <div class="card-footer">
-              <span class="card-meta-text">{{ formatCount(board.play_count) }} times</span>
+              <span class="card-meta-text">{{ t('home.card.times', { count: formatCount(board.play_count) }) }}</span>
               <div class="like-group">
                 <Heart :size="20" />
                 <span class="card-meta-text">{{ formatCount(board.score) }}</span>
@@ -93,10 +92,10 @@
 
       <div class="section-header mb-2">
         <div>
-          <h2 class="mb-0">Recently Added Boards</h2>
-          <small class="subheading">Fresh bingo cards from the community</small>
+          <h2 class="mb-0">{{ t('home.newest.title') }}</h2>
+          <small class="subheading">{{ t('home.newest.subtitle') }}</small>
         </div>
-        <RouterLink to="/boards?sort=newest">See all &rarr;</RouterLink>
+        <RouterLink to="/boards?sort=newest">{{ t('home.newest.seeAll') }} &rarr;</RouterLink>
       </div>
 
       <SliderSection
@@ -113,7 +112,7 @@
             </div>
             <hr class="mb-2">
             <div class="card-footer">
-              <span class="card-meta-text">{{ formatCount(board.play_count) }} times</span>
+              <span class="card-meta-text">{{ t('home.card.times', { count: formatCount(board.play_count) }) }}</span>
               <div class="like-group">
                 <Heart :size="20" />
                 <span class="card-meta-text">{{ formatCount(board.score) }}</span>
@@ -128,8 +127,11 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Heart, GamepadDirectional, SquarePlus, LayoutGrid, Medal } from 'lucide-vue-next'
 import SliderSection from '@/components/SliderSection.vue'
+
+const { t } = useI18n()
 
 interface Board {
   board_id: string

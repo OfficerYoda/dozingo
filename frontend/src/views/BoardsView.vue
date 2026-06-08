@@ -2,16 +2,16 @@
     <section>
         <div class="container">
             <div class="list-header mb-4">
-                <h2 class="mb-0">Explore all Cards</h2>
+                <h2 class="mb-0">{{ t('boards.title') }}</h2>
                 <div class="header-actions">
-                    <input class="btn btn-secondary" type="search" placeholder="Search.." v-model="search">
+                    <input class="btn btn-secondary" type="search" :placeholder="t('boards.searchPlaceholder')" v-model="search">
                     <select class="btn btn-secondary" v-model="appliedFiler">
-                        <option value="newest">Newest</option>
-                        <option value="most-liked">Most liked</option>
-                        <option value="most-played">Most played</option>
-                        <option value="oldest">Oldest</option>
-                        <option value="least-liked">Least liked</option>
-                        <option value="least-played">Least played</option>
+                        <option value="newest">{{ t('boards.sort.newest') }}</option>
+                        <option value="most-liked">{{ t('boards.sort.mostLiked') }}</option>
+                        <option value="most-played">{{ t('boards.sort.mostPlayed') }}</option>
+                        <option value="oldest">{{ t('boards.sort.oldest') }}</option>
+                        <option value="least-liked">{{ t('boards.sort.leastLiked') }}</option>
+                        <option value="least-played">{{ t('boards.sort.leastPlayed') }}</option>
                     </select>
                 </div>
             </div>
@@ -27,7 +27,7 @@
                     </div>
                     <hr class="mb-2">
                     <div class="card-footer">
-                        <span class="card-meta-text">Played {{ board.play_count }} times</span>
+                        <span class="card-meta-text">{{ t('boards.card.played', { count: board.play_count }) }}</span>
                         <div class="like-group">
                             <Heart :size="20" />
                             <span class="card-meta-text">{{ board.score }}</span>
@@ -72,17 +72,17 @@
 
                 <div class="bottom-bar">
                     <div class="bottom-bar-text">
-                        <small>Createt by</small>
+                        <small>{{ t('boards.modal.createdBy') }}</small>
                         <span>{{ authorName ?? '…' }}</span>
                     </div>
                     <div class="right-buttons-bottom">
                         <button class="btn btn-secondary button-bottom-row" @click="shuffle">
                             <Dices :size="20" />
-                            <p class="mb-0">Shuffle</p>
+                            <p class="mb-0">{{ t('boards.modal.shuffle') }}</p>
                         </button>
                         <button class="btn btn-primary button-bottom-row">
                             <Play :size="20" />
-                            <p class="mb-0">Start the game</p>
+                            <p class="mb-0">{{ t('boards.modal.startGame') }}</p>
                         </button>
                     </div>
                 </div>
@@ -113,7 +113,7 @@ interface Cell {
     value: 0,
 }
 
-useI18n()
+const { t } = useI18n()
 const route = useRoute()
 
 const error = ref<string | null>(null)
@@ -131,7 +131,7 @@ async function fetchAllBoards() {
     const query = params.toString() ? '?' + params.toString() : ''
     const boardsRes = await fetch('/api/boards' + query, { credentials: 'include' })
     if (!boardsRes.ok) {
-        error.value = 'Failed to load boards'
+        error.value = t('boards.error.loadBoards')
         return
     }
 
@@ -141,7 +141,7 @@ async function fetchAllBoards() {
 async function fetchAllCellsForBoard(boardID: string) {
     const cellsRes = await fetch('/api/boards/' + boardID + '/cells')
     if (!cellsRes.ok) {
-        error.value = 'Failed to load cells for board ' + boardID
+        error.value = t('boards.error.loadCells') + ' ' + boardID
         return
     }
 

@@ -48,6 +48,57 @@
       "deactivateBtn": "Deaktivieren"
     }
   },
+  "boards": {
+    "title": "Alle Karten erkunden",
+    "searchPlaceholder": "Suchen..",
+    "sort": {
+      "newest": "Neueste",
+      "mostLiked": "Beliebteste",
+      "mostPlayed": "Meistgespielt",
+      "oldest": "Älteste",
+      "leastLiked": "Wenigste Likes",
+      "leastPlayed": "Wenigste Spiele"
+    },
+    "card": {
+      "played": "{count} mal gespielt"
+    },
+    "modal": {
+      "createdBy": "Erstellt von",
+      "shuffle": "Mischen",
+      "startGame": "Spiel starten"
+    },
+    "error": {
+      "loadBoards": "Boards konnten nicht geladen werden",
+      "loadCells": "Felder konnten nicht geladen werden für Board"
+    }
+  },
+  "home": {
+    "hero": {
+      "title": "Bereit für deinen nächsten Vorlesungssieg?",
+      "subtitle": "Starte sofort ein Bingo-Raster für die heutige Vorlesung und spiele mit anderen Studierenden.",
+      "cta": "Karten durchsuchen"
+    },
+    "activity": {
+      "title": "Aktivität der letzten 24 Std.",
+      "bingos": "BINGOS",
+      "games": "SPIELE",
+      "boards": "BOARDS",
+      "cells": "FELDER"
+    },
+    "mostLiked": {
+      "title": "Beliebteste Boards",
+      "subtitle": "Die aktuellen Favoriten der Community",
+      "seeAll": "Alle anzeigen"
+    },
+    "newest": {
+      "title": "Zuletzt hinzugefügte Boards",
+      "subtitle": "Neue Bingo-Karten aus der Community",
+      "seeAll": "Alle anzeigen"
+    },
+    "card": {
+      "times": "{count} mal"
+    }
+  },
   "cardEditor": {
     "title": "Neues Board erstellen",
     "sessionTitle": "Sitzungstitel",
