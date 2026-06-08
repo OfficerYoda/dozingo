@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/officeryoda/dozingo/internal/avatar"
 	"github.com/officeryoda/dozingo/internal/middleware"
 	"github.com/officeryoda/dozingo/internal/pgmap"
@@ -151,10 +152,29 @@ func (h *UsersHandler) userByID(ctx context.Context, in *userByIDInput) (*userOu
 		return nil, toHumaErr(err, "", "failed to get user by ID")
 	}
 
-	// Clean email so no personal information is publicly accessible
-	user.Email = pgmap.PgTextFromString(nil)
+	// Hide email from anyone other than the user themselves so addresses
+	// can't be enumerated through the public-by-id endpoint. The session
+	// user, when present and matching, is allowed to see their own email
+	// here (parity with /users/me).
+	if !sessionUserMatches(ctx, user.ID) {
+		user.Email = pgmap.PgTextFromString(nil)
+	}
 
 	return &userOutput{Body: userToOutput(user, h.avatarURLs)}, nil
+}
+
+// sessionUserMatches reports whether the request carries an authenticated
+// session whose user_id equals the given user. Anonymous sessions and
+// missing sessions both return false.
+func sessionUserMatches(ctx context.Context, userID pgtype.UUID) bool {
+	if !userID.Valid {
+		return false
+	}
+	session, ok := middleware.SessionUserFromContext(ctx)
+	if !ok || !session.UserID.Valid {
+		return false
+	}
+	return session.UserID.Bytes == userID.Bytes
 }
 
 func (h *UsersHandler) updateMe(ctx context.Context, in *updateMeInput) (*userOutput, error) {

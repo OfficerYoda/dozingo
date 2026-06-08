@@ -113,6 +113,43 @@ func TestUserByID_Success(t *testing.T) {
 	}
 }
 
+func TestUserByID_OtherAuthenticatedUser_EmailHidden(t *testing.T) {
+	setupTest(t)
+
+	// userA's row gets fetched by userB while userB has a session.
+	a := createTestUserWithRegister(t, "byidA", "mypassword123", stringPtr("a@example.com"))
+	b := createTestUserWithRegister(t, "byidB", "mypassword123", stringPtr("b@example.com"))
+	aID := (*a)["user_id"].(string)
+	bID := (*b)["user_id"].(string)
+
+	w := doRequestWithCookies(http.MethodGet, fmt.Sprintf("/api/users/%s", aID), nil, cookiesFor(bID))
+	assertStatus(t, w, http.StatusOK)
+
+	var got map[string]any
+	decodeJSON(t, w, &got)
+	assertJSONField(t, got, "user_id", aID)
+	if got["email"] != nil {
+		t.Errorf("expected another user's email to be null, got %v", got["email"])
+	}
+}
+
+func TestUserByID_Self_EmailVisible(t *testing.T) {
+	setupTest(t)
+
+	resp := createTestUserWithRegister(t, "selfemail", "mypassword123", stringPtr("self@example.com"))
+	userID := (*resp)["user_id"].(string)
+
+	// Same user requesting their own row should see their email, mirroring
+	// /api/users/me. The hide-email-from-strangers protection is targeted
+	// at *other* users.
+	w := doRequestWithCookies(http.MethodGet, fmt.Sprintf("/api/users/%s", userID), nil, cookiesFor(userID))
+	assertStatus(t, w, http.StatusOK)
+
+	var got map[string]any
+	decodeJSON(t, w, &got)
+	assertJSONField(t, got, "email", "self@example.com")
+}
+
 func TestUserByID_NotFound(t *testing.T) {
 	setupTest(t)
 
