@@ -171,7 +171,7 @@ onMounted(fetchBoards)
 }
 
 .hero-banner {
-  background-color: #4B4AC8;
+  background-color: var(--color-hero-bg);
   border-radius: 16px;
   padding: 40px 36px;
   height: 100%
@@ -222,11 +222,11 @@ onMounted(fetchBoards)
 }
 
 .heading {
-  color: #2C2A51;
+  color: var(--color-heading);
 }
 
 .subheading {
-  color: #75729E;
+  color: var(--color-text-subtle);
 }
 
 /* Activity card */
@@ -247,7 +247,7 @@ onMounted(fetchBoards)
 }
 
 .card-meta-text {
-  color: #5A5781;
+  color: var(--color-subheading);
   font-weight: 600;
   font-size: 13px;
 }
@@ -260,12 +260,7 @@ onMounted(fetchBoards)
 }
 
 .like-group svg {
-  color: #5A5781;
-}
-
-.grid-icons {
-  background-color: gray;
-  border-radius: 50%;
+  color: var(--color-subheading);
 }
 
 .icon-circle {
@@ -273,7 +268,7 @@ onMounted(fetchBoards)
   height: 52px;
   min-width: 52px;
   border-radius: 50%;
-  background-color: #EEEEF8;
+  background-color: var(--color-icon-circle-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -288,7 +283,7 @@ onMounted(fetchBoards)
 }
 
 .icon-div svg {
-  color: #4052B6;
+  color: var(--color-icon-svg);
 }
 
 .icon-text {
@@ -298,14 +293,14 @@ onMounted(fetchBoards)
 }
 
 .category {
-  color: #75729E;
+  color: var(--color-text-subtle);
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.08em;
 }
 
 .category-value {
-  color: #2C2A51;
+  color: var(--color-heading);
   font-size: 1.5rem;
   font-weight: 800;
   line-height: 1;
