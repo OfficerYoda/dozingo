@@ -86,24 +86,6 @@ type UpdateUserInput struct {
 	Email    *string
 }
 
-func (s *Users) UpdateUser(ctx context.Context, userIDStr string, in UpdateUserInput) (generated.User, error) {
-	userID := pgmap.PgUUIDFromString(&userIDStr)
-	if !userID.Valid {
-		return generated.User{}, fmt.Errorf("invalid UUID: %w", domain.ErrBadInput)
-	}
-
-	sessionUser, err := requiresSessionUser(ctx, s.queries)
-	if err != nil {
-		return generated.User{}, fmt.Errorf("session required: %w", err)
-	}
-
-	if sessionUser.UserID.Bytes != userID.Bytes {
-		return generated.User{}, fmt.Errorf("cannot edit another user: %w", domain.ErrForbidden)
-	}
-
-	return s.applyUserUpdate(ctx, userID, sessionUser.Email, in)
-}
-
 func (s *Users) UpdateMe(ctx context.Context, in UpdateUserInput) (generated.User, error) {
 	sessionUser, err := requiresSessionUser(ctx, s.queries)
 	if err != nil {

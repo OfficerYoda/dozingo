@@ -32,11 +32,6 @@ type updateUserInputBody struct {
 	Email    types.NullableString `json:"email,omitempty" format:"email" maxLength:"200"`
 }
 
-type updateUserInput struct {
-	UserID string `path:"user_id" format:"uuid"`
-	Body   updateUserInputBody
-}
-
 type updateMeInput struct {
 	Body updateUserInputBody
 }
@@ -100,27 +95,12 @@ func (h *UsersHandler) Register(api huma.API) {
 	}, h.userByID)
 
 	huma.Register(api, huma.Operation{
-		OperationID: "update-user",
-		Method:      http.MethodPatch,
-		Path:        "/users/{user_id}",
-		Summary:     "Update a User's username and/or email",
-		Description: "Partial update. Only the user themselves may edit their " +
-			"own row. The `email` field is tri-state: omit the key to leave " +
-			"the column unchanged, send `null` to clear it, or send a new " +
-			"address to set it (which also resets verification and triggers " +
-			"a verification mail).",
-		Tags:        []string{"Users"},
-		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.WriteLimiter)},
-	}, h.update)
-
-	huma.Register(api, huma.Operation{
 		OperationID: "update-current-user",
 		Method:      http.MethodPatch,
 		Path:        "/users/me",
 		Summary:     "Update the current User's username and/or email",
-		Description: "Convenience alias for PATCH /users/{user_id} that " +
-			"resolves the user id from the session cookie. The `email` " +
-			"field is tri-state: omit the key to leave the column " +
+		Description: "Resolves the user id from the session cookie. The " +
+			"`email` field is tri-state: omit the key to leave the column " +
 			"unchanged, send `null` to clear it, or send a new address to " +
 			"set it (which also resets verification and triggers a " +
 			"verification mail).",
@@ -173,19 +153,6 @@ func (h *UsersHandler) userByID(ctx context.Context, in *userByIDInput) (*userOu
 
 	// Clean email so no personal information is publicly accessible
 	user.Email = pgmap.PgTextFromString(nil)
-
-	return &userOutput{Body: userToOutput(user, h.avatarURLs)}, nil
-}
-
-func (h *UsersHandler) update(ctx context.Context, in *updateUserInput) (*userOutput, error) {
-	user, err := h.users.UpdateUser(ctx, in.UserID, service.UpdateUserInput{
-		Username: in.Body.Username,
-		EmailSet: in.Body.Email.Set,
-		Email:    in.Body.Email.Value,
-	})
-	if err != nil {
-		return nil, toHumaErr(err, "", "failed to update user")
-	}
 
 	return &userOutput{Body: userToOutput(user, h.avatarURLs)}, nil
 }
