@@ -39,7 +39,12 @@ type createGameCellsItem struct {
 
 type createGameCellsInput struct {
 	GameID types.UUIDParam `path:"game_id" format:"uuid"`
-	Body   []createGameCellsItem
+	// Cap the number of cells one bulk create can submit. The largest
+	// supported board today is 6x6 = 36 cells, but pad to 64 to leave
+	// room for plausible future board sizes (8x8) without revisiting
+	// this limit. The cap exists to prevent a malicious caller from
+	// pushing arbitrarily large payloads through the bulk endpoint.
+	Body []createGameCellsItem `maxItems:"64"`
 }
 
 type createGameCellsOutput struct {

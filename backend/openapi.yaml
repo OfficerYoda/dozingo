@@ -1329,6 +1329,7 @@ paths:
             schema:
               items:
                 $ref: "#/components/schemas/CreateGameCellsItem"
+              maxItems: 64
               type:
                 - array
                 - "null"

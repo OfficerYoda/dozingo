@@ -94,6 +94,34 @@ func TestCreateGameCells_FullBoard(t *testing.T) {
 	}
 }
 
+// The bulk endpoint accepts up to 64 items per call. Anything larger
+// must be rejected at validation time (before the request reaches the
+// service or the database) so a malicious caller can't drive arbitrary-
+// size payloads through this endpoint. 64 sits comfortably above the
+// 6x6=36 cells of the largest currently-supported board, leaving room
+// for plausible future board sizes (e.g. 8x8).
+func TestCreateGameCells_TooMany_Rejected(t *testing.T) {
+	setupTest(t)
+	_, _, cellID, gameID := setupForGameCells(t)
+
+	// 65 items - just over the cap. The cell_id intentionally repeats
+	// the same UUID; validation must reject the array length before any
+	// DB lookup runs, so the references don't matter.
+	cells := make([]map[string]any, 65)
+	for i := 0; i < 65; i++ {
+		cells[i] = map[string]any{
+			"cell_id":  cellID,
+			"content":  "x",
+			"position": i,
+		}
+	}
+
+	w := doRequestWithCookies(http.MethodPost, fmt.Sprintf("/api/games/%s/cells", gameID), cells, cookiesForGame(t, gameID))
+	if w.Code != http.StatusUnprocessableEntity && w.Code != http.StatusBadRequest {
+		t.Errorf("expected 422/400 for >64 items, got %d (body: %s)", w.Code, w.Body.String())
+	}
+}
+
 func TestGetGameCellsByGameID(t *testing.T) {
 	setupTest(t)
 	_, _, cellID, gameID := setupForGameCells(t)
