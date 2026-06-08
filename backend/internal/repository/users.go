@@ -104,3 +104,11 @@ func (r *Users) SetAvatar(ctx context.Context, userID pgtype.UUID, avatarKey str
 	}
 	return user, nil
 }
+
+func (r *Users) ListInUseAvatarKeys(ctx context.Context) ([]string, error) {
+	keys, err := r.queries.ListInUseAvatarKeys(ctx)
+	if err != nil {
+		return nil, pgmap.TranslatePgErr(err)
+	}
+	return keys, nil
+}

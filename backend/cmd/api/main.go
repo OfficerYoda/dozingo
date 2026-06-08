@@ -29,9 +29,10 @@ import (
 )
 
 const (
-	sessionCleanupInterval = 1 * time.Hour
-	tokenCleanupInterval   = 1 * time.Hour
-	shutdownTimeout        = 10 * time.Second
+	sessionCleanupInterval      = 1 * time.Hour
+	tokenCleanupInterval        = 1 * time.Hour
+	avatarOrphanCleanupInterval = 1 * time.Hour
+	shutdownTimeout             = 10 * time.Second
 )
 
 func main() {
@@ -63,13 +64,19 @@ func run() error {
 		return fmt.Errorf("building avatar URL builder: %w", err)
 	}
 
+	garage := storage.NewGarage(ctx, cfg)
+
 	worker.NewPeriodic("session_cleanup", sessionCleanupInterval,
 		repos.Sessions.DeleteExpiredSessions).Start(ctx)
 	worker.NewPeriodic("verification_token_cleanup", tokenCleanupInterval,
 		repos.VerificationTokens.DeleteExpired).Start(ctx)
+	worker.NewPeriodic("avatar_orphan_cleanup", avatarOrphanCleanupInterval,
+		func(ctx context.Context) error {
+			return garage.SweepOrphanAvatars(ctx, repos.Users, storage.DefaultSweepConfig())
+		}).Start(ctx)
 
 	router := createRouter(cfg)
-	registerRoutes(router, repos, pool, cfg, ctx, avatarURLs)
+	registerRoutes(router, repos, pool, cfg, ctx, avatarURLs, garage)
 
 	return serveHTTP(ctx, createServer(cfg.Port, router))
 }
@@ -119,9 +126,9 @@ func registerRoutes(
 	cfg *config.Config,
 	ctx context.Context,
 	avatarURLs *avatar.URLBuilder,
+	garage *storage.Garage,
 ) {
 	emailSender := email.New(cfg)
-	garage := storage.NewGarage(ctx, cfg)
 	avatarGen := avatar.RandomProfilePicture
 	queries := generated.New(pool)
 

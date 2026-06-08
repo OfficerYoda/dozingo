@@ -12,9 +12,15 @@ import (
 	"github.com/officeryoda/dozingo/internal/config"
 )
 
+type s3API interface {
+	PutObject(ctx context.Context, in *s3.PutObjectInput, opts ...func(*s3.Options)) (*s3.PutObjectOutput, error)
+	ListObjectsV2(ctx context.Context, in *s3.ListObjectsV2Input, opts ...func(*s3.Options)) (*s3.ListObjectsV2Output, error)
+	DeleteObjects(ctx context.Context, in *s3.DeleteObjectsInput, opts ...func(*s3.Options)) (*s3.DeleteObjectsOutput, error)
+}
+
 type Garage struct {
 	bucketName string
-	s3Client   *s3.Client
+	s3Client   s3API
 }
 
 type ObjectUploader interface {
