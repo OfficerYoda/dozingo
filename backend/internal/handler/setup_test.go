@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -53,6 +54,13 @@ var (
 	// configure failNext to simulate a storage outage. Reset between tests
 	// in cleanupTables.
 	fakeUploader = &fakeObjectUploader{}
+
+	// fakeAvatarGen is the service.AvatarGenerator implementation wired
+	// into the test service.Auth so registration's best-effort avatar path
+	// runs against an in-memory fake (no DiceBear network call). Records
+	// every seed it was asked to generate; reset between tests in
+	// cleanupTables.
+	fakeAvatarGen = &fakeAvatarGenerator{}
 
 	// testAvatarURLs is the avatar.URLBuilder used by handlers under test.
 	// Configured in TestMain with a deterministic public URL so tests can
@@ -200,6 +208,55 @@ func (f *fakeObjectUploader) lastUpload() (recordedUpload, bool) {
 	return f.uploads[len(f.uploads)-1], true
 }
 
+// fakeAvatarGenerator records every seed it was asked to generate for and
+// hands back a deterministic in-memory SVG. Tests can set failNext to make
+// the next call fail (to exercise best-effort fallbacks). Safe for
+// concurrent use.
+type fakeAvatarGenerator struct {
+	mu       sync.Mutex
+	seeds    []string
+	failNext error
+}
+
+func (f *fakeAvatarGenerator) Generate(seed string) (*storage.Image, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.failNext != nil {
+		err := f.failNext
+		f.failNext = nil
+		return nil, err
+	}
+	f.seeds = append(f.seeds, seed)
+	body := []byte("<svg data-seed=\"" + seed + "\"/>")
+	return &storage.Image{
+		File:        bytes.NewReader(body),
+		ContentType: "image/svg+xml",
+		Extension:   ".svg",
+	}, nil
+}
+
+func (f *fakeAvatarGenerator) reset() {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.seeds = nil
+	f.failNext = nil
+}
+
+func (f *fakeAvatarGenerator) seedCount() int {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return len(f.seeds)
+}
+
+func (f *fakeAvatarGenerator) lastSeed() (string, bool) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if len(f.seeds) == 0 {
+		return "", false
+	}
+	return f.seeds[len(f.seeds)-1], true
+}
+
 // cookiesFor returns the session cookie associated with userID, or nil if no
 // cookie was captured (e.g. the user was created outside the auth API).
 func cookiesFor(userID string) []*http.Cookie {
@@ -309,7 +366,7 @@ func TestMain(m *testing.M) {
 	NewGamesHandler(service.NewGames(repos.Games, queries)).Register(apiGroup)
 	votesSvc := service.NewVotes(repos.Votes, queries)
 	NewVotesHandler(votesSvc).Register(apiGroup)
-	NewAuthHandler(service.NewAuth(repos, fakeMailer, queries, txRunner), testAvatarURLs).Register(apiGroup)
+	NewAuthHandler(service.NewAuth(repos, fakeMailer, queries, txRunner, fakeAvatarGen.Generate, fakeUploader), testAvatarURLs).Register(apiGroup)
 	NewUsersHandler(service.NewUsers(repos, queries, fakeMailer, txRunner, fakeUploader), votesSvc, testAvatarURLs).Register(apiGroup)
 
 	// Clean tables before running tests to ensure a fresh state
@@ -360,6 +417,9 @@ func cleanupTables(t *testing.T) {
 	// Fake uploader recorded uploads also span test boundaries; reset so
 	// the next test starts with an empty slice.
 	fakeUploader.reset()
+	// Same for the fake avatar generator (recorded seeds, configured
+	// failure mode).
+	fakeAvatarGen.reset()
 }
 
 /// ===== HTTP helpers =====
