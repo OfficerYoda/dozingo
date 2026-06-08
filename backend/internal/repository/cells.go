@@ -38,6 +38,19 @@ func (r *Cells) ListByBoardID(ctx context.Context, boardID pgtype.UUID) ([]gener
 	return cells, nil
 }
 
+// GetByID fetches a single cell by its primary key, regardless of which
+// board it belongs to. Callers in the service layer use this to verify
+// cell-to-board membership before mutating, so a cross-board cell_id
+// gets caught with an explicit error rather than relying on the
+// composite WHERE clause in UpdateCell/DeleteCell.
+func (r *Cells) GetByID(ctx context.Context, cellID pgtype.UUID) (generated.Cell, error) {
+	cell, err := r.queries.GetCellByID(ctx, cellID)
+	if err != nil {
+		return generated.Cell{}, pgmap.TranslatePgErr(err)
+	}
+	return cell, nil
+}
+
 func (r *Cells) Create(ctx context.Context, in CreateCellInput) (generated.Cell, error) {
 	cell, err := r.queries.CreateCell(ctx, generated.CreateCellParams{
 		BoardID: in.BoardID,

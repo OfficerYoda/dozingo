@@ -247,6 +247,28 @@ func TestUpdateGameCellMark_WrongGame(t *testing.T) {
 	assertStatus(t, w, http.StatusNotFound)
 }
 
+// TestUpdateGameCellMark_HijackOtherPlayersCell verifies that a caller
+// who legitimately owns their own game cannot toggle marks on someone
+// else's game by smuggling that game_cell_id through their own URL.
+// The service must catch the cross-game id at the membership-assert
+// step before the SQL UPDATE runs.
+func TestUpdateGameCellMark_HijackOtherPlayersCell(t *testing.T) {
+	setupTest(t)
+	_, boardID, cellID, victimGameID := setupForGameCells(t)
+	victimCellID := createTestGameCell(t, victimGameID, cellID, "Victim Cell", 0)
+
+	// Attacker creates their own game on the same board.
+	attacker := createTestUser(t, "attacker_gamecell", "attacker_gc@example.com")
+	attackerGameID := createTestGame(t, attacker, boardID)
+
+	w := doRequestWithCookies(http.MethodPut,
+		fmt.Sprintf("/api/games/%s/cells/%s", attackerGameID, victimCellID),
+		map[string]any{"is_marked": true},
+		cookiesFor(attacker),
+	)
+	assertStatus(t, w, http.StatusNotFound)
+}
+
 func TestGetGameCellsByGameID_InvalidGameID(t *testing.T) {
 	w := doRequest(http.MethodGet, "/api/games/not-a-uuid/cells", nil)
 	assertStatus(t, w, http.StatusUnprocessableEntity)

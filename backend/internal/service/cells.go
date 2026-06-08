@@ -72,6 +72,10 @@ func (s *Cells) Update(ctx context.Context, in UpdateCellInput) (generated.Cell,
 		return generated.Cell{}, err
 	}
 
+	if err := s.assertCellOnBoard(ctx, in.CellID, in.BoardID); err != nil {
+		return generated.Cell{}, err
+	}
+
 	return s.cells.Update(ctx, repository.UpdateCellInput(in))
 }
 
@@ -81,8 +85,30 @@ func (s *Cells) Delete(ctx context.Context, in DeleteCellInput) error {
 		return err
 	}
 
+	if err := s.assertCellOnBoard(ctx, in.CellID, in.BoardID); err != nil {
+		return err
+	}
+
 	_, err = s.cells.Delete(ctx, repository.DeleteCellInput(in))
 	return err
+}
+
+// assertCellOnBoard fetches the cell by its id and verifies it really
+// belongs to the board the caller named in the URL. The repository's
+// UpdateCell/DeleteCell SQL already scopes to (cell_id, board_id) in
+// the WHERE clause and would reject a cross-board id with no-rows. This
+// extra check is defense-in-depth: it surfaces the error as an explicit
+// "cell not found on this board" before the mutation runs and protects
+// against a future SQL regression that drops the board_id scoping.
+func (s *Cells) assertCellOnBoard(ctx context.Context, cellID, boardID pgtype.UUID) error {
+	cell, err := s.cells.GetByID(ctx, cellID)
+	if err != nil {
+		return err
+	}
+	if cell.BoardID != boardID {
+		return fmt.Errorf("cell does not belong to board: %w", domain.ErrNotFound)
+	}
+	return nil
 }
 
 func checkIfCallerOwnsBoard(ctx context.Context, s *Cells, boardID pgtype.UUID) error {

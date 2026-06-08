@@ -37,6 +37,18 @@ func (r *GameCells) ListByGameID(ctx context.Context, gameID pgtype.UUID) ([]gen
 	return cells, nil
 }
 
+// GetByID fetches a single game_cell by its primary key, regardless of
+// which game it belongs to. Used by the service layer to verify
+// game_cell-to-game membership before mutating so a cross-game id
+// surfaces as an explicit error.
+func (r *GameCells) GetByID(ctx context.Context, gameCellID pgtype.UUID) (generated.GameCell, error) {
+	cell, err := r.queries.GetGameCellByID(ctx, gameCellID)
+	if err != nil {
+		return generated.GameCell{}, pgmap.TranslatePgErr(err)
+	}
+	return cell, nil
+}
+
 func (r *GameCells) Create(ctx context.Context, in CreateGameCellsInput) ([]generated.GameCell, error) {
 	gameIDs := make([]pgtype.UUID, 0, len(in.Items))
 	cellIDs := make([]pgtype.UUID, 0, len(in.Items))
