@@ -206,9 +206,21 @@ func (s *Auth) ChangePassword(ctx context.Context, oldPassword, newPassword stri
 		return fmt.Errorf("hash password: %w", err)
 	}
 
-	_, err = s.passwords.Upsert(ctx, sessionUser.UserID, newPasswordHash)
+	err = s.txRunner.WithTx(ctx, func(r repository.Repos) error {
+		_, err = r.Passwords.Upsert(ctx, sessionUser.UserID, newPasswordHash)
+		if err != nil {
+			return fmt.Errorf("update password: %w", err)
+		}
+
+		err = r.Sessions.DeleteOtherSessionsFromUser(ctx, sessionUser.UserID, sessionUser.SessionID)
+		if err != nil {
+			return fmt.Errorf("delete other sessions: %w", err)
+		}
+
+		return nil
+	})
 	if err != nil {
-		return fmt.Errorf("update password: %w", err)
+		return err
 	}
 
 	return nil
