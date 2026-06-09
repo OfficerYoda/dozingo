@@ -87,6 +87,11 @@ func (s *Users) UserByID(ctx context.Context, userIDStr string) (generated.User,
 		return generated.User{}, fmt.Errorf("get user by id: %w", err)
 	}
 
+	sessionUser, _ := middleware.SessionUserFromContext(ctx)
+	if sessionUser.UserID != user.ID {
+		user.Email = pgmap.PgTextFromString(nil)
+	}
+
 	return user, nil
 }
 
