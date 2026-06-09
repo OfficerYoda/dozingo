@@ -25,9 +25,9 @@ func TestRegister_Success(t *testing.T) {
 	assertJSONField(t, resp, "username", "newuser")
 	assertJSONField(t, resp, "email", "newuser@example.com")
 
-	// Fresh registrations come back with the default avatar URL (the
-	// users.avatar_key column defaults to 'default.svg' at the DB
-	// level), so avatar_url is always set on a successful response.
+	// Register auto-generates a profile picture (best-effort) and
+	// uploads it before responding, so avatar_url is always set on a
+	// successful registration.
 	if resp["avatar_url"] == nil {
 		t.Errorf("expected avatar_url to be set on fresh register, got nil")
 	}
@@ -143,9 +143,8 @@ func TestLogin_Success(t *testing.T) {
 	assertJSONField(t, resp, "username", "loginuser")
 	assertJSONField(t, resp, "email", "login@example.com")
 
-	// Login response shape mirrors register; users without a custom
-	// avatar still get the default avatar URL because avatar_key defaults
-	// to 'default.svg' at the DB level.
+	// Login response shape mirrors register; the user got an
+	// auto-generated avatar at registration time, so avatar_url is set.
 	if resp["avatar_url"] == nil {
 		t.Errorf("expected avatar_url to be set on login for user without custom avatar, got nil")
 	}

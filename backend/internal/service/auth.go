@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/officeryoda/dozingo/internal/auth"
 	"github.com/officeryoda/dozingo/internal/domain"
@@ -15,12 +16,15 @@ import (
 	"github.com/officeryoda/dozingo/internal/middleware"
 	"github.com/officeryoda/dozingo/internal/pgmap"
 	"github.com/officeryoda/dozingo/internal/repository"
+	"github.com/officeryoda/dozingo/internal/storage"
 )
 
 const (
 	emailVerificationTokenTTL = 12 * time.Hour
 	passwordResetTokenTTL     = 30 * time.Minute
 )
+
+type AvatarGenerator func(seed string) (*storage.Image, error)
 
 type Auth struct {
 	users              *repository.Users
@@ -30,9 +34,18 @@ type Auth struct {
 	emailSender        email.Sender
 	queries            *generated.Queries
 	txRunner           repository.TxRunner
+	avatarGen          AvatarGenerator
+	uploader           storage.ObjectUploader
 }
 
-func NewAuth(repos repository.Repos, emailSender email.Sender, queries *generated.Queries, txRunner repository.TxRunner) *Auth {
+func NewAuth(
+	repos repository.Repos,
+	emailSender email.Sender,
+	queries *generated.Queries,
+	txRunner repository.TxRunner,
+	avatarGen AvatarGenerator,
+	uploader storage.ObjectUploader,
+) *Auth {
 	return &Auth{
 		users:              repos.Users,
 		passwords:          repos.Passwords,
@@ -41,6 +54,8 @@ func NewAuth(repos repository.Repos, emailSender email.Sender, queries *generate
 		emailSender:        emailSender,
 		txRunner:           txRunner,
 		queries:            queries,
+		avatarGen:          avatarGen,
+		uploader:           uploader,
 	}
 }
 
@@ -66,6 +81,14 @@ func (s *Auth) Register(ctx context.Context, in RegisterInput) (generated.User, 
 		return generated.User{}, fmt.Errorf("user creation: %w", err)
 	}
 
+	// generate and upload profile
+	if updated, err := s.assignGeneratedAvatar(ctx, user); err != nil {
+		slog.Warn("failed to assign generated avatar on register",
+			"error", err, "user_id", user.ID.String(), "username", user.Username)
+	} else {
+		user = updated
+	}
+
 	// Run session stuff outside the transaction so the user can recover
 	// via login when something with the session fails
 	err = s.attachUserToSession(ctx, user)
@@ -74,6 +97,34 @@ func (s *Auth) Register(ctx context.Context, in RegisterInput) (generated.User, 
 	}
 
 	return user, nil
+}
+
+func (s *Auth) assignGeneratedAvatar(ctx context.Context, user generated.User) (generated.User, error) {
+	if s.avatarGen == nil || s.uploader == nil {
+		return user, fmt.Errorf("avatar generator or uploader not configured")
+	}
+
+	avatarID, err := uuid.NewRandom()
+	if err != nil {
+		return user, fmt.Errorf("generate avatar key uuid: %w", err)
+	}
+
+	img, err := s.avatarGen(avatarID.String())
+	if err != nil {
+		return user, fmt.Errorf("generate avatar: %w", err)
+	}
+
+	objectKey := fmt.Sprintf("%s%s", avatarID, img.Extension)
+
+	if err := s.uploader.Upload(ctx, objectKey, img); err != nil {
+		return user, fmt.Errorf("upload avatar: %w", err)
+	}
+
+	updatedUser, err := s.users.SetAvatar(ctx, user.ID, objectKey)
+	if err != nil {
+		return user, fmt.Errorf("set avatar key: %w", err)
+	}
+	return updatedUser, nil
 }
 
 func (s *Auth) Login(ctx context.Context, in LoginInput) (generated.User, error) {
