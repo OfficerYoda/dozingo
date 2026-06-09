@@ -9,8 +9,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/officeryoda/dozingo/internal/domain"
 	"golang.org/x/crypto/bcrypt"
+
+	"github.com/officeryoda/dozingo/internal/domain"
 )
 
 // PasswordCost is exposed so it can be reduced in tests to improve runtime
