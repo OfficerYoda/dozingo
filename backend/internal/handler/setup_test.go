@@ -21,6 +21,8 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
+	"golang.org/x/crypto/bcrypt"
+
 	"github.com/officeryoda/dozingo/internal/auth"
 	"github.com/officeryoda/dozingo/internal/avatar"
 	"github.com/officeryoda/dozingo/internal/config"
@@ -29,7 +31,6 @@ import (
 	"github.com/officeryoda/dozingo/internal/repository"
 	"github.com/officeryoda/dozingo/internal/service"
 	"github.com/officeryoda/dozingo/internal/storage"
-	"golang.org/x/crypto/bcrypt"
 )
 
 var (
@@ -482,7 +483,7 @@ func assertStatus(t *testing.T, w *httptest.ResponseRecorder, expected int) {
 }
 
 // assertJSONField checks that a specific field in the JSON response has the expected string value.
-func assertJSONField(t *testing.T, data map[string]any, key string, expected string) {
+func assertJSONField(t *testing.T, data map[string]any, key, expected string) {
 	t.Helper()
 	val, ok := data[key]
 	if !ok {

@@ -64,6 +64,26 @@ func (q *Queries) DeleteCell(ctx context.Context, arg DeleteCellParams) (Cell, e
 	return i, err
 }
 
+const getCellByID = `-- name: GetCellByID :one
+SELECT id, board_id, content, created_at, updated_at, value, author_id FROM cells
+WHERE id = $1
+`
+
+func (q *Queries) GetCellByID(ctx context.Context, id pgtype.UUID) (Cell, error) {
+	row := q.db.QueryRow(ctx, getCellByID, id)
+	var i Cell
+	err := row.Scan(
+		&i.ID,
+		&i.BoardID,
+		&i.Content,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Value,
+		&i.AuthorID,
+	)
+	return i, err
+}
+
 const getCellsByBoardID = `-- name: GetCellsByBoardID :many
 SELECT id, board_id, content, created_at, updated_at, value, author_id FROM cells
 WHERE board_id = $1

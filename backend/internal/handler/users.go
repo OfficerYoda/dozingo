@@ -5,9 +5,9 @@ import (
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
+
 	"github.com/officeryoda/dozingo/internal/avatar"
 	"github.com/officeryoda/dozingo/internal/middleware"
-	"github.com/officeryoda/dozingo/internal/pgmap"
 	"github.com/officeryoda/dozingo/internal/service"
 	"github.com/officeryoda/dozingo/internal/types"
 )
@@ -30,11 +30,6 @@ type userByIDInput struct {
 type updateUserInputBody struct {
 	Username *string              `json:"username,omitempty" maxLength:"200"`
 	Email    types.NullableString `json:"email,omitempty" format:"email" maxLength:"200"`
-}
-
-type updateUserInput struct {
-	UserID string `path:"user_id" format:"uuid"`
-	Body   updateUserInputBody
 }
 
 type updateMeInput struct {
@@ -64,7 +59,7 @@ type listVotesFromUserOutput struct {
 
 type avatarUploadInput struct {
 	RawBody huma.MultipartFormFiles[struct {
-		Avatar huma.FormFile `form:"avatar" required:"true" doc:"The avatar image file (PNG, JPEG, WEBP, SVG)"`
+		Avatar huma.FormFile `form:"avatar" required:"true" doc:"The avatar image file. Allowed types: PNG, JPEG, WEBP. Max size: 20MB."`
 	}]
 }
 
@@ -100,32 +95,18 @@ func (h *UsersHandler) Register(api huma.API) {
 	}, h.userByID)
 
 	huma.Register(api, huma.Operation{
-		OperationID: "update-user",
-		Method:      http.MethodPatch,
-		Path:        "/users/{user_id}",
-		Summary:     "Update a User's username and/or email",
-		Description: "Partial update. Only the user themselves may edit their " +
-			"own row. The `email` field is tri-state: omit the key to leave " +
-			"the column unchanged, send `null` to clear it, or send a new " +
-			"address to set it (which also resets verification and triggers " +
-			"a verification mail).",
-		Tags:        []string{"Users"},
-		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.WriteLimiter)},
-	}, h.update)
-
-	huma.Register(api, huma.Operation{
 		OperationID: "update-current-user",
 		Method:      http.MethodPatch,
 		Path:        "/users/me",
 		Summary:     "Update the current User's username and/or email",
-		Description: "Convenience alias for PATCH /users/{user_id} that " +
-			"resolves the user id from the session cookie. The `email` " +
-			"field is tri-state: omit the key to leave the column " +
+		Description: "Resolves the user id from the session cookie. The " +
+			"`email` field is tri-state: omit the key to leave the column " +
 			"unchanged, send `null` to clear it, or send a new address to " +
 			"set it (which also resets verification and triggers a " +
-			"verification mail).",
+			"verification mail). Setting a new email triggers an outbound " +
+			"verification mail.",
 		Tags:        []string{"Users"},
-		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.WriteLimiter)},
+		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.StrictAuthLimiter)},
 	}, h.updateMe)
 
 	huma.Register(api, huma.Operation{
@@ -171,22 +152,6 @@ func (h *UsersHandler) userByID(ctx context.Context, in *userByIDInput) (*userOu
 		return nil, toHumaErr(err, "", "failed to get user by ID")
 	}
 
-	// Clean email so no personal information is publicly accessible
-	user.Email = pgmap.PgTextFromString(nil)
-
-	return &userOutput{Body: userToOutput(user, h.avatarURLs)}, nil
-}
-
-func (h *UsersHandler) update(ctx context.Context, in *updateUserInput) (*userOutput, error) {
-	user, err := h.users.UpdateUser(ctx, in.UserID, service.UpdateUserInput{
-		Username: in.Body.Username,
-		EmailSet: in.Body.Email.Set,
-		Email:    in.Body.Email.Value,
-	})
-	if err != nil {
-		return nil, toHumaErr(err, "", "failed to update user")
-	}
-
 	return &userOutput{Body: userToOutput(user, h.avatarURLs)}, nil
 }
 
@@ -210,7 +175,8 @@ func (h *UsersHandler) listVotesFromUser(ctx context.Context, in *listVotesFromU
 	}
 
 	body := make([]listVotesFromUserOutputBody, len(votes))
-	for i, vote := range votes {
+	for i := range votes {
+		vote := &votes[i]
 		body[i] = listVotesFromUserOutputBody{
 			VoteID:        vote.VoteID.String(),
 			VoteValue:     vote.VoteValue,
@@ -235,7 +201,8 @@ func (h *UsersHandler) listVotesFromMe(ctx context.Context, _ *struct{}) (*listV
 	}
 
 	body := make([]listVotesFromUserOutputBody, len(votes))
-	for i, vote := range votes {
+	for i := range votes {
+		vote := &votes[i]
 		body[i] = listVotesFromUserOutputBody{
 			VoteID:        vote.VoteID.String(),
 			VoteValue:     vote.VoteValue,

@@ -14,6 +14,22 @@ import (
 
 /// ===== Multipart helpers =====
 
+// pngMagic is the 8-byte PNG signature. http.DetectContentType (used by
+// the avatar service) sniffs only the first 512 bytes, so any payload
+// that starts with this prefix detects as image/png regardless of what
+// follows.
+var pngMagic = []byte{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A}
+
+// fakePNG returns a payload that sniffs as image/png. Tests use this in
+// place of the old "fake-png-bytes" string literal so the avatar service's
+// content-type detection lets the upload through.
+func fakePNG(payload []byte) []byte {
+	out := make([]byte, 0, len(pngMagic)+len(payload))
+	out = append(out, pngMagic...)
+	out = append(out, payload...)
+	return out
+}
+
 // buildMultipartAvatar builds a multipart form body with one file part for
 // the avatar upload endpoint. If fieldName is empty, no `avatar` part is
 // emitted; instead an unrelated text field is added so the body is still a
@@ -130,7 +146,7 @@ func TestUploadAvatar_Success_PNG(t *testing.T) {
 	// can assert this upload was the second.
 	preCount := fakeUploader.uploadCount()
 
-	pngBytes := []byte("fake-png-bytes")
+	pngBytes := fakePNG([]byte("fake-png-payload"))
 	ct, body := buildMultipartAvatar(t, "avatar", "hello.png", "image/png", pngBytes)
 	w := doMultipartRequest(http.MethodPut, "/api/users/me/avatar", ct, body, cookiesFor(userID))
 	assertStatus(t, w, http.StatusOK)
@@ -184,14 +200,103 @@ func TestUploadAvatar_Success_PNG(t *testing.T) {
 	}
 }
 
-func TestUploadAvatar_Success_SVG_PreservesExtension(t *testing.T) {
+// SVG uploads are rejected outright: SVG can embed <script> elements,
+// so storing user-supplied SVG and serving it back to other users would
+// be a stored-XSS vector. The auto-generated default avatars (which are
+// SVG) bypass this validation path entirely.
+func TestUploadAvatar_SVG_Rejected(t *testing.T) {
 	setupTest(t)
 
 	resp := createTestUserWithRegister(t, "svguser", "mypassword123", stringPtr("svg@example.com"))
 	userID := (*resp)["user_id"].(string)
 
-	svgBytes := []byte("<svg></svg>")
+	preCount := fakeUploader.uploadCount()
+	preKey := loadUserByID(t, userID).AvatarKey
+
+	svgBytes := []byte(`<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>`)
 	ct, body := buildMultipartAvatar(t, "avatar", "me.svg", "image/svg+xml", svgBytes)
+	w := doMultipartRequest(http.MethodPut, "/api/users/me/avatar", ct, body, cookiesFor(userID))
+	if w.Code != http.StatusBadRequest && w.Code != http.StatusUnsupportedMediaType {
+		t.Errorf("expected 400/415 for SVG upload, got %d (body: %s)", w.Code, w.Body.String())
+	}
+
+	// No upload may be recorded and the DB key must still point at
+	// whatever register left behind.
+	if added := fakeUploader.uploadCount() - preCount; added != 0 {
+		t.Errorf("expected 0 uploads for rejected SVG, got %d", added)
+	}
+	if got := loadUserByID(t, userID).AvatarKey; got != preKey {
+		t.Errorf("expected DB AvatarKey unchanged %q, got %q", preKey, got)
+	}
+}
+
+// Oversized uploads are rejected so a malicious client can't push the
+// API process to memory exhaustion. The cap is enforced both via the
+// declared multipart Size and via a hard read-byte limit.
+func TestUploadAvatar_TooLarge_Rejected(t *testing.T) {
+	setupTest(t)
+
+	resp := createTestUserWithRegister(t, "biguser", "mypassword123", nil)
+	userID := (*resp)["user_id"].(string)
+
+	preCount := fakeUploader.uploadCount()
+
+	// 21 MB > 20 MB cap. Prefix with PNG magic so detection is the cap
+	// check, not the format check.
+	huge := fakePNG(bytes.Repeat([]byte{0x00}, 21*1024*1024))
+	ct, body := buildMultipartAvatar(t, "avatar", "huge.png", "image/png", huge)
+	w := doMultipartRequest(http.MethodPut, "/api/users/me/avatar", ct, body, cookiesFor(userID))
+	if w.Code < 400 || w.Code >= 500 {
+		t.Errorf("expected 4xx for >20MB upload, got %d", w.Code)
+	}
+
+	if added := fakeUploader.uploadCount() - preCount; added != 0 {
+		t.Errorf("expected 0 uploads for oversized payload, got %d", added)
+	}
+}
+
+// MIME-mismatch test: client claims image/png but the body sniffs as
+// something else (HTML). The service must trust http.DetectContentType
+// over the client-supplied content-type and reject.
+func TestUploadAvatar_MIMEMismatch_Rejected(t *testing.T) {
+	setupTest(t)
+
+	resp := createTestUserWithRegister(t, "mimeuser", "mypassword123", nil)
+	userID := (*resp)["user_id"].(string)
+
+	preCount := fakeUploader.uploadCount()
+	preKey := loadUserByID(t, userID).AvatarKey
+
+	htmlBytes := []byte("<!DOCTYPE html><html><body>not a png</body></html>")
+	ct, body := buildMultipartAvatar(t, "avatar", "hello.png", "image/png", htmlBytes)
+	w := doMultipartRequest(http.MethodPut, "/api/users/me/avatar", ct, body, cookiesFor(userID))
+	if w.Code != http.StatusBadRequest && w.Code != http.StatusUnsupportedMediaType {
+		t.Errorf("expected 400/415 for MIME mismatch, got %d (body: %s)", w.Code, w.Body.String())
+	}
+
+	if added := fakeUploader.uploadCount() - preCount; added != 0 {
+		t.Errorf("expected 0 uploads for MIME mismatch, got %d", added)
+	}
+	if got := loadUserByID(t, userID).AvatarKey; got != preKey {
+		t.Errorf("expected DB AvatarKey unchanged %q, got %q", preKey, got)
+	}
+}
+
+// User-supplied filename must not influence the storage object key. The
+// service mints a random UUID and pins the extension to whatever
+// http.DetectContentType says; an attacker can't smuggle a .html or
+// .js extension into the bucket.
+func TestUploadAvatar_FilenameExtensionIgnored(t *testing.T) {
+	setupTest(t)
+
+	resp := createTestUserWithRegister(t, "extuser", "mypassword123", nil)
+	userID := (*resp)["user_id"].(string)
+
+	pngBytes := fakePNG([]byte("payload"))
+	// Filename pretends to be .html with a mismatched extension; the
+	// declared content-type is also a lie. Real bytes are PNG; the
+	// service must mint a .png-suffixed key from the detected MIME.
+	ct, body := buildMultipartAvatar(t, "avatar", "evil.html", "text/html", pngBytes)
 	w := doMultipartRequest(http.MethodPut, "/api/users/me/avatar", ct, body, cookiesFor(userID))
 	assertStatus(t, w, http.StatusOK)
 
@@ -199,14 +304,11 @@ func TestUploadAvatar_Success_SVG_PreservesExtension(t *testing.T) {
 	if !ok {
 		t.Fatal("expected a recorded upload")
 	}
-	if last.Extension != ".svg" {
-		t.Errorf("expected extension .svg, got %q", last.Extension)
+	if !strings.HasSuffix(last.Key, ".png") {
+		t.Errorf("expected storage key to end in .png (from detected MIME), got %q", last.Key)
 	}
-	if !strings.HasSuffix(last.Key, ".svg") {
-		t.Errorf("expected key to end in .svg, got %q", last.Key)
-	}
-	if last.ContentType != "image/svg+xml" {
-		t.Errorf("expected content type image/svg+xml, got %q", last.ContentType)
+	if last.ContentType != "image/png" {
+		t.Errorf("expected stored content-type image/png (from detection), got %q", last.ContentType)
 	}
 }
 
@@ -220,7 +322,7 @@ func TestUploadAvatar_Success_OverwritesPreviousKey(t *testing.T) {
 	preCount := fakeUploader.uploadCount()
 
 	// First explicit upload.
-	ct1, body1 := buildMultipartAvatar(t, "avatar", "first.png", "image/png", []byte("first-bytes"))
+	ct1, body1 := buildMultipartAvatar(t, "avatar", "first.png", "image/png", fakePNG([]byte("first-bytes")))
 	w1 := doMultipartRequest(http.MethodPut, "/api/users/me/avatar", ct1, body1, cookiesFor(userID))
 	assertStatus(t, w1, http.StatusOK)
 	var got1 map[string]any
@@ -232,7 +334,7 @@ func TestUploadAvatar_Success_OverwritesPreviousKey(t *testing.T) {
 
 	// Second upload with different bytes -> service mints a fresh UUID
 	// key, so the public URL must change.
-	ct2, body2 := buildMultipartAvatar(t, "avatar", "second.png", "image/png", []byte("second-bytes"))
+	ct2, body2 := buildMultipartAvatar(t, "avatar", "second.png", "image/png", fakePNG([]byte("second-bytes")))
 	w2 := doMultipartRequest(http.MethodPut, "/api/users/me/avatar", ct2, body2, cookiesFor(userID))
 	assertStatus(t, w2, http.StatusOK)
 	var got2 map[string]any
@@ -276,7 +378,7 @@ func TestUploadAvatar_UploaderFails_500(t *testing.T) {
 	// error message to the client.
 	fakeUploader.failNext = errors.New("garage down")
 
-	ct, body := buildMultipartAvatar(t, "avatar", "hello.png", "image/png", []byte("fake-png-bytes"))
+	ct, body := buildMultipartAvatar(t, "avatar", "hello.png", "image/png", fakePNG([]byte("payload")))
 	w := doMultipartRequest(http.MethodPut, "/api/users/me/avatar", ct, body, cookiesFor(userID))
 
 	if w.Code < 500 {
@@ -335,7 +437,7 @@ func TestMe_AvatarURL_PresentAfterUpload(t *testing.T) {
 	resp := createTestUserWithRegister(t, "havatarme", "mypassword123", stringPtr("hav@example.com"))
 	userID := (*resp)["user_id"].(string)
 
-	ct, body := buildMultipartAvatar(t, "avatar", "hello.png", "image/png", []byte("fake-png-bytes"))
+	ct, body := buildMultipartAvatar(t, "avatar", "hello.png", "image/png", fakePNG([]byte("payload")))
 	upload := doMultipartRequest(http.MethodPut, "/api/users/me/avatar", ct, body, cookiesFor(userID))
 	assertStatus(t, upload, http.StatusOK)
 

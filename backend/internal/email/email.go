@@ -1,11 +1,13 @@
+// Package email provides the transactional email sender and templated message helpers.
 package email
 
 import (
 	"fmt"
 	"net/url"
 
-	"github.com/officeryoda/dozingo/internal/config"
 	"github.com/resend/resend-go/v3"
+
+	"github.com/officeryoda/dozingo/internal/config"
 )
 
 // frontendURL is the base URL of the Dozingo frontend used to build the

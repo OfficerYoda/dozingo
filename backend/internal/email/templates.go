@@ -25,5 +25,6 @@ func render(name string, data any) (string, error) {
 	if err := templates.ExecuteTemplate(&buf, name, data); err != nil {
 		return "", fmt.Errorf("render email template %q: %w", name, err)
 	}
+
 	return buf.String(), nil
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
+
 	"github.com/officeryoda/dozingo/internal/generated"
 	"github.com/officeryoda/dozingo/internal/pgmap"
 )
@@ -34,7 +35,17 @@ func (r *GameCells) ListByGameID(ctx context.Context, gameID pgtype.UUID) ([]gen
 	if err != nil {
 		return []generated.GameCell{}, pgmap.TranslatePgErr(err)
 	}
+
 	return cells, nil
+}
+
+func (r *GameCells) GetByID(ctx context.Context, gameCellID pgtype.UUID) (generated.GameCell, error) {
+	cell, err := r.queries.GetGameCellByID(ctx, gameCellID)
+	if err != nil {
+		return generated.GameCell{}, pgmap.TranslatePgErr(err)
+	}
+
+	return cell, nil
 }
 
 func (r *GameCells) Create(ctx context.Context, in CreateGameCellsInput) ([]generated.GameCell, error) {
@@ -71,5 +82,6 @@ func (r *GameCells) UpdateMark(ctx context.Context, in UpdateGameCellMarkInput) 
 	if err != nil {
 		return generated.GameCell{}, pgmap.TranslatePgErr(err)
 	}
+
 	return cell, nil
 }

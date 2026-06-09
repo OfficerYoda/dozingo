@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
+
 	"github.com/officeryoda/dozingo/internal/generated"
 	"github.com/officeryoda/dozingo/internal/pgmap"
 )
@@ -36,6 +37,7 @@ func (r *Votes) GetAggregateByBoardID(ctx context.Context, in GetVotesAggregateI
 	if err != nil {
 		return generated.GetVotesByBoardIDRow{}, pgmap.TranslatePgErr(err)
 	}
+
 	return row, nil
 }
 
@@ -48,6 +50,7 @@ func (r *Votes) Upsert(ctx context.Context, in UpsertVoteInput) (generated.Vote,
 	if err != nil {
 		return generated.Vote{}, pgmap.TranslatePgErr(err)
 	}
+
 	return vote, nil
 }
 
@@ -59,6 +62,7 @@ func (r *Votes) Delete(ctx context.Context, in DeleteVoteInput) (generated.Vote,
 	if err != nil {
 		return generated.Vote{}, pgmap.TranslatePgErr(err)
 	}
+
 	return vote, nil
 }
 

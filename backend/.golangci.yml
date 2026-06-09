@@ -1,0 +1,190 @@
+# golangci-lint v2 config (toolchain version pinned in ../.mise.toml)
+# Docs: https://golangci-lint.run/usage/configuration/
+version: "2"
+
+run:
+  timeout: 5m
+  go: "1.25"
+
+linters:
+  default: none
+  enable:
+    # --- v2 default set ---
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+
+    # --- correctness ---
+    - asasalint
+    - asciicheck
+    - bidichk
+    - bodyclose
+    - durationcheck
+    - errorlint
+    - errname
+    - exhaustive
+    - gocheckcompilerdirectives
+    - loggercheck
+    - makezero
+    - nilerr
+    - noctx
+    - reassign
+    - rowserrcheck
+    - sqlclosecheck
+
+    # --- style / quality ---
+    - copyloopvar
+    - gocritic
+    - intrange
+    - misspell
+    - nlreturn
+    - nolintlint
+    - prealloc
+    - predeclared
+    - revive
+    - thelper
+    - unconvert
+    - usestdlibvars
+
+    # --- security ---
+    - gosec
+
+  settings:
+    errcheck:
+      check-type-assertions: true
+      check-blank: false
+
+    errorlint:
+      errorf: true
+      asserts: true
+      comparison: true
+
+    exhaustive:
+      default-signifies-exhaustive: true
+
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - style
+        - performance
+        - opinionated
+      disabled-checks:
+        - commentedOutCode
+        - whyNoLint
+        - hugeParam # noisy with huma input/output structs
+        - unnamedResult
+        - paramTypeCombine
+
+    gosec:
+      excludes:
+        - G104 # already covered by errcheck
+        - G404 # math/rand acceptable for non-crypto contexts
+
+    govet:
+      enable-all: true
+      disable:
+        - fieldalignment # cosmetic; not worth churn
+
+    nlreturn:
+      # block-size: 2 means single-statement blocks (e.g. `if err != nil { return err }`)
+      # are exempt; multi-statement blocks must have a blank line before `return`.
+      block-size: 2
+
+    nolintlint:
+      require-explanation: true
+      require-specific: true
+      allow-unused: false
+
+    revive:
+      severity: warning
+      rules:
+        - name: var-naming
+        - name: error-return
+        - name: error-naming
+        - name: error-strings
+        - name: if-return
+        - name: increment-decrement
+        - name: range
+        - name: receiver-naming
+        - name: time-naming
+        - name: unexported-return
+        - name: indent-error-flow
+        - name: errorf
+        - name: empty-block
+        - name: superfluous-else
+        - name: redefines-builtin-id
+        - name: unused-parameter
+          severity: warning
+        - name: blank-imports
+        - name: context-as-argument
+        - name: context-keys-type
+        - name: dot-imports
+        - name: package-comments
+          disabled: true
+        - name: range-val-in-closure
+
+    staticcheck:
+      checks:
+        - all
+
+  exclusions:
+    generated: lax
+    presets:
+      - common-false-positives
+      - legacy
+    paths:
+      - internal/generated
+      - internal/db/migrations
+    rules:
+      # Tests share state; relax noisy linters.
+      - path: _test\.go
+        linters:
+          - errcheck
+          - gosec
+          - nlreturn
+          - bodyclose
+          - noctx
+          - prealloc
+          - gocritic
+          - revive
+
+      # Seed binary: large data tables and intentional panic-on-failure.
+      - path: cmd/seed/
+        linters:
+          - prealloc
+          - gosec
+          - nlreturn
+          - gocritic
+
+      # auth.go init() computes a dummy bcrypt hash for timing-attack protection;
+      # panicking on failure is intentional.
+      - path: internal/auth/auth\.go
+        text: "panic"
+        linters:
+          - gocritic
+          - revive
+
+      # Sessions middleware constructor uses panic for nil-check on programmer error.
+      - path: internal/middleware/sessions\.go
+        text: "panic"
+        linters:
+          - gocritic
+          - revive
+
+formatters:
+  enable:
+    - gofmt
+    - gofumpt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/officeryoda/dozingo
+    gofumpt:
+      extra-rules: true
+  exclusions:
+    generated: lax
+    paths:
+      - internal/generated

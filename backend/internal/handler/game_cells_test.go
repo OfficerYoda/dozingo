@@ -13,7 +13,7 @@ func setupForGameCells(t *testing.T) (userID, boardID, cellID, gameID string) {
 	boardID = createTestBoard(t, "GameCell Board", 5, userID, nil)
 	cellID = createTestCell(t, boardID, "Source Cell")
 	gameID = createTestGame(t, userID, boardID)
-	return
+	return userID, boardID, cellID, gameID
 }
 
 func TestCreateGameCells(t *testing.T) {
@@ -74,7 +74,7 @@ func TestCreateGameCells_FullBoard(t *testing.T) {
 
 	// Create 9 cells for a 3x3 board worth of game cells
 	cells := make([]map[string]any, 9)
-	for i := 0; i < 9; i++ {
+	for i := range 9 {
 		cellID := createTestCell(t, boardID, fmt.Sprintf("Cell %d", i))
 		cells[i] = map[string]any{
 			"cell_id":  cellID,
@@ -91,6 +91,34 @@ func TestCreateGameCells_FullBoard(t *testing.T) {
 
 	if len(resp) != 9 {
 		t.Errorf("expected 9 game cells, got %d", len(resp))
+	}
+}
+
+// The bulk endpoint accepts up to 64 items per call. Anything larger
+// must be rejected at validation time (before the request reaches the
+// service or the database) so a malicious caller can't drive arbitrary-
+// size payloads through this endpoint. 64 sits comfortably above the
+// 6x6=36 cells of the largest currently-supported board, leaving room
+// for plausible future board sizes (e.g. 8x8).
+func TestCreateGameCells_TooMany_Rejected(t *testing.T) {
+	setupTest(t)
+	_, _, cellID, gameID := setupForGameCells(t)
+
+	// 65 items - just over the cap. The cell_id intentionally repeats
+	// the same UUID; validation must reject the array length before any
+	// DB lookup runs, so the references don't matter.
+	cells := make([]map[string]any, 65)
+	for i := range 65 {
+		cells[i] = map[string]any{
+			"cell_id":  cellID,
+			"content":  "x",
+			"position": i,
+		}
+	}
+
+	w := doRequestWithCookies(http.MethodPost, fmt.Sprintf("/api/games/%s/cells", gameID), cells, cookiesForGame(t, gameID))
+	if w.Code != http.StatusUnprocessableEntity && w.Code != http.StatusBadRequest {
+		t.Errorf("expected 422/400 for >64 items, got %d (body: %s)", w.Code, w.Body.String())
 	}
 }
 
@@ -215,6 +243,28 @@ func TestUpdateGameCellMark_WrongGame(t *testing.T) {
 	w := doRequestWithCookies(http.MethodPut, fmt.Sprintf("/api/games/%s/cells/%s", game2ID, gameCellID),
 		map[string]any{"is_marked": true},
 		cookiesForGame(t, game2ID),
+	)
+	assertStatus(t, w, http.StatusNotFound)
+}
+
+// TestUpdateGameCellMark_HijackOtherPlayersCell verifies that a caller
+// who legitimately owns their own game cannot toggle marks on someone
+// else's game by smuggling that game_cell_id through their own URL.
+// The service must catch the cross-game id at the membership-assert
+// step before the SQL UPDATE runs.
+func TestUpdateGameCellMark_HijackOtherPlayersCell(t *testing.T) {
+	setupTest(t)
+	_, boardID, cellID, victimGameID := setupForGameCells(t)
+	victimCellID := createTestGameCell(t, victimGameID, cellID, "Victim Cell", 0)
+
+	// Attacker creates their own game on the same board.
+	attacker := createTestUser(t, "attacker_gamecell", "attacker_gc@example.com")
+	attackerGameID := createTestGame(t, attacker, boardID)
+
+	w := doRequestWithCookies(http.MethodPut,
+		fmt.Sprintf("/api/games/%s/cells/%s", attackerGameID, victimCellID),
+		map[string]any{"is_marked": true},
+		cookiesFor(attacker),
 	)
 	assertStatus(t, w, http.StatusNotFound)
 }
