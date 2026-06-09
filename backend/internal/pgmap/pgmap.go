@@ -95,9 +95,16 @@ func DurationFromPgInterval(interval pgtype.Interval) *timepkg.Duration {
 		return nil
 	}
 
-	d := timepkg.Duration(interval.Microseconds)*timepkg.Microsecond +
-		timepkg.Duration(interval.Days)*24*timepkg.Hour +
-		timepkg.Duration(interval.Months)*30*24*timepkg.Hour
+	const (
+		microsecond = int64(timepkg.Microsecond)
+		hour        = int64(timepkg.Hour)
+	)
+
+	d := timepkg.Duration(
+		interval.Microseconds*microsecond +
+			int64(interval.Days)*24*hour +
+			int64(interval.Months)*30*24*hour,
+	)
 
 	return &d
 }
