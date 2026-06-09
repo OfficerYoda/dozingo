@@ -175,7 +175,7 @@ function clickBoard(boardID: string) {
 .card-meta-text {
     color: var(--color-subheading);
     font-weight: 600;
-    font-size: 13px;
+    font-size: 0.8125rem;
 }
 
 

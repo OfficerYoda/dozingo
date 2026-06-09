@@ -292,7 +292,7 @@ onMounted(fetchBoards)
 .card-meta-text {
   color: var(--color-subheading);
   font-weight: 600;
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 
 /* Like group */
@@ -337,7 +337,7 @@ onMounted(fetchBoards)
 
 .category {
   color: var(--color-text-subtle);
-  font-size: 10px;
+  font-size: 0.625rem;
   font-weight: 700;
   letter-spacing: 0.08em;
 }

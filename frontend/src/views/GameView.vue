@@ -288,7 +288,7 @@ function clickBoard(boardID: string) {
 .card-meta-text {
     color: #5A5781;
     font-weight: 600;
-    font-size: 13px;
+    font-size: 0.8125rem;
 }
 
 
@@ -449,7 +449,7 @@ function clickBoard(boardID: string) {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    font-size: 12px;
+    font-size: 0.75rem;
     font-weight: 600;
 }
 
