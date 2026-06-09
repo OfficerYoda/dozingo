@@ -11,6 +11,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
+
 	"github.com/officeryoda/dozingo/internal/auth"
 	"github.com/officeryoda/dozingo/internal/avatar"
 	"github.com/officeryoda/dozingo/internal/config"
@@ -63,7 +64,8 @@ func seed(pool *pgxpool.Pool) error {
 
 	q := generated.New(tx)
 
-	if err := truncateAll(ctx, tx); err != nil {
+	err = truncateAll(ctx, tx)
+	if err != nil {
 		return err
 	}
 
@@ -72,7 +74,8 @@ func seed(pool *pgxpool.Pool) error {
 		return err
 	}
 
-	if err := seedPasswords(ctx, q, userIDs); err != nil {
+	err = seedPasswords(ctx, q, userIDs)
+	if err != nil {
 		return err
 	}
 

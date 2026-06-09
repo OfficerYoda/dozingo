@@ -13,7 +13,7 @@ func setupForGameCells(t *testing.T) (userID, boardID, cellID, gameID string) {
 	boardID = createTestBoard(t, "GameCell Board", 5, userID, nil)
 	cellID = createTestCell(t, boardID, "Source Cell")
 	gameID = createTestGame(t, userID, boardID)
-	return
+	return userID, boardID, cellID, gameID
 }
 
 func TestCreateGameCells(t *testing.T) {
@@ -74,7 +74,7 @@ func TestCreateGameCells_FullBoard(t *testing.T) {
 
 	// Create 9 cells for a 3x3 board worth of game cells
 	cells := make([]map[string]any, 9)
-	for i := 0; i < 9; i++ {
+	for i := range 9 {
 		cellID := createTestCell(t, boardID, fmt.Sprintf("Cell %d", i))
 		cells[i] = map[string]any{
 			"cell_id":  cellID,

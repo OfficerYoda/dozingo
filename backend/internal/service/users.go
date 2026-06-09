@@ -11,6 +11,7 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
+
 	"github.com/officeryoda/dozingo/internal/domain"
 	"github.com/officeryoda/dozingo/internal/email"
 	"github.com/officeryoda/dozingo/internal/generated"
@@ -121,12 +122,12 @@ func (s *Users) UploadAvatar(ctx context.Context, in huma.FormFile) (generated.U
 		return generated.User{}, err
 	}
 
-	uuid, err := uuid.NewRandom()
+	id, err := uuid.NewRandom()
 	if err != nil {
 		return generated.User{}, fmt.Errorf("generate uuid: %w", err)
 	}
 
-	objectKey := fmt.Sprintf("%s%s", uuid, img.Extension)
+	objectKey := fmt.Sprintf("%s%s", id, img.Extension)
 	err = s.uploader.Upload(ctx, objectKey, img)
 	if err != nil {
 		return generated.User{}, fmt.Errorf("upload avatar: %w", err)
@@ -203,6 +204,7 @@ func pgTextEqual(a, b pgtype.Text) bool {
 	if !a.Valid {
 		return true
 	}
+
 	return a.String == b.String
 }
 
@@ -214,5 +216,6 @@ func requiresSessionUser(ctx context.Context, queries *generated.Queries) (gener
 	if !sessionUser.UserID.Valid {
 		return generated.GetSessionUserByTokenRow{}, fmt.Errorf("requires authenticated user: %w", domain.ErrUnauthorized)
 	}
+
 	return sessionUser, nil
 }

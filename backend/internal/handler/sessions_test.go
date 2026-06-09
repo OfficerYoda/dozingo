@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
+
 	"github.com/officeryoda/dozingo/internal/auth"
 	"github.com/officeryoda/dozingo/internal/generated"
 )

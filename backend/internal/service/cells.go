@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5/pgtype"
+
 	"github.com/officeryoda/dozingo/internal/domain"
 	"github.com/officeryoda/dozingo/internal/generated"
 	"github.com/officeryoda/dozingo/internal/middleware"
@@ -90,6 +91,7 @@ func (s *Cells) Delete(ctx context.Context, in DeleteCellInput) error {
 	}
 
 	_, err = s.cells.Delete(ctx, repository.DeleteCellInput(in))
+
 	return err
 }
 

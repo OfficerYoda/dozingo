@@ -1,3 +1,4 @@
+// Package worker runs periodic background jobs alongside the API server.
 package worker
 
 import (

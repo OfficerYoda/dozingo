@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
+
 	"github.com/officeryoda/dozingo/internal/avatar"
 	"github.com/officeryoda/dozingo/internal/middleware"
 	"github.com/officeryoda/dozingo/internal/service"
@@ -174,7 +175,8 @@ func (h *UsersHandler) listVotesFromUser(ctx context.Context, in *listVotesFromU
 	}
 
 	body := make([]listVotesFromUserOutputBody, len(votes))
-	for i, vote := range votes {
+	for i := range votes {
+		vote := &votes[i]
 		body[i] = listVotesFromUserOutputBody{
 			VoteID:        vote.VoteID.String(),
 			VoteValue:     vote.VoteValue,
@@ -199,7 +201,8 @@ func (h *UsersHandler) listVotesFromMe(ctx context.Context, _ *struct{}) (*listV
 	}
 
 	body := make([]listVotesFromUserOutputBody, len(votes))
-	for i, vote := range votes {
+	for i := range votes {
+		vote := &votes[i]
 		body[i] = listVotesFromUserOutputBody{
 			VoteID:        vote.VoteID.String(),
 			VoteValue:     vote.VoteValue,

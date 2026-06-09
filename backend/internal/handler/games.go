@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
+
 	"github.com/officeryoda/dozingo/internal/generated"
 	"github.com/officeryoda/dozingo/internal/middleware"
 	"github.com/officeryoda/dozingo/internal/pgmap"
@@ -164,7 +165,7 @@ func (h *GamesHandler) listByPlayer(ctx context.Context, in *listGamesByPlayerIn
 	return &listGamesOutput{Body: mapSlice(games, gameToOutput)}, nil
 }
 
-func (h *GamesHandler) listByCurrentSession(ctx context.Context, in *struct{}) (*listGamesOutput, error) {
+func (h *GamesHandler) listByCurrentSession(ctx context.Context, _ *struct{}) (*listGamesOutput, error) {
 	games, err := h.svc.ListByCurrentSession(ctx)
 	if err != nil {
 		return nil, toHumaErr(err, "", "failed to list games by player")

@@ -94,5 +94,6 @@ func gameCellsToRepoItems(items []CreateGameCellItem) []repository.CreateGameCel
 	for i, item := range items {
 		result[i] = repository.CreateGameCellItem(item)
 	}
+
 	return result
 }

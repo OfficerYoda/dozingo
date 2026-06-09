@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5/pgtype"
+
 	"github.com/officeryoda/dozingo/internal/domain"
 	"github.com/officeryoda/dozingo/internal/generated"
 	"github.com/officeryoda/dozingo/internal/middleware"
@@ -94,6 +95,7 @@ func (s *Boards) Delete(ctx context.Context, boardID pgtype.UUID) error {
 	}
 
 	_, err = s.boards.Delete(ctx, boardID)
+
 	return err
 }
 
