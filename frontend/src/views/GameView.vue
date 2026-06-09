@@ -1,19 +1,31 @@
 <template>
     <section>
         <div class="container">
-            <h2 class="mb-1">Board title</h2>
-            <small>Subtitle Description</small>
-            <div class="modal-stats">
-                <span class="stat-item stat-plays">
-                    <Play :size="15"/> XX
-                </span>
-                <span class="stat-item stat-likes">
-                    <Heart :size="15"/> XX
-                </span>
-                <span class="stat-item stat-size">
-                    <LayoutGrid :size="15"/> XxX
-                </span>
+            <div class="top-item-bar">
+                <div>
+                    <h2 class="mb-1">Board title</h2>
+                    <div class="stats">
+                        <span class="stat-item stat-plays">
+                            <Play :size="15"/> XX
+                        </span>
+                        <span class="stat-item stat-likes">
+                            <Heart :size="15"/> XX
+                        </span>
+                        <span class="stat-item stat-size">
+                            <LayoutGrid :size="15"/> XxX
+                        </span>
+                    </div>
+                </div>
+                <div>
+                    <span class="checked-title">Timer</span>
+                    <span class="checked-counter">XX:XX</span>
+                </div>
+                <div>
+                    <span class="checked-title">Checked</span>
+                    <span class="checked-counter">X / 16</span>
+                </div>
             </div>
+            
 
             <div class="board mt-3">
                 <div class="board-container" ref="boardContainerRef" @scroll="updateShadow" @click="toggleCell">
@@ -34,12 +46,13 @@
                     <div>15</div>
                     <div>16</div>
                 </div>
-                <div class="board-shadow" v-show="showShadow"></div>
+                <div class="board-shadow" v-bind:class="(showShadowRight)?'board-shadow-right':''"></div>
+                <div class="board-shadow" v-bind:class="(showShadowLeft)?'board-shadow-left':''"></div>
             </div>
 
             <p v-if="error" class="error-text">{{ error }}</p>
 
-            <div class="grid">
+            <div class="grid mt-5">
                 <button v-for="board in boards" :key="board.board_id" @click="clickBoard(board.board_id)"
                     class="card card-border-blue col-4 md-6 sm-12">
                     <div class="card-body">
@@ -145,14 +158,17 @@ const selectedCells = ref<Cell[]>()
 const authorName = ref<string | null>(null)
 
 const boardContainerRef = useTemplateRef<HTMLElement>('boardContainerRef')
-const showShadow = ref(true)
+const showShadowRight = ref(true)
+const showShadowLeft = ref(false)
 
 function updateShadow() {
     const el = boardContainerRef.value
     if (!el) return
     // hide shadow when no horizontal overflow exists or scroll is at the right end
     const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 1
-    showShadow.value = el.scrollWidth > el.clientWidth && !atEnd
+    const atStart = el.scrollLeft == 0
+    showShadowRight.value = el.scrollWidth > el.clientWidth && !atEnd
+    showShadowLeft.value =  !atStart
 }
 
 let resizeObserver: ResizeObserver | null = null
@@ -222,7 +238,7 @@ function shuffle() {
 
 function toggleCell(event: MouseEvent) {
     const cell = (event.target as HTMLElement).closest<HTMLElement>('.board-container > div')
-    cell?.classList.toggle('marked')
+    cell?.classList.toggle('checked')
 }
 
 function clickBoard(boardID: string) {
@@ -313,32 +329,6 @@ function clickBoard(boardID: string) {
     font-weight: 600;
 }
 
-.modal-stats {
-    display: flex;
-    flex-direction: row;
-    gap: 8px;
-    margin-top: 6px;
-}
-
-.stat-item {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 12px;
-    font-weight: 600;
-}
-
-.stat-plays {
-    color: #4052B6;
-}
-
-.stat-likes {
-    color: #C0185A;
-}
-
-.stat-size {
-    color: #2E7D32;
-}
 
 .bottom-bar {
     display: flex;
@@ -442,9 +432,51 @@ function clickBoard(boardID: string) {
 
 
 
+.top-item-bar{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
 
+.stats {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    margin-top: 6px;
+}
 
+.stat-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 600;
+}
 
+.stat-plays {
+    color: #4052B6;
+}
+
+.stat-likes {
+    color: #C0185A;
+}
+
+.stat-size {
+    color: #2E7D32;
+}
+
+.checked-title{
+    text-align: center;
+    font-size: 0.8rem;
+    display: block;
+}
+
+.checked-counter{
+    text-align: center;
+    font-weight: 700;
+    font-size: 1.2rem;
+    display: block;
+}
 
 .board{
     background-color: #E3DFFF;
@@ -461,6 +493,7 @@ function clickBoard(boardID: string) {
 }
 
 .board-container div{
+    position: relative;
     width: 100%;
     min-width: 160px;
     height: 100%;
@@ -478,8 +511,7 @@ function clickBoard(boardID: string) {
     transition: 0.3s;
 }
 
-.board-container div:hover:not(.marked){
-    box-shadow: 0 0 40px #E3DFFF;
+.board-container div:hover:not(.checked){
     border-width: 0.1rem;
     padding: calc(5px + 0.4rem);
 }
@@ -490,15 +522,23 @@ function clickBoard(boardID: string) {
     height: 100%;
     left: 0;
     top: 0;
-    box-shadow: inset -30px 0 30px #E3DFFF;
+    box-shadow: inset 0 0 0 #E3DFFF;
     pointer-events: none;
     border-radius: var(--radius-sm);
+    transition: 0.3s;
 }
 
-.board-container .marked{
+.board-shadow-right{
+    box-shadow: inset -30px 0 30px #E3DFFF;
+}
+
+.board-shadow-left{
+    box-shadow: inset 30px 0 30px #E3DFFF;
+}
+
+.board-container .checked{
     background-color: #5A5781;
     color: #E3DFFF;
-    position: relative;
 }
 
 .board-container div::after{
@@ -521,7 +561,7 @@ function clickBoard(boardID: string) {
     overflow: hidden;
 }
 
-.board-container .marked::after{
+.board-container .checked::after{
     top: 0;
     right: 0;
     height: 40px;
