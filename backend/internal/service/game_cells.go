@@ -32,6 +32,11 @@ type UpdateGameCellMarkInput struct {
 }
 
 func (s *GameCells) ListByGameID(ctx context.Context, gameID pgtype.UUID) ([]generated.GameCell, error) {
+	// Verify the game exists before listing its cells so that callers receive
+	// 404 for an unknown game_id rather than an empty list.
+	if _, err := s.games.Get(ctx, gameID); err != nil {
+		return nil, err
+	}
 	return s.gameCells.ListByGameID(ctx, gameID)
 }
 

@@ -52,11 +52,12 @@ func TestUpsertVote_Update(t *testing.T) {
 	userID, boardID := setupBoardForVotes(t)
 
 	// Create initial upvote
-	doRequestWithCookies(http.MethodPut,
+	wCreate := doRequestWithCookies(http.MethodPut,
 		fmt.Sprintf("/api/boards/%s/vote", boardID),
 		map[string]any{"vote_value": 1},
 		cookiesFor(userID),
 	)
+	assertStatus(t, wCreate, http.StatusOK)
 
 	// Change to downvote
 	w := doRequestWithCookies(http.MethodPut,
@@ -71,6 +72,9 @@ func TestUpsertVote_Update(t *testing.T) {
 
 	assertJSONField(t, resp, "user_id", userID)
 	assertJSONField(t, resp, "board_id", boardID)
+	if voteVal, ok := resp["vote_value"].(float64); !ok || int(voteVal) != -1 {
+		t.Errorf("expected vote_value = -1 after update, got %v", resp["vote_value"])
+	}
 }
 
 func TestGetVotesByBoardID(t *testing.T) {
@@ -90,9 +94,18 @@ func TestGetVotesByBoardID(t *testing.T) {
 	var resp map[string]any
 	decodeJSON(t, w, &resp)
 
-	score := resp["score"].(float64)
-	voteCount := resp["vote_count"].(float64)
-	userVote := resp["user_vote"].(float64)
+	score, ok := resp["score"].(float64)
+	if !ok {
+		t.Fatalf("expected score to be a number, got %T (%v)", resp["score"], resp["score"])
+	}
+	voteCount, ok := resp["vote_count"].(float64)
+	if !ok {
+		t.Fatalf("expected vote_count to be a number, got %T (%v)", resp["vote_count"], resp["vote_count"])
+	}
+	userVote, ok := resp["user_vote"].(float64)
+	if !ok {
+		t.Fatalf("expected user_vote to be a number, got %T (%v)", resp["user_vote"], resp["user_vote"])
+	}
 
 	if int(score) != 1 {
 		t.Errorf("expected score = 1, got %v", score)
@@ -154,9 +167,18 @@ func TestGetVotesByBoardID_MultipleVoters(t *testing.T) {
 	var resp map[string]any
 	decodeJSON(t, w, &resp)
 
-	score := resp["score"].(float64)
-	voteCount := resp["vote_count"].(float64)
-	userVote := resp["user_vote"].(float64)
+	score, ok := resp["score"].(float64)
+	if !ok {
+		t.Fatalf("expected score to be a number, got %T (%v)", resp["score"], resp["score"])
+	}
+	voteCount, ok := resp["vote_count"].(float64)
+	if !ok {
+		t.Fatalf("expected vote_count to be a number, got %T (%v)", resp["vote_count"], resp["vote_count"])
+	}
+	userVote, ok := resp["user_vote"].(float64)
+	if !ok {
+		t.Fatalf("expected user_vote to be a number, got %T (%v)", resp["user_vote"], resp["user_vote"])
+	}
 
 	if int(score) != 0 {
 		t.Errorf("expected score = 0 (1 + -1), got %v", score)

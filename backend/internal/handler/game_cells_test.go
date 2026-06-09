@@ -43,20 +43,14 @@ func TestGetGameCellsByGameID(t *testing.T) {
 }
 
 // TestGetGameCellsByGameID_NoSuchGame asserts that listing cells for a
-// nonexistent game id returns an empty list (the GET endpoint does not 404
-// on missing games — it just has nothing to return).
+// nonexistent game id returns 404. The service checks game existence before
+// querying cells so callers get a clear not-found error rather than an
+// empty list.
 func TestGetGameCellsByGameID_NoSuchGame(t *testing.T) {
 	setupTest(t)
 
 	w := doRequest(http.MethodGet, "/api/games/00000000-0000-0000-0000-000000000000/cells", nil)
-	assertStatus(t, w, http.StatusOK)
-
-	var resp []map[string]any
-	decodeJSON(t, w, &resp)
-
-	if len(resp) != 0 {
-		t.Errorf("expected 0 game cells for unknown game, got %d", len(resp))
-	}
+	assertStatus(t, w, http.StatusNotFound)
 }
 
 func TestGetGameCellsByGameID_InvalidGameID(t *testing.T) {
@@ -115,10 +109,11 @@ func TestUpdateGameCellMark_MarkFalse(t *testing.T) {
 	cookies := cookiesForGame(t, gameID)
 
 	// Mark it true first
-	doRequestWithCookies(http.MethodPut, fmt.Sprintf("/api/games/%s/cells/%s", gameID, gameCellID),
+	wMark := doRequestWithCookies(http.MethodPut, fmt.Sprintf("/api/games/%s/cells/%s", gameID, gameCellID),
 		map[string]any{"is_marked": true},
 		cookies,
 	)
+	assertStatus(t, wMark, http.StatusOK)
 
 	// Now unmark it
 	w := doRequestWithCookies(http.MethodPut, fmt.Sprintf("/api/games/%s/cells/%s", gameID, gameCellID),

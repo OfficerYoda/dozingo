@@ -47,6 +47,15 @@ type loginInput struct {
 	Body loginInputBody
 }
 
+type changePasswordInputBody struct {
+	OldPassword string `json:"old_password" required:"true" minLength:"8" maxLength:"72"`
+	NewPassword string `json:"new_password" required:"true" minLength:"8" maxLength:"72"`
+}
+
+type changePasswordInput struct {
+	Body changePasswordInputBody
+}
+
 type forgotPasswordInputBody struct {
 	Email string `json:"email" format:"email" required:"true" maxLength:"200"`
 }
@@ -120,6 +129,15 @@ func (h *AuthHandler) Register(api huma.API) {
 	}, h.logout)
 
 	huma.Register(api, huma.Operation{
+		OperationID: "change-password",
+		Method:      http.MethodPost,
+		Path:        "/auth/change-password",
+		Summary:     "Change the current password",
+		Tags:        []string{"Auth"},
+		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.StrictAuthLimiter)},
+	}, h.changePassword)
+
+	huma.Register(api, huma.Operation{
 		OperationID: "forgot-password",
 		Method:      http.MethodPost,
 		Path:        "/auth/forgot-password",
@@ -188,6 +206,15 @@ func (h *AuthHandler) logout(ctx context.Context, _ *struct{}) (*struct{}, error
 	}
 
 	return &struct{}{}, nil
+}
+
+func (h *AuthHandler) changePassword(ctx context.Context, in *changePasswordInput) (*struct{}, error) {
+	err := h.svc.ChangePassword(ctx, in.Body.OldPassword, in.Body.NewPassword)
+	if err != nil {
+		return nil, toHumaErr(err, "", "failed to update password")
+	}
+
+	return nil, nil
 }
 
 func (h *AuthHandler) forgotPassword(ctx context.Context, in *forgotPasswordInput) (*emailSentOutput, error) {

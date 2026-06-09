@@ -181,6 +181,51 @@ func (s *Auth) Logout(ctx context.Context) error {
 	return nil
 }
 
+func (s *Auth) ChangePassword(ctx context.Context, oldPassword, newPassword string) error {
+	sessionUser, err := requiresSessionUser(ctx, s.queries)
+	if err != nil {
+		return err
+	}
+
+	if oldPassword == newPassword {
+		return fmt.Errorf("password match: %w", domain.ErrUnprocessableEntity)
+	}
+
+	oldPasswordHash, err := s.passwords.GetHashForUserID(ctx, sessionUser.UserID)
+	if err != nil {
+		return fmt.Errorf("get password hash: %w", err)
+	}
+
+	err = auth.CheckPassword(oldPassword, oldPasswordHash)
+	if err != nil {
+		return fmt.Errorf("password mismatch: %w", err)
+	}
+
+	newPasswordHash, err := auth.HashPassword(newPassword)
+	if err != nil {
+		return fmt.Errorf("hash password: %w", err)
+	}
+
+	err = s.txRunner.WithTx(ctx, func(r repository.Repos) error {
+		_, err = r.Passwords.Upsert(ctx, sessionUser.UserID, newPasswordHash)
+		if err != nil {
+			return fmt.Errorf("update password: %w", err)
+		}
+
+		err = r.Sessions.DeleteOtherSessionsFromUser(ctx, sessionUser.UserID, sessionUser.SessionID)
+		if err != nil {
+			return fmt.Errorf("delete other sessions: %w", err)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (s *Auth) ForgotPassword(ctx context.Context, address string) error {
 	user, err := s.users.GetByEmail(ctx, address)
 	if err != nil {
@@ -256,7 +301,7 @@ func (s *Auth) NewPassword(ctx context.Context, in NewPasswordInput) (generated.
 func (s *Auth) SendEmailVerification(ctx context.Context) error {
 	sessionUser, err := requiresSessionUser(ctx, s.queries)
 	if err != nil {
-		return fmt.Errorf("session required: %w", err)
+		return err
 	}
 
 	if !sessionUser.Email.Valid {
@@ -309,7 +354,7 @@ func (s *Auth) VerifyEmail(ctx context.Context, token string) (generated.User, e
 func (s *Auth) generateUser(ctx context.Context, in RegisterInput) (generated.User, error) {
 	passwordHash, err := auth.HashPassword(in.Password)
 	if err != nil {
-		return generated.User{}, err
+		return generated.User{}, fmt.Errorf("hash password: %w", err)
 	}
 
 	var user generated.User
@@ -320,7 +365,7 @@ func (s *Auth) generateUser(ctx context.Context, in RegisterInput) (generated.Us
 		}
 		_, err = r.Passwords.Upsert(ctx, user.ID, passwordHash)
 		if err != nil {
-			return err
+			return fmt.Errorf("update password: %w", err)
 		}
 
 		return nil
