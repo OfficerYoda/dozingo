@@ -181,6 +181,39 @@ func (s *Auth) Logout(ctx context.Context) error {
 	return nil
 }
 
+func (s *Auth) ChangePassword(ctx context.Context, oldPassword, newPassword string) error {
+	sessionUser, err := requiresSessionUser(ctx, s.queries)
+	if err != nil {
+		return err
+	}
+
+	if oldPassword == newPassword {
+		return fmt.Errorf("password match: %w", domain.ErrUnprocessableEntity)
+	}
+
+	oldPasswordHash, err := s.passwords.GetHashForUserID(ctx, sessionUser.UserID)
+	if err != nil {
+		return fmt.Errorf("get password hash: %w", err)
+	}
+
+	err = auth.CheckPassword(oldPassword, oldPasswordHash)
+	if err != nil {
+		return fmt.Errorf("password mismatch: %w", err)
+	}
+
+	newPasswordHash, err := auth.HashPassword(newPassword)
+	if err != nil {
+		return fmt.Errorf("hash password: %w", err)
+	}
+
+	_, err = s.passwords.Upsert(ctx, sessionUser.UserID, newPasswordHash)
+	if err != nil {
+		return fmt.Errorf("update password: %w", err)
+	}
+
+	return nil
+}
+
 func (s *Auth) ForgotPassword(ctx context.Context, address string) error {
 	user, err := s.users.GetByEmail(ctx, address)
 	if err != nil {
