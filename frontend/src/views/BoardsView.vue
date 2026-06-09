@@ -159,7 +159,7 @@ async function fetchAllCellsForBoard(boardID: string) {
     showModal.value = true
 }
 
-const appliedFiler = ref(route.query.sort ? String(route.query.sort) : '')
+const appliedFiler = ref(route.query.sort ? String(route.query.sort) : 'newest')
 const search = ref('')
 
 watch([appliedFiler, search], () => {
