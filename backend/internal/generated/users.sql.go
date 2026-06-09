@@ -118,6 +118,31 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User,
 	return i, err
 }
 
+const listInUseAvatarKeys = `-- name: ListInUseAvatarKeys :many
+SELECT DISTINCT avatar_key FROM users
+WHERE avatar_key <> ''
+`
+
+func (q *Queries) ListInUseAvatarKeys(ctx context.Context) ([]string, error) {
+	rows, err := q.db.Query(ctx, listInUseAvatarKeys)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var avatar_key string
+		if err := rows.Scan(&avatar_key); err != nil {
+			return nil, err
+		}
+		items = append(items, avatar_key)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const setAvatar = `-- name: SetAvatar :one
 UPDATE users
 SET avatar_key = $1

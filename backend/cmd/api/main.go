@@ -29,9 +29,10 @@ import (
 )
 
 const (
-	sessionCleanupInterval = 1 * time.Hour
-	tokenCleanupInterval   = 1 * time.Hour
-	shutdownTimeout        = 10 * time.Second
+	sessionCleanupInterval      = 1 * time.Hour
+	tokenCleanupInterval        = 1 * time.Hour
+	avatarOrphanCleanupInterval = 1 * time.Hour
+	shutdownTimeout             = 10 * time.Second
 )
 
 func main() {
@@ -63,13 +64,19 @@ func run() error {
 		return fmt.Errorf("building avatar URL builder: %w", err)
 	}
 
+	garage := storage.NewGarage(ctx, cfg)
+
 	worker.NewPeriodic("session_cleanup", sessionCleanupInterval,
 		repos.Sessions.DeleteExpiredSessions).Start(ctx)
 	worker.NewPeriodic("verification_token_cleanup", tokenCleanupInterval,
 		repos.VerificationTokens.DeleteExpired).Start(ctx)
+	worker.NewPeriodic("avatar_orphan_cleanup", avatarOrphanCleanupInterval,
+		func(ctx context.Context) error {
+			return garage.SweepOrphanAvatars(ctx, repos.Users, storage.DefaultSweepConfig())
+		}).Start(ctx)
 
 	router := createRouter(cfg)
-	registerRoutes(router, repos, pool, cfg, ctx, avatarURLs)
+	registerRoutes(router, repos, pool, cfg, ctx, avatarURLs, garage)
 
 	return serveHTTP(ctx, createServer(cfg.Port, router))
 }
@@ -119,10 +126,13 @@ func registerRoutes(
 	cfg *config.Config,
 	ctx context.Context,
 	avatarURLs *avatar.URLBuilder,
+	garage *storage.Garage,
 ) {
 	emailSender := email.New(cfg)
-	garage := storage.NewGarage(ctx, cfg)
+	avatarGen := avatar.RandomProfilePicture
 	queries := generated.New(pool)
+
+	ensureDefaultAvatar(ctx, avatarGen, garage)
 
 	config := huma.DefaultConfig("Dozingo API", "0.2.0")
 	config.DocsPath = "/api/docs"
@@ -137,7 +147,7 @@ func registerRoutes(
 	gameCellsSvc := service.NewGameCells(repos.GameCells, repos.Games, queries)
 	gamesSvc := service.NewGames(repos.Games, queries)
 	votesSvc := service.NewVotes(repos.Votes, queries)
-	authSvc := service.NewAuth(repos, emailSender, queries, txRunner)
+	authSvc := service.NewAuth(repos, emailSender, queries, txRunner, avatarGen, garage)
 	usersSvc := service.NewUsers(repos, queries, emailSender, txRunner, garage)
 
 	handler.NewHealthHandler(pool).Register(api) // Don't use apiGroup here to get around middleware
@@ -150,6 +160,19 @@ func registerRoutes(
 	handler.NewUsersHandler(usersSvc, votesSvc, avatarURLs).Register(apiGroup)
 
 	createOpenAPIFile(api)
+}
+
+func ensureDefaultAvatar(ctx context.Context, gen service.AvatarGenerator, uploader storage.ObjectUploader) {
+	img, err := gen("default")
+	if err != nil {
+		slog.Warn("failed to generate default avatar", "error", err)
+		return
+	}
+	if err := uploader.Upload(ctx, "default.svg", img); err != nil {
+		slog.Warn("failed to upload default avatar", "error", err)
+		return
+	}
+	slog.Info("default avatar uploaded", "key", "default.svg")
 }
 
 func createOpenAPIFile(api huma.API) {

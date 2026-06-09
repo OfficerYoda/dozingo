@@ -48,6 +48,57 @@
       "deactivateBtn": "Deactivate"
     }
   },
+  "boards": {
+    "title": "Explore all Cards",
+    "searchPlaceholder": "Search..",
+    "sort": {
+      "newest": "Newest",
+      "mostLiked": "Most liked",
+      "mostPlayed": "Most played",
+      "oldest": "Oldest",
+      "leastLiked": "Least liked",
+      "leastPlayed": "Least played"
+    },
+    "card": {
+      "played": "Played {count} times"
+    },
+    "modal": {
+      "createdBy": "Created by",
+      "shuffle": "Shuffle",
+      "startGame": "Start the game"
+    },
+    "error": {
+      "loadBoards": "Failed to load boards",
+      "loadCells": "Failed to load cells for board"
+    }
+  },
+  "home": {
+    "hero": {
+      "title": "Ready for your next lecture win?",
+      "subtitle": "Quick-start a bingo grid for today's lecture and join other students currently playing.",
+      "cta": "Browse Cards"
+    },
+    "activity": {
+      "title": "Last 24hrs Activity",
+      "bingos": "BINGOS",
+      "games": "GAMES",
+      "boards": "BOARDS",
+      "cells": "CELLS"
+    },
+    "mostLiked": {
+      "title": "Most Liked Boards",
+      "subtitle": "The community's current favorites",
+      "seeAll": "See all"
+    },
+    "newest": {
+      "title": "Recently Added Boards",
+      "subtitle": "Fresh bingo cards from the community",
+      "seeAll": "See all"
+    },
+    "card": {
+      "times": "{count} times"
+    }
+  },
   "cardEditor": {
     "title": "Create a new board",
     "sessionTitle": "Session title",

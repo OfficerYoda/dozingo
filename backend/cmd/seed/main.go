@@ -7,12 +7,16 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/officeryoda/dozingo/internal/auth"
+	"github.com/officeryoda/dozingo/internal/avatar"
 	"github.com/officeryoda/dozingo/internal/config"
 	"github.com/officeryoda/dozingo/internal/generated"
+	"github.com/officeryoda/dozingo/internal/repository"
+	"github.com/officeryoda/dozingo/internal/storage"
 )
 
 func main() {
@@ -45,6 +49,11 @@ func main() {
 
 func seed(pool *pgxpool.Pool) error {
 	ctx := context.Background()
+
+	cfg, err := config.Load()
+	if err != nil {
+		return fmt.Errorf("loading config for avatar seeding: %w", err)
+	}
 
 	tx, err := pool.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
@@ -92,6 +101,16 @@ func seed(pool *pgxpool.Pool) error {
 
 	if err := tx.Commit(ctx); err != nil {
 		return fmt.Errorf("committing transaction: %w", err)
+	}
+
+	// Avatars are generated outside the DB transaction because they require
+	// external HTTP calls (DiceBear) and S3 uploads (Garage). Holding a tx
+	// open across those would lock rows for the duration of network I/O.
+	// Seeding hard-fails if any avatar step fails so a broken dev
+	// environment surfaces immediately rather than leaving users on the
+	// 'default.svg' placeholder.
+	if err := seedAvatars(ctx, pool, cfg, userIDs); err != nil {
+		return fmt.Errorf("seeding avatars: %w", err)
 	}
 
 	return nil
@@ -367,4 +386,85 @@ func countMarked(cells []gameCellData) int {
 		}
 	}
 	return count
+}
+
+// seedAvatars uploads a deterministic default.svg plus one DiceBear avatar
+// per seeded user, then writes each new key onto the user row via
+// repository.Users.SetAvatar. Hard-fails on the first error so a broken
+// Garage or DiceBear surfaces immediately rather than leaving rows on the
+// migration's 'default.svg' placeholder.
+//
+// Mirrors the shape of service.Auth.assignGeneratedAvatar without depending
+// on it: the seed binary intentionally avoids dragging in service.Auth's
+// session/middleware/txRunner machinery for what is a straightforward
+// generate-upload-persist sequence.
+func seedAvatars(
+	ctx context.Context,
+	pool *pgxpool.Pool,
+	cfg *config.Config,
+	userIDs []pgtype.UUID,
+) error {
+	garage := storage.NewGarage(ctx, cfg)
+	repos := repository.New(pool)
+
+	if err := uploadDefaultAvatar(ctx, garage); err != nil {
+		return fmt.Errorf("default avatar: %w", err)
+	}
+	slog.Info("Default avatar uploaded", "key", "default.svg")
+
+	slog.Info("Seeding user avatars", "count", len(userIDs))
+	for i, userID := range userIDs {
+		if i >= len(users) {
+			return fmt.Errorf("seeded user index %d exceeds users slice length %d", i, len(users))
+		}
+		username := users[i].Username
+
+		key, err := generateAndUploadAvatar(ctx, garage, username)
+		if err != nil {
+			return fmt.Errorf("avatar for %q: %w", username, err)
+		}
+
+		if _, err := repos.Users.SetAvatar(ctx, userID, key); err != nil {
+			return fmt.Errorf("setting avatar key for %q: %w", username, err)
+		}
+	}
+
+	slog.Info("User avatars uploaded", "count", len(userIDs))
+	return nil
+}
+
+// uploadDefaultAvatar generates a deterministic miniavs SVG (seed
+// "default") and PUTs it under the canonical key "default.svg" so the
+// migration's NOT NULL DEFAULT 'default.svg' resolves to a real object.
+// Idempotent: re-running seed simply overwrites the same key.
+func uploadDefaultAvatar(ctx context.Context, uploader storage.ObjectUploader) error {
+	img, err := avatar.RandomProfilePicture("default")
+	if err != nil {
+		return fmt.Errorf("generate: %w", err)
+	}
+	if err := uploader.Upload(ctx, "default.svg", img); err != nil {
+		return fmt.Errorf("upload: %w", err)
+	}
+	return nil
+}
+
+// generateAndUploadAvatar fetches a DiceBear avatar for the given seed,
+// uploads it under a fresh UUID-based object key, and returns the key the
+// caller should persist to users.avatar_key.
+func generateAndUploadAvatar(ctx context.Context, uploader storage.ObjectUploader, seed string) (string, error) {
+	img, err := avatar.RandomProfilePicture(seed)
+	if err != nil {
+		return "", fmt.Errorf("generate: %w", err)
+	}
+
+	id, err := uuid.NewRandom()
+	if err != nil {
+		return "", fmt.Errorf("uuid: %w", err)
+	}
+
+	key := fmt.Sprintf("%s%s", id, img.Extension)
+	if err := uploader.Upload(ctx, key, img); err != nil {
+		return "", fmt.Errorf("upload: %w", err)
+	}
+	return key, nil
 }
