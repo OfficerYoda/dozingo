@@ -19,6 +19,7 @@
             <div class="pencil-overlay" @click="startEditing">
               <img src="/pencil.png" alt="Change username" class="pencil-icon" />
             </div>
+            <p class="nameError" v-if="usernameError">Nutzername bereits vergeben</p>
           </div>
         </div>
       </article>
@@ -141,6 +142,7 @@ if (!auth.state.ready) {
 
 const editingUsername = ref(false)
 const newUsername = ref('')
+const usernameError = ref(false)
 
 const fileInput = useTemplateRef<HTMLInputElement>('fileInput')
 
@@ -207,8 +209,12 @@ async function saveUsername() {
     body: JSON.stringify({ username: newUsername.value })
   })
   if (res.ok) {
+    usernameError.value = false
     editingUsername.value = false
     await auth.fetchUser()
+  }
+  else{
+      usernameError.value = true
   }
 }
 
@@ -225,6 +231,12 @@ async function saveUsername() {
 .card {
   background-color: var(--color-bg-card-tinted);
 }
+
+.nameError{
+        color: var(--color-danger, #e53e3e);
+        font-size: 0.85rem;
+        margin-bottom: 8px;
+    }
 
 .card.deactivateaccount {
   background-color: var(--color-accent-red-soft);
