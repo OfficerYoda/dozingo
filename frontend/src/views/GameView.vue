@@ -32,7 +32,6 @@
                          :style="`grid-template-columns: repeat(${board.size}, 1fr)`">
                         <div v-for="(cell, i) in selectedCells" :key="cell.cell_id"
                              :class="{ revealed: revealedCells.has(i), checked: checkedCells.has(cell.cell_id) }"
-                             :style="{ transitionDelay: isRevealing ? `${i * 50}ms` : '0ms' }"
                              @click="handleCellClick(cell.cell_id)">
                             {{ cell.content }}
                         </div>
@@ -46,7 +45,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, useTemplateRef, onMounted, onUnmounted } from 'vue'
+import { ref, computed, nextTick, useTemplateRef, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { Heart, LayoutGrid, Play } from 'lucide-vue-next'
@@ -120,10 +119,13 @@ function stopTimer() {
 async function startGame() {
     if (gameState.value === 'running') return
     isRevealing.value = true
-    const total = selectedCells.value.length
-    for (let i = 0; i < total; i++) {
-        revealedCells.value = new Set(revealedCells.value).add(i)
+    const indices = Array.from({ length: selectedCells.value.length }, (_, i) => i)
+        .sort(() => Math.random() - 0.5)
+    for (const i of indices) {
         await new Promise(r => setTimeout(r, 80))
+        revealedCells.value = new Set(revealedCells.value).add(i)
+        await nextTick()
+        await new Promise(r => requestAnimationFrame(r))
     }
     isRevealing.value = false
     gameState.value = 'running'
@@ -259,7 +261,6 @@ async function fetchAllCellsForBoard(boardID: string) {
     border-radius: var(--radius-sm);
     padding: 0.5rem;
     position: relative;
-    overflow: hidden;
 }
 
 .board-scroll {
@@ -270,8 +271,8 @@ async function fetchAllCellsForBoard(boardID: string) {
 .board-container{
     display: grid;
     grid-template-columns: 1fr 1fr 1fr 1fr;
-    overflow: clip;
-    contain: paint;
+    width: max-content;
+    min-width: 100%;
 }
 
 .board-container div{
