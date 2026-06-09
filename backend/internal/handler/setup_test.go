@@ -364,7 +364,7 @@ func TestMain(m *testing.M) {
 	NewBoardsHandler(service.NewBoards(repos.Boards, queries)).Register(apiGroup)
 	NewCellsHandler(service.NewCells(repos.Cells, repos.Boards, queries)).Register(apiGroup)
 	NewGameCellsHandler(service.NewGameCells(repos.GameCells, repos.Games, queries)).Register(apiGroup)
-	NewGamesHandler(service.NewGames(repos.Games, queries)).Register(apiGroup)
+	NewGamesHandler(service.NewGames(repos.Games, repos.GameCells, repos.Boards, repos.Cells, queries, txRunner)).Register(apiGroup)
 	votesSvc := service.NewVotes(repos.Votes, queries)
 	NewVotesHandler(votesSvc).Register(apiGroup)
 	NewAuthHandler(service.NewAuth(repos, fakeMailer, queries, txRunner, fakeAvatarGen.Generate, fakeUploader), testAvatarURLs).Register(apiGroup)
@@ -666,13 +666,47 @@ func createTestCell(t *testing.T, boardID, content string) string {
 // createTestGame creates a game via the API and returns its ID. The caller is
 // authenticated as playerID via the captured session cookie; the server reads
 // the player from the session, not from a query param.
+//
+// The new game-create contract requires the body to carry exactly board.size^2
+// cells, all belonging to the board. This helper auto-seeds the board with
+// fresh cells (acting as the board's author) and posts them as the body so
+// callers don't have to thread cells through.
 func createTestGame(t *testing.T, playerID, boardID string) string {
 	t.Helper()
-	w := doRequestWithCookies(http.MethodPost, fmt.Sprintf("/api/boards/%s/games", boardID), nil, cookiesFor(playerID))
+	body := seedGameCellsBody(t, boardID)
+	w := doRequestWithCookies(http.MethodPost, fmt.Sprintf("/api/boards/%s/games", boardID), body, cookiesFor(playerID))
 	assertStatus(t, w, http.StatusOK)
 	var resp map[string]any
 	decodeJSON(t, w, &resp)
 	return resp["game_id"].(string)
+}
+
+// seedGameCellsBody looks up boardID's size, creates size*size fresh cells on
+// it (acting as the board's author), and returns a request body suitable for
+// POST /api/boards/{board_id}/games. Each item carries the cell's ID and a
+// 0-based position. This is the canonical way for tests to satisfy the
+// game-create input contract.
+func seedGameCellsBody(t *testing.T, boardID string) []map[string]any {
+	t.Helper()
+	q := generated.New(testPool)
+	id := pgtype.UUID{}
+	if err := id.Scan(boardID); err != nil {
+		t.Fatalf("invalid board id %q: %v", boardID, err)
+	}
+	board, err := q.GetBoardByID(context.Background(), id)
+	if err != nil {
+		t.Fatalf("failed to load board %s: %v", boardID, err)
+	}
+	count := int(board.Size) * int(board.Size)
+	body := make([]map[string]any, 0, count)
+	for i := range count {
+		cellID := createTestCell(t, boardID, fmt.Sprintf("Cell %d", i))
+		body = append(body, map[string]any{
+			"cell_id":  cellID,
+			"position": i,
+		})
+	}
+	return body
 }
 
 // createTestVote upserts a vote on a board for a user and returns the response
@@ -691,20 +725,19 @@ func createTestVote(t *testing.T, boardID, userID string, value int) map[string]
 	return resp
 }
 
-// createTestGameCell creates a single game cell on a game and returns its ID.
-// Use createTestGameCells for bulk creation when you need multiple cells.
-// Acts as the game's player.
-func createTestGameCell(t *testing.T, gameID, cellID, content string, position int) string {
+// createTestGameCell returns the first game_cell_id of the given game. Game
+// cells are now seeded as part of game creation, so this helper just reads
+// what's there. The cellID/content/position arguments are accepted for
+// backwards compatibility with callers that used to drive the (now removed)
+// bulk-create endpoint, but they are ignored.
+func createTestGameCell(t *testing.T, gameID, _cellID, _content string, _position int) string {
 	t.Helper()
-	body := []map[string]any{
-		{"cell_id": cellID, "content": content, "position": position},
-	}
-	w := doRequestWithCookies(http.MethodPost, fmt.Sprintf("/api/games/%s/cells", gameID), body, cookiesForGame(t, gameID))
+	w := doRequest(http.MethodGet, fmt.Sprintf("/api/games/%s/cells", gameID), nil)
 	assertStatus(t, w, http.StatusOK)
 	var resp []map[string]any
 	decodeJSON(t, w, &resp)
 	if len(resp) == 0 {
-		t.Fatalf("expected at least one game cell in response, got 0")
+		t.Fatalf("expected at least one game cell on game %s, got 0", gameID)
 	}
 	return resp[0]["game_cell_id"].(string)
 }
@@ -713,13 +746,17 @@ func createTestGameCell(t *testing.T, gameID, cellID, content string, position i
 // directly (instead of looking it up in userCookies). Pass nil for cookie to
 // send the request without any cookie at all -- the server will mint a fresh
 // anonymous session and emit a Set-Cookie header. Returns the new game ID.
+//
+// The board's author seeds size^2 cells before the request so the body
+// satisfies the game-create input contract.
 func createAnonGame(t *testing.T, cookie *http.Cookie, boardID string) string {
 	t.Helper()
+	body := seedGameCellsBody(t, boardID)
 	var cookies []*http.Cookie
 	if cookie != nil {
 		cookies = []*http.Cookie{cookie}
 	}
-	w := doRequestWithCookies(http.MethodPost, fmt.Sprintf("/api/boards/%s/games", boardID), nil, cookies)
+	w := doRequestWithCookies(http.MethodPost, fmt.Sprintf("/api/boards/%s/games", boardID), body, cookies)
 	assertStatus(t, w, http.StatusOK)
 	var resp map[string]any
 	decodeJSON(t, w, &resp)

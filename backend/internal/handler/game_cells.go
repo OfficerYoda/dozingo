@@ -32,21 +32,6 @@ type getGameCellsByGameIDOutput struct {
 	Body []gameCellOutput
 }
 
-type createGameCellsItem struct {
-	CellID   types.UUIDParam `json:"cell_id" format:"uuid"`
-	Content  string          `json:"content" required:"true" maxLength:"200"`
-	Position int32           `json:"position" required:"true"`
-}
-
-type createGameCellsInput struct {
-	GameID types.UUIDParam       `path:"game_id" format:"uuid"`
-	Body   []createGameCellsItem `maxItems:"64"`
-}
-
-type createGameCellsOutput struct {
-	Body []gameCellOutput
-}
-
 type updateGameCellMarkInputBody struct {
 	IsMarked bool `json:"is_marked" required:"true"`
 }
@@ -82,15 +67,6 @@ func (h *GameCellsHandler) Register(api huma.API) {
 	}, h.list)
 
 	huma.Register(api, huma.Operation{
-		OperationID: "create-game-cells",
-		Method:      http.MethodPost,
-		Path:        "/games/{game_id}/cells",
-		Summary:     "Bulk create game cells",
-		Tags:        []string{"Game Cells"},
-		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.WriteHeavyLimiter)},
-	}, h.create)
-
-	huma.Register(api, huma.Operation{
 		OperationID: "update-game-cell-mark",
 		Method:      http.MethodPut,
 		Path:        "/games/{game_id}/cells/{game_cell_id}",
@@ -107,27 +83,6 @@ func (h *GameCellsHandler) list(ctx context.Context, in *getGameCellsByGameIDInp
 	}
 
 	return &getGameCellsByGameIDOutput{Body: mapSlice(cells, gameCellToOutput)}, nil
-}
-
-func (h *GameCellsHandler) create(ctx context.Context, in *createGameCellsInput) (*createGameCellsOutput, error) {
-	items := make([]service.CreateGameCellItem, 0, len(in.Body))
-	for _, c := range in.Body {
-		items = append(items, service.CreateGameCellItem{
-			CellID:   c.CellID.Value,
-			Content:  c.Content,
-			Position: c.Position,
-		})
-	}
-
-	cells, err := h.svc.Create(ctx, service.CreateGameCellsInput{
-		GameID: in.GameID.Value,
-		Items:  items,
-	})
-	if err != nil {
-		return nil, toHumaErr(err, "", "failed to create game cells")
-	}
-
-	return &createGameCellsOutput{Body: mapSlice(cells, gameCellToOutput)}, nil
 }
 
 func (h *GameCellsHandler) updateMark(ctx context.Context, in *updateGameCellMarkInput) (*updateGameCellMarkOutput, error) {

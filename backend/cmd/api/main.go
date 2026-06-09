@@ -148,7 +148,7 @@ func registerRoutes(
 	boardsSvc := service.NewBoards(repos.Boards, queries)
 	cellsSvc := service.NewCells(repos.Cells, repos.Boards, queries)
 	gameCellsSvc := service.NewGameCells(repos.GameCells, repos.Games, queries)
-	gamesSvc := service.NewGames(repos.Games, queries)
+	gamesSvc := service.NewGames(repos.Games, repos.GameCells, repos.Boards, repos.Cells, queries, txRunner)
 	votesSvc := service.NewVotes(repos.Votes, queries)
 	authSvc := service.NewAuth(repos, emailSender, queries, txRunner, avatarGen, garage)
 	usersSvc := service.NewUsers(repos, queries, emailSender, txRunner, garage)
