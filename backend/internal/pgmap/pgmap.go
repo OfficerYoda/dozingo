@@ -77,6 +77,31 @@ func PgInt4FromInt32(v *int32) pgtype.Int4 {
 	return pgtype.Int4{Int32: *v, Valid: true}
 }
 
+func PgIntervalFromDuration(d *timepkg.Duration) pgtype.Interval {
+	if d == nil {
+		return pgtype.Interval{Valid: false}
+	}
+
+	return pgtype.Interval{
+		Microseconds: int64(*d / timepkg.Microsecond),
+		Days:         0,
+		Months:       0,
+		Valid:        true,
+	}
+}
+
+func DurationFromPgInterval(interval pgtype.Interval) *timepkg.Duration {
+	if !interval.Valid {
+		return nil
+	}
+
+	d := timepkg.Duration(interval.Microseconds)*timepkg.Microsecond +
+		timepkg.Duration(interval.Days)*24*timepkg.Hour +
+		timepkg.Duration(interval.Months)*30*24*timepkg.Hour
+
+	return &d
+}
+
 // TranslatePgErr maps pgx/pgconn errors to domain sentinels. Anything we don't
 // recognize is returned unchanged so it surfaces as a 500 in the handler.
 func TranslatePgErr(err error) error {
