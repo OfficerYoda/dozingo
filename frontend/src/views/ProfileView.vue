@@ -8,21 +8,7 @@
       <h1>Welcome, {{ auth.state.user.username }}!</h1>
     </div>
     <div class="container" style="padding-right: 0%; padding-left: 0%;">
-      <div class="list-header mb-4">
-          <h2 class="mb-0" style="padding-bottom: 1%;">Explore your {{boards.length}} boards</h2>
-          <div class="header-actions">
-              <input class="btn btn-secondary" type="search" placeholder="Search.." v-model="search">
-              <select class="btn btn-secondary" v-model="appliedFiler">
-                  <option value="">No Filter</option>
-                  <option value="newest">Newest</option>
-                  <option value="most-liked">Most liked</option>
-                  <option value="most-played">Most played</option>
-                  <option value="oldest">Oldest</option>
-                  <option value="least-liked">Least liked</option>
-                  <option value="least-played">Least played</option>
-              </select>
-          </div>
-      </div>
+      <h2 class="mb-0">Explore your {{boards.length}} boards</h2>
 
       <p v-if="error" class="error-text">{{ error }}</p>
 
