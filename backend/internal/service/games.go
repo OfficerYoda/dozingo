@@ -4,9 +4,10 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
+
 	"github.com/officeryoda/dozingo/internal/domain"
-	"github.com/officeryoda/dozingo/internal/middleware"
 	"github.com/officeryoda/dozingo/internal/generated"
+	"github.com/officeryoda/dozingo/internal/middleware"
 	"github.com/officeryoda/dozingo/internal/repository"
 )
 
@@ -61,9 +62,9 @@ func (s *Games) Create(ctx context.Context, boardID pgtype.UUID) (generated.Game
 	}
 
 	return s.games.Create(ctx, repository.CreateGameInput{
-		PlayerID: sessionUser.UserID,
+		PlayerID:  sessionUser.UserID,
 		SessionID: sessionUser.SessionID,
-		BoardID:  boardID,
+		BoardID:   boardID,
 	})
 }
 
@@ -88,6 +89,7 @@ func (s *Games) Delete(ctx context.Context, gameID pgtype.UUID) error {
 	}
 
 	_, err = s.games.Delete(ctx, gameID)
+
 	return err
 }
 
@@ -108,7 +110,7 @@ func checkIfCallerOwnsGame(
 	}
 
 	// Authored games are owned by the player; anonymous games are owned by
-	// the session that created them. 
+	// the session that created them.
 	if game.PlayerID.Valid {
 		if sessionUser.UserID != game.PlayerID {
 			return generated.GetSessionUserByTokenRow{}, domain.ErrForbidden

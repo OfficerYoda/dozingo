@@ -65,7 +65,7 @@ func TestListBoardsBySession_RespectsLimit(t *testing.T) {
 	setupTest(t)
 
 	user := createTestUser(t, "limituser", "lim@example.com")
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		createTestBoard(t, "lim-board", 5, user, nil)
 	}
 

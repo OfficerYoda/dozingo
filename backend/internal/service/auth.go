@@ -1,3 +1,4 @@
+// Package service implements the application's business logic on top of the repository layer.
 package service
 
 import (
@@ -9,6 +10,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
+
 	"github.com/officeryoda/dozingo/internal/auth"
 	"github.com/officeryoda/dozingo/internal/domain"
 	"github.com/officeryoda/dozingo/internal/email"
@@ -82,7 +84,8 @@ func (s *Auth) Register(ctx context.Context, in RegisterInput) (generated.User, 
 	}
 
 	// generate and upload profile
-	if updated, err := s.assignGeneratedAvatar(ctx, user); err != nil {
+	updated, err := s.assignGeneratedAvatar(ctx, user)
+	if err != nil {
 		slog.Warn("failed to assign generated avatar on register",
 			"error", err, "user_id", user.ID.String(), "username", user.Username)
 	} else {
@@ -116,7 +119,8 @@ func (s *Auth) assignGeneratedAvatar(ctx context.Context, user generated.User) (
 
 	objectKey := fmt.Sprintf("%s%s", avatarID, img.Extension)
 
-	if err := s.uploader.Upload(ctx, objectKey, img); err != nil {
+	err = s.uploader.Upload(ctx, objectKey, img)
+	if err != nil {
 		return user, fmt.Errorf("upload avatar: %w", err)
 	}
 
@@ -124,6 +128,7 @@ func (s *Auth) assignGeneratedAvatar(ctx context.Context, user generated.User) (
 	if err != nil {
 		return user, fmt.Errorf("set avatar key: %w", err)
 	}
+
 	return updatedUser, nil
 }
 
@@ -134,6 +139,7 @@ func (s *Auth) Login(ctx context.Context, in LoginInput) (generated.User, error)
 			auth.CheckPasswordAgainstDummy(in.Password)
 			return generated.User{}, domain.ErrUnauthorized
 		}
+
 		return generated.User{}, fmt.Errorf("user retrieval for login: %w", err)
 	}
 
@@ -175,8 +181,8 @@ func (s *Auth) Logout(ctx context.Context) error {
 	return nil
 }
 
-func (s *Auth) ForgotPassword(ctx context.Context, email string) error {
-	user, err := s.users.GetByEmail(ctx, email)
+func (s *Auth) ForgotPassword(ctx context.Context, address string) error {
+	user, err := s.users.GetByEmail(ctx, address)
 	if err != nil {
 		return fmt.Errorf("retrieve user: %w", err)
 	}
@@ -192,7 +198,7 @@ func (s *Auth) ForgotPassword(ctx context.Context, email string) error {
 		return err
 	}
 
-	err = s.emailSender.SendResetPassword(email, token)
+	err = s.emailSender.SendResetPassword(address, token)
 	if err != nil {
 		return fmt.Errorf("send mail: %w", err)
 	}
@@ -290,6 +296,7 @@ func (s *Auth) VerifyEmail(ctx context.Context, token string) (generated.User, e
 		if err != nil {
 			return fmt.Errorf("set email valid: %w", err)
 		}
+
 		return nil
 	})
 	if err != nil {
@@ -321,6 +328,7 @@ func (s *Auth) generateUser(ctx context.Context, in RegisterInput) (generated.Us
 	if err != nil {
 		return generated.User{}, err
 	}
+
 	return user, nil
 }
 
@@ -333,6 +341,7 @@ func (s *Auth) attachUserToSession(ctx context.Context, user generated.User) err
 	if err != nil {
 		return fmt.Errorf("attach user to session: %w", err)
 	}
+
 	return nil
 }
 
@@ -358,7 +367,7 @@ func upsertToken(
 		if existingToken.UserID.Valid {
 			// existingToken.Token is already the SHA-256 hex digest stored
 			// in the DB, so pass it back as-is.
-			err := r.VerificationTokens.Delete(ctx, existingToken.Token)
+			err = r.VerificationTokens.Delete(ctx, existingToken.Token)
 			if err != nil {
 				return fmt.Errorf("delete existing token: %w", err)
 			}
@@ -373,6 +382,7 @@ func upsertToken(
 		if err != nil {
 			return fmt.Errorf("create token: %w", err)
 		}
+
 		return nil
 	})
 	if err != nil {

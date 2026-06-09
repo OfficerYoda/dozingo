@@ -1,3 +1,4 @@
+// Package storage wraps the Garage S3-compatible object store used for avatars and other blobs.
 package storage
 
 import (
@@ -9,6 +10,7 @@ import (
 	s3cfg "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+
 	"github.com/officeryoda/dozingo/internal/config"
 )
 
@@ -60,5 +62,6 @@ func (g *Garage) Upload(ctx context.Context, objectKey string, img *Image) error
 	if err != nil {
 		return fmt.Errorf("failed to put object: %w", err)
 	}
+
 	return nil
 }

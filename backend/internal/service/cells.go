@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5/pgtype"
+
 	"github.com/officeryoda/dozingo/internal/domain"
 	"github.com/officeryoda/dozingo/internal/generated"
 	"github.com/officeryoda/dozingo/internal/middleware"
@@ -72,17 +73,37 @@ func (s *Cells) Update(ctx context.Context, in UpdateCellInput) (generated.Cell,
 		return generated.Cell{}, err
 	}
 
+	if err := s.assertCellOnBoard(ctx, in.CellID, in.BoardID); err != nil {
+		return generated.Cell{}, err
+	}
+
 	return s.cells.Update(ctx, repository.UpdateCellInput(in))
 }
 
 func (s *Cells) Delete(ctx context.Context, in DeleteCellInput) error {
-	err := checkIfCallerOwnsBoard(ctx, s, in.BoardID)
-	if err != nil {
+	if err := checkIfCallerOwnsBoard(ctx, s, in.BoardID); err != nil {
 		return err
 	}
 
-	_, err = s.cells.Delete(ctx, repository.DeleteCellInput(in))
+	if err := s.assertCellOnBoard(ctx, in.CellID, in.BoardID); err != nil {
+		return err
+	}
+
+	_, err := s.cells.Delete(ctx, repository.DeleteCellInput(in))
+
 	return err
+}
+
+func (s *Cells) assertCellOnBoard(ctx context.Context, cellID, boardID pgtype.UUID) error {
+	cell, err := s.cells.GetByID(ctx, cellID)
+	if err != nil {
+		return err
+	}
+	if cell.BoardID != boardID {
+		return fmt.Errorf("cell does not belong to board: %w", domain.ErrNotFound)
+	}
+
+	return nil
 }
 
 func checkIfCallerOwnsBoard(ctx context.Context, s *Cells, boardID pgtype.UUID) error {

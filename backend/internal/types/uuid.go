@@ -15,7 +15,7 @@ type UUIDParam struct {
 	raw   string
 }
 
-func (u UUIDParam) Schema(r huma.Registry) *huma.Schema {
+func (u UUIDParam) Schema(_ huma.Registry) *huma.Schema {
 	return &huma.Schema{
 		Type:   "string",
 		Format: "uuid",
@@ -28,7 +28,7 @@ func (u *UUIDParam) Receiver() reflect.Value {
 	return reflect.ValueOf(&u.raw).Elem()
 }
 
-func (u *UUIDParam) OnParamSet(isSet bool, parsed any) {
+func (u *UUIDParam) OnParamSet(isSet bool, _ any) {
 	if !isSet {
 		return
 	}
@@ -44,6 +44,7 @@ func (u *UUIDParam) UnmarshalJSON(data []byte) error {
 	}
 
 	u.raw = s
+
 	return u.Value.Scan(s)
 }
 
@@ -52,5 +53,6 @@ func (u UUIDParam) MarshalJSON() ([]byte, error) {
 	if !u.Value.Valid {
 		return []byte(`""`), nil
 	}
+
 	return json.Marshal(u.Value.String())
 }

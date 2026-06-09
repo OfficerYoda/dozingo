@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/danielgtaylor/huma/v2"
+
 	"github.com/officeryoda/dozingo/internal/domain"
 )
 

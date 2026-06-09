@@ -1,3 +1,4 @@
+// Package pgmap converts between pgx/pgtype values and Go types and translates Postgres errors to domain sentinels.
 package pgmap
 
 import (
@@ -9,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
+
 	"github.com/officeryoda/dozingo/internal/domain"
 )
 
@@ -16,6 +18,7 @@ func PgTextFromString(str *string) pgtype.Text {
 	if str != nil && strings.TrimSpace(*str) != "" {
 		return pgtype.Text{String: *str, Valid: true}
 	}
+
 	return pgtype.Text{Valid: false}
 }
 
@@ -24,6 +27,7 @@ func StringFromPgText(text pgtype.Text) *string {
 		return nil
 	}
 	s := text.String
+
 	return &s
 }
 
@@ -32,6 +36,7 @@ func StringFromPgUUID(uuid pgtype.UUID) *string {
 		return nil
 	}
 	s := uuid.String()
+
 	return &s
 }
 
@@ -44,6 +49,7 @@ func PgUUIDFromString(s *string) pgtype.UUID {
 	if err != nil {
 		return pgtype.UUID{Valid: false}
 	}
+
 	return uuid
 }
 
@@ -67,6 +73,7 @@ func PgInt4FromInt32(v *int32) pgtype.Int4 {
 	if v == nil {
 		return pgtype.Int4{Valid: false}
 	}
+
 	return pgtype.Int4{Int32: *v, Valid: true}
 }
 
@@ -90,5 +97,6 @@ func TranslatePgErr(err error) error {
 			return fmt.Errorf("%s: %w", pgErr.ConstraintName, domain.ErrBadInput)
 		}
 	}
+
 	return err
 }

@@ -1,5 +1,23 @@
-<template>
+<template> 
   <section>
+    <div class="grid container" style="margin-bottom: 1%;">
+      <article class="card col-12 md-12">
+        <div v-if="!auth.state.ready">Loading...</div>
+        <div v-else-if="!auth.state.user">Not logged in.</div>
+        <div v-else class="profile-header">
+          <div class="avatar-wrapper" @click="fileInput?.click()">
+            <img :src="auth.state.user.avatar_url ?? '/user.png'" class="profile-avatar" />
+            <div class="avatar-overlay">
+              <img src="/camera.png" alt="Change picture" class="camera-icon" />
+            </div>
+            <input ref="fileInput" type="file" accept="image/png,image/jpeg,image/webp"
+              style="display:none" @change="uploadAvatar" />
+          </div>
+          <h1>Welcome, {{ auth.state.user.username }}!</h1>
+        </div>
+      </article>
+    </div>
+
     <div class="grid container">
       <article class="card col-6 md-12">
         <div class="account-security-title">
@@ -81,11 +99,11 @@
             <ALargeSmall :size="23" />
             <small class="display-fontsize-title">{{ $t('settings.display.fontSize') }}</small>
           </div>
-          <input class="sliderreal" type="range" min="1" max="5" value="3" step="1">
+          <input class="sliderreal" type="range" min="1" max="5" step="1" v-model="fontSize">
           <div class="display-fontsize-texts">
-            <small>{{ $t('settings.display.small') }}</small>
-            <small>{{ $t('settings.display.standard') }}</small>
-            <small>{{ $t('settings.display.large') }}</small>
+            <small style="font-size: 12px;">{{ $t('settings.display.small') }}</small>
+            <small style="font-size: 16px;">{{ $t('settings.display.standard') }}</small>
+            <small style="font-size: 20px;">{{ $t('settings.display.large') }}</small>
           </div>
         </div>
 
@@ -106,14 +124,32 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { useAuth } from '@/composables/useAuth'
+import { ref, watch, useTemplateRef } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { ShieldUser, Key, Smartphone, Palette, Bell, Moon, Eye, ALargeSmall, UserX } from 'lucide-vue-next';
+
+const auth = useAuth()
+if (!auth.state.ready) {
+  auth.fetchUser()
+}
+
+const fileInput = useTemplateRef<HTMLInputElement>('fileInput')
 
 useI18n()
 
 const isChecked = ref(localStorage.getItem('theme') === 'dark')
 const colorCorrection = ref(localStorage.getItem('colorCorrection') ?? 'standart')
+const fontSize = ref(Number(localStorage.getItem('fontSize') ?? 3))
+
+const fontSizes = ['12px', '14px', '16px', '18px', '20px']
+
+watch(fontSize, (val) => {
+  document.documentElement.style.fontSize = fontSizes[val - 1] ?? '16px'
+  localStorage.setItem('fontSize', String(val))
+})
+
+
 
 watch(colorCorrection, (newValue) => {
   localStorage.setItem('colorCorrection', newValue)
@@ -132,6 +168,21 @@ function changeDarkMode() {
     document.documentElement.removeAttribute('data-theme')
     localStorage.setItem('theme', 'light')
   }
+}
+
+async function uploadAvatar(event: Event) {
+    const file = (event.target as HTMLInputElement).files?.[0]
+    if (!file) return
+    const form = new FormData()
+    form.append('avatar', file)
+    const res = await fetch('/api/users/me/avatar', {
+        method: 'PUT',
+        credentials: 'include',
+        body: form
+    })
+    if (res.ok) {
+        window.location.reload()
+    }
 }
 
 </script>
@@ -165,6 +216,58 @@ function changeDarkMode() {
   display: flex;
   flex-direction: row;
   gap: 8px;
+}
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  margin-top: 1rem;
+}
+
+.profile-header h1 {
+  margin: 0;
+}
+
+.profile-avatar {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.avatar-wrapper {
+  position: relative;
+  cursor: pointer;
+  width: 3rem;
+  height: 3rem;
+}
+
+.avatar-overlay {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.2rem;
+  opacity: 0;
+  transition: opacity 0.2s;
+  color: white;
+}
+
+.avatar-wrapper:hover .avatar-overlay {
+  opacity: 1;
+}
+
+.camera-icon {
+  width: 1.2rem;
+  height: 1.2rem;
+  object-position: 10rem, 1rem;
 }
 
 .display-title svg {
