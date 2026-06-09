@@ -10,7 +10,7 @@
             <div class="avatar-overlay">
               <img src="/camera.png" alt="Change picture" class="camera-icon" />
             </div>
-            <input ref="fileInput" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml"
+            <input ref="fileInput" type="file" accept="image/png,image/jpeg,image/webp"
               style="display:none" @change="uploadAvatar" />
           </div>
           <h1>Welcome, {{ auth.state.user.username }}!</h1>
@@ -99,11 +99,11 @@
             <ALargeSmall :size="23" />
             <small class="display-fontsize-title">{{ $t('settings.display.fontSize') }}</small>
           </div>
-          <input class="sliderreal" type="range" min="1" max="5" value="3" step="1">
+          <input class="sliderreal" type="range" min="1" max="5" step="1" v-model="fontSize">
           <div class="display-fontsize-texts">
-            <small>{{ $t('settings.display.small') }}</small>
-            <small>{{ $t('settings.display.standard') }}</small>
-            <small>{{ $t('settings.display.large') }}</small>
+            <small style="font-size: 12px;">{{ $t('settings.display.small') }}</small>
+            <small style="font-size: 16px;">{{ $t('settings.display.standard') }}</small>
+            <small style="font-size: 20px;">{{ $t('settings.display.large') }}</small>
           </div>
         </div>
 
@@ -140,6 +140,16 @@ useI18n()
 
 const isChecked = ref(localStorage.getItem('theme') === 'dark')
 const colorCorrection = ref(localStorage.getItem('colorCorrection') ?? 'standart')
+const fontSize = ref(Number(localStorage.getItem('fontSize') ?? 3))
+
+const fontSizes = ['12px', '14px', '16px', '18px', '20px']
+
+watch(fontSize, (val) => {
+  document.documentElement.style.fontSize = fontSizes[val - 1] ?? '16px'
+  localStorage.setItem('fontSize', String(val))
+})
+
+
 
 watch(colorCorrection, (newValue) => {
   localStorage.setItem('colorCorrection', newValue)
@@ -166,12 +176,12 @@ async function uploadAvatar(event: Event) {
     const form = new FormData()
     form.append('avatar', file)
     const res = await fetch('/api/users/me/avatar', {
-        method: 'POST',
+        method: 'PUT',
         credentials: 'include',
         body: form
     })
     if (res.ok) {
-        await auth.fetchUser() // refreshes the user incl. new avatar_url
+        window.location.reload()
     }
 }
 
