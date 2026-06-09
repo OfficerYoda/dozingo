@@ -62,6 +62,27 @@ func (q *Queries) CreateGameCells(ctx context.Context, arg CreateGameCellsParams
 	return items, nil
 }
 
+const getGameCellByID = `-- name: GetGameCellByID :one
+SELECT id, game_id, cell_id, content, position, is_marked, created_at, updated_at FROM game_cells
+WHERE id = $1
+`
+
+func (q *Queries) GetGameCellByID(ctx context.Context, id pgtype.UUID) (GameCell, error) {
+	row := q.db.QueryRow(ctx, getGameCellByID, id)
+	var i GameCell
+	err := row.Scan(
+		&i.ID,
+		&i.GameID,
+		&i.CellID,
+		&i.Content,
+		&i.Position,
+		&i.IsMarked,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getGameCellsByGameID = `-- name: GetGameCellsByGameID :many
 SELECT id, game_id, cell_id, content, position, is_marked, created_at, updated_at FROM game_cells
 WHERE game_id = $1

@@ -14,6 +14,7 @@ import (
 	"github.com/go-chi/httprate"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
+
 	"github.com/officeryoda/dozingo/internal/generated"
 )
 
@@ -202,7 +203,7 @@ func TestRateLimit_AllowsRequestsUnderLimit(t *testing.T) {
 	h := handlers[0]
 
 	sid := pgUUID(t)
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, reqWithSession("/op", sid))
 		if w.Code != successStatus {
@@ -222,7 +223,7 @@ func TestRateLimit_BlocksRequestsOverLimit(t *testing.T) {
 	sid := pgUUID(t)
 
 	// First 2 requests succeed.
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, reqWithSession("/op", sid))
 		if w.Code != successStatus {
@@ -252,7 +253,7 @@ func TestRateLimit_PerSessionIsolation(t *testing.T) {
 	sidB := pgUUID(t)
 
 	// Session A: exhaust quota.
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, reqWithSession("/op", sidA))
 		if w.Code != successStatus {
@@ -268,7 +269,7 @@ func TestRateLimit_PerSessionIsolation(t *testing.T) {
 	}
 
 	// Session B: must still have a fresh quota.
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, reqWithSession("/op", sidB))
 		if w.Code != successStatus {
@@ -295,7 +296,7 @@ func TestRateLimit_PerPathIsolation(t *testing.T) {
 	sid := pgUUID(t)
 
 	// Exhaust /a.
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, reqWithSession("/a", sid))
 		if w.Code != successStatus {
@@ -309,7 +310,7 @@ func TestRateLimit_PerPathIsolation(t *testing.T) {
 	}
 
 	// /b must still have a fresh quota despite sharing the limiter struct.
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, reqWithSession("/b", sid))
 		if w.Code != successStatus {
@@ -331,7 +332,7 @@ func TestRateLimit_IPFallbackIsolation(t *testing.T) {
 	h := handlers[0]
 
 	// IP A: exhaust quota.
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, reqWithRemoteAddr("/op", "1.1.1.1:1234"))
 		if w.Code != successStatus {
@@ -347,7 +348,7 @@ func TestRateLimit_IPFallbackIsolation(t *testing.T) {
 	}
 
 	// IP B must have a fresh quota.
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, reqWithRemoteAddr("/op", "2.2.2.2:5678"))
 		if w.Code != successStatus {

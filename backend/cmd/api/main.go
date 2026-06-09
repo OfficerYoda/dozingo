@@ -16,6 +16,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	chimw "github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
+
 	"github.com/officeryoda/dozingo/internal/avatar"
 	"github.com/officeryoda/dozingo/internal/config"
 	"github.com/officeryoda/dozingo/internal/email"
@@ -76,7 +77,7 @@ func run() error {
 		}).Start(ctx)
 
 	router := createRouter(cfg)
-	registerRoutes(router, repos, pool, cfg, ctx, avatarURLs, garage)
+	registerRoutes(ctx, router, repos, pool, cfg, avatarURLs, garage)
 
 	return serveHTTP(ctx, createServer(cfg.Port, router))
 }
@@ -97,6 +98,7 @@ func connectDB(databaseURL string) (*pgxpool.Pool, error) {
 	}
 
 	slog.Info("connected to database")
+
 	return pool, nil
 }
 
@@ -106,11 +108,12 @@ func createRouter(cfg *config.Config) *chi.Mux {
 	router.Use(chimw.Logger)
 	router.Use(chimw.Recoverer)
 	router.Get("/", rootHandler(cfg.Port))
+
 	return router
 }
 
 func rootHandler(port int) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
 		if _, err := fmt.Fprintf(w, "Dozingo API is running\nDocs: http://localhost:%d/docs", port); err != nil {
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -120,11 +123,11 @@ func rootHandler(port int) http.HandlerFunc {
 
 // registerRoutes sets up the Huma API and registers all handler groups.
 func registerRoutes(
+	ctx context.Context,
 	router *chi.Mux,
 	repos repository.Repos,
 	pool *pgxpool.Pool,
 	cfg *config.Config,
-	ctx context.Context,
 	avatarURLs *avatar.URLBuilder,
 	garage *storage.Garage,
 ) {
@@ -134,9 +137,9 @@ func registerRoutes(
 
 	ensureDefaultAvatar(ctx, avatarGen, garage)
 
-	config := huma.DefaultConfig("Dozingo API", "0.2.0")
-	config.DocsPath = "/api/docs"
-	api := humachi.New(router, config)
+	humaCfg := huma.DefaultConfig("Dozingo API", "0.2.0")
+	humaCfg.DocsPath = "/api/docs"
+	api := humachi.New(router, humaCfg)
 
 	apiGroup := huma.NewGroup(api, "/api")
 	apiGroup.UseMiddleware(middleware.NewSessionMiddleware(cfg, queries).Handler(api))
@@ -177,18 +180,20 @@ func ensureDefaultAvatar(ctx context.Context, gen service.AvatarGenerator, uploa
 
 func createOpenAPIFile(api huma.API) {
 	yamlData, _ := api.OpenAPI().YAML()
-	err := os.WriteFile("openapi.yaml", yamlData, 0o644)
+	err := os.WriteFile("openapi.yaml", yamlData, 0o600)
 	if err != nil {
 		slog.Warn("failed to write OpenAPI file", "error", err)
 	}
 }
 
-func createServer(port int, handler http.Handler) *http.Server {
+func createServer(port int, h http.Handler) *http.Server {
 	addr := fmt.Sprintf(":%d", port)
 	slog.Info("server created", "url", fmt.Sprintf("http://localhost%s", addr))
+
 	return &http.Server{
-		Handler: handler,
-		Addr:    addr,
+		Handler:           h,
+		Addr:              addr,
+		ReadHeaderTimeout: 10 * time.Second,
 	}
 }
 
@@ -215,6 +220,7 @@ func serveHTTP(ctx context.Context, srv *http.Server) error {
 	}
 
 	slog.Info("server shut down cleanly")
+
 	return nil
 }
 
@@ -224,5 +230,6 @@ func startServer(srv *http.Server) error {
 	if err := srv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 		return err
 	}
+
 	return nil
 }

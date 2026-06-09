@@ -12,6 +12,30 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  lint:
+    name: backend lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache: true
+          cache-dependency-path: backend/go.sum
+
+      # Installs the toolchain pinned in .mise.toml (golangci-lint, just, etc.)
+      # so CI uses the exact same version as local development.
+      - uses: jdx/mise-action@v2
+        with:
+          experimental: true
+
+      - name: golangci-lint
+        run: just lint
+
   test:
     name: backend tests
     runs-on: ubuntu-latest

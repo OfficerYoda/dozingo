@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
+
 	"github.com/officeryoda/dozingo/internal/domain"
 )
 
@@ -287,7 +288,7 @@ func TestTranslatePgErr_WrappedErrNoRows(t *testing.T) {
 func TestTranslatePgErr_GenericError(t *testing.T) {
 	sentinel := errors.New("some unexpected db error")
 	got := TranslatePgErr(sentinel)
-	if got != sentinel {
+	if !errors.Is(got, sentinel) {
 		t.Errorf("expected the original error to be returned unchanged, got %v", got)
 	}
 }

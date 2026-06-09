@@ -1,3 +1,4 @@
+// Package auth provides password hashing, token generation, and related primitives used by the auth flows.
 package auth
 
 import (
@@ -48,6 +49,7 @@ func CheckPassword(password, hash string) error {
 		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
 			return ErrInvalidCredentials
 		}
+
 		return err
 	}
 
@@ -59,6 +61,7 @@ func GenerateToken() string {
 	if _, err := rand.Read(bytes); err != nil {
 		return "" // rand.Read never returns an error
 	}
+
 	return base64.URLEncoding.EncodeToString(bytes)
 }
 

@@ -84,26 +84,26 @@ var users = []userData{
 // Size distribution: 4 boards size 4, 10 boards size 5, 4 boards size 6
 // (~22% / 56% / 22%, approximating a 20/60/20 split).
 var boards = []boardData{
-	{Title: "Mathe 1 Bingo", Description: "Klassiker aus der Mathe 1 Vorlesung", Size: 4, AuthorIdx: 0},                    // idx 0  (size 4)
-	{Title: "Lineare Algebra Klassiker", Description: "Die besten Momente aus LinAlg", Size: 5, AuthorIdx: 1},              // idx 1  (size 5)
-	{Title: "Statistik Grundlagen", Description: "Statistik Vorlesung Bingo", Size: 5, AuthorIdx: 4},                       // idx 2  (size 5)
-	{Title: "Theoretische Informatik", Description: "Turingmaschinen und mehr", Size: 4, AuthorIdx: 2},                     // idx 3  (size 4)
-	{Title: "Physik Vorlesung", Description: "Experimente die schiefgehen", Size: 5, AuthorIdx: 3},                         // idx 4  (size 5)
-	{Title: "BWL Einführung", Description: "PowerPoint-Schlachten und Buzzwords", Size: 5, AuthorIdx: 5},                   // idx 5  (size 5)
-	{Title: "Algorithmen und Datenstrukturen", Description: "O-Notation und Rekursion", Size: 5, AuthorIdx: 6},             // idx 6  (size 5)
-	{Title: "Softwaretechnik Bingo", Description: "UML und Agile Methoden", Size: 5, AuthorIdx: 7},                         // idx 7  (size 5)
-	{Title: "Datenbanken Vorlesung", Description: "SQL, Normalformen und Joins", Size: 5, AuthorIdx: 0},                    // idx 8  (size 5)
-	{Title: "Betriebssysteme Chaos", Description: "Deadlocks und Race Conditions", Size: 6, AuthorIdx: 8},                  // idx 9  (size 6)
-	{Title: "Rechnernetze Marathon", Description: "OSI-Modell und TCP/IP", Size: 6, AuthorIdx: 9},                          // idx 10 (size 6)
-	{Title: "Digitaltechnik Vorlesung", Description: "Flip-Flops und Gatter", Size: 6, AuthorIdx: 1},                       // idx 11 (size 6)
-	{Title: "Compilerbau Endgegner", Description: "Parser, Lexer und Optimierung", Size: 6, AuthorIdx: 3},                  // idx 12 (size 6)
-	{Title: "Verteilte Systeme Bingo", Description: "CAP-Theorem und Konsens", Size: 5, AuthorIdx: 6},                      // idx 13 (size 5)
-	{Title: "Maschinelles Lernen Bingo", Description: "Gradient Descent und Overfitting", Size: 5, AuthorIdx: 2},           // idx 14 (size 5)
+	{Title: "Mathe 1 Bingo", Description: "Klassiker aus der Mathe 1 Vorlesung", Size: 4, AuthorIdx: 0},          // idx 0  (size 4)
+	{Title: "Lineare Algebra Klassiker", Description: "Die besten Momente aus LinAlg", Size: 5, AuthorIdx: 1},    // idx 1  (size 5)
+	{Title: "Statistik Grundlagen", Description: "Statistik Vorlesung Bingo", Size: 5, AuthorIdx: 4},             // idx 2  (size 5)
+	{Title: "Theoretische Informatik", Description: "Turingmaschinen und mehr", Size: 4, AuthorIdx: 2},           // idx 3  (size 4)
+	{Title: "Physik Vorlesung", Description: "Experimente die schiefgehen", Size: 5, AuthorIdx: 3},               // idx 4  (size 5)
+	{Title: "BWL Einführung", Description: "PowerPoint-Schlachten und Buzzwords", Size: 5, AuthorIdx: 5},         // idx 5  (size 5)
+	{Title: "Algorithmen und Datenstrukturen", Description: "O-Notation und Rekursion", Size: 5, AuthorIdx: 6},   // idx 6  (size 5)
+	{Title: "Softwaretechnik Bingo", Description: "UML und Agile Methoden", Size: 5, AuthorIdx: 7},               // idx 7  (size 5)
+	{Title: "Datenbanken Vorlesung", Description: "SQL, Normalformen und Joins", Size: 5, AuthorIdx: 0},          // idx 8  (size 5)
+	{Title: "Betriebssysteme Chaos", Description: "Deadlocks und Race Conditions", Size: 6, AuthorIdx: 8},        // idx 9  (size 6)
+	{Title: "Rechnernetze Marathon", Description: "OSI-Modell und TCP/IP", Size: 6, AuthorIdx: 9},                // idx 10 (size 6)
+	{Title: "Digitaltechnik Vorlesung", Description: "Flip-Flops und Gatter", Size: 6, AuthorIdx: 1},             // idx 11 (size 6)
+	{Title: "Compilerbau Endgegner", Description: "Parser, Lexer und Optimierung", Size: 6, AuthorIdx: 3},        // idx 12 (size 6)
+	{Title: "Verteilte Systeme Bingo", Description: "CAP-Theorem und Konsens", Size: 5, AuthorIdx: 6},            // idx 13 (size 5)
+	{Title: "Maschinelles Lernen Bingo", Description: "Gradient Descent und Overfitting", Size: 5, AuthorIdx: 2}, // idx 14 (size 5)
 
 	// Admin-authored boards (AuthorIdx: 12)
-	{Title: "Programmierkurs Klassiker", Description: "Live-Coding-Fails und Stack Traces", Size: 4, AuthorIdx: 12},        // idx 15 (size 4)
-	{Title: "Webtechnologien Bingo", Description: "HTTP, REST und CSS-Spezifität", Size: 5, AuthorIdx: 12},                 // idx 16 (size 5)
-	{Title: "Admin Debug Bingo", Description: "QA hits, prod fires, and questionable commits", Size: 4, AuthorIdx: 12},     // idx 17 (size 4)
+	{Title: "Programmierkurs Klassiker", Description: "Live-Coding-Fails und Stack Traces", Size: 4, AuthorIdx: 12},    // idx 15 (size 4)
+	{Title: "Webtechnologien Bingo", Description: "HTTP, REST und CSS-Spezifität", Size: 5, AuthorIdx: 12},             // idx 16 (size 5)
+	{Title: "Admin Debug Bingo", Description: "QA hits, prod fires, and questionable commits", Size: 4, AuthorIdx: 12}, // idx 17 (size 4)
 }
 
 // cellPhrases contains German lecture bingo phrases for each board index.
@@ -145,7 +145,7 @@ var cellPhrases = map[int][]string{
 		"Prof sagt 'offensichtlich'",
 		"Rang der Matrix unklar",
 		"'Das ist ein Spezialfall'",
-		"Gauß-Algorithmus zum dritten Mal",
+		"Gauß-Algorithms zum dritten Mal",
 		"Prof dreht sich zur falschen Tafel",
 		"Inverse existiert nicht",
 		"Basiswechsel verwirrt alle",
@@ -153,7 +153,7 @@ var cellPhrases = map[int][]string{
 		"'Diagonalisierbar oder nicht?'",
 		"Prof verliert die Kreide",
 		"Jordan-Normalform erwähnt",
-		"Orthogonale Projektion an der Tafel",
+		"Orthogonale Projection an der Tafel",
 		"'Das ist linear unabhängig'",
 		"Prof vergisst Index",
 		"Kern und Bild verwechselt",
@@ -333,7 +333,7 @@ var cellPhrases = map[int][]string{
 		"Fibonacci als Beispiel",
 		"Prof zeichnet Rekursionsbaum",
 		"'Merken Sie sich das für die Klausur'",
-		"Greedy-Algorithmus vorgestellt",
+		"Greedy-Algorithms vorgestellt",
 		"Jemand fragt nach Python-Implementierung",
 		"Prof sagt 'Korrektheitsbeweis'",
 		"Backtracking wird erklärt",
@@ -424,7 +424,7 @@ var cellPhrases = map[int][]string{
 		"Prof zeichnet Seitentabelle",
 		"Page Fault erklärt",
 		"'Das ist ein klassisches Problem'",
-		"Scheduling-Algorithmus verglichen",
+		"Scheduling-Algorithms verglichen",
 		"Round Robin Beispiel",
 		"Prof sagt 'Kernel Mode'",
 		"Dateisystem wird erklärt",
@@ -667,7 +667,7 @@ var cellPhrases = map[int][]string{
 		"k-Nearest-Neighbors erklärt",
 		"Prof zeigt Scatter-Plot",
 		"'Das ist ein Clustering-Problem'",
-		"k-Means Algorithmus vorgestellt",
+		"k-Means Algorithms vorgestellt",
 		"Dimensionsreduktion erwähnt",
 		"'PCA ist Ihr Freund'",
 		"Prof sagt 'Regularisierung'",
@@ -957,7 +957,7 @@ var gameCells = map[int][]gameCellData{
 		{Content: "Prof sagt 'offensichtlich'", Position: 6, IsMarked: true},
 		{Content: "Rang der Matrix unklar", Position: 7, IsMarked: false},
 		{Content: "'Das ist ein Spezialfall'", Position: 8, IsMarked: false},
-		{Content: "Gauß-Algorithmus zum dritten Mal", Position: 9, IsMarked: true},
+		{Content: "Gauß-Algorithms zum dritten Mal", Position: 9, IsMarked: true},
 		{Content: "Prof dreht sich zur falschen Tafel", Position: 10, IsMarked: false},
 		{Content: "Inverse existiert nicht", Position: 11, IsMarked: false},
 		{Content: "Basiswechsel verwirrt alle", Position: 12, IsMarked: false},

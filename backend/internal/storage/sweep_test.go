@@ -78,7 +78,7 @@ func (f *fakeS3) ListObjectsV2(ctx context.Context, in *s3.ListObjectsV2Input, o
 	page := keys[startIdx:end]
 	contents := make([]s3types.Object, 0, len(page))
 	for _, k := range page {
-		k := k
+
 		lm := f.objects[k]
 		contents = append(contents, s3types.Object{
 			Key:          aws.String(k),
@@ -290,7 +290,7 @@ func TestSweep_HardCap_DeletesUpToLimit(t *testing.T) {
 		"alice.svg": time.Now().Add(-time.Hour),
 	}
 	// 1500 orphans; cap = 1000 -> exactly 1000 deleted, 500 survive.
-	for i := 0; i < 1500; i++ {
+	for i := range 1500 {
 		objects[fmtKey(i)] = time.Now().Add(-time.Hour)
 	}
 	f := &fakeS3{bucketName: "pics", objects: objects, pageSize: 200}
@@ -393,7 +393,7 @@ func TestSweep_PaginatesAcrossMultiplePages(t *testing.T) {
 	objects := map[string]time.Time{
 		"alice.svg": time.Now().Add(-time.Hour),
 	}
-	for i := 0; i < 250; i++ {
+	for i := range 250 {
 		objects[fmtKey(i)] = time.Now().Add(-time.Hour)
 	}
 	// pageSize 100 -> 3 pages (100, 100, 51).

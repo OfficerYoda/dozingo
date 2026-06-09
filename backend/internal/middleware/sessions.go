@@ -1,3 +1,4 @@
+// Package middleware provides Huma middleware: session resolution, rate limiting, and auth gating.
 package middleware
 
 import (
@@ -10,6 +11,7 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+
 	"github.com/officeryoda/dozingo/internal/auth"
 	"github.com/officeryoda/dozingo/internal/config"
 	"github.com/officeryoda/dozingo/internal/generated"
@@ -57,6 +59,7 @@ func NewSessionMiddleware(cfg *config.Config, queries *generated.Queries) *Sessi
 	if queries == nil {
 		panic("middleware: nil *generated.Queries")
 	}
+
 	return &SessionMiddleware{cfg: cfg, queries: queries}
 }
 
@@ -92,12 +95,16 @@ func (m *SessionMiddleware) Handler(api huma.API) func(huma.Context, func(huma.C
 		sessionUser, err := m.queries.GetSessionUserByToken(ctx.Context(), auth.HashToken(sessionToken))
 		if err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
-				ClearSessionTokenCookie(ctx.Context())
+				if cerr := ClearSessionTokenCookie(ctx.Context()); cerr != nil {
+					slog.Warn("failed to clear stale session cookie", "error", cerr)
+				}
 				next(ctx)
+
 				return
 			}
 			slog.Error("failed to look up session", "error", err)
 			_ = huma.WriteErr(api, ctx, http.StatusInternalServerError, "internal server error")
+
 			return
 		}
 
@@ -119,6 +126,7 @@ func SessionUserFromContext(ctx context.Context) (generated.GetSessionUserByToke
 		return slot.row, true
 	}
 	v, ok := ctx.Value(contextSessionUser).(generated.GetSessionUserByTokenRow)
+
 	return v, ok
 }
 
@@ -168,6 +176,7 @@ func getSessionTokenFromCookie(ctx huma.Context) string {
 	if err != nil {
 		return ""
 	}
+
 	return cookie.Value
 }
 

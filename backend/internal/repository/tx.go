@@ -48,5 +48,6 @@ func (r *pgxTxRunner) WithTx(ctx context.Context, fn func(Repos) error) error {
 	if err != nil {
 		return err
 	}
+
 	return tx.Commit(ctx)
 }

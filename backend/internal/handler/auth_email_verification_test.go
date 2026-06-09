@@ -108,7 +108,7 @@ func TestSendEmailVerification_RotatesExistingToken(t *testing.T) {
 	userID := userIDFromString(t, userIDStr)
 	cookie := userCookies[userIDStr]
 
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		w := doRequestWithCookies(http.MethodPost, "/api/auth/send-email-verification", nil, []*http.Cookie{cookie})
 		assertStatus(t, w, http.StatusOK)
 	}

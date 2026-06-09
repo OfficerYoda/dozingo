@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
+
 	"github.com/officeryoda/dozingo/internal/generated"
 	"github.com/officeryoda/dozingo/internal/pgmap"
 )
@@ -18,6 +19,7 @@ func (r *Users) GetForPasswordLogin(ctx context.Context, username string) (gener
 	if err != nil {
 		return generated.GetUserForPasswordLoginRow{}, pgmap.TranslatePgErr(err)
 	}
+
 	return user, nil
 }
 
@@ -26,6 +28,7 @@ func (r *Users) GetByID(ctx context.Context, userID pgtype.UUID) (generated.User
 	if err != nil {
 		return generated.User{}, pgmap.TranslatePgErr(err)
 	}
+
 	return user, nil
 }
 
@@ -34,6 +37,7 @@ func (r *Users) GetByUsername(ctx context.Context, username string) (generated.U
 	if err != nil {
 		return generated.User{}, pgmap.TranslatePgErr(err)
 	}
+
 	return user, nil
 }
 
@@ -42,6 +46,7 @@ func (r *Users) GetByEmail(ctx context.Context, email string) (generated.User, e
 	if err != nil {
 		return generated.User{}, pgmap.TranslatePgErr(err)
 	}
+
 	return user, nil
 }
 
@@ -53,6 +58,7 @@ func (r *Users) Create(ctx context.Context, username string, email *string) (gen
 	if err != nil {
 		return generated.User{}, pgmap.TranslatePgErr(err)
 	}
+
 	return user, nil
 }
 
@@ -64,6 +70,7 @@ func (r *Users) SetEmailVerifiedAt(ctx context.Context, userID pgtype.UUID, emai
 	if err != nil {
 		return generated.User{}, pgmap.TranslatePgErr(err)
 	}
+
 	return user, nil
 }
 
@@ -83,6 +90,7 @@ func (r *Users) Update(ctx context.Context, userID pgtype.UUID, in UpdateUserPar
 	if err != nil {
 		return generated.User{}, pgmap.TranslatePgErr(err)
 	}
+
 	return user, nil
 }
 
@@ -91,6 +99,7 @@ func (r *Users) Delete(ctx context.Context, userID pgtype.UUID) (generated.User,
 	if err != nil {
 		return generated.User{}, pgmap.TranslatePgErr(err)
 	}
+
 	return user, nil
 }
 
@@ -102,6 +111,7 @@ func (r *Users) SetAvatar(ctx context.Context, userID pgtype.UUID, avatarKey str
 	if err != nil {
 		return generated.User{}, pgmap.TranslatePgErr(err)
 	}
+
 	return user, nil
 }
 
@@ -110,5 +120,6 @@ func (r *Users) ListInUseAvatarKeys(ctx context.Context) ([]string, error) {
 	if err != nil {
 		return nil, pgmap.TranslatePgErr(err)
 	}
+
 	return keys, nil
 }

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
+
 	"github.com/officeryoda/dozingo/internal/generated"
 	"github.com/officeryoda/dozingo/internal/pgmap"
 )
@@ -34,6 +35,7 @@ func (r *Sessions) Create(ctx context.Context, in CreateSessionInput) (generated
 	if err != nil {
 		return generated.Session{}, pgmap.TranslatePgErr(err)
 	}
+
 	return session, nil
 }
 
@@ -45,6 +47,7 @@ func (r *Sessions) Extend(ctx context.Context, tokenHash string, expiresAt time.
 	if err != nil {
 		return generated.Session{}, pgmap.TranslatePgErr(err)
 	}
+
 	return session, nil
 }
 
@@ -56,6 +59,7 @@ func (r *Sessions) AttachUser(ctx context.Context, tokenHash string, userID pgty
 	if err != nil {
 		return generated.Session{}, pgmap.TranslatePgErr(err)
 	}
+
 	return session, nil
 }
 
@@ -64,6 +68,7 @@ func (r *Sessions) Delete(ctx context.Context, tokenHash string) error {
 	if err != nil {
 		return pgmap.TranslatePgErr(err)
 	}
+
 	return nil
 }
 
@@ -72,6 +77,7 @@ func (r *Sessions) DeleteByUserID(ctx context.Context, userID pgtype.UUID) error
 	if err != nil {
 		return pgmap.TranslatePgErr(err)
 	}
+
 	return nil
 }
 
@@ -80,6 +86,7 @@ func (r *Sessions) DeleteExpiredSessions(ctx context.Context) error {
 	if err != nil {
 		return pgmap.TranslatePgErr(err)
 	}
+
 	return nil
 }
 
@@ -88,5 +95,6 @@ func (r *Sessions) GetUserByToken(ctx context.Context, tokenHash string) (genera
 	if err != nil {
 		return generated.GetSessionUserByTokenRow{}, pgmap.TranslatePgErr(err)
 	}
+
 	return user, nil
 }
