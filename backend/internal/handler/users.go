@@ -103,9 +103,7 @@ func (h *UsersHandler) Register(api huma.API) {
 			"unchanged, send `null` to clear it, or send a new address to " +
 			"set it (which also resets verification and triggers a " +
 			"verification mail). Setting a new email triggers an outbound " +
-			"verification mail, so the route is rate-limited as strictly " +
-			"as the dedicated email/auth endpoints to prevent mail " +
-			"amplification.",
+			"verification mail.",
 		Tags:        []string{"Users"},
 		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.StrictAuthLimiter)},
 	}, h.updateMe)
