@@ -1,5 +1,97 @@
 <template> 
   <section>
+    <div class="grid container" style="margin-bottom: 1%;">
+      <article class="card col-6 md-12">
+        <div class="account-security-title">
+          <ShieldUser :size="30" />
+          <h2 class="mb-0">{{ $t('settings.security.title') }}</h2>
+        </div>
+
+        <span class="account-security-subtitle">{{ $t('settings.security.subtitle') }}</span>
+
+        <div class="highlighedcard">
+          <Smartphone :size="23" />
+          <div class="account-security-info">
+            <span>{{ $t('settings.security.twoFa') }}</span>
+            <small>{{ $t('settings.security.disabled') }}</small>
+          </div>
+          <button class="btn btn-primary">{{ $t('settings.security.enable') }}</button>
+        </div>
+
+        <div class="highlighedcard">
+          <Key :size="23" />
+          <div class="account-security-info">
+            <span>{{ $t('settings.security.lastPasswordChange') }}</span>
+            <small>3 Months ago</small>
+          </div>
+          <button class="btn btn-primary">{{ $t('settings.security.change') }}</button>
+        </div>
+
+        <div class="display-darkmode">
+          <Bell :size="23" />
+          <div class="display-darkmode-info">
+            <span>{{ $t('settings.security.loginNotification') }}</span>
+            <small>{{ $t('settings.security.loginNotificationDesc') }}</small>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="btnToggle" name="btnToggle" />
+            <span class="slider"></span>
+          </label>
+        </div>
+      </article>
+
+      <article class="card col-6 md-12">
+        <div class="display-title">
+          <Palette :size="30" />
+          <h2 class="mb-0">{{ $t('settings.display.title') }}</h2>
+        </div>
+
+        <span class="account-security-subtitle">{{ $t('settings.display.subtitle') }}</span>
+
+        <div class="display-darkmode">
+          <Moon :size="23" />
+          <div class="display-darkmode-info">
+            <span>{{ $t('settings.display.darkMode') }}</span>
+            <small>{{ $t('settings.display.darkModeDesc') }}</small>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="btnDarkToggle" name="btnDarkToggle" v-model="isChecked"
+              @change="changeDarkMode" />
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="display-darkmode">
+          <Eye :size="23" />
+          <div class="display-darkmode-info">
+            <span>{{ $t('settings.display.colorCorrection') }}</span>
+            <small>{{ $t('settings.display.colorCorrectionDesc') }}</small>
+          </div>
+
+          <select v-model="colorCorrection" class="btn btn-secondary">
+            <option value="standart">{{ $t('settings.display.colorFilters.standard') }}</option>
+            <option value="redgreen">{{ $t('settings.display.colorFilters.redGreen') }}</option>
+            <option value="blueyellow">{{ $t('settings.display.colorFilters.blueYellow') }}</option>
+            <option value="gray">{{ $t('settings.display.colorFilters.grayscale') }}</option>
+          </select>
+        </div>
+
+        <div class="display-fontsize">
+          <div class="display-fontsize-header">
+            <ALargeSmall :size="23" />
+            <small class="display-fontsize-title">{{ $t('settings.display.fontSize') }}</small>
+          </div>
+          <input class="sliderreal" type="range" min="1" max="5" value="3" step="1">
+          <div class="display-fontsize-texts">
+            <small>{{ $t('settings.display.small') }}</small>
+            <small>{{ $t('settings.display.standard') }}</small>
+            <small>{{ $t('settings.display.large') }}</small>
+          </div>
+        </div>
+
+      </article>
+    </div>
+
     <div class="grid container">
       <article class="card col-6 md-12">
         <div class="account-security-title">
