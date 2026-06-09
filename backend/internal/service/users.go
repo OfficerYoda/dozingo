@@ -5,11 +5,13 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"path/filepath"
+	"net/http"
+	"strings"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
+
 	"github.com/officeryoda/dozingo/internal/domain"
 	"github.com/officeryoda/dozingo/internal/email"
 	"github.com/officeryoda/dozingo/internal/generated"
@@ -18,6 +20,15 @@ import (
 	"github.com/officeryoda/dozingo/internal/repository"
 	"github.com/officeryoda/dozingo/internal/storage"
 )
+
+// MaxAvatarBytes caps the size of a user-uploaded avatar payload
+const MaxAvatarBytes = 20 * 1024 * 1024
+
+var allowedAvatarMIMEs = map[string]string{
+	"image/png":  ".png",
+	"image/jpeg": ".jpg",
+	"image/webp": ".webp",
+}
 
 type Users struct {
 	users       *repository.Users
@@ -68,6 +79,11 @@ func (s *Users) UserByID(ctx context.Context, userIDStr string) (generated.User,
 		return generated.User{}, fmt.Errorf("get user by id: %w", err)
 	}
 
+	sessionUser, _ := middleware.SessionUserFromContext(ctx)
+	if sessionUser.UserID != user.ID {
+		user.Email = pgmap.PgTextFromString(nil)
+	}
+
 	return user, nil
 }
 
@@ -84,24 +100,6 @@ type UpdateUserInput struct {
 	Username *string
 	EmailSet bool
 	Email    *string
-}
-
-func (s *Users) UpdateUser(ctx context.Context, userIDStr string, in UpdateUserInput) (generated.User, error) {
-	userID := pgmap.PgUUIDFromString(&userIDStr)
-	if !userID.Valid {
-		return generated.User{}, fmt.Errorf("invalid UUID: %w", domain.ErrBadInput)
-	}
-
-	sessionUser, err := requiresSessionUser(ctx, s.queries)
-	if err != nil {
-		return generated.User{}, fmt.Errorf("session required: %w", err)
-	}
-
-	if sessionUser.UserID.Bytes != userID.Bytes {
-		return generated.User{}, fmt.Errorf("cannot edit another user: %w", domain.ErrForbidden)
-	}
-
-	return s.applyUserUpdate(ctx, userID, sessionUser.Email, in)
 }
 
 func (s *Users) UpdateMe(ctx context.Context, in UpdateUserInput) (generated.User, error) {
@@ -124,12 +122,12 @@ func (s *Users) UploadAvatar(ctx context.Context, in huma.FormFile) (generated.U
 		return generated.User{}, err
 	}
 
-	uuid, err := uuid.NewRandom()
+	id, err := uuid.NewRandom()
 	if err != nil {
 		return generated.User{}, fmt.Errorf("generate uuid: %w", err)
 	}
 
-	objectKey := fmt.Sprintf("%s%s", uuid, img.Extension)
+	objectKey := fmt.Sprintf("%s%s", id, img.Extension)
 	err = s.uploader.Upload(ctx, objectKey, img)
 	if err != nil {
 		return generated.User{}, fmt.Errorf("upload avatar: %w", err)
@@ -144,15 +142,40 @@ func (s *Users) UploadAvatar(ctx context.Context, in huma.FormFile) (generated.U
 }
 
 func convertFormFileToImage(in huma.FormFile) (*storage.Image, error) {
-	extension := filepath.Ext(in.Filename)
-
-	fileBytes, err := io.ReadAll(in.File)
-	if err != nil {
-		return nil, fmt.Errorf("read file: %w", err)
+	if in.Size > MaxAvatarBytes {
+		return nil, fmt.Errorf("avatar exceeds %d bytes: %w", MaxAvatarBytes, domain.ErrBadInput)
 	}
-	bytesReader := bytes.NewReader(fileBytes)
 
-	img := storage.NewImage(bytesReader, in.ContentType, extension)
+	limited := io.LimitReader(in.File, MaxAvatarBytes+1)
+	fileBytes, err := io.ReadAll(limited)
+	if err != nil {
+		return nil, fmt.Errorf("read avatar: %w", err)
+	}
+	if len(fileBytes) > MaxAvatarBytes {
+		return nil, fmt.Errorf("avatar exceeds %d bytes: %w", MaxAvatarBytes, domain.ErrBadInput)
+	}
+
+	declared := strings.ToLower(strings.TrimSpace(in.ContentType))
+	if declared == "image/svg+xml" || declared == "image/svg" {
+		return nil, fmt.Errorf("svg avatars are not allowed: %w", domain.ErrBadInput)
+	}
+
+	sniffLen := min(len(fileBytes), 512)
+	detected := http.DetectContentType(fileBytes[:sniffLen])
+	// http.DetectContentType returns "type/subtype; charset=utf-8" sometimes
+	if idx := strings.IndexByte(detected, ';'); idx >= 0 {
+		detected = detected[:idx]
+	}
+	detected = strings.ToLower(strings.TrimSpace(detected))
+
+	extension, ok := allowedAvatarMIMEs[detected]
+	if !ok {
+		return nil, fmt.Errorf("unsupported avatar type %q: %w", detected, domain.ErrBadInput)
+	}
+
+	bytesReader := bytes.NewReader(fileBytes)
+	img := storage.NewImage(bytesReader, detected, extension)
+
 	return img, nil
 }
 
@@ -182,6 +205,7 @@ func pgTextEqual(a, b pgtype.Text) bool {
 	if !a.Valid {
 		return true
 	}
+
 	return a.String == b.String
 }
 
@@ -193,5 +217,6 @@ func requiresSessionUser(ctx context.Context, queries *generated.Queries) (gener
 	if !sessionUser.UserID.Valid {
 		return generated.GetSessionUserByTokenRow{}, fmt.Errorf("requires authenticated user: %w", domain.ErrUnauthorized)
 	}
+
 	return sessionUser, nil
 }

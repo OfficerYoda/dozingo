@@ -7,6 +7,7 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humachi"
 	"github.com/go-chi/httprate"
+
 	"github.com/officeryoda/dozingo/internal/generated"
 	"github.com/officeryoda/dozingo/internal/pgmap"
 )
@@ -20,7 +21,7 @@ func RateLimit(
 
 		key, err := sessKeyFn(r)
 		if err != nil {
-			huma.WriteErr(api, ctx, http.StatusInternalServerError, "rate limit key error")
+			_ = huma.WriteErr(api, ctx, http.StatusInternalServerError, "rate limit key error")
 			return
 		}
 
@@ -50,11 +51,13 @@ func ipKeyFn(r *http.Request) (string, error) {
 		if i := strings.Index(xff, ","); i != -1 {
 			return strings.TrimSpace(xff[:i]), nil
 		}
+
 		return strings.TrimSpace(xff), nil
 	}
 	ip := r.RemoteAddr
 	if i := strings.LastIndex(ip, ":"); i != -1 {
 		ip = ip[:i]
 	}
+
 	return ip, nil
 }

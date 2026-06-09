@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
+
 	"github.com/officeryoda/dozingo/internal/generated"
 	"github.com/officeryoda/dozingo/internal/pgmap"
 )
@@ -55,10 +56,9 @@ func (r *VerificationTokens) GetByToken(ctx context.Context, tokenHash string) (
 }
 
 func (r *VerificationTokens) GetValidTokenForUser(ctx context.Context, in GetByTokenForUserInput) (generated.VerificationToken, error) {
-	tokenType := generated.TokenType(in.TokenType)
 	token, err := r.queries.GetValidTokenForUser(ctx, generated.GetValidTokenForUserParams{
 		UserID: in.UserID,
-		Type:   tokenType,
+		Type:   in.TokenType,
 	})
 	if err != nil {
 		return generated.VerificationToken{}, pgmap.TranslatePgErr(err)

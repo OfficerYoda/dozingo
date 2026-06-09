@@ -3,6 +3,10 @@ SELECT * FROM game_cells
 WHERE game_id = $1
 ORDER BY position;
 
+-- name: GetGameCellByID :one
+SELECT * FROM game_cells
+WHERE id = $1;
+
 -- name: CreateGameCells :many
 INSERT INTO game_cells (game_id, cell_id, content, position)
 SELECT

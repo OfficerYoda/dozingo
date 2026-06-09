@@ -536,8 +536,11 @@ components:
           readOnly: true
           type: string
         status:
-          description: "must be any of those: 'active', 'completed' or 'abandoned'"
-          maxLength: 20
+          description: "Game lifecycle state. Must be one of: active, completed, abandoned."
+          enum:
+            - active
+            - completed
+            - abandoned
           type: string
       required:
         - status
@@ -1326,6 +1329,7 @@ paths:
             schema:
               items:
                 $ref: "#/components/schemas/CreateGameCellsItem"
+              maxItems: 64
               type:
                 - array
                 - "null"
@@ -1531,7 +1535,7 @@ paths:
       tags:
         - Users
     patch:
-      description: "Convenience alias for PATCH /users/{user_id} that resolves the user id from the session cookie. The `email` field is tri-state: omit the key to leave the column unchanged, send `null` to clear it, or send a new address to set it (which also resets verification and triggers a verification mail)."
+      description: "Resolves the user id from the session cookie. The `email` field is tri-state: omit the key to leave the column unchanged, send `null` to clear it, or send a new address to set it (which also resets verification and triggers a verification mail). Setting a new email triggers an outbound verification mail."
       operationId: update-current-user
       requestBody:
         content:
@@ -1569,7 +1573,7 @@ paths:
                 avatar:
                   contentEncoding: binary
                   contentMediaType: application/octet-stream
-                  description: The avatar image file (PNG, JPEG, WEBP, SVG)
+                  description: "The avatar image file. Allowed types: PNG, JPEG, WEBP. Max size: 20MB."
                   format: binary
                   type: string
               required:
@@ -1668,38 +1672,6 @@ paths:
                 $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Get User by ID
-      tags:
-        - Users
-    patch:
-      description: "Partial update. Only the user themselves may edit their own row. The `email` field is tri-state: omit the key to leave the column unchanged, send `null` to clear it, or send a new address to set it (which also resets verification and triggers a verification mail)."
-      operationId: update-user
-      parameters:
-        - in: path
-          name: user_id
-          required: true
-          schema:
-            format: uuid
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UpdateUserInputBody"
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/UserOutputBody"
-          description: OK
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      summary: Update a User's username and/or email
       tags:
         - Users
   /api/users/{user_id}/votes:

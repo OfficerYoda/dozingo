@@ -2,25 +2,13 @@
   <div className="container">
     <div v-if="!auth.state.ready">Loading...</div>
     <div v-else-if="!auth.state.user">Not logged in.</div>
-    <div v-else>
+    <div v-else class="profile-header">
+      <img v-if="auth.state.user.avatar_url" :src="auth.state.user.avatar_url" alt="Profile picture" class="profile-avatar" />
+      <img v-else src="/user.png" alt="Profile picture" class="profile-avatar" />
       <h1>Welcome, {{ auth.state.user.username }}!</h1>
     </div>
     <div class="container" style="padding-right: 0%; padding-left: 0%;">
-      <div class="list-header mb-4">
-          <h2 class="mb-0">Explore your {{boards.length}} boards</h2>
-          <div class="header-actions">
-              <input class="btn btn-secondary" type="search" placeholder="Search.." v-model="search">
-              <select class="btn btn-secondary" v-model="appliedFiler">
-                  <option value="">No Filter</option>
-                  <option value="newest">Newest</option>
-                  <option value="most-liked">Most liked</option>
-                  <option value="most-played">Most played</option>
-                  <option value="oldest">Oldest</option>
-                  <option value="least-liked">Least liked</option>
-                  <option value="least-played">Least played</option>
-              </select>
-          </div>
-      </div>
+      <h2 class="mb-0">Explore your {{boards.length}} boards</h2>
 
       <p v-if="error" class="error-text">{{ error }}</p>
 
@@ -231,6 +219,26 @@ function clickBoard(boardID: string) {
 </script>
 
 <style scoped>
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  margin-top: 1rem;
+}
+
+.profile-header h1 {
+  margin: 0;
+}
+
+.profile-avatar {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
 .profile-slider-card {
   width: 100%;
   height: 100%;

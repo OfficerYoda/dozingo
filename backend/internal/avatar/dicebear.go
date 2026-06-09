@@ -2,13 +2,17 @@ package avatar
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"mime"
 	"net/http"
+	"time"
 
 	"github.com/officeryoda/dozingo/internal/storage"
 )
+
+const dicebearTimeout = 10 * time.Second
 
 func RandomProfilePicture(seed string) (*storage.Image, error) {
 	url := fmt.Sprintf("https://api.dicebear.com/10.x/miniavs/svg?seed=%s", seed)
@@ -16,11 +20,19 @@ func RandomProfilePicture(seed string) (*storage.Image, error) {
 }
 
 func avatarFromURL(url string) (*storage.Image, error) {
-	resp, err := http.Get(url)
+	ctx, cancel := context.WithTimeout(context.Background(), dicebearTimeout)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
+	if err != nil {
+		return nil, fmt.Errorf("build avatar request: %w", err)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch avatar: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	avatarBytes, err := io.ReadAll(resp.Body)
 	if err != nil {

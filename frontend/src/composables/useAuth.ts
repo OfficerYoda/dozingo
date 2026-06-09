@@ -4,6 +4,7 @@ interface User {
     user_id: string
     username: string
     email: string | null
+    avatar_url: string | null 
 }
 
 const state = reactive<{

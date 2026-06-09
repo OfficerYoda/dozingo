@@ -316,3 +316,36 @@ func TestDeleteCell_WrongBoard(t *testing.T) {
 	w := doRequestWithCookies(http.MethodDelete, fmt.Sprintf("/api/boards/%s/cells/%s", board2, cellID), nil, cookies)
 	assertStatus(t, w, http.StatusNotFound)
 }
+
+// TestUpdateCell_WrongBoard_OtherUser_OwnsBoard2 verifies that a caller
+// who legitimately owns board2 cannot mutate a cell that lives on
+// board1 by routing the request through their own board's URL. Without
+// the service-layer membership assertion this would still be safe (the
+// SQL UPDATE's composite WHERE clause would reject the no-match row),
+// but the explicit assertion guards against future SQL regressions.
+func TestUpdateCell_WrongBoard_OtherUserOwnsTargetBoard(t *testing.T) {
+	setupTest(t)
+
+	alice := createTestUser(t, "alice_celldef", "alice_celldef@example.com")
+	bob := createTestUser(t, "bob_celldef", "bob_celldef@example.com")
+	aliceBoard := createTestBoard(t, "Alice's Board", 5, alice, nil)
+	bobBoard := createTestBoard(t, "Bob's Board", 5, bob, nil)
+	aliceCellID := createTestCell(t, aliceBoard, "Alice Cell")
+
+	// Bob owns bobBoard. He routes a PUT through his own board's path
+	// but supplies Alice's cell_id. Even though he passes the board
+	// ownership check, the cell-on-board membership check must reject.
+	w := doRequestWithCookies(http.MethodPut, fmt.Sprintf("/api/boards/%s/cells/%s", bobBoard, aliceCellID), map[string]any{
+		"content": "hijacked",
+	}, cookiesFor(bob))
+	assertStatus(t, w, http.StatusNotFound)
+
+	// Alice's cell is untouched.
+	listResp := doRequest(http.MethodGet, fmt.Sprintf("/api/boards/%s/cells", aliceBoard), nil)
+	assertStatus(t, listResp, http.StatusOK)
+	var cells []map[string]any
+	decodeJSON(t, listResp, &cells)
+	if len(cells) != 1 || cells[0]["content"] != "Alice Cell" {
+		t.Errorf("expected Alice's cell content to be unchanged, got %v", cells)
+	}
+}

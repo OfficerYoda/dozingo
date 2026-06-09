@@ -7,6 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+
 	"github.com/officeryoda/dozingo/internal/domain"
 	"github.com/officeryoda/dozingo/internal/generated"
 	"github.com/officeryoda/dozingo/internal/pgmap"
@@ -133,7 +134,6 @@ func (r *Boards) List(ctx context.Context, f BoardListFilter) ([]BoardWithStats,
 	if f.Limit > 0 {
 		fmt.Fprintf(&query, " LIMIT $%d", i)
 		args = append(args, f.Limit)
-		i++
 	}
 
 	rows, err := r.db.Query(ctx, query.String(), args...)
@@ -146,6 +146,7 @@ func (r *Boards) List(ctx context.Context, f BoardListFilter) ([]BoardWithStats,
 	if err != nil {
 		return nil, fmt.Errorf("scan boards: %w", err)
 	}
+
 	return boards, nil
 }
 
@@ -162,6 +163,7 @@ func (r *Boards) Get(ctx context.Context, boardID pgtype.UUID) (BoardWithStats, 
 	if err != nil {
 		return BoardWithStats{}, pgmap.TranslatePgErr(err)
 	}
+
 	return board, nil
 }
 
@@ -185,6 +187,7 @@ func (r *Boards) Delete(ctx context.Context, boardID pgtype.UUID) (generated.Boa
 	if err != nil {
 		return generated.Board{}, pgmap.TranslatePgErr(err)
 	}
+
 	return board, nil
 }
 
@@ -193,5 +196,6 @@ func (r *Boards) TotalGamesPlayed(ctx context.Context, boardID pgtype.UUID) (gen
 	if err != nil {
 		return generated.GetTotalGamesPlayedForBoardRow{}, pgmap.TranslatePgErr(err)
 	}
+
 	return playedGames, nil
 }

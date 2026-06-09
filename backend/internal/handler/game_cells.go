@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
+
 	"github.com/officeryoda/dozingo/internal/generated"
 	"github.com/officeryoda/dozingo/internal/middleware"
 	"github.com/officeryoda/dozingo/internal/pgmap"
@@ -38,8 +39,8 @@ type createGameCellsItem struct {
 }
 
 type createGameCellsInput struct {
-	GameID types.UUIDParam `path:"game_id" format:"uuid"`
-	Body   []createGameCellsItem
+	GameID types.UUIDParam       `path:"game_id" format:"uuid"`
+	Body   []createGameCellsItem `maxItems:"64"`
 }
 
 type createGameCellsOutput struct {

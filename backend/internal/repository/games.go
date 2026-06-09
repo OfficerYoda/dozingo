@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
+
 	"github.com/officeryoda/dozingo/internal/generated"
 	"github.com/officeryoda/dozingo/internal/pgmap"
 )
@@ -30,6 +31,7 @@ func (r *Games) Get(ctx context.Context, gameID pgtype.UUID) (generated.Game, er
 	if err != nil {
 		return generated.Game{}, pgmap.TranslatePgErr(err)
 	}
+
 	return game, nil
 }
 
@@ -38,6 +40,7 @@ func (r *Games) ListByPlayer(ctx context.Context, playerID pgtype.UUID) ([]gener
 	if err != nil {
 		return []generated.Game{}, pgmap.TranslatePgErr(err)
 	}
+
 	return games, nil
 }
 
@@ -46,6 +49,7 @@ func (r *Games) ListBySession(ctx context.Context, sessionID pgtype.UUID) ([]gen
 	if err != nil {
 		return []generated.Game{}, pgmap.TranslatePgErr(err)
 	}
+
 	return games, nil
 }
 
@@ -54,6 +58,7 @@ func (r *Games) ListByBoard(ctx context.Context, boardID pgtype.UUID) ([]generat
 	if err != nil {
 		return []generated.Game{}, pgmap.TranslatePgErr(err)
 	}
+
 	return games, nil
 }
 
@@ -66,6 +71,7 @@ func (r *Games) Create(ctx context.Context, in CreateGameInput) (generated.Game,
 	if err != nil {
 		return generated.Game{}, pgmap.TranslatePgErr(err)
 	}
+
 	return game, nil
 }
 
@@ -79,6 +85,7 @@ func (r *Games) UpdateStatus(ctx context.Context, in UpdateGameStatusInput) (gen
 	if err != nil {
 		return generated.Game{}, pgmap.TranslatePgErr(err)
 	}
+
 	return game, nil
 }
 
@@ -87,5 +94,6 @@ func (r *Games) Delete(ctx context.Context, gameID pgtype.UUID) (generated.Game,
 	if err != nil {
 		return generated.Game{}, pgmap.TranslatePgErr(err)
 	}
+
 	return game, nil
 }
