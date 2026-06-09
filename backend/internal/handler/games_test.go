@@ -347,16 +347,11 @@ func TestDeleteGame_CascadesGameCells(t *testing.T) {
 	w := doRequestWithCookies(http.MethodDelete, fmt.Sprintf("/api/games/%s", gameID), nil, cookiesFor(userID))
 	assertStatus(t, w, http.StatusNoContent)
 
-	// Verify game cells are gone too
+	// Verify game cells are gone too. After the game is deleted the cells
+	// endpoint returns 404 (the service checks game existence before querying
+	// cells), which also proves the cascade removed the game row.
 	getResp := doRequest(http.MethodGet, fmt.Sprintf("/api/games/%s/cells", gameID), nil)
-	// The game is gone so game cells should be empty or the game_id is invalid
-	var cells []map[string]any
-	if getResp.Code == http.StatusOK {
-		decodeJSON(t, getResp, &cells)
-		if len(cells) != 0 {
-			t.Errorf("expected 0 game cells after game deletion, got %d", len(cells))
-		}
-	}
+	assertStatus(t, getResp, http.StatusNotFound)
 }
 
 // ===== Anonymous + /me/games coverage =====
@@ -491,14 +486,12 @@ func TestListByCurrentSession_AfterLogin(t *testing.T) {
 	}
 }
 
-// ===== Latent bugs (these tests are expected to fail until the bugs are
-// fixed in a follow-up commit). =====
+// ===== Anonymous game authorization =====
 
-// TestUpdateGameStatus_Anonymous documents that anonymous players cannot
-// update their own anonymous game's status today. The repository's
-// UpdateStatus method only forwards PlayerID to the SQL query, so the
-// session-id branch in the WHERE clause never matches for anon callers and
-// the UPDATE affects 0 rows -> ErrNoRows -> 404. Should be 200.
+// TestUpdateGameStatus_Anonymous verifies that an anonymous player can update
+// the status of their own game. Authorization is by session_id: the SQL WHERE
+// clause uses (player_id IS NULL AND session_id = $4) for anon callers, so the
+// update matches and returns the updated game.
 func TestUpdateGameStatus_Anonymous(t *testing.T) {
 	setupTest(t)
 	_, boardID := setupForGames(t)
@@ -518,12 +511,11 @@ func TestUpdateGameStatus_Anonymous(t *testing.T) {
 	assertJSONField(t, resp, "status", "completed")
 }
 
-// TestDeleteGame_AnonymousNonOwner documents that a *different* anonymous
-// caller can currently delete someone else's anonymous game. The
-// service-layer ownership check compares sessionUser.UserID == game.PlayerID;
-// for anon-vs-anon both are zero pgtype.UUID, so the equality holds and
-// authorization passes incorrectly. Authorization for anon games must be by
-// session_id, not by player_id.
+// TestDeleteGame_AnonymousNonOwner verifies that a different anonymous caller
+// cannot delete another user's anonymous game. The service-layer ownership
+// check branches on game.PlayerID.Valid: when player_id is NULL (anon game)
+// it compares sessionUser.SessionID == game.SessionID, so a stranger with a
+// different session correctly receives 403 Forbidden.
 func TestDeleteGame_AnonymousNonOwner(t *testing.T) {
 	setupTest(t)
 	_, boardID := setupForGames(t)
