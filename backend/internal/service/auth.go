@@ -289,7 +289,7 @@ func (s *Auth) NewPassword(ctx context.Context, in NewPasswordInput) (generated.
 func (s *Auth) SendEmailVerification(ctx context.Context) error {
 	sessionUser, err := requiresSessionUser(ctx, s.queries)
 	if err != nil {
-		return fmt.Errorf("session required: %w", err)
+		return err
 	}
 
 	if !sessionUser.Email.Valid {
@@ -342,7 +342,7 @@ func (s *Auth) VerifyEmail(ctx context.Context, token string) (generated.User, e
 func (s *Auth) generateUser(ctx context.Context, in RegisterInput) (generated.User, error) {
 	passwordHash, err := auth.HashPassword(in.Password)
 	if err != nil {
-		return generated.User{}, err
+		return generated.User{}, fmt.Errorf("hash password: %w", err)
 	}
 
 	var user generated.User
@@ -353,7 +353,7 @@ func (s *Auth) generateUser(ctx context.Context, in RegisterInput) (generated.Us
 		}
 		_, err = r.Passwords.Upsert(ctx, user.ID, passwordHash)
 		if err != nil {
-			return err
+			return fmt.Errorf("update password: %w", err)
 		}
 
 		return nil

@@ -105,7 +105,7 @@ type UpdateUserInput struct {
 func (s *Users) UpdateMe(ctx context.Context, in UpdateUserInput) (generated.User, error) {
 	sessionUser, err := requiresSessionUser(ctx, s.queries)
 	if err != nil {
-		return generated.User{}, fmt.Errorf("require session: %w", err)
+		return generated.User{}, err
 	}
 
 	return s.applyUserUpdate(ctx, sessionUser.UserID, sessionUser.Email, in)
@@ -114,7 +114,7 @@ func (s *Users) UpdateMe(ctx context.Context, in UpdateUserInput) (generated.Use
 func (s *Users) UploadAvatar(ctx context.Context, in huma.FormFile) (generated.User, error) {
 	sessionUser, err := requiresSessionUser(ctx, s.queries)
 	if err != nil {
-		return generated.User{}, fmt.Errorf("require session: %w", err)
+		return generated.User{}, err
 	}
 
 	img, err := convertFormFileToImage(in)
