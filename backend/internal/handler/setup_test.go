@@ -365,6 +365,7 @@ func TestMain(m *testing.M) {
 	NewCellsHandler(service.NewCells(repos.Cells, repos.Boards, queries)).Register(apiGroup)
 	NewGameCellsHandler(service.NewGameCells(repos.GameCells, repos.Games, queries)).Register(apiGroup)
 	NewGamesHandler(service.NewGames(repos.Games, repos.GameCells, repos.Boards, repos.Cells, queries, txRunner)).Register(apiGroup)
+	NewStatsHandler(service.NewStats(repos.Stats, queries)).Register(apiGroup)
 	votesSvc := service.NewVotes(repos.Votes, queries)
 	NewVotesHandler(votesSvc).Register(apiGroup)
 	NewAuthHandler(service.NewAuth(repos, fakeMailer, queries, txRunner, fakeAvatarGen.Generate, fakeUploader), testAvatarURLs).Register(apiGroup)
