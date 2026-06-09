@@ -127,15 +127,11 @@ components:
         cell_id:
           format: uuid
           type: string
-        content:
-          maxLength: 200
-          type: string
         position:
           format: int32
           type: integer
       required:
         - cell_id
-        - content
         - position
       type: object
     EmailSentOutputBody:
@@ -1116,6 +1112,17 @@ paths:
           schema:
             format: uuid
             type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              items:
+                $ref: "#/components/schemas/CreateGameCellsItem"
+              maxItems: 64
+              type:
+                - array
+                - "null"
+        required: true
       responses:
         "200":
           content:
@@ -1312,46 +1319,6 @@ paths:
                 $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Get all cells for a game
-      tags:
-        - Game Cells
-    post:
-      operationId: create-game-cells
-      parameters:
-        - in: path
-          name: game_id
-          required: true
-          schema:
-            format: uuid
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              items:
-                $ref: "#/components/schemas/CreateGameCellsItem"
-              maxItems: 64
-              type:
-                - array
-                - "null"
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                items:
-                  $ref: "#/components/schemas/GameCellOutput"
-                type:
-                  - array
-                  - "null"
-          description: OK
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      summary: Bulk create game cells
       tags:
         - Game Cells
   /api/games/{game_id}/cells/{game_cell_id}:

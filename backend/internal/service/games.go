@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/jackc/pgx/v5/pgtype"
 
@@ -12,12 +13,40 @@ import (
 )
 
 type Games struct {
-	games   *repository.Games
-	queries *generated.Queries
+	games     *repository.Games
+	gameCells *repository.GameCells
+	boards    *repository.Boards
+	cells     *repository.Cells
+	queries   *generated.Queries
+	txRunner  repository.TxRunner
 }
 
-func NewGames(games *repository.Games, queries *generated.Queries) *Games {
-	return &Games{games: games, queries: queries}
+func NewGames(
+	games *repository.Games,
+	gameCells *repository.GameCells,
+	boards *repository.Boards,
+	cells *repository.Cells,
+	queries *generated.Queries,
+	txRunner repository.TxRunner,
+) *Games {
+	return &Games{
+		games:     games,
+		gameCells: gameCells,
+		boards:    boards,
+		cells:     cells,
+		queries:   queries,
+		txRunner:  txRunner,
+	}
+}
+
+type CreateGameInput struct {
+	BoardID   pgtype.UUID
+	GameCells []CreateGameCellItem
+}
+
+type CreateGameCellItem struct {
+	CellID   pgtype.UUID
+	Position int32
 }
 
 type UpdateGameStatusInput struct {
@@ -55,17 +84,53 @@ func (s *Games) ListByBoard(ctx context.Context, boardID pgtype.UUID) ([]generat
 	return s.games.ListByBoard(ctx, boardID)
 }
 
-func (s *Games) Create(ctx context.Context, boardID pgtype.UUID) (generated.Game, error) {
+func (s *Games) Create(ctx context.Context, in CreateGameInput) (generated.Game, error) {
 	sessionUser, err := middleware.RequireSession(ctx, s.queries)
 	if err != nil {
 		return generated.Game{}, err
 	}
 
-	return s.games.Create(ctx, repository.CreateGameInput{
-		PlayerID:  sessionUser.UserID,
-		SessionID: sessionUser.SessionID,
-		BoardID:   boardID,
+	board, err := s.boards.Get(ctx, in.BoardID)
+	if err != nil {
+		return generated.Game{}, fmt.Errorf("board does not exist: %w", domain.ErrBadInput)
+	}
+
+	if int(board.Size*board.Size) != len(in.GameCells) {
+		return generated.Game{}, fmt.Errorf("mismatch of board size and game cells: %w", domain.ErrBadInput)
+	}
+
+	var game generated.Game
+	err = s.txRunner.WithTx(ctx, func(r repository.Repos) error {
+		game, err = r.Games.Create(ctx, repository.CreateGameInput{
+			PlayerID:  sessionUser.UserID,
+			SessionID: sessionUser.SessionID,
+			BoardID:   in.BoardID,
+		})
+		if err != nil {
+			return fmt.Errorf("create game: %w", err)
+		}
+
+		var gameCells []repository.CreateGameCellItem
+		gameCells, err = gameCellsToRepoItems(ctx, r.Cells, in.GameCells, board.ID)
+		if err != nil {
+			return fmt.Errorf("retrieve cells: %w", err)
+		}
+
+		_, err = r.GameCells.Create(ctx, repository.CreateGameCellsInput{
+			GameID:    game.ID,
+			GameCells: gameCells,
+		})
+		if err != nil {
+			return fmt.Errorf("create game cells: %w", err)
+		}
+
+		return nil
 	})
+	if err != nil {
+		return generated.Game{}, err
+	}
+
+	return game, nil
 }
 
 func (s *Games) UpdateStatus(ctx context.Context, in UpdateGameStatusInput) (generated.Game, error) {
@@ -122,4 +187,37 @@ func checkIfCallerOwnsGame(
 	}
 
 	return sessionUser, nil
+}
+
+func gameCellsToRepoItems(ctx context.Context, cellRepo *repository.Cells, cells []CreateGameCellItem, boardID pgtype.UUID) ([]repository.CreateGameCellItem, error) {
+	cellIDs := make([]pgtype.UUID, len(cells))
+	for i, cell := range cells {
+		cellIDs[i] = cell.CellID
+	}
+
+	boardCells, err := cellRepo.ListByIDs(ctx, cellIDs, boardID)
+	if err != nil {
+		return []repository.CreateGameCellItem{}, fmt.Errorf("get cells from board: %w", err)
+	}
+
+	cellMap := make(map[pgtype.UUID]*generated.Cell)
+	for i := range boardCells {
+		cellMap[boardCells[i].ID] = &boardCells[i]
+	}
+
+	result := make([]repository.CreateGameCellItem, len(cells))
+	for i, cell := range cells {
+		boardCell, exists := cellMap[cell.CellID]
+		if !exists {
+			return []repository.CreateGameCellItem{}, fmt.Errorf("cell not found: %w", domain.ErrBadInput)
+		}
+
+		result[i] = repository.CreateGameCellItem{
+			CellID:   cell.CellID,
+			Position: cell.Position,
+			Content:  boardCell.Content,
+		}
+	}
+
+	return result, nil
 }

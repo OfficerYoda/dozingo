@@ -6,6 +6,11 @@ WHERE board_id = $1;
 SELECT * FROM cells
 WHERE id = $1;
 
+-- name: ListCellsByIDs :many
+SELECT * FROM cells
+WHERE id = ANY(@cell_ids::uuid[])
+  AND board_id = @board_id;
+
 -- name: CreateCell :one
 INSERT INTO cells (board_id, content, value)
 VALUES ($1, $2, $3)
