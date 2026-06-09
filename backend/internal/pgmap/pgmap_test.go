@@ -219,6 +219,140 @@ func TestPgInt4FromInt32_Negative(t *testing.T) {
 	}
 }
 
+// ── PgIntervalFromDuration ────────────────────────────────────────────────────
+
+func TestPgIntervalFromDuration_Nil(t *testing.T) {
+	got := PgIntervalFromDuration(nil)
+	if got.Valid {
+		t.Fatal("expected Valid=false for a nil pointer")
+	}
+}
+
+func TestPgIntervalFromDuration_Valid(t *testing.T) {
+	d := time.Hour
+	got := PgIntervalFromDuration(&d)
+	if !got.Valid {
+		t.Fatal("expected Valid=true for a non-nil pointer")
+	}
+	const wantUS = int64(time.Hour / time.Microsecond)
+	if got.Microseconds != wantUS {
+		t.Errorf("expected Microseconds=%d, got %d", wantUS, got.Microseconds)
+	}
+	if got.Days != 0 {
+		t.Errorf("expected Days=0, got %d", got.Days)
+	}
+	if got.Months != 0 {
+		t.Errorf("expected Months=0, got %d", got.Months)
+	}
+}
+
+func TestPgIntervalFromDuration_ZeroDuration(t *testing.T) {
+	d := time.Duration(0)
+	got := PgIntervalFromDuration(&d)
+	if !got.Valid {
+		t.Fatal("expected Valid=true for a pointer to zero duration")
+	}
+	if got.Microseconds != 0 {
+		t.Errorf("expected Microseconds=0, got %d", got.Microseconds)
+	}
+}
+
+func TestPgIntervalFromDuration_SubMicrosecond(t *testing.T) {
+	// Anything below 1µs is truncated by the integer division.
+	d := 500 * time.Nanosecond
+	got := PgIntervalFromDuration(&d)
+	if !got.Valid {
+		t.Fatal("expected Valid=true")
+	}
+	if got.Microseconds != 0 {
+		t.Errorf("expected Microseconds=0 for sub-microsecond duration, got %d", got.Microseconds)
+	}
+}
+
+// ── DurationFromPgInterval ────────────────────────────────────────────────────
+
+func TestDurationFromPgInterval_Invalid(t *testing.T) {
+	got := DurationFromPgInterval(pgtype.Interval{Valid: false})
+	if got != nil {
+		t.Fatalf("expected nil for an invalid pgtype.Interval, got %v", *got)
+	}
+}
+
+func TestDurationFromPgInterval_MicrosecondsOnly(t *testing.T) {
+	interval := pgtype.Interval{
+		Microseconds: int64(time.Hour / time.Microsecond),
+		Valid:        true,
+	}
+	got := DurationFromPgInterval(interval)
+	if got == nil {
+		t.Fatal("expected non-nil pointer for a valid pgtype.Interval")
+	}
+	if *got != time.Hour {
+		t.Errorf("expected %v, got %v", time.Hour, *got)
+	}
+}
+
+func TestDurationFromPgInterval_WithDays(t *testing.T) {
+	interval := pgtype.Interval{
+		Days:  2,
+		Valid: true,
+	}
+	got := DurationFromPgInterval(interval)
+	if got == nil {
+		t.Fatal("expected non-nil pointer")
+	}
+	want := 48 * time.Hour
+	if *got != want {
+		t.Errorf("expected %v, got %v", want, *got)
+	}
+}
+
+func TestDurationFromPgInterval_WithMonths(t *testing.T) {
+	interval := pgtype.Interval{
+		Months: 1,
+		Valid:  true,
+	}
+	got := DurationFromPgInterval(interval)
+	if got == nil {
+		t.Fatal("expected non-nil pointer")
+	}
+	want := 30 * 24 * time.Hour // implementation treats a month as 30 days
+	if *got != want {
+		t.Errorf("expected %v, got %v", want, *got)
+	}
+}
+
+func TestDurationFromPgInterval_Combined(t *testing.T) {
+	interval := pgtype.Interval{
+		Microseconds: int64(time.Hour / time.Microsecond),
+		Days:         1,
+		Months:       1,
+		Valid:        true,
+	}
+	got := DurationFromPgInterval(interval)
+	if got == nil {
+		t.Fatal("expected non-nil pointer")
+	}
+	want := time.Hour + 24*time.Hour + 30*24*time.Hour
+	if *got != want {
+		t.Errorf("expected %v, got %v", want, *got)
+	}
+}
+
+func TestPgIntervalFromDuration_RoundTrip(t *testing.T) {
+	// PgIntervalFromDuration only sets Microseconds, so any input that
+	// fits in microseconds should round-trip exactly.
+	original := time.Hour + 30*time.Minute
+	interval := PgIntervalFromDuration(&original)
+	got := DurationFromPgInterval(interval)
+	if got == nil {
+		t.Fatal("expected non-nil round-trip pointer")
+	}
+	if *got != original {
+		t.Errorf("expected round-trip %v, got %v", original, *got)
+	}
+}
+
 // ── TranslatePgErr ────────────────────────────────────────────────────────────
 
 func TestTranslatePgErr_Nil(t *testing.T) {

@@ -145,21 +145,23 @@ func registerRoutes(
 	apiGroup.UseMiddleware(middleware.NewSessionMiddleware(cfg, queries).Handler(api))
 	txRunner := repository.NewTxRunner(pool)
 
+	authSvc := service.NewAuth(repos, emailSender, queries, txRunner, avatarGen, garage)
 	boardsSvc := service.NewBoards(repos.Boards, queries)
 	cellsSvc := service.NewCells(repos.Cells, repos.Boards, queries)
 	gameCellsSvc := service.NewGameCells(repos.GameCells, repos.Games, queries)
 	gamesSvc := service.NewGames(repos.Games, repos.GameCells, repos.Boards, repos.Cells, queries, txRunner)
-	votesSvc := service.NewVotes(repos.Votes, queries)
-	authSvc := service.NewAuth(repos, emailSender, queries, txRunner, avatarGen, garage)
+	statsSvc := service.NewStats(repos.Stats, queries)
 	usersSvc := service.NewUsers(repos, queries, emailSender, txRunner, garage)
+	votesSvc := service.NewVotes(repos.Votes, queries)
 
-	handler.NewHealthHandler(pool).Register(api) // Don't use apiGroup here to get around middleware
+	handler.NewAuthHandler(authSvc, avatarURLs).Register(apiGroup)
 	handler.NewBoardsHandler(boardsSvc).Register(apiGroup)
 	handler.NewCellsHandler(cellsSvc).Register(apiGroup)
 	handler.NewGameCellsHandler(gameCellsSvc).Register(apiGroup)
 	handler.NewGamesHandler(gamesSvc).Register(apiGroup)
+	handler.NewHealthHandler(pool).Register(api) // Don't use apiGroup here to get around middleware
+	handler.NewStatsHandler(statsSvc).Register(apiGroup)
 	handler.NewVotesHandler(votesSvc).Register(apiGroup)
-	handler.NewAuthHandler(authSvc, avatarURLs).Register(apiGroup)
 	handler.NewUsersHandler(usersSvc, votesSvc, avatarURLs).Register(apiGroup)
 
 	createOpenAPIFile(api)
