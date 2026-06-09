@@ -6,7 +6,7 @@
                 <div class="header-actions">
                     <input class="btn btn-secondary" type="search" :placeholder="t('boards.searchPlaceholder')" v-model="search">
                     <select class="btn btn-secondary" v-model="appliedFiler">
-                        <option value="newest">{{ t('boards.sort.newest') }}</option>
+                        <option value="newest" selected >{{ t('boards.sort.newest') }}</option>
                         <option value="most-liked">{{ t('boards.sort.mostLiked') }}</option>
                         <option value="most-played">{{ t('boards.sort.mostPlayed') }}</option>
                         <option value="oldest">{{ t('boards.sort.oldest') }}</option>
@@ -76,11 +76,7 @@
                         <span>{{ authorName ?? '…' }}</span>
                     </div>
                     <div class="right-buttons-bottom">
-                        <button class="btn btn-secondary button-bottom-row" @click="shuffle">
-                            <Dices :size="20" />
-                            <p class="mb-0">{{ t('boards.modal.shuffle') }}</p>
-                        </button>
-                        <button class="btn btn-primary button-bottom-row">
+                        <button class="btn btn-primary button-bottom-row" @click="router.push('/game/' + selecetedBoard?.board_id)">
                             <Play :size="20" />
                             <p class="mb-0">{{ t('boards.modal.startGame') }}</p>
                         </button>
@@ -94,8 +90,8 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute } from 'vue-router'
-import { Heart, X, Dices, LayoutGrid, Play } from 'lucide-vue-next'
+import { useRoute, useRouter } from 'vue-router'
+import { Heart, X, LayoutGrid, Play } from 'lucide-vue-next'
 
 interface Board {
     board_id: string
@@ -115,6 +111,7 @@ interface Cell {
 
 const { t } = useI18n()
 const route = useRoute()
+const router = useRouter()
 
 const error = ref<string | null>(null)
 const boards = ref<Board[]>([])
@@ -171,11 +168,6 @@ watch([appliedFiler, search], () => {
 
 const showModal = ref(false)
 
-function shuffle() {
-    const numberOfCells = (selecetedBoard.value?.size ?? 0) ** 2
-    selectedCells.value = [...cells.value].sort(() => Math.random() - 0.5).slice(0, numberOfCells)
-}
-
 function clickBoard(boardID: string) {
     console.log("Statet loading the cells for board with boardid " + boardID)
     fetchAllCellsForBoard(boardID)
@@ -217,11 +209,11 @@ function clickBoard(boardID: string) {
 }
 
 .like-group svg {
-    color: #5A5781;
+    color: var(--color-subheading);
 }
 
 .card-meta-text {
-    color: #5A5781;
+    color: var(--color-subheading);
     font-weight: 600;
     font-size: 13px;
 }
@@ -256,11 +248,11 @@ function clickBoard(boardID: string) {
 }
 
 .header-modal-title {
-    color: #2C2A51;
+    color: var(--color-heading);
 }
 
 .header-modal-subtitle {
-    color: #4052B6;
+    color: var(--card-blue);
     font-weight: 600;
 }
 
@@ -280,15 +272,15 @@ function clickBoard(boardID: string) {
 }
 
 .stat-plays {
-    color: #4052B6;
+    color: var(--card-blue);
 }
 
 .stat-likes {
-    color: #C0185A;
+    color: var(--card-red);
 }
 
 .stat-size {
-    color: #2E7D32;
+    color: var(--card-green);
 }
 
 .bottom-bar {
@@ -313,7 +305,7 @@ function clickBoard(boardID: string) {
 }
 
 .background-seperate-cells {
-    background-color: #E3DFFF;
+    background-color: var(--color-input-bg);
     border-radius: var(--radius-sm);
     padding: 8px;
     display: grid;
@@ -363,7 +355,7 @@ function clickBoard(boardID: string) {
     font-weight: 700;
     text-align: center;
     margin: 0;
-    color: #2C2A51;
+    color: var(--color-heading);
     word-break: break-word;
 }
 
