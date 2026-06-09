@@ -165,8 +165,10 @@ watch(colorCorrection, (newValue) => {
   localStorage.setItem('colorCorrection', newValue)
   if (newValue === 'standart') {
     document.documentElement.removeAttribute('color-correction')
+    localStorage.setItem('colorCorrection', 'standart')
   } else {
     document.documentElement.setAttribute('color-correction', newValue)
+    localStorage.setItem('colorCorrection', newValue)
   }
 }, { immediate: true })
 
@@ -335,7 +337,7 @@ async function saveUsername() {
 
 .account-security-info span {
   color: var(--color-heading);
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 550;
 }
 
@@ -345,7 +347,7 @@ async function saveUsername() {
 
 .display-darkmode span {
   color: var(--color-heading);
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 550;
 }
 
@@ -456,7 +458,7 @@ input[type=range]::-webkit-slider-thumb {
 
 .display-fontsize-texts small {
   color: var(--color-text-subtle);
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 600;
 }
 
@@ -472,7 +474,7 @@ input[type=range]::-webkit-slider-thumb {
 }
 
 .display-fontsize-title {
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 700;
 }
 
