@@ -108,7 +108,7 @@ func TestCreateGameCells_TooMany_Rejected(t *testing.T) {
 	// the same UUID; validation must reject the array length before any
 	// DB lookup runs, so the references don't matter.
 	cells := make([]map[string]any, 65)
-	for i := 0; i < 65; i++ {
+	for i := range 65 {
 		cells[i] = map[string]any{
 			"cell_id":  cellID,
 			"content":  "x",

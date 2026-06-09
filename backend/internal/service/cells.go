@@ -81,8 +81,7 @@ func (s *Cells) Update(ctx context.Context, in UpdateCellInput) (generated.Cell,
 }
 
 func (s *Cells) Delete(ctx context.Context, in DeleteCellInput) error {
-	err := checkIfCallerOwnsBoard(ctx, s, in.BoardID)
-	if err != nil {
+	if err := checkIfCallerOwnsBoard(ctx, s, in.BoardID); err != nil {
 		return err
 	}
 
@@ -90,7 +89,7 @@ func (s *Cells) Delete(ctx context.Context, in DeleteCellInput) error {
 		return err
 	}
 
-	_, err = s.cells.Delete(ctx, repository.DeleteCellInput(in))
+	_, err := s.cells.Delete(ctx, repository.DeleteCellInput(in))
 
 	return err
 }
@@ -103,6 +102,7 @@ func (s *Cells) assertCellOnBoard(ctx context.Context, cellID, boardID pgtype.UU
 	if cell.BoardID != boardID {
 		return fmt.Errorf("cell does not belong to board: %w", domain.ErrNotFound)
 	}
+
 	return nil
 }
 

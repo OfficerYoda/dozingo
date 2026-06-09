@@ -175,6 +175,7 @@ func convertFormFileToImage(in huma.FormFile) (*storage.Image, error) {
 
 	bytesReader := bytes.NewReader(fileBytes)
 	img := storage.NewImage(bytesReader, detected, extension)
+
 	return img, nil
 }
 

@@ -44,6 +44,7 @@ func (r *GameCells) GetByID(ctx context.Context, gameCellID pgtype.UUID) (genera
 	if err != nil {
 		return generated.GameCell{}, pgmap.TranslatePgErr(err)
 	}
+
 	return cell, nil
 }
 

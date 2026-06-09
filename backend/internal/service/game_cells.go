@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5/pgtype"
+
 	"github.com/officeryoda/dozingo/internal/domain"
 	"github.com/officeryoda/dozingo/internal/generated"
 	"github.com/officeryoda/dozingo/internal/repository"
@@ -86,6 +87,7 @@ func (s *GameCells) assertGameCellOnGame(ctx context.Context, gameCellID, gameID
 	if cell.GameID != gameID {
 		return fmt.Errorf("game cell does not belong to game: %w", domain.ErrNotFound)
 	}
+
 	return nil
 }
 

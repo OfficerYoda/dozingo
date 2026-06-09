@@ -229,7 +229,6 @@ func TestUpdateGameStatus_InvalidValue_Rejected(t *testing.T) {
 	gameID := createTestGame(t, userID, boardID)
 
 	for _, bad := range []string{"garbage", "", "ACTIVE", "deleted", "pending"} {
-		bad := bad
 		t.Run("status="+bad, func(t *testing.T) {
 			w := doRequestWithCookies(http.MethodPut,
 				fmt.Sprintf("/api/games/%s/status", gameID),

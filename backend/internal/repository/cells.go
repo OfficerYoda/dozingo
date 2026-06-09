@@ -45,6 +45,7 @@ func (r *Cells) GetByID(ctx context.Context, cellID pgtype.UUID) (generated.Cell
 	if err != nil {
 		return generated.Cell{}, pgmap.TranslatePgErr(err)
 	}
+
 	return cell, nil
 }
 
