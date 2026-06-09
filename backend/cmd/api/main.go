@@ -16,6 +16,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	chimw "github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/officeryoda/dozingo/internal/avatar"
 	"github.com/officeryoda/dozingo/internal/config"
 	"github.com/officeryoda/dozingo/internal/email"
 	"github.com/officeryoda/dozingo/internal/generated"
@@ -23,13 +24,15 @@ import (
 	"github.com/officeryoda/dozingo/internal/middleware"
 	"github.com/officeryoda/dozingo/internal/repository"
 	"github.com/officeryoda/dozingo/internal/service"
+	"github.com/officeryoda/dozingo/internal/storage"
 	"github.com/officeryoda/dozingo/internal/worker"
 )
 
 const (
-	sessionCleanupInterval = 1 * time.Hour
-	tokenCleanupInterval   = 1 * time.Hour
-	shutdownTimeout        = 10 * time.Second
+	sessionCleanupInterval      = 1 * time.Hour
+	tokenCleanupInterval        = 1 * time.Hour
+	avatarOrphanCleanupInterval = 1 * time.Hour
+	shutdownTimeout             = 10 * time.Second
 )
 
 func main() {
@@ -56,13 +59,24 @@ func run() error {
 
 	repos := repository.New(pool)
 
+	avatarURLs, err := avatar.NewURLBuilder(cfg.GaragePublicURL, cfg.GarageBucketName)
+	if err != nil {
+		return fmt.Errorf("building avatar URL builder: %w", err)
+	}
+
+	garage := storage.NewGarage(ctx, cfg)
+
 	worker.NewPeriodic("session_cleanup", sessionCleanupInterval,
 		repos.Sessions.DeleteExpiredSessions).Start(ctx)
 	worker.NewPeriodic("verification_token_cleanup", tokenCleanupInterval,
 		repos.VerificationTokens.DeleteExpired).Start(ctx)
+	worker.NewPeriodic("avatar_orphan_cleanup", avatarOrphanCleanupInterval,
+		func(ctx context.Context) error {
+			return garage.SweepOrphanAvatars(ctx, repos.Users, storage.DefaultSweepConfig())
+		}).Start(ctx)
 
 	router := createRouter(cfg)
-	registerRoutes(router, repos, pool, cfg)
+	registerRoutes(router, repos, pool, cfg, ctx, avatarURLs, garage)
 
 	return serveHTTP(ctx, createServer(cfg.Port, router))
 }
@@ -105,14 +119,27 @@ func rootHandler(port int) http.HandlerFunc {
 }
 
 // registerRoutes sets up the Huma API and registers all handler groups.
-func registerRoutes(router *chi.Mux, repos repository.Repos, pool *pgxpool.Pool, cfg *config.Config) {
+func registerRoutes(
+	router *chi.Mux,
+	repos repository.Repos,
+	pool *pgxpool.Pool,
+	cfg *config.Config,
+	ctx context.Context,
+	avatarURLs *avatar.URLBuilder,
+	garage *storage.Garage,
+) {
 	emailSender := email.New(cfg)
+	avatarGen := avatar.RandomProfilePicture
 	queries := generated.New(pool)
 
-	api := humachi.New(router, huma.DefaultConfig("Dozingo API", "0.2.0"))
-	api.UseMiddleware(middleware.NewSessionMiddleware(cfg, queries).Handler(api))
+	ensureDefaultAvatar(ctx, avatarGen, garage)
+
+	config := huma.DefaultConfig("Dozingo API", "0.2.0")
+	config.DocsPath = "/api/docs"
+	api := humachi.New(router, config)
 
 	apiGroup := huma.NewGroup(api, "/api")
+	apiGroup.UseMiddleware(middleware.NewSessionMiddleware(cfg, queries).Handler(api))
 	txRunner := repository.NewTxRunner(pool)
 
 	boardsSvc := service.NewBoards(repos.Boards, queries)
@@ -120,19 +147,32 @@ func registerRoutes(router *chi.Mux, repos repository.Repos, pool *pgxpool.Pool,
 	gameCellsSvc := service.NewGameCells(repos.GameCells, repos.Games, queries)
 	gamesSvc := service.NewGames(repos.Games, queries)
 	votesSvc := service.NewVotes(repos.Votes, queries)
-	authSvc := service.NewAuth(repos, emailSender, queries, txRunner)
-	usersSvc := service.NewUsers(repos, queries, emailSender, txRunner)
+	authSvc := service.NewAuth(repos, emailSender, queries, txRunner, avatarGen, garage)
+	usersSvc := service.NewUsers(repos, queries, emailSender, txRunner, garage)
 
-	handler.NewHealthHandler(pool).Register(apiGroup)
+	handler.NewHealthHandler(pool).Register(api) // Don't use apiGroup here to get around middleware
 	handler.NewBoardsHandler(boardsSvc).Register(apiGroup)
 	handler.NewCellsHandler(cellsSvc).Register(apiGroup)
 	handler.NewGameCellsHandler(gameCellsSvc).Register(apiGroup)
 	handler.NewGamesHandler(gamesSvc).Register(apiGroup)
 	handler.NewVotesHandler(votesSvc).Register(apiGroup)
-	handler.NewAuthHandler(authSvc).Register(apiGroup)
-	handler.NewUsersHandler(usersSvc, votesSvc).Register(apiGroup)
+	handler.NewAuthHandler(authSvc, avatarURLs).Register(apiGroup)
+	handler.NewUsersHandler(usersSvc, votesSvc, avatarURLs).Register(apiGroup)
 
 	createOpenAPIFile(api)
+}
+
+func ensureDefaultAvatar(ctx context.Context, gen service.AvatarGenerator, uploader storage.ObjectUploader) {
+	img, err := gen("default")
+	if err != nil {
+		slog.Warn("failed to generate default avatar", "error", err)
+		return
+	}
+	if err := uploader.Upload(ctx, "default.svg", img); err != nil {
+		slog.Warn("failed to upload default avatar", "error", err)
+		return
+	}
+	slog.Info("default avatar uploaded", "key", "default.svg")
 }
 
 func createOpenAPIFile(api huma.API) {

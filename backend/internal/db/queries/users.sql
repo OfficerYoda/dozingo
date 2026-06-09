@@ -45,3 +45,13 @@ RETURNING *;
 DELETE FROM users
 WHERE id = $1
 RETURNING *;
+
+-- name: SetAvatar :one
+UPDATE users
+SET avatar_key = @avatar_key
+WHERE id = @user_id
+RETURNING *;
+
+-- name: ListInUseAvatarKeys :many
+SELECT DISTINCT avatar_key FROM users
+WHERE avatar_key <> '';

@@ -54,7 +54,7 @@ type getBoardByIDOutput struct {
 type createBoardInputBody struct {
 	Title       string  `json:"title" required:"true" maxLength:"200"`
 	Description *string `json:"description,omitempty" maxLength:"500"`
-	Size        int32   `json:"size" required:"true" minimum:"3" maximum:"7"`
+	Size        int32   `json:"size" required:"true" minimum:"4" maximum:"6"`
 }
 
 type createBoardInput struct {

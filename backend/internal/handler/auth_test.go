@@ -24,6 +24,13 @@ func TestRegister_Success(t *testing.T) {
 
 	assertJSONField(t, resp, "username", "newuser")
 	assertJSONField(t, resp, "email", "newuser@example.com")
+
+	// Register auto-generates a profile picture (best-effort) and
+	// uploads it before responding, so avatar_url is always set on a
+	// successful registration.
+	if resp["avatar_url"] == nil {
+		t.Errorf("expected avatar_url to be set on fresh register, got nil")
+	}
 }
 
 func TestRegister_WithoutEmail(t *testing.T) {
@@ -135,6 +142,12 @@ func TestLogin_Success(t *testing.T) {
 
 	assertJSONField(t, resp, "username", "loginuser")
 	assertJSONField(t, resp, "email", "login@example.com")
+
+	// Login response shape mirrors register; the user got an
+	// auto-generated avatar at registration time, so avatar_url is set.
+	if resp["avatar_url"] == nil {
+		t.Errorf("expected avatar_url to be set on login for user without custom avatar, got nil")
+	}
 }
 
 func TestLogin_WrongPassword(t *testing.T) {

@@ -93,3 +93,22 @@ func (r *Users) Delete(ctx context.Context, userID pgtype.UUID) (generated.User,
 	}
 	return user, nil
 }
+
+func (r *Users) SetAvatar(ctx context.Context, userID pgtype.UUID, avatarKey string) (generated.User, error) {
+	user, err := r.queries.SetAvatar(ctx, generated.SetAvatarParams{
+		UserID:    userID,
+		AvatarKey: avatarKey,
+	})
+	if err != nil {
+		return generated.User{}, pgmap.TranslatePgErr(err)
+	}
+	return user, nil
+}
+
+func (r *Users) ListInUseAvatarKeys(ctx context.Context) ([]string, error) {
+	keys, err := r.queries.ListInUseAvatarKeys(ctx)
+	if err != nil {
+		return nil, pgmap.TranslatePgErr(err)
+	}
+	return keys, nil
+}

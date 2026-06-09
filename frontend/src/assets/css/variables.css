@@ -116,6 +116,11 @@
     --color-bg-card-tinted: #F3EEFF;
     --color-bg-card-highlighted: #E9E5FF;
     --color-interactive-track: #DDD9FF;
+
+    /* Home page */
+    --color-hero-bg: #4B4AC8;
+    --color-icon-circle-bg: #EEEEF8;
+    --color-icon-svg: var(--card-blue);
 }
 
 
@@ -169,6 +174,17 @@
   --color-bg-card-tinted: #1e1b4b;
   --color-bg-card-highlighted: #252145;
   --color-interactive-track: #3730a3;
+
+  /* Home page */
+  --color-hero-bg: #3a3880;
+  --color-icon-circle-bg: #2a2550;
+  --color-icon-svg: #a5b4fc;
+
+  /* Cards */
+  --card-blue: var(--color-primary-600);
+  --card-green: #34d399;
+  --card-yellow: #fbbf24;
+  --card-red: #f87171;
 }
 
 [color-correction="redgreen"] {

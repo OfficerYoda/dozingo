@@ -4,22 +4,21 @@
       <div class="hero-section grid mb-3">
         <div class="hero-banner mb-3 col-8 md-12 sm-12">
           <div class="hero-content">
-            <h2 class="hero-title">Ready for your next lecture win?</h2>
-            <p class="hero-subtitle">Quick-start a bingo grid for today's lecture and join other students currently
-              playing.</p>
-            <RouterLink to="/boards" class="hero-button">Browse Cards</RouterLink>
+            <h2 class="hero-title">{{ t('home.hero.title') }}</h2>
+            <p class="hero-subtitle">{{ t('home.hero.subtitle') }}</p>
+            <RouterLink to="/boards" class="hero-button">{{ t('home.hero.cta') }}</RouterLink>
           </div>
         </div>
 
         <div class="card activity-card col-4 md-12 sm-12">
-          <h3 class="mb-0">Last 24hrs Activity</h3>
+          <h3 class="mb-0">{{ t('home.activity.title') }}</h3>
           <div class="raster-container">
             <div class="icon-div box">
               <div class="icon-circle">
                 <Medal :size="20" />
               </div>
               <div class="icon-text">
-                <small class="category">BINGOS</small>
+                <small class="category">{{ t('home.activity.bingos') }}</small>
                 <span class="category-value">3</span>
               </div>
             </div>
@@ -29,7 +28,7 @@
                 <GamepadDirectional :size="20" />
               </div>
               <div class="icon-text">
-                <small class="category">GAMES</small>
+                <small class="category">{{ t('home.activity.games') }}</small>
                 <span class="category-value">12</span>
               </div>
             </div>
@@ -39,7 +38,7 @@
                 <LayoutGrid :size="20" />
               </div>
               <div class="icon-text">
-                <small class="category">BOARDS</small>
+                <small class="category">{{ t('home.activity.boards') }}</small>
                 <span class="category-value">4</span>
               </div>
             </div>
@@ -49,7 +48,7 @@
                 <SquarePlus :size="18" />
               </div>
               <div class="icon-text">
-                <small class="category">CELLS</small>
+                <small class="category">{{ t('home.activity.cells') }}</small>
                 <span class="category-value">86</span>
               </div>
             </div>
@@ -57,66 +56,82 @@
         </div>
       </div>
 
-      <div class="mb-3">
-        <div class="section-header mb-3">
-          <div>
-            <h2 class="mb-0">Most Liked Cards</h2>
-            <small class="subheading">The community's current favorites</small>
-          </div>
-          <RouterLink to="/boards?sort=most-liked">See all &rarr;</RouterLink>
+      <div class="section-header mb-2">
+        <div>
+          <h2 class="mb-0">{{ t('home.mostLiked.title') }}</h2>
+          <small class="subheading">{{ t('home.mostLiked.subtitle') }}</small>
         </div>
+        <RouterLink to="/boards?sort=most-liked">{{ t('home.mostLiked.seeAll') }} &rarr;</RouterLink>
+      </div>
 
-        <div class="grid">
-          <button v-for="board in mostLikedBoards" :key="board.board_id" class="card card-border-blue col-4 md-6 sm-12">
+      <SliderSection
+        :items="mostLikedBoards"
+        :per-page="3"
+        :per-page-md="2"
+        :per-page-sm="1"
+        :type="'slide'"
+        class="mb-3"
+      >
+        <template #slide="{ item: board }">
+          <button class="card card-border-blue slider-board-card">
             <div class="card-body">
               <h3>{{ board.title }}</h3>
               <small>{{ board.description ?? '—' }}</small>
             </div>
             <hr class="mb-2">
             <div class="card-footer">
-              <span class="card-meta-text">{{ formatCount(board.play_count) }} times</span>
+              <span class="card-meta-text">{{ t('home.card.times', { count: formatCount(board.play_count) }) }}</span>
               <div class="like-group">
                 <Heart :size="20" />
                 <span class="card-meta-text">{{ formatCount(board.score) }}</span>
               </div>
             </div>
           </button>
+        </template>
+      </SliderSection>
+
+      <div class="section-header mb-2">
+        <div>
+          <h2 class="mb-0">{{ t('home.newest.title') }}</h2>
+          <small class="subheading">{{ t('home.newest.subtitle') }}</small>
         </div>
+        <RouterLink to="/boards?sort=newest">{{ t('home.newest.seeAll') }} &rarr;</RouterLink>
       </div>
 
-      <div>
-        <div class="section-header mb-3">
-          <div>
-            <h2 class="mb-0">Recently Added Cards</h2>
-            <small class="subheading">Fresh bingo cards from the community</small>
-          </div>
-          <RouterLink to="/boards?sort=newest">See all &rarr;</RouterLink>
-        </div>
-
-        <div class="grid">
-          <button v-for="board in newestBoards" :key="board.board_id" class="card card-border-blue col-4 md-6 sm-12">
+      <SliderSection
+        :items="newestBoards"
+        :per-page="3"
+        :per-page-md="2"
+        :per-page-sm="1"
+      >
+        <template #slide="{ item: board }">
+          <button class="card card-border-blue slider-board-card">
             <div class="card-body">
               <h3>{{ board.title }}</h3>
               <small>{{ board.description ?? '—' }}</small>
             </div>
             <hr class="mb-2">
             <div class="card-footer">
-              <span class="card-meta-text">{{ formatCount(board.play_count) }} times</span>
+              <span class="card-meta-text">{{ t('home.card.times', { count: formatCount(board.play_count) }) }}</span>
               <div class="like-group">
                 <Heart :size="20" />
                 <span class="card-meta-text">{{ formatCount(board.score) }}</span>
               </div>
             </div>
           </button>
-        </div>
-      </div>
+        </template>
+      </SliderSection>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Heart, GamepadDirectional, SquarePlus, LayoutGrid, Medal } from 'lucide-vue-next'
+import SliderSection from '@/components/SliderSection.vue'
+
+const { t } = useI18n()
 
 interface Board {
   board_id: string
@@ -139,8 +154,8 @@ function formatCount(n: number): string {
 
 async function fetchBoards() {
   const [likedRes, newestRes] = await Promise.all([
-    fetch('/api/boards?sort=most-liked&limit=3', { credentials: 'include' }),
-    fetch('/api/boards?sort=newest&limit=3', { credentials: 'include' }),
+    fetch('/api/boards?sort=most-liked&limit=5', { credentials: 'include' }),
+    fetch('/api/boards?sort=newest&limit=5', { credentials: 'include' }),
   ])
 
   if (likedRes.ok) mostLikedBoards.value = await likedRes.json()
@@ -158,7 +173,7 @@ onMounted(fetchBoards)
 }
 
 .hero-banner {
-  background-color: #4B4AC8;
+  background-color: var(--color-hero-bg);
   border-radius: 16px;
   padding: 40px 36px;
   height: 100%
@@ -209,11 +224,11 @@ onMounted(fetchBoards)
 }
 
 .heading {
-  color: #2C2A51;
+  color: var(--color-heading);
 }
 
 .subheading {
-  color: #75729E;
+  color: var(--color-text-subtle);
 }
 
 /* Activity card */
@@ -234,7 +249,7 @@ onMounted(fetchBoards)
 }
 
 .card-meta-text {
-  color: #5A5781;
+  color: var(--color-subheading);
   font-weight: 600;
   font-size: 13px;
 }
@@ -247,12 +262,7 @@ onMounted(fetchBoards)
 }
 
 .like-group svg {
-  color: #5A5781;
-}
-
-.grid-icons {
-  background-color: gray;
-  border-radius: 50%;
+  color: var(--color-subheading);
 }
 
 .icon-circle {
@@ -260,7 +270,7 @@ onMounted(fetchBoards)
   height: 52px;
   min-width: 52px;
   border-radius: 50%;
-  background-color: #EEEEF8;
+  background-color: var(--color-icon-circle-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -275,7 +285,7 @@ onMounted(fetchBoards)
 }
 
 .icon-div svg {
-  color: #4052B6;
+  color: var(--color-icon-svg);
 }
 
 .icon-text {
@@ -285,14 +295,14 @@ onMounted(fetchBoards)
 }
 
 .category {
-  color: #75729E;
+  color: var(--color-text-subtle);
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.08em;
 }
 
 .category-value {
-  color: #2C2A51;
+  color: var(--color-heading);
   font-size: 1.5rem;
   font-weight: 800;
   line-height: 1;
@@ -311,5 +321,11 @@ onMounted(fetchBoards)
   display: flex;
   justify-content: space-evenly;
   align-items: space-evenly;
+}
+
+.slider-board-card {
+  width: 100%;
+  height: 100%;
+  text-align: left;
 }
 </style>

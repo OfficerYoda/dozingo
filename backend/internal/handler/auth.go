@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
+	"github.com/officeryoda/dozingo/internal/avatar"
 	"github.com/officeryoda/dozingo/internal/generated"
 	"github.com/officeryoda/dozingo/internal/middleware"
 	"github.com/officeryoda/dozingo/internal/pgmap"
@@ -15,9 +16,10 @@ import (
 // ===== Input/Output types =====
 
 type userOutputBody struct {
-	UserID   string  `json:"user_id"  format:"uuid"`
-	Username string  `json:"username" pattern:"^[^\\s\\x00-\\x1F\\x7F]+$"`
-	Email    *string `json:"email"    format:"email"`
+	UserID    string  `json:"user_id"            format:"uuid"`
+	Username  string  `json:"username"           pattern:"^[^\\s\\x00-\\x1F\\x7F]+$"`
+	Email     *string `json:"email"              format:"email"`
+	AvatarURL *string `json:"avatar_url,omitempty" format:"uri"`
 }
 
 type userOutput struct {
@@ -79,11 +81,12 @@ type verifyEmailInput struct {
 // ===== Handler =====
 
 type AuthHandler struct {
-	svc *service.Auth
+	svc        *service.Auth
+	avatarURLs *avatar.URLBuilder
 }
 
-func NewAuthHandler(svc *service.Auth) *AuthHandler {
-	return &AuthHandler{svc: svc}
+func NewAuthHandler(svc *service.Auth, avatarURLs *avatar.URLBuilder) *AuthHandler {
+	return &AuthHandler{svc: svc, avatarURLs: avatarURLs}
 }
 
 func (h *AuthHandler) Register(api huma.API) {
@@ -161,7 +164,7 @@ func (h *AuthHandler) register(ctx context.Context, in *registerInput) (*userOut
 		return nil, toHumaErr(err, "", "failed to register user")
 	}
 
-	return &userOutput{Body: userToOutput(user)}, nil
+	return &userOutput{Body: userToOutput(user, h.avatarURLs)}, nil
 }
 
 func (h *AuthHandler) login(ctx context.Context, in *loginInput) (*userOutput, error) {
@@ -173,7 +176,7 @@ func (h *AuthHandler) login(ctx context.Context, in *loginInput) (*userOutput, e
 		return nil, toHumaErr(err, "", "failed to login user")
 	}
 
-	return &userOutput{Body: userToOutput(user)}, nil
+	return &userOutput{Body: userToOutput(user, h.avatarURLs)}, nil
 }
 
 func (h *AuthHandler) logout(ctx context.Context, _ *struct{}) (*struct{}, error) {
@@ -204,7 +207,7 @@ func (h *AuthHandler) newPassword(ctx context.Context, in *newPasswordInput) (*u
 		return nil, toHumaErr(err, "", "failed to update password")
 	}
 
-	return &userOutput{Body: userToOutput(user)}, nil
+	return &userOutput{Body: userToOutput(user, h.avatarURLs)}, nil
 }
 
 func (h *AuthHandler) sendEmailVerification(ctx context.Context, _ *struct{}) (*emailSentOutput, error) {
@@ -222,13 +225,14 @@ func (h *AuthHandler) verifyEmail(ctx context.Context, in *verifyEmailInput) (*u
 		return nil, toHumaErr(err, "", "failed to verify email")
 	}
 
-	return &userOutput{Body: userToOutput(user)}, nil
+	return &userOutput{Body: userToOutput(user, h.avatarURLs)}, nil
 }
 
-func userToOutput(user generated.User) userOutputBody {
+func userToOutput(user generated.User, urls *avatar.URLBuilder) userOutputBody {
 	return userOutputBody{
-		UserID:   user.ID.String(),
-		Username: user.Username,
-		Email:    pgmap.StringFromPgText(user.Email),
+		UserID:    user.ID.String(),
+		Username:  user.Username,
+		Email:     pgmap.StringFromPgText(user.Email),
+		AvatarURL: urls.URL(user.AvatarKey),
 	}
 }

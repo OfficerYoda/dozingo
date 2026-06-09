@@ -53,8 +53,8 @@ func fetchSessionExpiry(t *testing.T, token string) (time.Time, bool) {
 func TestSession_NoCookieOnAnonRequest(t *testing.T) {
 	setupTest(t)
 
-	// /api/health does not call RequireSessionCtx, so the middleware should
-	// not mint or set any cookie.
+	// /api/health is registered directly on the bare api (not apiGroup), so
+	// it bypasses session middleware entirely and must never set a cookie.
 	w := doRequest(http.MethodGet, "/api/health", nil)
 	if c := extractSessionCookie(w); c != nil {
 		t.Errorf("expected no session cookie on anon request, got %+v", c)
@@ -64,8 +64,12 @@ func TestSession_NoCookieOnAnonRequest(t *testing.T) {
 func TestSession_InvalidCookie_ClearedAndRequestStillWorks(t *testing.T) {
 	setupTest(t)
 
+	// Use an endpoint that lives on apiGroup (where the session middleware
+	// runs) but does not itself require auth. /api/health is registered
+	// directly on the bare api to bypass middleware, so it would not
+	// exercise the cookie-clearing path.
 	junk := &http.Cookie{Name: "session_token", Value: "this-token-does-not-exist"}
-	w := doRequestWithCookies(http.MethodGet, "/api/health", nil, []*http.Cookie{junk})
+	w := doRequestWithCookies(http.MethodGet, "/api/boards", nil, []*http.Cookie{junk})
 	assertStatus(t, w, http.StatusOK)
 
 	c := extractSessionCookie(w)
@@ -111,7 +115,9 @@ func TestSession_NearExpiry_GetsExtended(t *testing.T) {
 	}
 
 	cookie := &http.Cookie{Name: "session_token", Value: tok}
-	w := doRequestWithCookies(http.MethodGet, "/api/health", nil, []*http.Cookie{cookie})
+	// /api/boards lives on apiGroup so it goes through session middleware
+	// (which is what we're testing here). /api/health bypasses it.
+	w := doRequestWithCookies(http.MethodGet, "/api/boards", nil, []*http.Cookie{cookie})
 	assertStatus(t, w, http.StatusOK)
 
 	newExpiry, ok := fetchSessionExpiry(t, tok)
@@ -139,7 +145,7 @@ func TestSession_FreshSession_NotExtended(t *testing.T) {
 	}
 
 	cookie := &http.Cookie{Name: "session_token", Value: tok}
-	w := doRequestWithCookies(http.MethodGet, "/api/health", nil, []*http.Cookie{cookie})
+	w := doRequestWithCookies(http.MethodGet, "/api/boards", nil, []*http.Cookie{cookie})
 	assertStatus(t, w, http.StatusOK)
 
 	newExpiry, ok := fetchSessionExpiry(t, tok)

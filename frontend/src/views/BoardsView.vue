@@ -2,17 +2,16 @@
     <section>
         <div class="container">
             <div class="list-header mb-4">
-                <h2 class="mb-0">Explore all Cards</h2>
+                <h2 class="mb-0">{{ t('boards.title') }}</h2>
                 <div class="header-actions">
-                    <input class="btn btn-secondary" type="search" placeholder="Search.." v-model="search">
+                    <input class="btn btn-secondary" type="search" :placeholder="t('boards.searchPlaceholder')" v-model="search">
                     <select class="btn btn-secondary" v-model="appliedFiler">
-                        <option value="">No Filter</option>
-                        <option value="newest">Newest</option>
-                        <option value="most-liked">Most liked</option>
-                        <option value="most-played">Most played</option>
-                        <option value="oldest">Oldest</option>
-                        <option value="least-liked">Least liked</option>
-                        <option value="least-played">Least played</option>
+                        <option value="newest" selected >{{ t('boards.sort.newest') }}</option>
+                        <option value="most-liked">{{ t('boards.sort.mostLiked') }}</option>
+                        <option value="most-played">{{ t('boards.sort.mostPlayed') }}</option>
+                        <option value="oldest">{{ t('boards.sort.oldest') }}</option>
+                        <option value="least-liked">{{ t('boards.sort.leastLiked') }}</option>
+                        <option value="least-played">{{ t('boards.sort.leastPlayed') }}</option>
                     </select>
                 </div>
             </div>
@@ -28,7 +27,7 @@
                     </div>
                     <hr class="mb-2">
                     <div class="card-footer">
-                        <span class="card-meta-text">Played {{ board.play_count }} times</span>
+                        <span class="card-meta-text">{{ t('boards.card.played', { count: board.play_count }) }}</span>
                         <div class="like-group">
                             <Heart :size="20" />
                             <span class="card-meta-text">{{ board.score }}</span>
@@ -73,17 +72,13 @@
 
                 <div class="bottom-bar">
                     <div class="bottom-bar-text">
-                        <small>Createt by</small>
-                        <span>Hier Author eintragen</span>
+                        <small>{{ t('boards.modal.createdBy') }}</small>
+                        <span>{{ authorName ?? '…' }}</span>
                     </div>
                     <div class="right-buttons-bottom">
-                        <button class="btn btn-secondary button-bottom-row" @click="shuffle">
-                            <Dices :size="20" />
-                            <p class="mb-0">Shuffle</p>
-                        </button>
-                        <button class="btn btn-primary button-bottom-row">
+                        <button class="btn btn-primary button-bottom-row" @click="router.push('/game/' + selecetedBoard?.board_id)">
                             <Play :size="20" />
-                            <p class="mb-0">Start the game</p>
+                            <p class="mb-0">{{ t('boards.modal.startGame') }}</p>
                         </button>
                     </div>
                 </div>
@@ -95,8 +90,8 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute } from 'vue-router'
-import { Heart, X, Dices, LayoutGrid, Play } from 'lucide-vue-next'
+import { useRoute, useRouter } from 'vue-router'
+import { Heart, X, LayoutGrid, Play } from 'lucide-vue-next'
 
 interface Board {
     board_id: string
@@ -105,6 +100,7 @@ interface Board {
     play_count: number
     score: number
     size: number
+    author_id: string
 }
 
 interface Cell {
@@ -113,14 +109,16 @@ interface Cell {
     value: 0,
 }
 
-useI18n()
+const { t } = useI18n()
 const route = useRoute()
+const router = useRouter()
 
 const error = ref<string | null>(null)
 const boards = ref<Board[]>([])
 const cells = ref<Cell[]>([])
 const selecetedBoard = ref<Board>()
 const selectedCells = ref<Cell[]>()
+const authorName = ref<string | null>(null)
 
 async function fetchAllBoards() {
     const params = new URLSearchParams()
@@ -130,7 +128,7 @@ async function fetchAllBoards() {
     const query = params.toString() ? '?' + params.toString() : ''
     const boardsRes = await fetch('/api/boards' + query, { credentials: 'include' })
     if (!boardsRes.ok) {
-        error.value = 'Failed to load boards'
+        error.value = t('boards.error.loadBoards')
         return
     }
 
@@ -140,7 +138,7 @@ async function fetchAllBoards() {
 async function fetchAllCellsForBoard(boardID: string) {
     const cellsRes = await fetch('/api/boards/' + boardID + '/cells')
     if (!cellsRes.ok) {
-        error.value = 'Failed to load cells for board ' + boardID
+        error.value = t('boards.error.loadCells') + ' ' + boardID
         return
     }
 
@@ -148,6 +146,16 @@ async function fetchAllCellsForBoard(boardID: string) {
     selecetedBoard.value = boards.value.find(b => b.board_id === boardID)
     const numberOfCells = (selecetedBoard.value?.size ?? 0) ** 2
     selectedCells.value = [...cells.value].sort(() => Math.random() - 0.5).slice(0, numberOfCells)
+
+    authorName.value = null
+    if (selecetedBoard.value?.author_id) {
+        const userRes = await fetch('/api/users/' + selecetedBoard.value.author_id)
+        if (userRes.ok) {
+            const user = await userRes.json()
+            authorName.value = user.username
+        }
+    }
+
     showModal.value = true
 }
 
@@ -159,11 +167,6 @@ watch([appliedFiler, search], () => {
 }, { immediate: true })
 
 const showModal = ref(false)
-
-function shuffle() {
-    const numberOfCells = (selecetedBoard.value?.size ?? 0) ** 2
-    selectedCells.value = [...cells.value].sort(() => Math.random() - 0.5).slice(0, numberOfCells)
-}
 
 function clickBoard(boardID: string) {
     console.log("Statet loading the cells for board with boardid " + boardID)
@@ -206,11 +209,11 @@ function clickBoard(boardID: string) {
 }
 
 .like-group svg {
-    color: #5A5781;
+    color: var(--color-subheading);
 }
 
 .card-meta-text {
-    color: #5A5781;
+    color: var(--color-subheading);
     font-weight: 600;
     font-size: 13px;
 }
@@ -245,11 +248,11 @@ function clickBoard(boardID: string) {
 }
 
 .header-modal-title {
-    color: #2C2A51;
+    color: var(--color-heading);
 }
 
 .header-modal-subtitle {
-    color: #4052B6;
+    color: var(--card-blue);
     font-weight: 600;
 }
 
@@ -269,15 +272,15 @@ function clickBoard(boardID: string) {
 }
 
 .stat-plays {
-    color: #4052B6;
+    color: var(--card-blue);
 }
 
 .stat-likes {
-    color: #C0185A;
+    color: var(--card-red);
 }
 
 .stat-size {
-    color: #2E7D32;
+    color: var(--card-green);
 }
 
 .bottom-bar {
@@ -302,7 +305,7 @@ function clickBoard(boardID: string) {
 }
 
 .background-seperate-cells {
-    background-color: #E3DFFF;
+    background-color: var(--color-input-bg);
     border-radius: var(--radius-sm);
     padding: 8px;
     display: grid;
@@ -352,7 +355,7 @@ function clickBoard(boardID: string) {
     font-weight: 700;
     text-align: center;
     margin: 0;
-    color: #2C2A51;
+    color: var(--color-heading);
     word-break: break-word;
 }
 
