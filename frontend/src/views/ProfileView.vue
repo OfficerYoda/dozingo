@@ -69,7 +69,6 @@
 <script setup lang="ts">
 import { useAuth } from '@/composables/useAuth'
 import { ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { Heart } from 'lucide-vue-next'
 import SliderSection from '@/components/SliderSection.vue'
@@ -93,7 +92,7 @@ interface Board {
 interface Cell {
     cell_id: string,
     content: string,
-    value: 0,
+    value: number,
 }
 
 interface Vote {
@@ -106,7 +105,6 @@ interface Vote {
     vote_count: number
 }
 
-useI18n()
 const route = useRoute()
 
 const error = ref<string | null>(null)
