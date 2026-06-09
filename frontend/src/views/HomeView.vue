@@ -73,7 +73,7 @@
         class="mb-3"
       >
         <template #slide="{ item: board }">
-          <button class="card card-border-blue slider-board-card">
+          <button class="card card-border-blue slider-board-card" @click="clickBoard(board)">
             <div class="card-body">
               <h3>{{ board.title }}</h3>
               <small>{{ board.description ?? '—' }}</small>
@@ -105,7 +105,7 @@
         :per-page-sm="1"
       >
         <template #slide="{ item: board }">
-          <button class="card card-border-blue slider-board-card">
+          <button class="card card-border-blue slider-board-card" @click="clickBoard(board)">
             <div class="card-body">
               <h3>{{ board.title }}</h3>
               <small>{{ board.description ?? '—' }}</small>
@@ -123,6 +123,14 @@
       </SliderSection>
     </div>
   </section>
+
+  <ModalStartGame
+    v-if="selectedBoard"
+    v-model="showModal"
+    :board="selectedBoard"
+    :cells="selectedCells"
+    :author-name="authorName"
+  />
 </template>
 
 <script setup lang="ts">
@@ -130,6 +138,7 @@ import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Heart, GamepadDirectional, SquarePlus, LayoutGrid, Medal } from 'lucide-vue-next'
 import SliderSection from '@/components/SliderSection.vue'
+import ModalStartGame from '@/components/ModalStartGame.vue'
 
 const { t } = useI18n()
 
@@ -144,8 +153,18 @@ interface Board {
   play_count: number
 }
 
+interface Cell {
+  cell_id: string
+  content: string
+  value: number
+}
+
 const mostLikedBoards = ref<Board[]>([])
 const newestBoards = ref<Board[]>([])
+const selectedBoard = ref<Board | null>(null)
+const selectedCells = ref<Cell[]>([])
+const authorName = ref<string | null>(null)
+const showModal = ref(false)
 
 function formatCount(n: number): string {
   if (n >= 1000) return `${(n / 1000).toFixed(1)}k`
@@ -160,6 +179,28 @@ async function fetchBoards() {
 
   if (likedRes.ok) mostLikedBoards.value = await likedRes.json()
   if (newestRes.ok) newestBoards.value = await newestRes.json()
+}
+
+async function clickBoard(board: Board) {
+  selectedBoard.value = board
+  authorName.value = null
+
+  const cellsRes = await fetch('/api/boards/' + board.board_id + '/cells')
+  if (cellsRes.ok) {
+    const allCells: Cell[] = await cellsRes.json()
+    const count = board.size ** 2
+    selectedCells.value = [...allCells].sort(() => Math.random() - 0.5).slice(0, count)
+  }
+
+  if (board.author_id) {
+    const userRes = await fetch('/api/users/' + board.author_id)
+    if (userRes.ok) {
+      const user = await userRes.json()
+      authorName.value = user.username
+    }
+  }
+
+  showModal.value = true
 }
 
 onMounted(fetchBoards)

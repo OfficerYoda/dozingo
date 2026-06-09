@@ -38,60 +38,21 @@
         </div>
     </section>
 
-    <Teleport to="body">
-        <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
-            <div class="card">
-                <div class="header-modal mb-0">
-                    <div>
-                        <h2 class="mb-0 header-modal-title">{{ selecetedBoard?.title }}</h2>
-                        <small class="header-modal-subtitle">{{ selecetedBoard?.description }}</small>
-                        <div class="modal-stats">
-                            <span class="stat-item stat-plays">
-                                <Play :size="15"/> {{ selecetedBoard?.play_count }}
-                            </span>
-                            <span class="stat-item stat-likes">
-                                <Heart :size="15"/> {{ selecetedBoard?.score }}
-                            </span>
-                            <span class="stat-item stat-size">
-                                <LayoutGrid :size="15"/> {{ selecetedBoard?.size }}x{{ selecetedBoard?.size }}
-                            </span>
-                        </div>
-                    </div>
-                    <X :size="20" @click="showModal = false" />
-                </div>
-
-                <hr class="mb-3">
-
-                <ul class="background-seperate-cells ">
-                    <li v-for="cell in selectedCells" :key="cell.cell_id" class="card cell-btn">
-                        <p>{{ cell.content }}</p>
-                    </li>
-                </ul>
-
-                <hr class="mb-3">
-
-                <div class="bottom-bar">
-                    <div class="bottom-bar-text">
-                        <small>{{ t('boards.modal.createdBy') }}</small>
-                        <span>{{ authorName ?? '…' }}</span>
-                    </div>
-                    <div class="right-buttons-bottom">
-                        <button class="btn btn-primary button-bottom-row" @click="router.push('/game/' + selecetedBoard?.board_id)">
-                            <Play :size="20" />
-                            <p class="mb-0">{{ t('boards.modal.startGame') }}</p>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </Teleport>
+    <ModalStartGame
+        v-if="selecetedBoard"
+        v-model="showModal"
+        :board="selecetedBoard"
+        :cells="selectedCells ?? []"
+        :author-name="authorName"
+    />
 </template>
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute, useRouter } from 'vue-router'
-import { Heart, X, LayoutGrid, Play } from 'lucide-vue-next'
+import { useRoute } from 'vue-router'
+import { Heart } from 'lucide-vue-next'
+import ModalStartGame from '@/components/ModalStartGame.vue'
 
 interface Board {
     board_id: string
@@ -111,7 +72,6 @@ interface Cell {
 
 const { t } = useI18n()
 const route = useRoute()
-const router = useRouter()
 
 const error = ref<string | null>(null)
 const boards = ref<Board[]>([])
