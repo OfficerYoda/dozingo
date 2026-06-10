@@ -303,7 +303,7 @@ func seedGames(ctx context.Context, q *generated.Queries, userIDs, sessionIDs, b
 		if g.Status != "active" {
 			updateParams := generated.UpdateGameStatusParams{
 				Status: generated.GameStatus(g.Status),
-				ID:     game.ID,
+				GameID: game.ID,
 			}
 			if g.PlayerIdx >= 0 {
 				updateParams.PlayerID = userIDs[g.PlayerIdx]
