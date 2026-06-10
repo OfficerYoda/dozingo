@@ -13,19 +13,19 @@ import (
 
 const attachUserToSession = `-- name: AttachUserToSession :one
 UPDATE sessions
-SET user_id = $2
-WHERE token = $1
+SET user_id = $1
+WHERE token = $2
 RETURNING id, user_id, token, expires_at, created_at, updated_at
 `
 
 type AttachUserToSessionParams struct {
-	Token  string      `json:"token"`
 	UserID pgtype.UUID `json:"user_id"`
+	Token  string      `json:"token"`
 }
 
 // Used on login: prompote an anon session to a user-bound one
 func (q *Queries) AttachUserToSession(ctx context.Context, arg AttachUserToSessionParams) (Session, error) {
-	row := q.db.QueryRow(ctx, attachUserToSession, arg.Token, arg.UserID)
+	row := q.db.QueryRow(ctx, attachUserToSession, arg.UserID, arg.Token)
 	var i Session
 	err := row.Scan(
 		&i.ID,
@@ -81,12 +81,12 @@ WHERE user_id = $1
 `
 
 type DeleteOtherSessionsFromUserParams struct {
-	UserID pgtype.UUID `json:"user_id"`
-	ID     pgtype.UUID `json:"id"`
+	UserID    pgtype.UUID `json:"user_id"`
+	SessionID pgtype.UUID `json:"session_id"`
 }
 
 func (q *Queries) DeleteOtherSessionsFromUser(ctx context.Context, arg DeleteOtherSessionsFromUserParams) error {
-	_, err := q.db.Exec(ctx, deleteOtherSessionsFromUser, arg.UserID, arg.ID)
+	_, err := q.db.Exec(ctx, deleteOtherSessionsFromUser, arg.UserID, arg.SessionID)
 	return err
 }
 
@@ -112,18 +112,18 @@ func (q *Queries) DeleteSessionByUserID(ctx context.Context, userID pgtype.UUID)
 
 const extendSessionByToken = `-- name: ExtendSessionByToken :one
 UPDATE sessions
-SET expires_at = $2
-WHERE token = $1
+SET expires_at = $1
+WHERE token = $2
 RETURNING id, user_id, token, expires_at, created_at, updated_at
 `
 
 type ExtendSessionByTokenParams struct {
-	Token     string             `json:"token"`
 	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
+	Token     string             `json:"token"`
 }
 
 func (q *Queries) ExtendSessionByToken(ctx context.Context, arg ExtendSessionByTokenParams) (Session, error) {
-	row := q.db.QueryRow(ctx, extendSessionByToken, arg.Token, arg.ExpiresAt)
+	row := q.db.QueryRow(ctx, extendSessionByToken, arg.ExpiresAt, arg.Token)
 	var i Session
 	err := row.Scan(
 		&i.ID,
