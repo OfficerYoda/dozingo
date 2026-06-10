@@ -363,9 +363,9 @@ func seedGames(ctx context.Context, q *generated.Queries, userIDs, sessionIDs, b
 			for _, gc := range cells {
 				if gc.Position == row.Position && gc.IsMarked {
 					_, err = q.UpdateGameCellMark(ctx, generated.UpdateGameCellMarkParams{
-						IsMarked: true,
-						ID:       row.ID,
-						GameID:   game.ID,
+						IsMarked:   true,
+						GameCellID: row.ID,
+						GameID:     game.ID,
 					})
 					if err != nil {
 						return fmt.Errorf("marking game cell at position %d for game %d: %w", gc.Position, gameIdx, err)
