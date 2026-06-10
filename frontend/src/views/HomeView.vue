@@ -19,7 +19,7 @@
               </div>
               <div class="icon-text">
                 <small class="category">{{ t('home.activity.bingos') }}</small>
-                <span class="category-value">3</span>
+                <span class="category-value">{{ stats.bingos }}</span>
               </div>
             </div>
 
@@ -29,7 +29,7 @@
               </div>
               <div class="icon-text">
                 <small class="category">{{ t('home.activity.games') }}</small>
-                <span class="category-value">12</span>
+                <span class="category-value">{{ stats.games }}</span>
               </div>
             </div>
 
@@ -39,7 +39,7 @@
               </div>
               <div class="icon-text">
                 <small class="category">{{ t('home.activity.boards') }}</small>
-                <span class="category-value">4</span>
+                <span class="category-value">{{ stats.boards }}</span>
               </div>
             </div>
 
@@ -49,7 +49,7 @@
               </div>
               <div class="icon-text">
                 <small class="category">{{ t('home.activity.cells') }}</small>
-                <span class="category-value">86</span>
+                <span class="category-value">{{ stats.cells }}</span>
               </div>
             </div>
           </div>
@@ -159,12 +159,31 @@ interface Cell {
   value: number
 }
 
+interface Stats {
+  bingos: number
+  boards: number
+  cells: number
+  games: number
+}
+
 const mostLikedBoards = ref<Board[]>([])
 const newestBoards = ref<Board[]>([])
 const selectedBoard = ref<Board | null>(null)
 const selectedCells = ref<Cell[]>([])
 const authorName = ref<string | null>(null)
 const showModal = ref(false)
+
+const stats = ref<Stats>({
+  bingos:0,
+  boards: 0,
+  cells: 0,
+  games: 0,
+})
+
+async function loadStats(){
+  const statsFetched = await fetch('api/stats/recent?duration=24h' , { credentials: 'include' })
+  stats.value = await statsFetched.json()
+}
 
 function formatCount(n: number): string {
   if (n >= 1000) return `${(n / 1000).toFixed(1)}k`
@@ -204,6 +223,7 @@ async function clickBoard(board: Board) {
 }
 
 onMounted(fetchBoards)
+onMounted(loadStats)
 </script>
 
 <style>
