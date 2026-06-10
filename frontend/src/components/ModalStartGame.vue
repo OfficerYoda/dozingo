@@ -37,7 +37,8 @@
                         <span>{{ authorName ?? '…' }}</span>
                     </div>
                     <div class="right-buttons-bottom">
-                        <button class="btn btn-primary button-bottom-row" @click="router.push('/game/' + board.board_id)">
+                        <button class="btn btn-primary button-bottom-row"
+                            @click="router.push('/game/' + board.board_id)">
                             <Play :size="20" />
                             <p class="mb-0">{{ t('boards.modal.startGame') }}</p>
                         </button>
@@ -80,6 +81,35 @@ const emit = defineEmits<{
     'update:modelValue': [value: boolean]
 }>()
 
+async function createGameAndNav() {
+    const cells: Cell[] = props.cells
+
+    shuffle(cells);
+
+    const 
+
+    const createGame = await fetch('/api/boards/' + props.board.board_id + '/games', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: ,
+    })
+}
+
+function shuffle(array: Cell[]) {
+    let currentIndex = array.length;
+
+    while (currentIndex != 0) {
+
+        let randomIndex = Math.floor(Math.random() * currentIndex);
+        currentIndex--;
+
+        [array[currentIndex], array[randomIndex]] = [
+            array[randomIndex]!, array[currentIndex]!]
+
+    }
+}
+
 const { t } = useI18n()
 const router = useRouter()
 </script>
@@ -96,7 +126,7 @@ const router = useRouter()
     padding: 16px;
 }
 
-.modal-overlay > .card {
+.modal-overlay>.card {
     width: 100%;
     max-width: 720px;
     max-height: 90vh;
@@ -135,9 +165,17 @@ const router = useRouter()
     font-weight: 600;
 }
 
-.stat-plays { color: var(--card-blue); }
-.stat-likes { color: var(--card-red); }
-.stat-size  { color: var(--card-green); }
+.stat-plays {
+    color: var(--card-blue);
+}
+
+.stat-likes {
+    color: var(--card-red);
+}
+
+.stat-size {
+    color: var(--card-green);
+}
 
 .bottom-bar {
     display: flex;
@@ -179,7 +217,7 @@ const router = useRouter()
     }
 }
 
-.background-seperate-cells > .card.cell-btn {
+.background-seperate-cells>.card.cell-btn {
     min-height: 0;
     overflow: hidden;
     cursor: pointer;
@@ -190,7 +228,7 @@ const router = useRouter()
     justify-content: center;
 }
 
-.background-seperate-cells > .cell-btn p {
+.background-seperate-cells>.cell-btn p {
     display: -webkit-box;
     -webkit-line-clamp: 3;
     line-clamp: 3;
