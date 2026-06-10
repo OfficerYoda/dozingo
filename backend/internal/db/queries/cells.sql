@@ -1,10 +1,10 @@
 -- name: GetCellsByBoardID :many
 SELECT * FROM cells
-WHERE board_id = $1;
+WHERE board_id = @board_id;
 
 -- name: GetCellByID :one
 SELECT * FROM cells
-WHERE id = $1;
+WHERE id = @cell_id;
 
 -- name: ListCellsByIDs :many
 SELECT * FROM cells
@@ -13,7 +13,7 @@ WHERE id = ANY(@cell_ids::uuid[])
 
 -- name: CreateCell :one
 INSERT INTO cells (board_id, content, value)
-VALUES ($1, $2, $3)
+VALUES (@board_id, @content, @value)
 RETURNING *;
 
 -- name: UpdateCell :one
@@ -25,5 +25,5 @@ RETURNING *;
 
 -- name: DeleteCell :one
 DELETE FROM cells
-WHERE id = $1 and board_id = $2
+WHERE id = @cell_id and board_id = @board_id
 RETURNING *;
