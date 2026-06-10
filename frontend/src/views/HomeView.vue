@@ -19,7 +19,7 @@
               </div>
               <div class="icon-text">
                 <small class="category">{{ t('home.activity.bingos') }}</small>
-                <span class="category-value">3</span>
+                <span class="category-value">{{ stats.bingos }}</span>
               </div>
             </div>
 
@@ -29,7 +29,7 @@
               </div>
               <div class="icon-text">
                 <small class="category">{{ t('home.activity.games') }}</small>
-                <span class="category-value">12</span>
+                <span class="category-value">{{ stats.games }}</span>
               </div>
             </div>
 
@@ -39,7 +39,7 @@
               </div>
               <div class="icon-text">
                 <small class="category">{{ t('home.activity.boards') }}</small>
-                <span class="category-value">4</span>
+                <span class="category-value">{{ stats.boards }}</span>
               </div>
             </div>
 
@@ -49,7 +49,7 @@
               </div>
               <div class="icon-text">
                 <small class="category">{{ t('home.activity.cells') }}</small>
-                <span class="category-value">86</span>
+                <span class="category-value">{{ stats.cells }}</span>
               </div>
             </div>
           </div>
@@ -73,7 +73,7 @@
         class="mb-3"
       >
         <template #slide="{ item: board }">
-          <button class="card card-border-blue slider-board-card">
+          <button class="card card-border-blue slider-board-card" @click="clickBoard(board)">
             <div class="card-body">
               <h3>{{ board.title }}</h3>
               <small>{{ board.description ?? '—' }}</small>
@@ -105,7 +105,7 @@
         :per-page-sm="1"
       >
         <template #slide="{ item: board }">
-          <button class="card card-border-blue slider-board-card">
+          <button class="card card-border-blue slider-board-card" @click="clickBoard(board)">
             <div class="card-body">
               <h3>{{ board.title }}</h3>
               <small>{{ board.description ?? '—' }}</small>
@@ -123,6 +123,14 @@
       </SliderSection>
     </div>
   </section>
+
+  <ModalStartGame
+    v-if="selectedBoard"
+    v-model="showModal"
+    :board="selectedBoard"
+    :cells="selectedCells"
+    :author-name="authorName"
+  />
 </template>
 
 <script setup lang="ts">
@@ -130,6 +138,7 @@ import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Heart, GamepadDirectional, SquarePlus, LayoutGrid, Medal } from 'lucide-vue-next'
 import SliderSection from '@/components/SliderSection.vue'
+import ModalStartGame from '@/components/ModalStartGame.vue'
 
 const { t } = useI18n()
 
@@ -144,8 +153,37 @@ interface Board {
   play_count: number
 }
 
+interface Cell {
+  cell_id: string
+  content: string
+  value: number
+}
+
+interface Stats {
+  bingos: number
+  boards: number
+  cells: number
+  games: number
+}
+
 const mostLikedBoards = ref<Board[]>([])
 const newestBoards = ref<Board[]>([])
+const selectedBoard = ref<Board | null>(null)
+const selectedCells = ref<Cell[]>([])
+const authorName = ref<string | null>(null)
+const showModal = ref(false)
+
+const stats = ref<Stats>({
+  bingos:0,
+  boards: 0,
+  cells: 0,
+  games: 0,
+})
+
+async function loadStats(){
+  const statsFetched = await fetch('api/stats/recent?duration=24h' , { credentials: 'include' })
+  stats.value = await statsFetched.json()
+}
 
 function formatCount(n: number): string {
   if (n >= 1000) return `${(n / 1000).toFixed(1)}k`
@@ -162,7 +200,30 @@ async function fetchBoards() {
   if (newestRes.ok) newestBoards.value = await newestRes.json()
 }
 
+async function clickBoard(board: Board) {
+  selectedBoard.value = board
+  authorName.value = null
+
+  const cellsRes = await fetch('/api/boards/' + board.board_id + '/cells')
+  if (cellsRes.ok) {
+    const allCells: Cell[] = await cellsRes.json()
+    const count = board.size ** 2
+    selectedCells.value = [...allCells].sort(() => Math.random() - 0.5).slice(0, count)
+  }
+
+  if (board.author_id) {
+    const userRes = await fetch('/api/users/' + board.author_id)
+    if (userRes.ok) {
+      const user = await userRes.json()
+      authorName.value = user.username
+    }
+  }
+
+  showModal.value = true
+}
+
 onMounted(fetchBoards)
+onMounted(loadStats)
 </script>
 
 <style>
@@ -251,7 +312,7 @@ onMounted(fetchBoards)
 .card-meta-text {
   color: var(--color-subheading);
   font-weight: 600;
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 
 /* Like group */
@@ -296,7 +357,7 @@ onMounted(fetchBoards)
 
 .category {
   color: var(--color-text-subtle);
-  font-size: 10px;
+  font-size: 0.625rem;
   font-weight: 700;
   letter-spacing: 0.08em;
 }

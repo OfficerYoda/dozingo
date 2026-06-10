@@ -77,7 +77,7 @@ var users = []userData{
 	{Username: "emiliaWolf", Email: "emilia.wolf@stud.uni-koeln.de"},
 	{Username: "ghostUser01", Email: ""},
 	{Username: "anon_student", Email: ""},
-	{Username: "admin", Email: "admin@dozingo.de"},
+	{Username: "admin", Email: "admin@mail.dozingo.de"},
 }
 
 // boards defines 18 boards with mixed sizes (4-6), each linked to an author.
@@ -743,7 +743,7 @@ var cellPhrases = map[int][]string{
 	// Board 17: "Admin Debug Bingo" (size 4, 21 cells, English, with hidden references)
 	17: {
 		"Tests pass on second try",
-		"`TODO: fix later` from 2019",
+		"`TODO fix later` from 2019",
 		"Admin force-pushes to main",
 		"'It works on my machine'",
 		"42 unread Slack pings",
@@ -1067,7 +1067,7 @@ var gameCells = map[int][]gameCellData{
 	// Game 9: admin on board 17 (Admin Debug Bingo, size 4 -> 16 cells, active, a few marks)
 	9: {
 		{Content: "Tests pass on second try", Position: 0, IsMarked: true},
-		{Content: "`TODO: fix later` from 2019", Position: 1, IsMarked: true},
+		{Content: "`TODO fix later` from 2019", Position: 1, IsMarked: true},
 		{Content: "Admin force-pushes to main", Position: 2, IsMarked: false},
 		{Content: "'It works on my machine'", Position: 3, IsMarked: true},
 		{Content: "42 unread Slack pings", Position: 4, IsMarked: false},

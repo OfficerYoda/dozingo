@@ -47,8 +47,14 @@ type listGamesByBoardOutput struct {
 	Body []gameOutput
 }
 
+type createGameCellsItem struct {
+	CellID   types.UUIDParam `json:"cell_id" format:"uuid"`
+	Position int32           `json:"position" required:"true"`
+}
+
 type createGameInput struct {
-	BoardID types.UUIDParam `path:"board_id" format:"uuid"`
+	BoardID types.UUIDParam       `path:"board_id" format:"uuid"`
+	Body    []createGameCellsItem `maxItems:"64"`
 }
 
 type createGameOutput struct {
@@ -184,7 +190,18 @@ func (h *GamesHandler) listByBoard(ctx context.Context, in *listGamesByBoardInpu
 }
 
 func (h *GamesHandler) create(ctx context.Context, in *createGameInput) (*createGameOutput, error) {
-	game, err := h.svc.Create(ctx, in.BoardID.Value)
+	gameCells := make([]service.CreateGameCellItem, 0, len(in.Body))
+	for _, c := range in.Body {
+		gameCells = append(gameCells, service.CreateGameCellItem{
+			CellID:   c.CellID.Value,
+			Position: c.Position,
+		})
+	}
+
+	game, err := h.svc.Create(ctx, service.CreateGameInput{
+		BoardID:   in.BoardID.Value,
+		GameCells: gameCells,
+	})
 	if err != nil {
 		return nil, toHumaErr(err, "", "failed to create game")
 	}

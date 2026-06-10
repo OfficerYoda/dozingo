@@ -24,6 +24,11 @@ WHERE token = $1;
 DELETE FROM sessions
 WHERE user_id = $1;
 
+-- name: DeleteOtherSessionsFromUser :exec
+DELETE FROM sessions
+WHERE user_id = $1
+  AND id != $2;
+
 -- name: DeleteExpiredSessions :exec
 DELETE FROM sessions
 WHERE expires_at < now();

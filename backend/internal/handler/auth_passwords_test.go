@@ -373,3 +373,165 @@ func TestNewPassword_InvalidatesAllSessions(t *testing.T) {
 		}
 	}
 }
+
+/// ===== /auth/change-password =====
+
+func TestChangePassword_Unauthenticated(t *testing.T) {
+	setupTest(t)
+
+	w := doRequest(http.MethodPost, "/api/auth/change-password", map[string]any{
+		"old_password": "originalpw1",
+		"new_password": "freshpw98765",
+	})
+	assertStatus(t, w, http.StatusUnauthorized)
+}
+
+func TestChangePassword_Success(t *testing.T) {
+	setupTest(t)
+
+	resp := createTestUserWithRegister(t, "cpuser", "originalpw1", stringPtr("cp@example.com"))
+	userIDStr := (*resp)["user_id"].(string)
+	cookie := userCookies[userIDStr]
+	if cookie == nil {
+		t.Fatal("expected register to capture a session cookie")
+	}
+
+	w := doRequestWithCookies(http.MethodPost, "/api/auth/change-password", map[string]any{
+		"old_password": "originalpw1",
+		"new_password": "freshpw98765",
+	}, []*http.Cookie{cookie})
+	if w.Code != http.StatusOK && w.Code != http.StatusNoContent {
+		t.Errorf("expected 200/204 for successful change-password, got %d (body: %s)", w.Code, w.Body.String())
+	}
+
+	// Logging in with the new password must work.
+	loginNew := doRequest(http.MethodPost, "/api/auth/login", map[string]any{
+		"username": "cpuser",
+		"password": "freshpw98765",
+	})
+	assertStatus(t, loginNew, http.StatusOK)
+
+	// Logging in with the old password must fail.
+	loginOld := doRequest(http.MethodPost, "/api/auth/login", map[string]any{
+		"username": "cpuser",
+		"password": "originalpw1",
+	})
+	assertStatus(t, loginOld, http.StatusUnauthorized)
+}
+
+func TestChangePassword_WrongOldPassword(t *testing.T) {
+	setupTest(t)
+
+	resp := createTestUserWithRegister(t, "cpwrong", "originalpw1", stringPtr("cpwrong@example.com"))
+	userIDStr := (*resp)["user_id"].(string)
+	cookie := userCookies[userIDStr]
+	if cookie == nil {
+		t.Fatal("expected register to capture a session cookie")
+	}
+
+	w := doRequestWithCookies(http.MethodPost, "/api/auth/change-password", map[string]any{
+		"old_password": "wrongoldpw1",
+		"new_password": "freshpw98765",
+	}, []*http.Cookie{cookie})
+	assertStatus(t, w, http.StatusUnauthorized)
+
+	// Old password must still be valid (no change happened).
+	loginOld := doRequest(http.MethodPost, "/api/auth/login", map[string]any{
+		"username": "cpwrong",
+		"password": "originalpw1",
+	})
+	assertStatus(t, loginOld, http.StatusOK)
+}
+
+func TestChangePassword_SamePassword(t *testing.T) {
+	setupTest(t)
+
+	resp := createTestUserWithRegister(t, "cpsame", "originalpw1", stringPtr("cpsame@example.com"))
+	userIDStr := (*resp)["user_id"].(string)
+	cookie := userCookies[userIDStr]
+	if cookie == nil {
+		t.Fatal("expected register to capture a session cookie")
+	}
+
+	w := doRequestWithCookies(http.MethodPost, "/api/auth/change-password", map[string]any{
+		"old_password": "originalpw1",
+		"new_password": "originalpw1",
+	}, []*http.Cookie{cookie})
+	assertStatus(t, w, http.StatusUnprocessableEntity)
+}
+
+func TestChangePassword_NewPasswordTooLong(t *testing.T) {
+	setupTest(t)
+
+	resp := createTestUserWithRegister(t, "cplong", "originalpw1", stringPtr("cplong@example.com"))
+	userIDStr := (*resp)["user_id"].(string)
+	cookie := userCookies[userIDStr]
+	if cookie == nil {
+		t.Fatal("expected register to capture a session cookie")
+	}
+
+	w := doRequestWithCookies(http.MethodPost, "/api/auth/change-password", map[string]any{
+		"old_password": "originalpw1",
+		"new_password": strings.Repeat("a", 73),
+	}, []*http.Cookie{cookie})
+	if w.Code != http.StatusUnprocessableEntity && w.Code != http.StatusBadRequest {
+		t.Errorf("expected 422/400 for >72 byte new_password, got %d (body: %s)", w.Code, w.Body.String())
+	}
+}
+
+func TestChangePassword_InvalidatesOtherSessions(t *testing.T) {
+	setupTest(t)
+
+	// Two separate sessions for the same user: one from the original
+	// register response (cookie A) and one from a follow-up login (cookie B).
+	resp := createTestUserWithRegister(t, "cpmulti", "originalpw1", stringPtr("cpmulti@example.com"))
+	userIDStr := (*resp)["user_id"].(string)
+	cookieA := userCookies[userIDStr]
+
+	loginResp := doRequest(http.MethodPost, "/api/auth/login", map[string]any{
+		"username": "cpmulti",
+		"password": "originalpw1",
+	})
+	assertStatus(t, loginResp, http.StatusOK)
+	cookieB := extractSessionCookie(loginResp)
+	if cookieA == nil || cookieB == nil || cookieA.Value == cookieB.Value {
+		t.Fatalf("expected two distinct session cookies, got A=%v B=%v", cookieA, cookieB)
+	}
+
+	// Change the password using cookie B. Cookie B is the "current
+	// session" and must remain valid; cookie A must be invalidated.
+	w := doRequestWithCookies(http.MethodPost, "/api/auth/change-password", map[string]any{
+		"old_password": "originalpw1",
+		"new_password": "freshpw98765",
+	}, []*http.Cookie{cookieB})
+	if w.Code != http.StatusOK && w.Code != http.StatusNoContent {
+		t.Errorf("expected 200/204 for successful change-password, got %d (body: %s)", w.Code, w.Body.String())
+	}
+
+	// Cookie B (the session that performed the change) must still work.
+	meB := doRequestWithCookies(http.MethodGet, "/api/users/me", nil, []*http.Cookie{cookieB})
+	assertStatus(t, meB, http.StatusOK)
+
+	// Cookie A (the other session) must be invalidated.
+	meA := doRequestWithCookies(http.MethodGet, "/api/users/me", nil, []*http.Cookie{cookieA})
+	assertStatus(t, meA, http.StatusUnauthorized)
+}
+
+func TestChangePassword_DoesNotLeakDBDetails(t *testing.T) {
+	setupTest(t)
+
+	resp := createTestUserWithRegister(t, "cpleak", "originalpw1", stringPtr("cpleak@example.com"))
+	userIDStr := (*resp)["user_id"].(string)
+	cookie := userCookies[userIDStr]
+	if cookie == nil {
+		t.Fatal("expected register to capture a session cookie")
+	}
+
+	w := doRequestWithCookies(http.MethodPost, "/api/auth/change-password", map[string]any{
+		"old_password": "wrongoldpw1",
+		"new_password": "freshpw98765",
+	}, []*http.Cookie{cookie})
+	assertResponseDoesNotLeak(t, w.Body.String(),
+		"user_passwords", "constraint", "23505", "pgx", "sql:",
+		"originalpw1", "wrongoldpw1", "freshpw98765")
+}

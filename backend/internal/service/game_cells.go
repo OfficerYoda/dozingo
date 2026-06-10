@@ -25,17 +25,6 @@ func NewGameCells(gameCells *repository.GameCells, games *repository.Games, quer
 	}
 }
 
-type CreateGameCellsInput struct {
-	GameID pgtype.UUID
-	Items  []CreateGameCellItem
-}
-
-type CreateGameCellItem struct {
-	CellID   pgtype.UUID
-	Content  string
-	Position int32
-}
-
 type UpdateGameCellMarkInput struct {
 	GameCellID pgtype.UUID
 	GameID     pgtype.UUID
@@ -43,19 +32,12 @@ type UpdateGameCellMarkInput struct {
 }
 
 func (s *GameCells) ListByGameID(ctx context.Context, gameID pgtype.UUID) ([]generated.GameCell, error) {
-	return s.gameCells.ListByGameID(ctx, gameID)
-}
-
-func (s *GameCells) Create(ctx context.Context, in CreateGameCellsInput) ([]generated.GameCell, error) {
-	_, err := checkIfCallerOwnsGame(ctx, s.games, s.queries, in.GameID)
-	if err != nil {
-		return []generated.GameCell{}, err
+	// Verify the game exists before listing its cells so that callers receive
+	// 404 for an unknown game_id rather than an empty list.
+	if _, err := s.games.Get(ctx, gameID); err != nil {
+		return nil, err
 	}
-
-	return s.gameCells.Create(ctx, repository.CreateGameCellsInput{
-		GameID: in.GameID,
-		Items:  gameCellsToRepoItems(in.Items),
-	})
+	return s.gameCells.ListByGameID(ctx, gameID)
 }
 
 func (s *GameCells) UpdateMark(ctx context.Context, in UpdateGameCellMarkInput) (generated.GameCell, error) {
@@ -89,13 +71,4 @@ func (s *GameCells) assertGameCellOnGame(ctx context.Context, gameCellID, gameID
 	}
 
 	return nil
-}
-
-func gameCellsToRepoItems(items []CreateGameCellItem) []repository.CreateGameCellItem {
-	result := make([]repository.CreateGameCellItem, len(items))
-	for i, item := range items {
-		result[i] = repository.CreateGameCellItem(item)
-	}
-
-	return result
 }

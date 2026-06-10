@@ -62,14 +62,3 @@ func toHumaErr(err error, notFoundMsg, opMsg string) error {
 
 	return huma.Error500InternalServerError(opMsg)
 }
-
-// mapSlice returns a new slice with fn applied to every element of in.
-// Always returns a non-nil slice
-func mapSlice[T, U any](in []T, fn func(T) U) []U {
-	out := make([]U, 0, len(in))
-	for _, v := range in {
-		out = append(out, fn(v))
-	}
-
-	return out
-}

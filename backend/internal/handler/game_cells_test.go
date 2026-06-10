@@ -6,133 +6,21 @@ import (
 	"testing"
 )
 
-// setupForGameCells creates a user, board, cell, and game, returning relevant IDs.
-func setupForGameCells(t *testing.T) (userID, boardID, cellID, gameID string) {
+// setupForGameCells creates a user, a board, and a game (with auto-seeded
+// game cells), and returns the relevant IDs. The board uses size 5, so the
+// game has 25 game cells out of the box. Tests that need finer control over
+// the board size should construct their own setup.
+func setupForGameCells(t *testing.T) (userID, boardID, gameID string) {
 	t.Helper()
 	userID = createTestUser(t, "gamecelluser", "gamecelluser@example.com")
 	boardID = createTestBoard(t, "GameCell Board", 5, userID, nil)
-	cellID = createTestCell(t, boardID, "Source Cell")
 	gameID = createTestGame(t, userID, boardID)
-	return userID, boardID, cellID, gameID
-}
-
-func TestCreateGameCells(t *testing.T) {
-	setupTest(t)
-	_, boardID, cellID, gameID := setupForGameCells(t)
-
-	// Create a second cell
-	cellID2 := createTestCell(t, boardID, "Source Cell 2")
-
-	body := []map[string]any{
-		{"cell_id": cellID, "content": "Cell Content 1", "position": 0},
-		{"cell_id": cellID2, "content": "Cell Content 2", "position": 1},
-	}
-
-	w := doRequestWithCookies(http.MethodPost, fmt.Sprintf("/api/games/%s/cells", gameID), body, cookiesForGame(t, gameID))
-	assertStatus(t, w, http.StatusOK)
-
-	var resp []map[string]any
-	decodeJSON(t, w, &resp)
-
-	if len(resp) != 2 {
-		t.Errorf("expected 2 game cells, got %d", len(resp))
-		return
-	}
-
-	// Verify cells are ordered by position
-	if pos, ok := resp[0]["position"].(float64); !ok || int(pos) != 0 {
-		t.Errorf("expected first cell position = 0, got %v", resp[0]["position"])
-	}
-	if pos, ok := resp[1]["position"].(float64); !ok || int(pos) != 1 {
-		t.Errorf("expected second cell position = 1, got %v", resp[1]["position"])
-	}
-
-	assertJSONField(t, resp[0], "content", "Cell Content 1")
-	assertJSONField(t, resp[1], "content", "Cell Content 2")
-	assertJSONField(t, resp[0], "game_id", gameID)
-}
-
-func TestCreateGameCells_AnonymousNonOwner(t *testing.T) {
-	setupTest(t)
-	_, _, cellID, gameID := setupForGameCells(t)
-
-	body := []map[string]any{
-		{"cell_id": cellID, "content": "Anon Cell", "position": 0},
-	}
-
-	// Anonymous caller (no cookie) is automatically minted a fresh session by
-	// RequireSession middleware, so the request reaches the ownership check.
-	// That check fails because the game belongs to someone else, returning
-	// 403 Forbidden.
-	w := doRequest(http.MethodPost, fmt.Sprintf("/api/games/%s/cells", gameID), body)
-	assertStatus(t, w, http.StatusForbidden)
-}
-
-func TestCreateGameCells_FullBoard(t *testing.T) {
-	setupTest(t)
-	_, boardID, _, gameID := setupForGameCells(t)
-
-	// Create 9 cells for a 3x3 board worth of game cells
-	cells := make([]map[string]any, 9)
-	for i := range 9 {
-		cellID := createTestCell(t, boardID, fmt.Sprintf("Cell %d", i))
-		cells[i] = map[string]any{
-			"cell_id":  cellID,
-			"content":  fmt.Sprintf("Game Cell %d", i),
-			"position": i,
-		}
-	}
-
-	w := doRequestWithCookies(http.MethodPost, fmt.Sprintf("/api/games/%s/cells", gameID), cells, cookiesForGame(t, gameID))
-	assertStatus(t, w, http.StatusOK)
-
-	var resp []map[string]any
-	decodeJSON(t, w, &resp)
-
-	if len(resp) != 9 {
-		t.Errorf("expected 9 game cells, got %d", len(resp))
-	}
-}
-
-// The bulk endpoint accepts up to 64 items per call. Anything larger
-// must be rejected at validation time (before the request reaches the
-// service or the database) so a malicious caller can't drive arbitrary-
-// size payloads through this endpoint. 64 sits comfortably above the
-// 6x6=36 cells of the largest currently-supported board, leaving room
-// for plausible future board sizes (e.g. 8x8).
-func TestCreateGameCells_TooMany_Rejected(t *testing.T) {
-	setupTest(t)
-	_, _, cellID, gameID := setupForGameCells(t)
-
-	// 65 items - just over the cap. The cell_id intentionally repeats
-	// the same UUID; validation must reject the array length before any
-	// DB lookup runs, so the references don't matter.
-	cells := make([]map[string]any, 65)
-	for i := range 65 {
-		cells[i] = map[string]any{
-			"cell_id":  cellID,
-			"content":  "x",
-			"position": i,
-		}
-	}
-
-	w := doRequestWithCookies(http.MethodPost, fmt.Sprintf("/api/games/%s/cells", gameID), cells, cookiesForGame(t, gameID))
-	if w.Code != http.StatusUnprocessableEntity && w.Code != http.StatusBadRequest {
-		t.Errorf("expected 422/400 for >64 items, got %d (body: %s)", w.Code, w.Body.String())
-	}
+	return userID, boardID, gameID
 }
 
 func TestGetGameCellsByGameID(t *testing.T) {
 	setupTest(t)
-	_, _, cellID, gameID := setupForGameCells(t)
-
-	// Create game cells
-	body := []map[string]any{
-		{"cell_id": cellID, "content": "Cell A", "position": 0},
-		{"cell_id": cellID, "content": "Cell B", "position": 1},
-		{"cell_id": cellID, "content": "Cell C", "position": 2},
-	}
-	doRequestWithCookies(http.MethodPost, fmt.Sprintf("/api/games/%s/cells", gameID), body, cookiesForGame(t, gameID))
+	_, _, gameID := setupForGameCells(t)
 
 	w := doRequest(http.MethodGet, fmt.Sprintf("/api/games/%s/cells", gameID), nil)
 	assertStatus(t, w, http.StatusOK)
@@ -140,12 +28,13 @@ func TestGetGameCellsByGameID(t *testing.T) {
 	var resp []map[string]any
 	decodeJSON(t, w, &resp)
 
-	if len(resp) != 3 {
-		t.Errorf("expected 3 game cells, got %d", len(resp))
+	// createTestGame seeds size*size cells (5*5 = 25).
+	if len(resp) != 25 {
+		t.Errorf("expected 25 game cells, got %d", len(resp))
 		return
 	}
 
-	// Should be ordered by position
+	// Should be ordered by position 0..24.
 	for i, cell := range resp {
 		if pos, ok := cell["position"].(float64); !ok || int(pos) != i {
 			t.Errorf("expected position %d, got %v", i, cell["position"])
@@ -153,9 +42,25 @@ func TestGetGameCellsByGameID(t *testing.T) {
 	}
 }
 
-func TestGetGameCellsByGameID_Empty(t *testing.T) {
+// TestGetGameCellsByGameID_NoSuchGame asserts that listing cells for a
+// nonexistent game id returns 404. The service checks game existence before
+// querying cells so callers get a clear not-found error rather than an
+// empty list.
+func TestGetGameCellsByGameID_NoSuchGame(t *testing.T) {
 	setupTest(t)
-	_, _, _, gameID := setupForGameCells(t)
+
+	w := doRequest(http.MethodGet, "/api/games/00000000-0000-0000-0000-000000000000/cells", nil)
+	assertStatus(t, w, http.StatusNotFound)
+}
+
+func TestGetGameCellsByGameID_InvalidGameID(t *testing.T) {
+	w := doRequest(http.MethodGet, "/api/games/not-a-uuid/cells", nil)
+	assertStatus(t, w, http.StatusUnprocessableEntity)
+}
+
+func TestCreateGame_IsMarkedDefaultsFalse(t *testing.T) {
+	setupTest(t)
+	_, _, gameID := setupForGameCells(t)
 
 	w := doRequest(http.MethodGet, fmt.Sprintf("/api/games/%s/cells", gameID), nil)
 	assertStatus(t, w, http.StatusOK)
@@ -163,16 +68,22 @@ func TestGetGameCellsByGameID_Empty(t *testing.T) {
 	var resp []map[string]any
 	decodeJSON(t, w, &resp)
 
-	if len(resp) != 0 {
-		t.Errorf("expected 0 game cells, got %d", len(resp))
+	if len(resp) == 0 {
+		t.Fatalf("expected seeded game cells, got 0")
+	}
+	for i, c := range resp {
+		marked, ok := c["is_marked"].(bool)
+		if !ok || marked {
+			t.Errorf("cell %d: expected is_marked = false by default, got %v", i, c["is_marked"])
+		}
 	}
 }
 
 func TestUpdateGameCellMark_MarkTrue(t *testing.T) {
 	setupTest(t)
-	_, _, cellID, gameID := setupForGameCells(t)
+	_, _, gameID := setupForGameCells(t)
 
-	gameCellID := createTestGameCell(t, gameID, cellID, "Markable Cell", 0)
+	gameCellID := createTestGameCell(t, gameID, "", "", 0)
 
 	// Mark the cell
 	w := doRequestWithCookies(http.MethodPut, fmt.Sprintf("/api/games/%s/cells/%s", gameID, gameCellID),
@@ -192,16 +103,17 @@ func TestUpdateGameCellMark_MarkTrue(t *testing.T) {
 
 func TestUpdateGameCellMark_MarkFalse(t *testing.T) {
 	setupTest(t)
-	_, _, cellID, gameID := setupForGameCells(t)
+	_, _, gameID := setupForGameCells(t)
 
-	gameCellID := createTestGameCell(t, gameID, cellID, "Toggle Cell", 0)
+	gameCellID := createTestGameCell(t, gameID, "", "", 0)
 	cookies := cookiesForGame(t, gameID)
 
 	// Mark it true first
-	doRequestWithCookies(http.MethodPut, fmt.Sprintf("/api/games/%s/cells/%s", gameID, gameCellID),
+	wMark := doRequestWithCookies(http.MethodPut, fmt.Sprintf("/api/games/%s/cells/%s", gameID, gameCellID),
 		map[string]any{"is_marked": true},
 		cookies,
 	)
+	assertStatus(t, wMark, http.StatusOK)
 
 	// Now unmark it
 	w := doRequestWithCookies(http.MethodPut, fmt.Sprintf("/api/games/%s/cells/%s", gameID, gameCellID),
@@ -220,7 +132,7 @@ func TestUpdateGameCellMark_MarkFalse(t *testing.T) {
 
 func TestUpdateGameCellMark_NotFound(t *testing.T) {
 	setupTest(t)
-	_, _, _, gameID := setupForGameCells(t)
+	_, _, gameID := setupForGameCells(t)
 
 	w := doRequestWithCookies(http.MethodPut,
 		fmt.Sprintf("/api/games/%s/cells/00000000-0000-0000-0000-000000000000", gameID),
@@ -232,9 +144,9 @@ func TestUpdateGameCellMark_NotFound(t *testing.T) {
 
 func TestUpdateGameCellMark_WrongGame(t *testing.T) {
 	setupTest(t)
-	userID, boardID, cellID, gameID := setupForGameCells(t)
+	userID, boardID, gameID := setupForGameCells(t)
 
-	gameCellID := createTestGameCell(t, gameID, cellID, "Cell", 0)
+	gameCellID := createTestGameCell(t, gameID, "", "", 0)
 
 	// Create a second game (same player so cookie lookup works for both)
 	game2ID := createTestGame(t, userID, boardID)
@@ -254,8 +166,8 @@ func TestUpdateGameCellMark_WrongGame(t *testing.T) {
 // step before the SQL UPDATE runs.
 func TestUpdateGameCellMark_HijackOtherPlayersCell(t *testing.T) {
 	setupTest(t)
-	_, boardID, cellID, victimGameID := setupForGameCells(t)
-	victimCellID := createTestGameCell(t, victimGameID, cellID, "Victim Cell", 0)
+	_, boardID, victimGameID := setupForGameCells(t)
+	victimCellID := createTestGameCell(t, victimGameID, "", "", 0)
 
 	// Attacker creates their own game on the same board.
 	attacker := createTestUser(t, "attacker_gamecell", "attacker_gc@example.com")
@@ -269,62 +181,64 @@ func TestUpdateGameCellMark_HijackOtherPlayersCell(t *testing.T) {
 	assertStatus(t, w, http.StatusNotFound)
 }
 
-func TestGetGameCellsByGameID_InvalidGameID(t *testing.T) {
-	w := doRequest(http.MethodGet, "/api/games/not-a-uuid/cells", nil)
-	assertStatus(t, w, http.StatusUnprocessableEntity)
-}
-
-func TestCreateGameCells_IsMarkedDefaultsFalse(t *testing.T) {
-	setupTest(t)
-	_, _, cellID, gameID := setupForGameCells(t)
-
-	body := []map[string]any{
-		{"cell_id": cellID, "content": "New Cell", "position": 0},
-	}
-
-	w := doRequestWithCookies(http.MethodPost, fmt.Sprintf("/api/games/%s/cells", gameID), body, cookiesForGame(t, gameID))
-	assertStatus(t, w, http.StatusOK)
-
-	var resp []map[string]any
-	decodeJSON(t, w, &resp)
-
-	if len(resp) != 1 {
-		t.Fatalf("expected 1 game cell, got %d", len(resp))
-	}
-
-	if marked, ok := resp[0]["is_marked"].(bool); !ok || marked {
-		t.Errorf("expected is_marked = false by default, got %v", resp[0]["is_marked"])
-	}
-}
-
+// TestGetGameCellsByGameID_CellIDNullable asserts that when a board cell is
+// deleted, any game_cells referencing it have their cell_id set to NULL but
+// keep their snapshotted content. We pick one of the auto-seeded cells from
+// the game, look up its source board cell_id, delete that board cell, and
+// re-read the game cells list to verify.
 func TestGetGameCellsByGameID_CellIDNullable(t *testing.T) {
 	setupTest(t)
-	_, boardID, cellID, gameID := setupForGameCells(t)
+	_, boardID, gameID := setupForGameCells(t)
 
-	// Create game cells with a cell reference
-	body := []map[string]any{
-		{"cell_id": cellID, "content": "Linked Cell", "position": 0},
+	// Read game cells, pick the first one's cell_id (the board cell it
+	// references) and remember its content snapshot.
+	listResp := doRequest(http.MethodGet, fmt.Sprintf("/api/games/%s/cells", gameID), nil)
+	assertStatus(t, listResp, http.StatusOK)
+	var before []map[string]any
+	decodeJSON(t, listResp, &before)
+	if len(before) == 0 {
+		t.Fatalf("expected seeded game cells, got 0")
 	}
-	doRequestWithCookies(http.MethodPost, fmt.Sprintf("/api/games/%s/cells", gameID), body, cookiesForGame(t, gameID))
+	first := before[0]
+	sourceCellID, _ := first["cell_id"].(string)
+	if sourceCellID == "" {
+		t.Fatalf("expected cell_id on freshly created game cell, got empty")
+	}
+	wantContent, _ := first["content"].(string)
+	gameCellID, _ := first["game_cell_id"].(string)
 
-	// Delete the source cell (should SET NULL on game_cells.cell_id)
-	doRequestWithCookies(http.MethodDelete, fmt.Sprintf("/api/boards/%s/cells/%s", boardID, cellID), nil, cookiesForBoard(t, boardID))
+	// Delete the source board cell. The schema should SET NULL on
+	// game_cells.cell_id.
+	delResp := doRequestWithCookies(http.MethodDelete,
+		fmt.Sprintf("/api/boards/%s/cells/%s", boardID, sourceCellID),
+		nil,
+		cookiesForBoard(t, boardID),
+	)
+	if delResp.Code >= 400 {
+		t.Fatalf("failed to delete source cell: status=%d body=%s", delResp.Code, delResp.Body.String())
+	}
 
-	// Fetch game cells — cell_id should now be null
+	// Re-fetch and find the same game cell by id.
 	w := doRequest(http.MethodGet, fmt.Sprintf("/api/games/%s/cells", gameID), nil)
 	assertStatus(t, w, http.StatusOK)
+	var after []map[string]any
+	decodeJSON(t, w, &after)
 
-	var resp []map[string]any
-	decodeJSON(t, w, &resp)
-
-	if len(resp) != 1 {
-		t.Fatalf("expected 1 game cell, got %d", len(resp))
+	var found map[string]any
+	for _, c := range after {
+		if id, _ := c["game_cell_id"].(string); id == gameCellID {
+			found = c
+			break
+		}
 	}
-
-	if resp[0]["cell_id"] != nil {
-		t.Errorf("expected cell_id = null after source cell deletion, got %v", resp[0]["cell_id"])
+	if found == nil {
+		t.Fatalf("game cell %s missing after source cell deletion", gameCellID)
 	}
-
-	// Content should still be preserved (snapshot)
-	assertJSONField(t, resp[0], "content", "Linked Cell")
+	if found["cell_id"] != nil {
+		t.Errorf("expected cell_id = null after source cell deletion, got %v", found["cell_id"])
+	}
+	// Content snapshot should be preserved.
+	if got, _ := found["content"].(string); got != wantContent {
+		t.Errorf("expected content %q to be preserved after cell deletion, got %q", wantContent, got)
+	}
 }

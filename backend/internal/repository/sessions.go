@@ -81,6 +81,18 @@ func (r *Sessions) DeleteByUserID(ctx context.Context, userID pgtype.UUID) error
 	return nil
 }
 
+func (r *Sessions) DeleteOtherSessionsFromUser(ctx context.Context, userID, sessionID pgtype.UUID) error {
+	err := r.queries.DeleteOtherSessionsFromUser(ctx, generated.DeleteOtherSessionsFromUserParams{
+		UserID: userID,
+		ID:     sessionID,
+	})
+	if err != nil {
+		return pgmap.TranslatePgErr(err)
+	}
+
+	return nil
+}
+
 func (r *Sessions) DeleteExpiredSessions(ctx context.Context) error {
 	err := r.queries.DeleteExpiredSessions(ctx)
 	if err != nil {

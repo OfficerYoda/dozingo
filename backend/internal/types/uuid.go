@@ -8,7 +8,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-// UUIDParam is a custom param Wrapper for pgtype.UUID. This indriectly allows
+// UUIDParam is a custom param Wrapper for pgtype.UUID. This indirectly allows
 // for the direct use of pgtype.UUID and skips the extra parsing from string step
 type UUIDParam struct {
 	Value pgtype.UUID

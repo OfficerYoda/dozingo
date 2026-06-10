@@ -49,6 +49,18 @@ func (r *Cells) GetByID(ctx context.Context, cellID pgtype.UUID) (generated.Cell
 	return cell, nil
 }
 
+func (r *Cells) ListByIDs(ctx context.Context, cellIDs []pgtype.UUID, boardID pgtype.UUID) ([]generated.Cell, error) {
+	cells, err := r.queries.ListCellsByIDs(ctx, generated.ListCellsByIDsParams{
+		BoardID: boardID,
+		CellIds: cellIDs,
+	})
+	if err != nil {
+		return []generated.Cell{}, pgmap.TranslatePgErr(err)
+	}
+
+	return cells, nil
+}
+
 func (r *Cells) Create(ctx context.Context, in CreateCellInput) (generated.Cell, error) {
 	cell, err := r.queries.CreateCell(ctx, generated.CreateCellParams{
 		BoardID: in.BoardID,

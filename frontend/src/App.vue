@@ -94,7 +94,7 @@ const auth = useAuth()
 const fontSizes = ['12px', '14px', '16px', '18px', '20px']
 const savedFontSize = localStorage.getItem('fontSize')
 if (savedFontSize) {
-  document.documentElement.style.fontSize = fontSizes[Number(savedFontSize) - 1]
+  document.documentElement.style.fontSize = fontSizes[Number(savedFontSize) - 1] ?? '16px'
 }
 
 watch(locale, (newLocale) => {

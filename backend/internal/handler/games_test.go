@@ -19,8 +19,9 @@ func TestCreateGame(t *testing.T) {
 	setupTest(t)
 	userID, boardID := setupForGames(t)
 
+	body := seedGameCellsBody(t, boardID)
 	w := doRequestWithCookies(http.MethodPost,
-		fmt.Sprintf("/api/boards/%s/games", boardID), nil, cookiesFor(userID))
+		fmt.Sprintf("/api/boards/%s/games", boardID), body, cookiesFor(userID))
 	assertStatus(t, w, http.StatusOK)
 
 	var resp map[string]any
@@ -41,7 +42,8 @@ func TestCreateGame_Anonymous(t *testing.T) {
 
 	// No cookie -> server mints a fresh anonymous session and creates the
 	// game with player_id = NULL, session_id set.
-	w := doRequest(http.MethodPost, fmt.Sprintf("/api/boards/%s/games", boardID), nil)
+	body := seedGameCellsBody(t, boardID)
+	w := doRequest(http.MethodPost, fmt.Sprintf("/api/boards/%s/games", boardID), body)
 	assertStatus(t, w, http.StatusOK)
 
 	var resp map[string]any
@@ -328,28 +330,28 @@ func TestCreateGame_MultipleOnSameBoard(t *testing.T) {
 func TestDeleteGame_CascadesGameCells(t *testing.T) {
 	setupTest(t)
 	userID, boardID := setupForGames(t)
-	cellID := createTestCell(t, boardID, "Test Cell")
 	gameID := createTestGame(t, userID, boardID)
 
-	// Create game cells
-	doRequestWithCookies(http.MethodPost, fmt.Sprintf("/api/games/%s/cells", gameID), []map[string]any{
-		{"cell_id": cellID, "content": "Test Cell", "position": 0},
-	}, cookiesFor(userID))
+	// createTestGame seeds size*size game cells (board size 5 -> 25 cells).
+	// Sanity-check they exist before deletion so the post-delete assertion
+	// is meaningful.
+	pre := doRequest(http.MethodGet, fmt.Sprintf("/api/games/%s/cells", gameID), nil)
+	assertStatus(t, pre, http.StatusOK)
+	var preCells []map[string]any
+	decodeJSON(t, pre, &preCells)
+	if len(preCells) == 0 {
+		t.Fatalf("expected game cells to be seeded by createTestGame, got 0")
+	}
 
 	// Delete the game (should cascade to game_cells)
 	w := doRequestWithCookies(http.MethodDelete, fmt.Sprintf("/api/games/%s", gameID), nil, cookiesFor(userID))
 	assertStatus(t, w, http.StatusNoContent)
 
-	// Verify game cells are gone too
+	// Verify game cells are gone too. After the game is deleted the cells
+	// endpoint returns 404 (the service checks game existence before querying
+	// cells), which also proves the cascade removed the game row.
 	getResp := doRequest(http.MethodGet, fmt.Sprintf("/api/games/%s/cells", gameID), nil)
-	// The game is gone so game cells should be empty or the game_id is invalid
-	var cells []map[string]any
-	if getResp.Code == http.StatusOK {
-		decodeJSON(t, getResp, &cells)
-		if len(cells) != 0 {
-			t.Errorf("expected 0 game cells after game deletion, got %d", len(cells))
-		}
-	}
+	assertStatus(t, getResp, http.StatusNotFound)
 }
 
 // ===== Anonymous + /me/games coverage =====
@@ -484,14 +486,12 @@ func TestListByCurrentSession_AfterLogin(t *testing.T) {
 	}
 }
 
-// ===== Latent bugs (these tests are expected to fail until the bugs are
-// fixed in a follow-up commit). =====
+// ===== Anonymous game authorization =====
 
-// TestUpdateGameStatus_Anonymous documents that anonymous players cannot
-// update their own anonymous game's status today. The repository's
-// UpdateStatus method only forwards PlayerID to the SQL query, so the
-// session-id branch in the WHERE clause never matches for anon callers and
-// the UPDATE affects 0 rows -> ErrNoRows -> 404. Should be 200.
+// TestUpdateGameStatus_Anonymous verifies that an anonymous player can update
+// the status of their own game. Authorization is by session_id: the SQL WHERE
+// clause uses (player_id IS NULL AND session_id = $4) for anon callers, so the
+// update matches and returns the updated game.
 func TestUpdateGameStatus_Anonymous(t *testing.T) {
 	setupTest(t)
 	_, boardID := setupForGames(t)
@@ -511,12 +511,11 @@ func TestUpdateGameStatus_Anonymous(t *testing.T) {
 	assertJSONField(t, resp, "status", "completed")
 }
 
-// TestDeleteGame_AnonymousNonOwner documents that a *different* anonymous
-// caller can currently delete someone else's anonymous game. The
-// service-layer ownership check compares sessionUser.UserID == game.PlayerID;
-// for anon-vs-anon both are zero pgtype.UUID, so the equality holds and
-// authorization passes incorrectly. Authorization for anon games must be by
-// session_id, not by player_id.
+// TestDeleteGame_AnonymousNonOwner verifies that a different anonymous caller
+// cannot delete another user's anonymous game. The service-layer ownership
+// check branches on game.PlayerID.Valid: when player_id is NULL (anon game)
+// it compares sessionUser.SessionID == game.SessionID, so a stranger with a
+// different session correctly receives 403 Forbidden.
 func TestDeleteGame_AnonymousNonOwner(t *testing.T) {
 	setupTest(t)
 	_, boardID := setupForGames(t)
@@ -531,4 +530,227 @@ func TestDeleteGame_AnonymousNonOwner(t *testing.T) {
 		[]*http.Cookie{strangerCookie},
 	)
 	assertStatus(t, w, http.StatusForbidden)
+}
+
+// ===== Game-create input validation =====
+
+// setupForGamesSize creates a user and a board with the given size, returning
+// both IDs. Helper for tests that want to pin down the size to keep payloads
+// small.
+func setupForGamesSize(t *testing.T, size int) (userID, boardID string) {
+	t.Helper()
+	userID = createTestUser(t, fmt.Sprintf("gameuser_size%d", size), fmt.Sprintf("gameuser_size%d@example.com", size))
+	boardID = createTestBoard(t, fmt.Sprintf("Board %d", size), size, userID, nil)
+	return userID, boardID
+}
+
+// TestCreateGame_RejectsMismatchedCellCount documents the size^2 contract:
+// the body must carry exactly board.size*board.size items. One short is a
+// bad-input error from the service.
+func TestCreateGame_RejectsMismatchedCellCount(t *testing.T) {
+	setupTest(t)
+	userID, boardID := setupForGamesSize(t, 4)
+
+	// Seed full body, then truncate by one to force the mismatch.
+	body := seedGameCellsBody(t, boardID)
+	body = body[:len(body)-1]
+
+	w := doRequestWithCookies(http.MethodPost,
+		fmt.Sprintf("/api/boards/%s/games", boardID), body, cookiesFor(userID))
+	assertStatus(t, w, http.StatusBadRequest)
+}
+
+// TestCreateGame_RejectsEmptyBody asserts an empty cell list is rejected
+// for any board with size > 0.
+func TestCreateGame_RejectsEmptyBody(t *testing.T) {
+	setupTest(t)
+	userID, boardID := setupForGamesSize(t, 4)
+
+	w := doRequestWithCookies(http.MethodPost,
+		fmt.Sprintf("/api/boards/%s/games", boardID), []map[string]any{}, cookiesFor(userID))
+	assertStatus(t, w, http.StatusBadRequest)
+}
+
+// TestCreateGame_RejectsTooManyCells exercises the maxItems:64 cap on the
+// Huma input schema. 65 items must be rejected at validation time, before
+// the handler runs.
+func TestCreateGame_RejectsTooManyCells(t *testing.T) {
+	setupTest(t)
+	userID, boardID := setupForGamesSize(t, 4)
+
+	// Build 65 syntactically-valid items. The cell IDs need not exist;
+	// validation must reject the request before the service is called.
+	items := make([]map[string]any, 65)
+	for i := range items {
+		items[i] = map[string]any{
+			"cell_id":  "00000000-0000-0000-0000-000000000000",
+			"position": i,
+		}
+	}
+
+	w := doRequestWithCookies(http.MethodPost,
+		fmt.Sprintf("/api/boards/%s/games", boardID), items, cookiesFor(userID))
+	assertStatus(t, w, http.StatusUnprocessableEntity)
+}
+
+// TestCreateGame_RejectsCellsFromDifferentBoard pins down the security fix
+// from the review: a client cannot supply cell IDs that belong to a
+// different board. The board-scoped cell lookup in the service must reject
+// these as bad input.
+func TestCreateGame_RejectsCellsFromDifferentBoard(t *testing.T) {
+	setupTest(t)
+	userID := createTestUser(t, "cross_board_user", "cross_board@example.com")
+
+	// Two same-size boards, each fully seeded.
+	targetBoardID := createTestBoard(t, "Target Board", 4, userID, nil)
+	otherBoardID := createTestBoard(t, "Other Board", 4, userID, nil)
+
+	// Build a body whose cell_ids belong to the *other* board, but post to
+	// the target board. The size matches, so only the board-scope check
+	// can reject the request.
+	body := seedGameCellsBody(t, otherBoardID)
+
+	w := doRequestWithCookies(http.MethodPost,
+		fmt.Sprintf("/api/boards/%s/games", targetBoardID), body, cookiesFor(userID))
+	assertStatus(t, w, http.StatusBadRequest)
+}
+
+// TestCreateGame_RejectsUnknownCellID asserts a non-existent cell id is
+// rejected even if the count and board match up.
+func TestCreateGame_RejectsUnknownCellID(t *testing.T) {
+	setupTest(t)
+	userID, boardID := setupForGamesSize(t, 4)
+
+	// 4 items where one is a zero UUID.
+	body := seedGameCellsBody(t, boardID)
+	body[0]["cell_id"] = "00000000-0000-0000-0000-000000000000"
+
+	w := doRequestWithCookies(http.MethodPost,
+		fmt.Sprintf("/api/boards/%s/games", boardID), body, cookiesFor(userID))
+	assertStatus(t, w, http.StatusBadRequest)
+}
+
+// TestCreateGame_RejectsBoardNotFound asserts a missing board surfaces as
+// bad input (per the service: "board does not exist: ErrBadInput"). The
+// body shape is irrelevant; the board check runs first.
+func TestCreateGame_RejectsBoardNotFound(t *testing.T) {
+	setupTest(t)
+	userID := createTestUser(t, "no_board_user", "noboard@example.com")
+
+	body := []map[string]any{
+		{"cell_id": "00000000-0000-0000-0000-000000000000", "position": 0},
+	}
+	w := doRequestWithCookies(http.MethodPost,
+		"/api/boards/00000000-0000-0000-0000-000000000000/games", body, cookiesFor(userID))
+	assertStatus(t, w, http.StatusBadRequest)
+}
+
+// TestCreateGame_AtomicityOnCellFailure pins down the transaction wrapping:
+// when the cell-resolution step fails, the outer game row must not be
+// persisted. Without the transaction, the failed second insert would leave
+// an orphan game discoverable via the by-board listing.
+func TestCreateGame_AtomicityOnCellFailure(t *testing.T) {
+	setupTest(t)
+	userID, boardID := setupForGamesSize(t, 4)
+
+	// Force a cell-resolution failure by including a zero UUID after the
+	// board check has passed.
+	body := seedGameCellsBody(t, boardID)
+	body[0]["cell_id"] = "00000000-0000-0000-0000-000000000000"
+
+	w := doRequestWithCookies(http.MethodPost,
+		fmt.Sprintf("/api/boards/%s/games", boardID), body, cookiesFor(userID))
+	assertStatus(t, w, http.StatusBadRequest)
+
+	// Verify no orphan game row was committed for this board.
+	listResp := doRequest(http.MethodGet, fmt.Sprintf("/api/boards/%s/games", boardID), nil)
+	assertStatus(t, listResp, http.StatusOK)
+	var games []map[string]any
+	decodeJSON(t, listResp, &games)
+	if len(games) != 0 {
+		t.Errorf("expected 0 games on the board after a failed create, got %d (transaction rollback regressed)", len(games))
+	}
+}
+
+// TestCreateGame_SnapshotsBoardCellContent verifies the new behavior: the
+// content for each game cell is sourced from the board's cell, not from
+// anything the client supplied. The handler input has no content field.
+func TestCreateGame_SnapshotsBoardCellContent(t *testing.T) {
+	setupTest(t)
+	userID, boardID := setupForGamesSize(t, 4)
+
+	// Seed cells with deterministic contents so we can match them in the
+	// game cells output. Board size is 4, so we need 16 cells.
+	wantContent := map[string]string{}
+	body := make([]map[string]any, 0, 16)
+	for i := range 16 {
+		content := fmt.Sprintf("Board Content %d", i)
+		cellID := createTestCell(t, boardID, content)
+		wantContent[cellID] = content
+		body = append(body, map[string]any{
+			"cell_id":  cellID,
+			"position": i,
+		})
+	}
+
+	createResp := doRequestWithCookies(http.MethodPost,
+		fmt.Sprintf("/api/boards/%s/games", boardID), body, cookiesFor(userID))
+	assertStatus(t, createResp, http.StatusOK)
+	var game map[string]any
+	decodeJSON(t, createResp, &game)
+	gameID := game["game_id"].(string)
+
+	// Read game cells back and check each one's content matches the
+	// board cell it was created from.
+	cellsResp := doRequest(http.MethodGet, fmt.Sprintf("/api/games/%s/cells", gameID), nil)
+	assertStatus(t, cellsResp, http.StatusOK)
+	var gameCells []map[string]any
+	decodeJSON(t, cellsResp, &gameCells)
+	if len(gameCells) != 16 {
+		t.Fatalf("expected 16 game cells, got %d", len(gameCells))
+	}
+	for _, gc := range gameCells {
+		cellID, _ := gc["cell_id"].(string)
+		gotContent, _ := gc["content"].(string)
+		want, ok := wantContent[cellID]
+		if !ok {
+			t.Errorf("game cell references unknown cell_id %q", cellID)
+			continue
+		}
+		if gotContent != want {
+			t.Errorf("game cell content for cell %s: got %q, want %q", cellID, gotContent, want)
+		}
+	}
+}
+
+// TestCreateGame_SeedsAllCells happy path: a successful create returns a
+// game whose cells exactly cover positions 0..(size^2 - 1).
+func TestCreateGame_SeedsAllCells(t *testing.T) {
+	setupTest(t)
+	userID, boardID := setupForGamesSize(t, 4)
+
+	gameID := createTestGame(t, userID, boardID)
+
+	w := doRequest(http.MethodGet, fmt.Sprintf("/api/games/%s/cells", gameID), nil)
+	assertStatus(t, w, http.StatusOK)
+	var cells []map[string]any
+	decodeJSON(t, w, &cells)
+
+	if len(cells) != 16 {
+		t.Fatalf("expected 16 game cells (size 4 -> 16), got %d", len(cells))
+	}
+	seen := make(map[int]bool, 16)
+	for _, c := range cells {
+		pos, ok := c["position"].(float64)
+		if !ok {
+			t.Errorf("expected position to be a number, got %T", c["position"])
+			continue
+		}
+		seen[int(pos)] = true
+	}
+	for i := range 16 {
+		if !seen[i] {
+			t.Errorf("expected position %d to be present", i)
+		}
+	}
 }

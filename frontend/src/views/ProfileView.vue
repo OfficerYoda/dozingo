@@ -54,58 +54,14 @@
         </template>
       </SliderSection>
     </div>
-      <Teleport to="body">
-        <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
-            <div class="card">
-                <div class="header-modal">
-                    <div>
-                        <h2 class="mb-0 header-modal-title">{{ selecetedBoard?.title }}</h2>
-                        <small class="header-modal-subtitle">{{ selecetedBoard?.description }}</small>
-                        <div class="modal-stats">
-                            <span class="stat-item stat-plays">
-                                <Play :size="15"/> {{ selecetedBoard?.play_count }}
-                            </span>
-                            <span class="stat-item stat-likes">
-                                <Heart :size="15"/> {{ selecetedBoard?.score }}
-                            </span>
-                            <span class="stat-item stat-size">
-                                <LayoutGrid :size="15"/> {{ selecetedBoard?.size }}x{{ selecetedBoard?.size }}
-                            </span>
-                        </div>
-                    </div>
-                    <X :size="20" @click="showModal = false" />
-                </div>
 
-                <hr class="mb-3">
-
-
-                <ul class="background-seperate-cells">
-                    <li v-for="cell in selectedCells" :key="cell.cell_id" class="card cell-btn">
-                        <p>{{ cell.content }}</p>
-                    </li>
-                </ul>
-
-                <hr>
-
-                <div class="bottom-bar">
-                    <div class="bottom-bar-text">
-                        <small>Createt by</small>
-                        <span>Hier Author eintragen</span>
-                    </div>
-                    <div class="right-buttons-bottom">
-                        <button class="btn btn-secondary button-bottom-row" @click="shuffle">
-                            <Dices :size="20" />
-                            <p class="mb-0">Shuffle</p>
-                        </button>
-                        <button class="btn btn-primary button-bottom-row">
-                            <Play :size="20" />
-                            <p class="mb-0">Start the game</p>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </Teleport>
+  <ModalStartGame
+    v-if="selecetedBoard"
+    v-model="showModal"
+    :board="selecetedBoard"
+    :cells="selectedCells ?? []"
+    :author-name="authorName"
+  />
 
   </div>
 </template>
@@ -113,10 +69,10 @@
 <script setup lang="ts">
 import { useAuth } from '@/composables/useAuth'
 import { ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
-import { Heart, X, Dices, LayoutGrid, Play } from 'lucide-vue-next'
+import { Heart } from 'lucide-vue-next'
 import SliderSection from '@/components/SliderSection.vue'
+import ModalStartGame from '@/components/ModalStartGame.vue'
 
 const auth = useAuth()
 if (!auth.state.ready) {
@@ -130,12 +86,13 @@ interface Board {
     play_count: number
     score: number
     size: number
+    author_id: string
 }
 
 interface Cell {
     cell_id: string,
     content: string,
-    value: 0,
+    value: number,
 }
 
 interface Vote {
@@ -148,7 +105,6 @@ interface Vote {
     vote_count: number
 }
 
-useI18n()
 const route = useRoute()
 
 const error = ref<string | null>(null)
@@ -157,6 +113,7 @@ const likedBoards = ref<Vote[]>([])
 const cells = ref<Cell[]>([])
 const selecetedBoard = ref<Board>()
 const selectedCells = ref<Cell[]>()
+const authorName = ref<string | null>(null)
 
 async function fetchAllUserBoards() {
     const params = new URLSearchParams()
@@ -192,6 +149,16 @@ async function fetchAllCellsForBoard(boardID: string) {
     selecetedBoard.value = boards.value.find(b => b.board_id === boardID)
     const numberOfCells = (selecetedBoard.value?.size ?? 0) ** 2
     selectedCells.value = [...cells.value].sort(() => Math.random() - 0.5).slice(0, numberOfCells)
+
+    authorName.value = null
+    if (selecetedBoard.value?.author_id) {
+        const userRes = await fetch('/api/users/' + selecetedBoard.value.author_id)
+        if (userRes.ok) {
+            const user = await userRes.json()
+            authorName.value = user.username
+        }
+    }
+
     showModal.value = true
 }
 
@@ -207,13 +174,7 @@ fetchLikedBoards()
 const showModal = ref(false)
 
 
-function shuffle() {
-    const numberOfCells = (selecetedBoard.value?.size ?? 0) ** 2
-    selectedCells.value = [...cells.value].sort(() => Math.random() - 0.5).slice(0, numberOfCells)
-}
-
 function clickBoard(boardID: string) {
-    console.log("Statet loading the cells for board with boardid " + boardID)
     fetchAllCellsForBoard(boardID)
 }
 </script>

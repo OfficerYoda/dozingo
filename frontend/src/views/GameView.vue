@@ -227,7 +227,7 @@ async function fetchAllCellsForBoard(boardID: string) {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    font-size: 12px;
+    font-size: 0.75rem;
     font-weight: 600;
 }
 
