@@ -37,6 +37,7 @@ func (s *GameCells) ListByGameID(ctx context.Context, gameID pgtype.UUID) ([]gen
 	if _, err := s.games.Get(ctx, gameID); err != nil {
 		return nil, err
 	}
+
 	return s.gameCells.ListByGameID(ctx, gameID)
 }
 
