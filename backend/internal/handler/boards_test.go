@@ -87,9 +87,10 @@ func TestCreateBoard_WithoutDescription(t *testing.T) {
 
 	assertJSONField(t, resp, "title", "No Desc Board")
 
-	// Description should be empty string when not provided
-	if desc, ok := resp["description"].(string); ok && desc != "" {
-		t.Errorf("expected empty description, got %q", desc)
+	// Description is stored as NULL when not provided and serialized as JSON
+	// null (the field is *string without omitempty).
+	if resp["description"] != nil {
+		t.Errorf("expected description = null, got %v", resp["description"])
 	}
 }
 

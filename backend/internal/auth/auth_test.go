@@ -7,6 +7,8 @@ import (
 	"testing"
 
 	"golang.org/x/crypto/bcrypt"
+
+	"github.com/officeryoda/dozingo/internal/domain"
 )
 
 func init() {
@@ -47,8 +49,8 @@ func TestHashPassword_DifferentSaltEachTime(t *testing.T) {
 func TestHashPassword_TooLong(t *testing.T) {
 	tooLong := strings.Repeat("a", 73)
 	_, err := HashPassword(tooLong)
-	if !errors.Is(err, ErrPasswordTooLong) {
-		t.Fatalf("expected ErrPasswordTooLong, got: %v", err)
+	if !errors.Is(err, domain.ErrUnprocessableEntity) {
+		t.Fatalf("expected domain.ErrUnprocessableEntity, got: %v", err)
 	}
 }
 
@@ -69,8 +71,8 @@ func TestCheckPassword_Wrong(t *testing.T) {
 		t.Fatalf("HashPassword failed: %v", err)
 	}
 	err = CheckPassword("incorrect", hash)
-	if !errors.Is(err, ErrInvalidCredentials) {
-		t.Fatalf("expected ErrInvalidCredentials, got: %v", err)
+	if !errors.Is(err, domain.ErrUnauthorized) {
+		t.Fatalf("expected domain.ErrUnauthorized, got: %v", err)
 	}
 }
 
@@ -79,8 +81,8 @@ func TestCheckPassword_MalformedHash(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected an error for a malformed hash")
 	}
-	if errors.Is(err, ErrInvalidCredentials) {
-		t.Fatal("malformed-hash error must not be reported as ErrInvalidCredentials")
+	if errors.Is(err, domain.ErrUnauthorized) {
+		t.Fatal("malformed-hash error must not be reported as domain.ErrUnauthorized")
 	}
 }
 

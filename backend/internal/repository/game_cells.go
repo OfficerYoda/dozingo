@@ -20,8 +20,8 @@ type CreateGameCellItem struct {
 }
 
 type CreateGameCellsInput struct {
-	GameID pgtype.UUID
-	Items  []CreateGameCellItem
+	GameID    pgtype.UUID
+	GameCells []CreateGameCellItem
 }
 
 type UpdateGameCellMarkInput struct {
@@ -49,11 +49,11 @@ func (r *GameCells) GetByID(ctx context.Context, gameCellID pgtype.UUID) (genera
 }
 
 func (r *GameCells) Create(ctx context.Context, in CreateGameCellsInput) ([]generated.GameCell, error) {
-	gameIDs := make([]pgtype.UUID, 0, len(in.Items))
-	cellIDs := make([]pgtype.UUID, 0, len(in.Items))
-	contents := make([]string, 0, len(in.Items))
-	positions := make([]int32, 0, len(in.Items))
-	for _, item := range in.Items {
+	gameIDs := make([]pgtype.UUID, 0, len(in.GameCells))
+	cellIDs := make([]pgtype.UUID, 0, len(in.GameCells))
+	contents := make([]string, 0, len(in.GameCells))
+	positions := make([]int32, 0, len(in.GameCells))
+	for _, item := range in.GameCells {
 		gameIDs = append(gameIDs, in.GameID)
 		cellIDs = append(cellIDs, item.CellID)
 		contents = append(contents, item.Content)

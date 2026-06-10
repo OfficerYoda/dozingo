@@ -13,7 +13,14 @@
             <input ref="fileInput" type="file" accept="image/png,image/jpeg,image/webp"
               style="display:none" @change="uploadAvatar" />
           </div>
-          <h1>Welcome, {{ auth.state.user.username }}!</h1>
+          <div class="username-row">
+            <h1 v-if="!editingUsername">Welcome, {{ auth.state.user.username }}!</h1>
+            <input v-else class="username-input" v-model="newUsername" @keyup.enter="saveUsername" @keyup.escape="editingUsername = false" autofocus />
+            <div class="pencil-overlay" @click="startEditing">
+              <img src="/pencil.png" alt="Change username" class="pencil-icon" />
+            </div>
+            <p class="nameError" v-if="usernameError">Nutzername bereits vergeben</p>
+          </div>
         </div>
       </article>
     </div>
@@ -127,12 +134,15 @@
 import { useAuth } from '@/composables/useAuth'
 import { ref, watch, useTemplateRef } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { ShieldUser, Key, Smartphone, Palette, Bell, Moon, Eye, ALargeSmall, UserX } from 'lucide-vue-next';
 
 const auth = useAuth()
 if (!auth.state.ready) {
   auth.fetchUser()
 }
+
+const editingUsername = ref(false)
+const newUsername = ref('')
+const usernameError = ref(false)
 
 const fileInput = useTemplateRef<HTMLInputElement>('fileInput')
 
@@ -187,12 +197,48 @@ async function uploadAvatar(event: Event) {
     }
 }
 
+function startEditing() {
+  newUsername.value = auth.state.user?.username ?? ''
+  editingUsername.value = true
+}
+
+async function saveUsername() {
+  if (!newUsername.value.trim()) return
+  const res = await fetch('/api/users/me', {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: newUsername.value })
+  })
+  if (res.ok) {
+    usernameError.value = false
+    editingUsername.value = false
+    await auth.fetchUser()
+  }
+  else{
+      usernameError.value = true
+  }
+}
+
 </script>
 
 <style scoped>
+
+.username-row {
+  display: flex;
+  align-items: center;
+  gap: 0.1rem;
+}
+
 .card {
   background-color: var(--color-bg-card-tinted);
 }
+
+.nameError{
+        color: var(--color-danger, #e53e3e);
+        font-size: 0.85rem;
+        margin-bottom: 8px;
+    }
 
 .card.deactivateaccount {
   background-color: var(--color-accent-red-soft);
@@ -262,6 +308,14 @@ async function uploadAvatar(event: Event) {
   color: white;
 }
 
+.pencil-overlay {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.2rem;
+  cursor: pointer;
+}
+
 .avatar-wrapper:hover .avatar-overlay {
   opacity: 1;
 }
@@ -269,7 +323,12 @@ async function uploadAvatar(event: Event) {
 .camera-icon {
   width: 1.2rem;
   height: 1.2rem;
-  object-position: 10rem, 1rem;
+  object-position: 3rem, 0.5rem;
+}
+
+.pencil-icon {
+  width: 1rem;
+  height: 1rem;
 }
 
 .display-title svg {

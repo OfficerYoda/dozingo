@@ -117,6 +117,45 @@ func (q *Queries) GetCellsByBoardID(ctx context.Context, boardID pgtype.UUID) ([
 	return items, nil
 }
 
+const listCellsByIDs = `-- name: ListCellsByIDs :many
+SELECT id, board_id, content, created_at, updated_at, value, author_id FROM cells
+WHERE id = ANY($1::uuid[])
+  AND board_id = $2
+`
+
+type ListCellsByIDsParams struct {
+	CellIds []pgtype.UUID `json:"cell_ids"`
+	BoardID pgtype.UUID   `json:"board_id"`
+}
+
+func (q *Queries) ListCellsByIDs(ctx context.Context, arg ListCellsByIDsParams) ([]Cell, error) {
+	rows, err := q.db.Query(ctx, listCellsByIDs, arg.CellIds, arg.BoardID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Cell{}
+	for rows.Next() {
+		var i Cell
+		if err := rows.Scan(
+			&i.ID,
+			&i.BoardID,
+			&i.Content,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Value,
+			&i.AuthorID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateCell = `-- name: UpdateCell :one
 UPDATE cells
 SET content = COALESCE($1, content),
