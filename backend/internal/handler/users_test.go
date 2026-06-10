@@ -267,7 +267,7 @@ func TestUpdateMe_Success_Email_SendsVerificationAndClearsVerifiedAt(t *testing.
 	now := time.Now()
 	q := generated.New(testPool)
 	if _, err := q.SetUserEmailVerifiedAt(context.Background(), generated.SetUserEmailVerifiedAtParams{
-		ID:              id,
+		UserID:          id,
 		EmailVerifiedAt: pgtype.Timestamptz{Time: now, Valid: true},
 	}); err != nil {
 		t.Fatalf("seed email_verified_at: %v", err)
