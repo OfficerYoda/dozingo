@@ -56,7 +56,7 @@ function closeMenu(){
           <Menu :size="20"/>
         </button> 
         <div class="header-spacing">
-          <h1 class="mb-0">{{ $t('nav.settings') }}</h1>
+          <h1 class="mb-0">{{ pageTitle }}</h1>
           <div class="dropdown">
             <button class="btn"><Languages :size="20" /></button>
             <ul class="dropdown-menu">
@@ -86,10 +86,12 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { Home, Settings, LogOut, LogIn, UserCircle, Menu, Computer, SquarePen, Languages } from 'lucide-vue-next'
 import { useAuth } from '@/composables/useAuth'
+import { usePageTitle } from '@/composables/usePageTitle'
 
 const { locale } = useI18n()
 const router = useRouter()
 const auth = useAuth()
+const { pageTitle } = usePageTitle()
 
 const fontSizes = ['12px', '14px', '16px', '18px', '20px']
 const savedFontSize = localStorage.getItem('fontSize')
