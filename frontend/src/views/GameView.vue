@@ -49,6 +49,7 @@ import { ref, computed, nextTick, useTemplateRef, onMounted, onUnmounted } from 
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { Heart, LayoutGrid, Play } from 'lucide-vue-next'
+import { usePageTitle } from '@/composables/usePageTitle'
 
 interface Board {
     board_id: string
@@ -77,6 +78,7 @@ interface GameCell {
 
 useI18n()
 const route = useRoute()
+const { pageTitle } = usePageTitle('Bingo Game')
 
 const board = ref<Board | null>(null)
 const error = ref<string | null>(null)
@@ -125,6 +127,7 @@ async function loadGame() {
     if (!cellsRes.ok) { error.value = 'Zellen nicht gefunden'; return }
 
     board.value = await boardRes.json()
+    if (board.value) pageTitle.value = board.value.title
     const gameCells: GameCell[] = await cellsRes.json()
 
     selectedCells.value = gameCells

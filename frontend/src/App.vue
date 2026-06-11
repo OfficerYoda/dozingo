@@ -56,7 +56,7 @@ function closeMenu(){
           <Menu :size="20"/>
         </button> 
         <div class="header-spacing">
-          <h1 class="mb-0">{{ $t('nav.settings') }}</h1>
+          <h1 class="mb-0">{{ pageTitle }}</h1>
           <div v-if="auth.state.user" class="profile-menu" ref="profileMenuRef">
             <img :src="auth.state.user.avatar_url ?? '/user.png'" class="profile-avatar" @click="profileOpen = !profileOpen" />
             <div v-if="profileOpen" class="profile-dropdown">
@@ -95,10 +95,12 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { Home, Settings, LogOut, LogIn, UserCircle, Menu, Computer, SquarePen } from 'lucide-vue-next'
 import { useAuth } from '@/composables/useAuth'
+import { usePageTitle } from '@/composables/usePageTitle'
 
 const { locale } = useI18n()
 const router = useRouter()
 const auth = useAuth()
+const { pageTitle } = usePageTitle()
 const profileOpen = ref(false)
 const profileMenuRef = ref<HTMLElement | null>(null)
 
