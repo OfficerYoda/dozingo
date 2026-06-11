@@ -53,6 +53,7 @@ import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { Heart } from 'lucide-vue-next'
 import ModalStartGame from '@/components/ModalStartGame.vue'
+import { usePageTitle } from '@/composables/usePageTitle'
 
 interface Board {
     board_id: string
@@ -79,6 +80,8 @@ const cells = ref<Cell[]>([])
 const selecetedBoard = ref<Board>()
 const selectedCells = ref<Cell[]>()
 const authorName = ref<string | null>(null)
+
+const { pageTitle } = usePageTitle(t('header.boards'))
 
 async function fetchAllBoards() {
     const params = new URLSearchParams()

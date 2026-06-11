@@ -112,6 +112,7 @@
 import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { FilePlus, CirclePlus, Trash2 } from 'lucide-vue-next';
+import { usePageTitle } from '@/composables/usePageTitle'
 
 useI18n()
 
@@ -131,6 +132,8 @@ const entries = ref<Entry[]>([{ term: '', rarity: 'common' }, { term: '', rarity
 const selectedSize = ref('5x5')
 
 const { t } = useI18n()
+
+const { pageTitle } = usePageTitle(t('header.cardEditor'))
 
 const requiredEntries = computed(() => {
   const n = parseInt(selectedSize.value)

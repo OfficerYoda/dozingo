@@ -146,6 +146,7 @@
 import { useAuth } from '@/composables/useAuth'
 import { ref, watch, useTemplateRef } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { usePageTitle } from '@/composables/usePageTitle'
 import { ShieldUser, Smartphone, Key, Bell, Palette, Moon, Eye, Languages, UserX } from 'lucide-vue-next'
 
 const auth = useAuth()
@@ -160,6 +161,9 @@ const usernameError = ref(false)
 const fileInput = useTemplateRef<HTMLInputElement>('fileInput')
 
 const { locale } = useI18n({ useScope: 'global' })
+const { t } = useI18n()
+
+const { pageTitle } = usePageTitle(t('header.settings'))
 
 const isChecked = ref(localStorage.getItem('theme') === 'dark')
 const colorCorrection = ref(localStorage.getItem('colorCorrection') ?? 'standart')

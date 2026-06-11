@@ -5,9 +5,17 @@
     "settings": "Settings",
     "profile": "Profile",
     "signOut": "Sign Out",
-    "signIn": "Sign In",
+        "signIn": "Sign In",
     "register": "Register",
-    "cardEditor": "Card Editor"
+    "cardEditor": "Board Editor",
+    "boards": "Explore boards"
+  },
+  "header": {
+    "home": "Home",
+    "cardEditor": "Board editor",
+    "boards": "Explore boards",
+    "settings": "Settings",
+    "profile": "Profile"
   },
   "footer": {
     "copyright": "© DOZINGO - All rights reserved"
