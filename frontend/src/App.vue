@@ -31,23 +31,6 @@ function closeMenu(){
           </ul>
         </nav>
       </div>
-
-      <div class="sidebar-footer">
-        <hr class="m-0">
-        <nav>
-          <ul>
-            <li><RouterLink to="/settings" class="sidebar-buttons"><Settings :size="20"/>{{ $t('nav.settings') }}</RouterLink></li>
-            <li v-if="auth.state.user">
-              <button class="sidebar-buttons" @click="handleLogout"><LogOut :size="20" class="sidebar-footer-signout"/><span class="sidebar-footer-signout">{{ $t('nav.signOut') }}</span></button>
-            </li>
-            <li v-else>
-              <RouterLink to="/login" class="sidebar-buttons"><LogIn :size="20" />Log In</RouterLink>
-            </li>
-            <hr class="m-0">
-            <li><RouterLink class="sidebar-buttons" to="/profile"><UserCircle :size="20"/>{{ auth.state.user?.username ?? $t('nav.profile') }}</RouterLink></li>
-          </ul>
-        </nav>
-      </div>
     </aside>
 
     <div class="content-area">
