@@ -5,6 +5,8 @@
     "settings": "Settings",
     "profile": "Profile",
     "signOut": "Sign Out",
+    "signIn": "Sign In",
+    "register": "Register",
     "cardEditor": "Card Editor"
   },
   "footer": {

@@ -1,37 +1,48 @@
 <template>
     <Teleport to="body">
-        <div v-if="loginModalOpen" class="modal-overlay" @click.self="closeLoginModal">
-            <div class="card login-card">
+        <div v-if="registerModalOpen" class="modal-overlay" @click.self="closeRegisterModal">
+            <div class="card register-card">
                 <div class="heading mb-3">
-                    <h2 class="mb-0">Welcome Back</h2>
-                    <small>Continue your bingo journey</small>
+                    <h2 class="mb-0">Join the Game</h2>
+                    <small>Start your journey here at dozingo</small>
                 </div>
-                <form @submit.prevent="handleLogin">
+                <form @submit.prevent="handleRegister">
                     <div class="mb-3">
-                        <label for="username">Username or Email</label>
+                        <label for="reg-username">Username</label>
                         <div class="input-group">
                             <span><User :size="20" /></span>
-                            <input v-model="username" type="text" id="username" required>
+                            <input v-model="username" type="text" id="reg-username" required>
                         </div>
                     </div>
                     <div class="mb-3">
-                        <div class="password-top">
-                            <label for="password">Password</label>
-                            <a href="/forgotpw">Forgot Password?</a>
+                        <label for="reg-email">Email</label>
+                        <div class="input-group">
+                            <span><Mail :size="20" /></span>
+                            <input v-model="email" type="email" id="reg-email">
                         </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="reg-password">Password</label>
                         <div class="input-group">
                             <span><KeyRound :size="20" /></span>
-                            <input v-model="password" type="password" id="password" required>
+                            <input v-model="password" type="password" id="reg-password" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="reg-confirm-password">Confirm Password</label>
+                        <div class="input-group">
+                            <span><KeyRound :size="20" /></span>
+                            <input v-model="confirmPassword" type="password" id="reg-confirm-password" required>
                         </div>
                     </div>
                     <p v-if="error" class="auth-error">{{ error }}</p>
-                    <button type="submit" class="btn btn-primary login-btn" :disabled="loading">
-                        {{ loading ? 'Logging in...' : 'Log In' }}
+                    <button type="submit" class="btn btn-primary register-btn" :disabled="loading">
+                        {{ loading ? 'Creating account...' : 'Create Account' }}
                     </button>
                 </form>
-                <small class="register-notice">
-                    Don't have an account?
-                    <button class="link-btn" @click="closeLoginModal(); openRegisterModal()">Join the Squad</button>
+                <small class="login-notice">
+                    Already have an account?
+                    <button class="link-btn" @click="closeRegisterModal(); openLoginModal()">Log In</button>
                 </small>
             </div>
         </div>
@@ -49,7 +60,7 @@
         z-index: 1000;
     }
 
-    .login-card {
+    .register-card {
         width: 100%;
         max-width: 420px;
         border-top: 5px solid var(--card-blue);
@@ -91,34 +102,17 @@
         color: var(--color-subheading);
     }
 
-    .password-top {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .password-top a {
-        font-size: 0.7rem;
-        font-weight: 700;
-        color: var(--color-primary-600);
-    }
-
-    .login-btn {
+    .register-btn {
         width: 100%;
         border-radius: 999px !important;
     }
 
-    .register-notice {
+    .login-notice {
         color: var(--color-text-subtle);
         text-align: center;
         display: block;
         padding-top: 20px;
         padding-bottom: 5px;
-    }
-
-    .register-notice a {
-        font-weight: 600;
-        color: var(--color-primary-600);
     }
 
     .link-btn {
@@ -141,43 +135,51 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { User, KeyRound } from 'lucide-vue-next'
+import { User, Mail, KeyRound } from 'lucide-vue-next'
 import { useAuth } from '@/composables/useAuth'
-import { useLoginModal } from '@/composables/useLoginModal'
 import { useRegisterModal } from '@/composables/useRegisterModal'
+import { useLoginModal } from '@/composables/useLoginModal'
 
 const router = useRouter()
-const { login } = useAuth()
-const { loginModalOpen, closeLoginModal } = useLoginModal()
-const { openRegisterModal } = useRegisterModal()
+const { register } = useAuth()
+const { registerModalOpen, closeRegisterModal } = useRegisterModal()
+const { openLoginModal } = useLoginModal()
 
 const username = ref('')
+const email = ref('')
 const password = ref('')
+const confirmPassword = ref('')
 const error = ref('')
 const loading = ref(false)
 
-watch(loginModalOpen, (open) => {
+watch(registerModalOpen, (open) => {
     if (open) {
         username.value = ''
+        email.value = ''
         password.value = ''
+        confirmPassword.value = ''
         error.value = ''
     }
 })
 
-async function handleLogin() {
+async function handleRegister() {
     error.value = ''
+    if (password.value !== confirmPassword.value) {
+        error.value = 'Passwords do not match.'
+        return
+    }
     loading.value = true
     try {
-        const status = await login(username.value, password.value)
-        if (status === 401) {
-            error.value = 'Invalid username or password.'
+        const status = await register(username.value, password.value, email.value || undefined)
+        if (status === 409) {
+            error.value = 'Username or email is already taken.'
             return
         }
         if (status !== null) {
             error.value = 'Something went wrong. Please try again.'
             return
         }
-        closeLoginModal()
+        closeRegisterModal()
         router.push('/')
     } finally {
         loading.value = false

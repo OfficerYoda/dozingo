@@ -40,22 +40,42 @@ function closeMenu(){
         </button> 
         <div class="header-spacing">
           <h1 class="mb-0">{{ pageTitle }}</h1>
-          <div v-if="auth.state.user" class="profile-menu" ref="profileMenuRef">
-            <img :src="auth.state.user.avatar_url ?? '/user.png'" class="profile-avatar" @click="profileOpen = !profileOpen" />
+          <div class="profile-menu" ref="profileMenuRef">
+            <button class="profile-trigger" @click="profileOpen = !profileOpen">
+              <img
+                v-if="auth.state.user?.avatar_url"
+                :src="auth.state.user.avatar_url"
+                class="profile-avatar"
+              />
+              <UserCircle v-else :size="28" />
+            </button>
             <div v-if="profileOpen" class="profile-dropdown">
-              <RouterLink to="/profile" class="dropdown-item" @click="profileOpen = false">
-                <UserCircle :size="16" /> {{ auth.state.user.username }}
-              </RouterLink>
-              <RouterLink to="/settings" class="dropdown-item" @click="profileOpen = false">
-                <Settings :size="16" /> {{ $t('nav.settings') }}
-              </RouterLink>
-              <hr class="dropdown-divider">
-              <button class="dropdown-item dropdown-item-danger" @click="handleLogout">
-                <LogOut :size="16" /> {{ $t('nav.signOut') }}
-              </button>
+              <template v-if="auth.state.user">
+                <RouterLink to="/profile" class="dropdown-item" @click="profileOpen = false">
+                  <UserCircle :size="16" /> {{ auth.state.user.username }}
+                </RouterLink>
+                <RouterLink to="/settings" class="dropdown-item" @click="profileOpen = false">
+                  <Settings :size="16" /> {{ $t('nav.settings') }}
+                </RouterLink>
+                <hr class="dropdown-divider">
+                <button class="dropdown-item dropdown-item-danger" @click="handleLogout">
+                  <LogOut :size="16" /> {{ $t('nav.signOut') }}
+                </button>
+              </template>
+              <template v-else>
+                <button class="dropdown-item" @click="openLoginModal(); profileOpen = false">
+                  <LogIn :size="16" /> {{ $t('nav.signIn') }}
+                </button>
+                <button class="dropdown-item" @click="openRegisterModal(); profileOpen = false">
+                  <UserPlus :size="16" /> {{ $t('nav.register') }}
+                </button>
+                <hr class="dropdown-divider">
+                <RouterLink to="/settings" class="dropdown-item" @click="profileOpen = false">
+                  <Settings :size="16" /> {{ $t('nav.settings') }}
+                </RouterLink>
+              </template>
             </div>
           </div>
-          <RouterLink v-else to="/login" class="btn btn-primary">{{ $t('nav.signIn') }}</RouterLink>
         </div>
       </header>
 
@@ -67,6 +87,8 @@ function closeMenu(){
           {{ $t('footer.copyright') }}
         </footer>
 
+      <LoginModal />
+      <RegisterModal />
       <div class="disable-layer" id="disable-layer" @click="closeMenu"></div>
     </div>
   </div>
@@ -76,10 +98,16 @@ function closeMenu(){
 import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { Home, Settings, LogOut, LogIn, UserCircle, Menu, Computer, SquarePen } from 'lucide-vue-next'
+import { Home, Settings, LogOut, LogIn, UserCircle, UserPlus, Menu, Computer, SquarePen } from 'lucide-vue-next'
 import { useAuth } from '@/composables/useAuth'
+import { useLoginModal } from '@/composables/useLoginModal'
+import { useRegisterModal } from '@/composables/useRegisterModal'
+import LoginModal from '@/components/LoginView.vue'
+import RegisterModal from '@/components/RegisterView.vue'
 import { usePageTitle } from '@/composables/usePageTitle'
 
+const { openLoginModal } = useLoginModal()
+const { openRegisterModal } = useRegisterModal()
 const { locale } = useI18n()
 const router = useRouter()
 const auth = useAuth()
@@ -108,7 +136,7 @@ watch(locale, (newLocale) => {
 
 async function handleLogout() {
   await auth.logout()
-  router.push('/login')
+  router.push('/')
 }
 </script>
 
@@ -177,6 +205,13 @@ header {
 .profile-menu {
   position: relative;
   cursor: pointer;
+}
+
+.profile-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-subheading);
 }
 
 .profile-avatar {
