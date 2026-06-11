@@ -1,11 +1,19 @@
 {
   "nav": {
-    "home": "Home",
+    "home": "Startseite",
     "about": "Über uns",
     "settings": "Einstellungen",
     "profile": "Profil",
     "signOut": "Abmelden",
-    "cardEditor": "Karten-Editor"
+    "cardEditor": "Karten-Editor",
+    "boards": "Karten entdecken"
+  },
+  "header": {
+    "home": "Startseite",
+    "cardEditor": "Karten-Editor",
+    "boards": "Karten entdecken",
+    "settings": "Einstellungen",
+    "profile": "Profil"
   },
   "footer": {
     "copyright": "© DOZINGO - Alle Rechte vorbehalten"
@@ -74,7 +82,7 @@
       "startGame": "Spiel starten"
     },
     "error": {
-      "loadBoards": "Boards konnten nicht geladen werden",
+      "loadBoards": "Karten konnten nicht geladen werden",
       "loadCells": "Felder konnten nicht geladen werden für Board"
     }
   },
@@ -88,16 +96,16 @@
       "title": "Aktivität der letzten 24 Std.",
       "bingos": "BINGOS",
       "games": "SPIELE",
-      "boards": "BOARDS",
+      "boards": "KARTEN",
       "cells": "FELDER"
     },
     "mostLiked": {
-      "title": "Beliebteste Boards",
+      "title": "Beliebteste Karten",
       "subtitle": "Die aktuellen Favoriten der Community",
       "seeAll": "Alle anzeigen"
     },
     "newest": {
-      "title": "Zuletzt hinzugefügte Boards",
+      "title": "Zuletzt hinzugefügte Karten",
       "subtitle": "Neue Bingo-Karten aus der Community",
       "seeAll": "Alle anzeigen"
     },
@@ -106,7 +114,7 @@
     }
   },
   "cardEditor": {
-    "title": "Neues Board erstellen",
+    "title": "Neue Karte erstellen",
     "sessionTitle": "Sitzungstitel",
     "titlePlaceholder": "z.B. Einführung in die Spieltheorie",
     "layoutSelection": "Layout-Auswahl",

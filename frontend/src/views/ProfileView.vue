@@ -69,10 +69,12 @@
 <script setup lang="ts">
 import { useAuth } from '@/composables/useAuth'
 import { ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router'
 import { Heart } from 'lucide-vue-next'
 import SliderSection from '@/components/SliderSection.vue'
 import ModalStartGame from '@/components/ModalStartGame.vue'
+import { usePageTitle } from '@/composables/usePageTitle'
 
 const auth = useAuth()
 if (!auth.state.ready) {
@@ -106,6 +108,7 @@ interface Vote {
 }
 
 const route = useRoute()
+const { t } = useI18n()
 
 const error = ref<string | null>(null)
 const boards = ref<Board[]>([])
@@ -114,6 +117,8 @@ const cells = ref<Cell[]>([])
 const selecetedBoard = ref<Board>()
 const selectedCells = ref<Cell[]>()
 const authorName = ref<string | null>(null)
+
+const { pageTitle } = usePageTitle(t('header.profile'))
 
 async function fetchAllUserBoards() {
     const params = new URLSearchParams()

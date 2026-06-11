@@ -26,7 +26,7 @@ function closeMenu(){
           <ul>
             <li><RouterLink to="/" class="sidebar-buttons upper-buttons"><Home :size="20" />{{ $t('nav.home') }}</RouterLink></li>
             <li><RouterLink to="/cardeditor" class="sidebar-buttons upper-buttons"><SquarePen :size="20"/>{{ $t('nav.cardEditor') }}</RouterLink></li>
-            <li><RouterLink to="/boards" class="sidebar-buttons upper-buttons"><SquarePen :size="20"/>Boards</RouterLink></li>
+            <li><RouterLink to="/boards" class="sidebar-buttons upper-buttons"><LayoutGrid :size="20"/>{{ $t('nav.boards') }}</RouterLink></li>
             <li><RouterLink to="/components" class="sidebar-buttons upper-buttons"><Computer :size="20"/>Components(only for dev)</RouterLink></li>
           </ul>
         </nav>
@@ -76,7 +76,7 @@ function closeMenu(){
 import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { Home, Settings, LogOut, LogIn, UserCircle, Menu, Computer, SquarePen } from 'lucide-vue-next'
+import { Home, Settings, LogOut, LogIn, UserCircle, Menu, Computer, SquarePen, LayoutGrid } from 'lucide-vue-next'
 import { useAuth } from '@/composables/useAuth'
 import { usePageTitle } from '@/composables/usePageTitle'
 

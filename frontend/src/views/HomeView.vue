@@ -139,6 +139,7 @@ import { useI18n } from 'vue-i18n'
 import { Heart, GamepadDirectional, SquarePlus, LayoutGrid, Medal } from 'lucide-vue-next'
 import SliderSection from '@/components/SliderSection.vue'
 import ModalStartGame from '@/components/ModalStartGame.vue'
+import { usePageTitle } from '@/composables/usePageTitle'
 
 const { t } = useI18n()
 
@@ -165,6 +166,8 @@ interface Stats {
   cells: number
   games: number
 }
+
+const { pageTitle } = usePageTitle(t('header.home'))
 
 const mostLikedBoards = ref<Board[]>([])
 const newestBoards = ref<Board[]>([])
