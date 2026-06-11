@@ -2,26 +2,26 @@
     <section>
         <div class="container">
             <div class="top-item-bar">
-                <div>
+                <div class="top-board-info">
                     <div class="stats">
                         <span class="stat-item stat-plays">
-                            <Play :size="15"/> {{ board?.play_count }}
+                            <Play :size="13"/> {{ board?.play_count ?? '—' }}
                         </span>
                         <span class="stat-item stat-likes">
-                            <Heart :size="15"/> {{ board?.score }}
+                            <Heart :size="13"/> {{ board?.score ?? '—' }}
                         </span>
                         <span class="stat-item stat-size">
-                            <LayoutGrid :size="15"/> {{ board?.size }}x{{ board?.size }}
+                            <LayoutGrid :size="13"/> {{ board?.size ?? '—' }}x{{ board?.size ?? '—' }}
                         </span>
                     </div>
                 </div>
-                <div>
-                    <span class="checked-title">Timer</span>
-                    <span class="checked-counter">{{ formattedTime }}</span>
+                <div class="top-stat-pill">
+                    <Timer :size="15" class="top-stat-icon"/>
+                    <span class="top-stat-value">{{ formattedTime }}</span>
                 </div>
-                <div>
-                    <span class="checked-title">Checked</span>
-                    <span class="checked-counter">{{ checkedCells.size }} / {{ selectedCells.length }}</span>
+                <div class="top-stat-pill">
+                    <CheckSquare :size="15" class="top-stat-icon"/>
+                    <span class="top-stat-value">{{ checkedCells.size }}<span class="top-stat-total"> / {{ selectedCells.length }}</span></span>
                 </div>
             </div>
             
@@ -50,7 +50,7 @@
 import { ref, computed, nextTick, useTemplateRef, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
-import { Heart, LayoutGrid, Play } from 'lucide-vue-next'
+import { Heart, LayoutGrid, Play, Timer, CheckSquare } from 'lucide-vue-next'
 import { usePageTitle } from '@/composables/usePageTitle'
 
 interface Board {
@@ -216,50 +216,64 @@ onUnmounted(() => {
 
 <style scoped>
 
-.top-item-bar{
+.top-item-bar {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    gap: 8px;
+}
+
+.top-board-info {
+    flex: 1;
 }
 
 .stats {
     display: flex;
     flex-direction: row;
-    gap: 8px;
-    margin-top: 6px;
+    gap: 6px;
+    flex-wrap: wrap;
 }
 
 .stat-item {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 3px;
     font-size: 0.75rem;
     font-weight: 600;
+    background-color: var(--color-bg-muted);
+    border-radius: var(--radius-sm);
+    padding: 3px 8px;
 }
 
-.stat-plays {
-    color: #4052B6;
+.stat-plays { color: #4052B6; }
+.stat-likes { color: #C0185A; }
+.stat-size  { color: #2E7D32; }
+
+.top-stat-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background-color: #E3DFFF;
+    border-radius: var(--radius-sm);
+    padding: 6px 12px;
+    white-space: nowrap;
 }
 
-.stat-likes {
-    color: #C0185A;
+.top-stat-icon {
+    color: #5A5781;
+    flex-shrink: 0;
 }
 
-.stat-size {
-    color: #2E7D32;
-}
-
-.checked-title{
-    text-align: center;
-    font-size: 0.8rem;
-    display: block;
-}
-
-.checked-counter{
-    text-align: center;
+.top-stat-value {
+    font-size: 1rem;
     font-weight: 700;
-    font-size: 1.2rem;
-    display: block;
+    color: #2C2A51;
+    line-height: 1;
+}
+
+.top-stat-total {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #5A5781;
 }
 
 .board{
