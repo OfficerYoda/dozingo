@@ -3,16 +3,16 @@
         <div class="container">
             <div class="top-item-bar">
                 <div>
-                    <h2 class="mb-1">{{ board.title }}</h2>
+                    <h2 class="mb-1">{{ board?.title }}</h2>
                     <div class="stats">
                         <span class="stat-item stat-plays">
-                            <Play :size="15"/> {{ board.play_count }}
+                            <Play :size="15"/> {{ board?.play_count }}
                         </span>
                         <span class="stat-item stat-likes">
-                            <Heart :size="15"/> {{ board.score }}
+                            <Heart :size="15"/> {{ board?.score }}
                         </span>
                         <span class="stat-item stat-size">
-                            <LayoutGrid :size="15"/> {{ board.size }}x{{ board.size }}
+                            <LayoutGrid :size="15"/> {{ board?.size }}x{{ board?.size }}
                         </span>
                     </div>
                 </div>
@@ -29,7 +29,7 @@
             <div :class="['board', 'mt-3', { stopped: gameState === 'stopped' }]">
                 <div class="board-scroll" ref="boardContainerRef" @scroll="updateShadow">
                     <div class="board-container"
-                         :style="`grid-template-columns: repeat(${board.size}, 1fr)`">
+                     :style="`grid-template-columns: repeat(${board?.size ?? 4}, 1fr)`">
                         <div v-for="(cell, i) in selectedCells" :key="cell.cell_id"
                              :class="{ revealed: revealedCells.has(i), checked: checkedCells.has(cell.cell_id) }"
                              @click="handleCellClick(cell.cell_id)">
@@ -66,29 +66,21 @@ interface Cell {
     value: 0
 }
 
+interface GameCell {
+    game_cell_id: string
+    cell_id: string | null
+    content: string
+    game_id: string
+    is_marked: boolean
+    position: number
+}
+
 useI18n()
 const route = useRoute()
 
-const board = ref<Board>({
-    board_id: 'tmp-1',
-    title: 'Temporäres Board',
-    description: 'Mock-Daten',
-    play_count: 42,
-    score: 7,
-    size: 4,
-    author_id: 'user-1',
-})
-
+const board = ref<Board | null>(null)
 const error = ref<string | null>(null)
-const boards = ref<Board[]>([])
-const cells = ref<Cell[]>([])
-const selectedCells = ref<Cell[]>(
-    Array.from({ length: board.value.size ** 2 }, (_, i) => ({
-        cell_id: `tmp-cell-${i}`,
-        content: `Zelle ${i + 1}`,
-        value: 0,
-    }))
-)
+const selectedCells = ref<Cell[]>([])
 
 // 'stopped' | 'running'
 const gameState = ref<'stopped' | 'running'>('stopped')
@@ -115,9 +107,46 @@ function stopTimer() {
     if (timerInterval) { clearInterval(timerInterval); timerInterval = null }
 }
 
+// --- Data loading ---
+async function loadGame() {
+    const gameId = route.params.game_id as string
+    error.value = null
+
+    const gameRes = await fetch(`/api/games/${gameId}`, { credentials: 'include' })
+    if (!gameRes.ok) { error.value = 'Spiel nicht gefunden'; return }
+    const game = await gameRes.json()
+
+    const [boardRes, cellsRes] = await Promise.all([
+        fetch(`/api/boards/${game.board_id}`, { credentials: 'include' }),
+        fetch(`/api/games/${gameId}/cells`, { credentials: 'include' }),
+    ])
+
+    if (!boardRes.ok) { error.value = 'Board nicht gefunden'; return }
+    if (!cellsRes.ok) { error.value = 'Zellen nicht gefunden'; return }
+
+    board.value = await boardRes.json()
+    const gameCells: GameCell[] = await cellsRes.json()
+
+    selectedCells.value = gameCells
+        .sort((a, b) => a.position - b.position)
+        .map(gc => ({
+            cell_id: gc.game_cell_id,
+            content: gc.content,
+            value: 0,
+        }))
+
+    checkedCells.value = new Set(
+        gameCells.filter(gc => gc.is_marked).map(gc => gc.game_cell_id)
+    )
+
+    startGame()
+}
+
 // --- Game flow ---
 async function startGame() {
     if (gameState.value === 'running') return
+    const scrollEl = boardContainerRef.value
+    if (scrollEl) scrollEl.style.overflowX = 'hidden'
     isRevealing.value = true
     const indices = Array.from({ length: selectedCells.value.length }, (_, i) => i)
         .sort(() => Math.random() - 0.5)
@@ -127,6 +156,8 @@ async function startGame() {
         await nextTick()
         await new Promise(r => requestAnimationFrame(r))
     }
+    await new Promise(r => setTimeout(r, 500))
+    if (scrollEl) scrollEl.style.overflowX = ''
     isRevealing.value = false
     gameState.value = 'running'
     startTimer()
@@ -168,43 +199,13 @@ onMounted(() => {
     resizeObserver = new ResizeObserver(updateShadow)
     if (boardContainerRef.value) resizeObserver.observe(boardContainerRef.value)
     updateShadow()
-    startGame()
+    loadGame()
 })
 
 onUnmounted(() => {
     resizeObserver?.disconnect()
     stopTimer()
 })
-
-// --- unused fetch stubs (to be replaced later) ---
-const appliedFiler = ref(route.query.sort ? String(route.query.sort) : '')
-const search = ref('')
-const showModal = ref(false)
-const authorName = ref<string | null>(null)
-
-async function fetchAllBoards() {
-    const params = new URLSearchParams()
-    if (appliedFiler.value) params.set('sort', appliedFiler.value)
-    if (search.value) params.set('search', search.value)
-    const query = params.toString() ? '?' + params.toString() : ''
-    const boardsRes = await fetch('/api/boards' + query, { credentials: 'include' })
-    if (!boardsRes.ok) { error.value = 'Failed to load boards'; return }
-    boards.value = await boardsRes.json()
-}
-
-async function fetchAllCellsForBoard(boardID: string) {
-    const cellsRes = await fetch('/api/boards/' + boardID + '/cells')
-    if (!cellsRes.ok) { error.value = 'Failed to load cells for board ' + boardID; return }
-    cells.value = await cellsRes.json()
-    const found = boards.value.find(b => b.board_id === boardID)
-    const numberOfCells = (found?.size ?? 0) ** 2
-    selectedCells.value = [...cells.value].sort(() => Math.random() - 0.5).slice(0, numberOfCells)
-    if (found?.author_id) {
-        const userRes = await fetch('/api/users/' + found.author_id)
-        if (userRes.ok) authorName.value = (await userRes.json()).username
-    }
-    showModal.value = true
-}
 
 </script>
 
@@ -264,21 +265,20 @@ async function fetchAllCellsForBoard(boardID: string) {
 }
 
 .board-scroll {
-    overflow: auto;
+    overflow-x: auto;
     scroll-snap-type: both mandatory;
 }
 
 .board-container{
     display: grid;
     grid-template-columns: 1fr 1fr 1fr 1fr;
-    width: max-content;
     min-width: 100%;
 }
 
 .board-container div{
     position: relative;
     width: 100%;
-    min-width: 160px;
+    min-width: 100px;
     height: 100%;
     min-height: 100px;
     scroll-snap-align: start;
@@ -289,6 +289,8 @@ async function fetchAllCellsForBoard(boardID: string) {
     align-items: center;
     padding: 5px;
     text-align: center;
+    overflow-wrap: break-word; 
+    hyphens: auto;
     border-radius: var(--radius-lg);
     cursor: pointer;
     transition: transform 0.6s ease, border-width 0.3s, padding 0.3s;
