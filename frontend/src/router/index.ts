@@ -29,7 +29,7 @@ const routes = [
   { path: '/components', name: 'components', component: ComponentsView, meta: { requiresAuth: false } },
   { path: '/cardeditor', name: 'cardeditor', component: CardEditorView, meta: { requiresAuth: true } },
   { path: '/boards', name: 'boards', component: BoardsView, meta: { requiresAuth: false } },
-  { path: '/game', name: 'game', component: GameView, meta: { requiresAuth: false } },
+  { path: '/game/:game_id', name: 'game', component: GameView, meta: { requiresAuth: false } },
 ]
 
 const router = createRouter({
