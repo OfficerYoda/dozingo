@@ -1,11 +1,11 @@
 -- name: GetGameCellsByGameID :many
 SELECT * FROM game_cells
-WHERE game_id = $1
+WHERE game_id = @game_id
 ORDER BY position;
 
 -- name: GetGameCellByID :one
 SELECT * FROM game_cells
-WHERE id = $1;
+WHERE id = @game_cell_id;
 
 -- name: CreateGameCells :many
 INSERT INTO game_cells (game_id, cell_id, content, position)
@@ -18,6 +18,6 @@ RETURNING *;
 
 -- name: UpdateGameCellMark :one
 UPDATE game_cells
-SET is_marked = $1
-WHERE id = $2 AND game_id = $3
+SET is_marked = @is_marked
+WHERE id = @game_cell_id AND game_id = @game_id
 RETURNING *;

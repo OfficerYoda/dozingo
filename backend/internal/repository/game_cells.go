@@ -75,9 +75,9 @@ func (r *GameCells) Create(ctx context.Context, in CreateGameCellsInput) ([]gene
 
 func (r *GameCells) UpdateMark(ctx context.Context, in UpdateGameCellMarkInput) (generated.GameCell, error) {
 	cell, err := r.queries.UpdateGameCellMark(ctx, generated.UpdateGameCellMarkParams{
-		IsMarked: in.IsMarked,
-		ID:       in.GameCellID,
-		GameID:   in.GameID,
+		IsMarked:   in.IsMarked,
+		GameCellID: in.GameCellID,
+		GameID:     in.GameID,
 	})
 	if err != nil {
 		return generated.GameCell{}, pgmap.TranslatePgErr(err)

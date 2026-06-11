@@ -43,8 +43,8 @@ WHERE id = $1
 RETURNING id, username, email, created_at, updated_at, email_verified_at, avatar_key
 `
 
-func (q *Queries) DeleteUser(ctx context.Context, id pgtype.UUID) (User, error) {
-	row := q.db.QueryRow(ctx, deleteUser, id)
+func (q *Queries) DeleteUser(ctx context.Context, userID pgtype.UUID) (User, error) {
+	row := q.db.QueryRow(ctx, deleteUser, userID)
 	var i User
 	err := row.Scan(
 		&i.ID,
@@ -83,8 +83,8 @@ SELECT id, username, email, created_at, updated_at, email_verified_at, avatar_ke
 WHERE id = $1
 `
 
-func (q *Queries) GetUserByID(ctx context.Context, id pgtype.UUID) (User, error) {
-	row := q.db.QueryRow(ctx, getUserByID, id)
+func (q *Queries) GetUserByID(ctx context.Context, userID pgtype.UUID) (User, error) {
+	row := q.db.QueryRow(ctx, getUserByID, userID)
 	var i User
 	err := row.Scan(
 		&i.ID,
@@ -172,18 +172,18 @@ func (q *Queries) SetAvatar(ctx context.Context, arg SetAvatarParams) (User, err
 
 const setUserEmailVerifiedAt = `-- name: SetUserEmailVerifiedAt :one
 UPDATE users
-SET email_verified_at = $2
-WHERE id = $1
+SET email_verified_at = $1
+WHERE id = $2
 RETURNING id, username, email, created_at, updated_at, email_verified_at, avatar_key
 `
 
 type SetUserEmailVerifiedAtParams struct {
-	ID              pgtype.UUID        `json:"id"`
 	EmailVerifiedAt pgtype.Timestamptz `json:"email_verified_at"`
+	UserID          pgtype.UUID        `json:"user_id"`
 }
 
 func (q *Queries) SetUserEmailVerifiedAt(ctx context.Context, arg SetUserEmailVerifiedAtParams) (User, error) {
-	row := q.db.QueryRow(ctx, setUserEmailVerifiedAt, arg.ID, arg.EmailVerifiedAt)
+	row := q.db.QueryRow(ctx, setUserEmailVerifiedAt, arg.EmailVerifiedAt, arg.UserID)
 	var i User
 	err := row.Scan(
 		&i.ID,
@@ -200,24 +200,24 @@ func (q *Queries) SetUserEmailVerifiedAt(ctx context.Context, arg SetUserEmailVe
 const updateUser = `-- name: UpdateUser :one
 UPDATE users
 SET
-    username = COALESCE($2, username),
+    username = COALESCE($1, username),
     email = CASE
-        WHEN $3::bool THEN $4
+        WHEN $2::bool THEN $3
         ELSE email
     END,
     email_verified_at = CASE
-        WHEN $3::bool THEN NULL
+        WHEN $2::bool THEN NULL
         ELSE email_verified_at
     END
-WHERE id = $1
+WHERE id = $4
 RETURNING id, username, email, created_at, updated_at, email_verified_at, avatar_key
 `
 
 type UpdateUserParams struct {
-	ID       pgtype.UUID `json:"id"`
 	Username pgtype.Text `json:"username"`
 	EmailSet bool        `json:"email_set"`
 	Email    pgtype.Text `json:"email"`
+	UserID   pgtype.UUID `json:"user_id"`
 }
 
 // Tri-state PATCH:
@@ -227,10 +227,10 @@ type UpdateUserParams struct {
 //     resets email_verified_at to NULL.
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) {
 	row := q.db.QueryRow(ctx, updateUser,
-		arg.ID,
 		arg.Username,
 		arg.EmailSet,
 		arg.Email,
+		arg.UserID,
 	)
 	var i User
 	err := row.Scan(

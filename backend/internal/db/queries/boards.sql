@@ -4,16 +4,16 @@ ORDER BY created_at DESC;
 
 -- name: GetBoardByID :one
 SELECT * FROM boards
-WHERE id = $1;
+WHERE id = @board_id;
 
 -- name: CreateBoard :one
 INSERT INTO boards (title, size, author_id, description)
-VALUES ($1, $2, $3, $4)
+VALUES (@title, @size, @author_id, @description)
 RETURNING *;
 
 -- name: DeleteBoard :one
 DELETE FROM boards
-WHERE id = $1
+WHERE id = @board_id
 RETURNING *;
 
 -- name: GetTotalGamesPlayedForBoard :one
@@ -23,5 +23,5 @@ SELECT
     COUNT(g.id) AS total_games
 FROM boards b
 LEFT JOIN games g ON g.board_id = b.id
-WHERE b.id = $1
+WHERE b.id = @board_id
 GROUP BY b.id, b.title;

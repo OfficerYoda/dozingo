@@ -45,12 +45,12 @@ RETURNING id, board_id, content, created_at, updated_at, value, author_id
 `
 
 type DeleteCellParams struct {
-	ID      pgtype.UUID `json:"id"`
+	CellID  pgtype.UUID `json:"cell_id"`
 	BoardID pgtype.UUID `json:"board_id"`
 }
 
 func (q *Queries) DeleteCell(ctx context.Context, arg DeleteCellParams) (Cell, error) {
-	row := q.db.QueryRow(ctx, deleteCell, arg.ID, arg.BoardID)
+	row := q.db.QueryRow(ctx, deleteCell, arg.CellID, arg.BoardID)
 	var i Cell
 	err := row.Scan(
 		&i.ID,
@@ -69,8 +69,8 @@ SELECT id, board_id, content, created_at, updated_at, value, author_id FROM cell
 WHERE id = $1
 `
 
-func (q *Queries) GetCellByID(ctx context.Context, id pgtype.UUID) (Cell, error) {
-	row := q.db.QueryRow(ctx, getCellByID, id)
+func (q *Queries) GetCellByID(ctx context.Context, cellID pgtype.UUID) (Cell, error) {
+	row := q.db.QueryRow(ctx, getCellByID, cellID)
 	var i Cell
 	err := row.Scan(
 		&i.ID,

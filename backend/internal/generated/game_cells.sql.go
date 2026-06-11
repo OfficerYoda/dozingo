@@ -67,8 +67,8 @@ SELECT id, game_id, cell_id, content, position, is_marked, created_at, updated_a
 WHERE id = $1
 `
 
-func (q *Queries) GetGameCellByID(ctx context.Context, id pgtype.UUID) (GameCell, error) {
-	row := q.db.QueryRow(ctx, getGameCellByID, id)
+func (q *Queries) GetGameCellByID(ctx context.Context, gameCellID pgtype.UUID) (GameCell, error) {
+	row := q.db.QueryRow(ctx, getGameCellByID, gameCellID)
 	var i GameCell
 	err := row.Scan(
 		&i.ID,
@@ -126,13 +126,13 @@ RETURNING id, game_id, cell_id, content, position, is_marked, created_at, update
 `
 
 type UpdateGameCellMarkParams struct {
-	IsMarked bool        `json:"is_marked"`
-	ID       pgtype.UUID `json:"id"`
-	GameID   pgtype.UUID `json:"game_id"`
+	IsMarked   bool        `json:"is_marked"`
+	GameCellID pgtype.UUID `json:"game_cell_id"`
+	GameID     pgtype.UUID `json:"game_id"`
 }
 
 func (q *Queries) UpdateGameCellMark(ctx context.Context, arg UpdateGameCellMarkParams) (GameCell, error) {
-	row := q.db.QueryRow(ctx, updateGameCellMark, arg.IsMarked, arg.ID, arg.GameID)
+	row := q.db.QueryRow(ctx, updateGameCellMark, arg.IsMarked, arg.GameCellID, arg.GameID)
 	var i GameCell
 	err := row.Scan(
 		&i.ID,
