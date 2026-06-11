@@ -3,7 +3,10 @@
     <div class="grid container" style="margin-bottom: 1%;">
       <article class="card col-12 md-12">
         <div v-if="!auth.state.ready">Loading...</div>
-        <div v-else-if="!auth.state.user">Not logged in.</div>
+        <div v-else-if="!auth.state.user" class="profile-header">
+          <UserCircle :size="32" class="guest-icon" />
+          <h1>{{ $t('settings.guest') }}</h1>
+        </div>
         <div v-else class="profile-header">
           <div class="avatar-wrapper" @click="fileInput?.click()">
             <img :src="auth.state.user.avatar_url ?? '/user.png'" class="profile-avatar" />
@@ -26,7 +29,12 @@
     </div>
 
     <div class="grid container">
-      <article class="card col-6 md-12">
+      <article class="card col-6 md-12 security-card">
+        <div v-if="!auth.state.user" class="login-overlay">
+          <ShieldUser :size="40" />
+          <span>{{ $t('settings.security.loginRequired') }}</span>
+          <router-link to="/login" class="btn btn-primary">{{ $t('settings.security.loginBtn') }}</router-link>
+        </div>
         <div class="account-security-title">
           <ShieldUser :size="30" />
           <h2 class="mb-0">{{ $t('settings.security.title') }}</h2>
@@ -128,7 +136,11 @@
 
       </article>
 
-      <article class="card deactivateaccount col-12">
+      <article class="card deactivateaccount col-12 security-card">
+        <div v-if="!auth.state.user" class="login-overlay">
+          <UserX :size="40" />
+          <span>{{ $t('settings.security.loginRequired') }}</span>
+        </div>
         <div class="deactivateaccount-title">
           <div class="deactivateaccount-heading">
             <UserX :size="23" />
@@ -147,7 +159,7 @@ import { useAuth } from '@/composables/useAuth'
 import { ref, watch, useTemplateRef } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { usePageTitle } from '@/composables/usePageTitle'
-import { ShieldUser, Smartphone, Key, Bell, Palette, Moon, Eye, Languages, UserX } from 'lucide-vue-next'
+import { ShieldUser, Smartphone, Key, Bell, Palette, Moon, Eye, Languages, UserX, UserCircle } from 'lucide-vue-next'
 
 const auth = useAuth()
 if (!auth.state.ready) {
@@ -550,5 +562,40 @@ input:checked+.slider {
 
 input:checked+.slider:before {
   transform: translateX(26px);
+}
+
+.security-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.login-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  backdrop-filter: blur(6px);
+  background-color: color-mix(in srgb, var(--color-bg-card-tinted) 70%, transparent);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  border-radius: inherit;
+  text-align: center;
+  padding: 2rem;
+}
+
+.login-overlay svg {
+  color: var(--card-red);
+}
+
+.login-overlay span {
+  font-weight: 500;
+  color: var(--color-heading);
+}
+
+.guest-icon {
+  color: var(--color-text-subtle);
+  flex-shrink: 0;
 }
 </style>

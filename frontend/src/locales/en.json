@@ -23,6 +23,7 @@
   },
   "settings": {
     "title": "Settings",
+    "guest": "Hello, Stranger!",
     "security": {
       "title": "Account Security",
       "subtitle": "Authentication",
@@ -32,7 +33,9 @@
       "lastPasswordChange": "Last password change",
       "change": "Change",
       "loginNotification": "Login Notification",
-      "loginNotificationDesc": "Get notified for each login"
+      "loginNotificationDesc": "Get notified for each login",
+      "loginRequired": "Please log in to view security settings.",
+      "loginBtn": "Log in"
     },
     "display": {
       "title": "Display",
