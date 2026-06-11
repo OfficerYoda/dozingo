@@ -346,6 +346,8 @@ onMounted(loadStats)
   align-items: center;
   gap: 14px;
   padding: 12px 16px;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .icon-div svg {
