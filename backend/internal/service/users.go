@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 
+	"github.com/officeryoda/dozingo/internal/auth"
 	"github.com/officeryoda/dozingo/internal/domain"
 	"github.com/officeryoda/dozingo/internal/email"
 	"github.com/officeryoda/dozingo/internal/generated"
@@ -33,6 +34,7 @@ var allowedAvatarMIMEs = map[string]string{
 
 type Users struct {
 	users       *repository.Users
+	passwords   *repository.UserPasswords
 	queries     *generated.Queries
 	emailSender email.Sender
 	txRunner    repository.TxRunner
@@ -48,6 +50,7 @@ func NewUsers(
 ) *Users {
 	return &Users{
 		users:       repos.Users,
+		passwords:   repos.Passwords,
 		queries:     queries,
 		emailSender: emailSender,
 		txRunner:    txRunner,
@@ -67,6 +70,43 @@ func (s *Users) Me(ctx context.Context) (generated.User, error) {
 		Email:     sessionUser.Email,
 		AvatarKey: sessionUser.AvatarKey.String,
 	}, nil
+}
+
+func (s *Users) Delete(ctx context.Context, password string) error {
+	sessionUser, err := requiresSessionUser(ctx, s.queries)
+	if err != nil {
+		return err
+	}
+
+	err = s.txRunner.WithTx(ctx, func(r repository.Repos) error {
+		var passwordHash string
+		passwordHash, err = r.Passwords.GetHashForUserID(ctx, sessionUser.UserID)
+		if err != nil {
+			return fmt.Errorf("get password hash: %w", err)
+		}
+
+		err = auth.CheckPassword(password, passwordHash)
+		if err != nil {
+			return fmt.Errorf("password mismatch: %w", err)
+		}
+
+		_, err = r.Users.Delete(ctx, sessionUser.UserID)
+		if err != nil {
+			return fmt.Errorf("delete user: %w", err)
+		}
+
+		err = r.Sessions.DeleteByUserID(ctx, sessionUser.UserID)
+		if err != nil {
+			return fmt.Errorf("delete sessions: %w", err)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *Users) UserByID(ctx context.Context, userIDStr string) (generated.User, error) {

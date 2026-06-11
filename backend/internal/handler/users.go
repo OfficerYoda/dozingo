@@ -18,6 +18,14 @@ type userByIDInput struct {
 	UserID string `path:"user_id"  format:"uuid"`
 }
 
+type deleteUserInputBody struct {
+	Password string `json:"password" required:"true" minLength:"8" maxLength:"72"`
+}
+
+type deleteUserInput struct {
+	Body deleteUserInputBody
+}
+
 // updateUserInputBody is a tri-state PATCH payload:
 //
 //   - username: omit the key entirely to leave the username unchanged.
@@ -86,6 +94,15 @@ func (h *UsersHandler) Register(api huma.API) {
 	}, h.me)
 
 	huma.Register(api, huma.Operation{
+		OperationID: "delete-current-user",
+		Method:      http.MethodDelete,
+		Path:        "/users/delete",
+		Summary:     "Delete the current user",
+		Tags:        []string{"Users"},
+		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.StrictAuthLimiter)},
+	}, h.delete)
+
+	huma.Register(api, huma.Operation{
 		OperationID: "get-user-by-id",
 		Method:      http.MethodGet,
 		Path:        "/users/{user_id}",
@@ -143,6 +160,15 @@ func (h *UsersHandler) me(ctx context.Context, _ *struct{}) (*userOutput, error)
 	}
 
 	return &userOutput{Body: userToOutput(user, h.avatarURLs)}, nil
+}
+
+func (h *UsersHandler) delete(ctx context.Context, in *deleteUserInput) (*struct{}, error) {
+	err := h.users.Delete(ctx, in.Body.Password)
+	if err != nil {
+		return nil, toHumaErr(err, "", "failed to delete user")
+	}
+
+	return nil, nil
 }
 
 func (h *UsersHandler) userByID(ctx context.Context, in *userByIDInput) (*userOutput, error) {

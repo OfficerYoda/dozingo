@@ -145,7 +145,7 @@ func (s *Auth) Login(ctx context.Context, in LoginInput) (generated.User, error)
 
 	err = auth.CheckPassword(in.Password, user.PasswordHash)
 	if err != nil {
-		return generated.User{}, domain.ErrUnauthorized
+		return generated.User{}, fmt.Errorf("password mismatch: %w", err)
 	}
 
 	vanillaUser := generated.User{
