@@ -361,15 +361,15 @@ func TestMain(m *testing.M) {
 	// Health is registered on the bare api (not apiGroup) to bypass session
 	// middleware; its operation Path is the absolute "/api/health".
 	NewHealthHandler(testPool).Register(api)
-	NewBoardsHandler(service.NewBoards(repos.Boards, queries)).Register(apiGroup)
-	NewCellsHandler(service.NewCells(repos.Cells, repos.Boards, queries)).Register(apiGroup)
-	NewGameCellsHandler(service.NewGameCells(repos.GameCells, repos.Games, queries)).Register(apiGroup)
-	NewGamesHandler(service.NewGames(repos.Games, repos.GameCells, repos.Boards, repos.Cells, queries, txRunner)).Register(apiGroup)
-	NewStatsHandler(service.NewStats(repos.Stats, queries)).Register(apiGroup)
-	votesSvc := service.NewVotes(repos.Votes, queries)
+	NewBoardsHandler(service.NewBoards(&repos, queries)).Register(apiGroup)
+	NewCellsHandler(service.NewCells(&repos, queries)).Register(apiGroup)
+	NewGameCellsHandler(service.NewGameCells(&repos, queries)).Register(apiGroup)
+	NewGamesHandler(service.NewGames(&repos, queries, txRunner)).Register(apiGroup)
+	NewStatsHandler(service.NewStats(&repos, queries)).Register(apiGroup)
+	votesSvc := service.NewVotes(&repos, queries)
 	NewVotesHandler(votesSvc).Register(apiGroup)
-	NewAuthHandler(service.NewAuth(repos, fakeMailer, queries, txRunner, fakeAvatarGen.Generate, fakeUploader), testAvatarURLs).Register(apiGroup)
-	NewUsersHandler(service.NewUsers(repos, queries, fakeMailer, txRunner, fakeUploader), votesSvc, testAvatarURLs).Register(apiGroup)
+	NewAuthHandler(service.NewAuth(repos, queries, fakeMailer, txRunner, fakeAvatarGen.Generate, fakeUploader), testAvatarURLs).Register(apiGroup)
+	NewUsersHandler(service.NewUsers(&repos, queries, fakeMailer, txRunner, fakeUploader), votesSvc, testAvatarURLs).Register(apiGroup)
 
 	// Clean tables before running tests to ensure a fresh state
 	truncateAllTables()

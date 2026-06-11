@@ -70,7 +70,7 @@ func (h *VotesHandler) Register(api huma.API) {
 		Summary:     "Get all votes for a Board",
 		Tags:        []string{"Votes"},
 		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.ReadLimiter)},
-	}, h.get)
+	}, h.getByBoard)
 
 	huma.Register(api, huma.Operation{
 		OperationID: "upsert-vote",
@@ -92,13 +92,8 @@ func (h *VotesHandler) Register(api huma.API) {
 	}, h.delete)
 }
 
-func (h *VotesHandler) get(ctx context.Context, in *getVotesByBoardIDInput) (*getVotesByBoardIDOutput, error) {
-	sessionUser, _ := middleware.SessionUserFromContext(ctx)
-
-	votes, err := h.svc.GetAggregateByBoardID(ctx, service.GetVotesAggregateInput{
-		BoardID: in.BoardID.Value,
-		UserID:  sessionUser.UserID,
-	})
+func (h *VotesHandler) getByBoard(ctx context.Context, in *getVotesByBoardIDInput) (*getVotesByBoardIDOutput, error) {
+	votes, err := h.svc.GetAggregateByBoardID(ctx, in.BoardID.Value)
 	if err != nil {
 		return nil, toHumaErr(err, "", "failed to get votes")
 	}

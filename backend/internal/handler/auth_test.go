@@ -355,7 +355,7 @@ func TestLogout_NoCookie_NoOp(t *testing.T) {
 	setupTest(t)
 
 	w := doRequest(http.MethodPost, "/api/auth/logout", nil)
-	assertStatus(t, w, http.StatusNoContent)
+	assertStatus(t, w, http.StatusUnauthorized)
 }
 
 func TestLogout_AuthenticatedDeletesSessionAndClearsCookie(t *testing.T) {
@@ -402,5 +402,5 @@ func TestLogout_StaleCookie_NoOp(t *testing.T) {
 
 	staleCookie := &http.Cookie{Name: "session_token", Value: "definitely-not-a-real-token"}
 	w := doRequestWithCookies(http.MethodPost, "/api/auth/logout", nil, []*http.Cookie{staleCookie})
-	assertStatus(t, w, http.StatusNoContent)
+	assertStatus(t, w, http.StatusUnauthorized)
 }

@@ -17,10 +17,10 @@ type GameCells struct {
 	queries   *generated.Queries
 }
 
-func NewGameCells(gameCells *repository.GameCells, games *repository.Games, queries *generated.Queries) *GameCells {
+func NewGameCells(repos *repository.Repos, queries *generated.Queries) *GameCells {
 	return &GameCells{
-		gameCells: gameCells,
-		games:     games,
+		gameCells: repos.GameCells,
+		games:     repos.Games,
 		queries:   queries,
 	}
 }

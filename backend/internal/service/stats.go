@@ -15,11 +15,8 @@ type Stats struct {
 	queries *generated.Queries
 }
 
-func NewStats(stats *repository.Stats, queries *generated.Queries) *Stats {
-	return &Stats{
-		stats:   stats,
-		queries: queries,
-	}
+func NewStats(repos *repository.Repos, queries *generated.Queries) *Stats {
+	return &Stats{stats: repos.Stats, queries: queries}
 }
 
 func (s *Stats) GetRecentStats(ctx context.Context, period time.Duration) (generated.GetRecentStatsRow, error) {

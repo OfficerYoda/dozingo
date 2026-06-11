@@ -75,17 +75,17 @@ func (r *Users) SetEmailVerifiedAt(ctx context.Context, userID pgtype.UUID, emai
 }
 
 type UpdateUserParams struct {
-	Username *string
-	EmailSet bool
-	Email    *string // only consulted when EmailSet
+	Username   *string
+	ClearEmail bool
+	Email      *string
 }
 
 func (r *Users) Update(ctx context.Context, userID pgtype.UUID, in UpdateUserParams) (generated.User, error) {
 	user, err := r.queries.UpdateUser(ctx, generated.UpdateUserParams{
-		UserID:   userID,
-		Username: pgmap.PgTextFromString(in.Username),
-		EmailSet: in.EmailSet,
-		Email:    pgmap.PgTextFromString(in.Email),
+		UserID:     userID,
+		Username:   pgmap.PgTextFromString(in.Username),
+		ClearEmail: in.ClearEmail,
+		Email:      pgmap.PgTextFromString(in.Email),
 	})
 	if err != nil {
 		return generated.User{}, pgmap.TranslatePgErr(err)

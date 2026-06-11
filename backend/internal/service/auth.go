@@ -42,8 +42,8 @@ type Auth struct {
 
 func NewAuth(
 	repos repository.Repos,
-	emailSender email.Sender,
 	queries *generated.Queries,
+	emailSender email.Sender,
 	txRunner repository.TxRunner,
 	avatarGen AvatarGenerator,
 	uploader storage.ObjectUploader,
@@ -145,7 +145,7 @@ func (s *Auth) Login(ctx context.Context, in LoginInput) (generated.User, error)
 
 	err = auth.CheckPassword(in.Password, user.PasswordHash)
 	if err != nil {
-		return generated.User{}, domain.ErrUnauthorized
+		return generated.User{}, fmt.Errorf("password mismatch: %w", err)
 	}
 
 	vanillaUser := generated.User{
@@ -163,12 +163,12 @@ func (s *Auth) Login(ctx context.Context, in LoginInput) (generated.User, error)
 }
 
 func (s *Auth) Logout(ctx context.Context) error {
-	sessionUser, ok := middleware.SessionUserFromContext(ctx)
-	if !ok || !sessionUser.UserID.Valid {
-		return nil
+	sessionUser, err := requiresSessionUser(ctx, s.queries)
+	if err != nil {
+		return err
 	}
 
-	err := s.sessions.Delete(ctx, sessionUser.Token)
+	err = s.sessions.Delete(ctx, sessionUser.Token)
 	if err != nil {
 		return fmt.Errorf("delete session token: %w", err)
 	}

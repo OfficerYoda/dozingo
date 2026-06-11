@@ -305,7 +305,7 @@ func TestUpdateMe_ClearEmail(t *testing.T) {
 	userID := (*resp)["user_id"].(string)
 
 	w := doRequestWithCookies(http.MethodPatch, "/api/users/me",
-		map[string]any{"email": nil}, cookiesFor(userID))
+		map[string]any{"email": ""}, cookiesFor(userID))
 	assertStatus(t, w, http.StatusOK)
 
 	var got map[string]any
