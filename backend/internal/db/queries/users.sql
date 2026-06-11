@@ -24,18 +24,19 @@ RETURNING *;
 -- name: UpdateUser :one
 -- Tri-state PATCH:
 --   * username: NULL means "leave alone", non-NULL means "set"
---   * email_set=false means "leave email/email_verified_at alone";
---     email_set=true writes whatever's in email (NULL = clear) and
---     resets email_verified_at to NULL.
+--   * email: NULL means "leave alone", non-NULL means "set"
+--   * clear_email: true means "clear email and reset email_verified_at"
 UPDATE users
 SET
     username = COALESCE(sqlc.narg('username'), username),
     email = CASE
-        WHEN sqlc.arg('email_set')::bool THEN sqlc.narg('email')
+        WHEN sqlc.arg('clear_email')::bool THEN NULL
+        WHEN sqlc.narg('email')::text IS NOT NULL THEN sqlc.narg('email')
         ELSE email
     END,
     email_verified_at = CASE
-        WHEN sqlc.arg('email_set')::bool THEN NULL
+        WHEN sqlc.arg('clear_email')::bool THEN NULL
+        WHEN sqlc.narg('email')::text IS NOT NULL THEN NULL
         ELSE email_verified_at
     END
 WHERE id = @user_id

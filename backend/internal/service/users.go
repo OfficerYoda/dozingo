@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/mail"
 	"strings"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -55,16 +56,16 @@ func NewUsers(
 }
 
 func (s *Users) Me(ctx context.Context) (generated.User, error) {
-	session, ok := middleware.SessionUserFromContext(ctx)
-	if !ok || !session.UserID.Valid {
-		return generated.User{}, fmt.Errorf("not logged in: %w", domain.ErrUnauthorized)
+	sessionUser, err := requiresSessionUser(ctx, s.queries)
+	if err != nil {
+		return generated.User{}, err
 	}
 
 	return generated.User{
-		ID:        session.UserID,
-		Username:  session.Username.String,
-		Email:     session.Email,
-		AvatarKey: session.AvatarKey.String,
+		ID:        sessionUser.UserID,
+		Username:  sessionUser.Username.String,
+		Email:     sessionUser.Email,
+		AvatarKey: sessionUser.AvatarKey.String,
 	}, nil
 }
 
@@ -87,18 +88,15 @@ func (s *Users) UserByID(ctx context.Context, userIDStr string) (generated.User,
 	return user, nil
 }
 
-// UpdateUserInput captures a tri-state PATCH payload:
+// UpdateUserInput captures the PATCH payload for a user update:
 //
 //   - Username: nil -> leave alone, non-nil -> set to that value.
-//   - EmailSet: false -> leave Email and email_verified_at alone.
-//     true -> write Email (which may itself be nil to clear the column)
-//     and reset email_verified_at to NULL.
-//
-// When EmailSet is true and the new Email differs from the previous value,
-// the service fires a verification mail to the new address (when non-nil).
+//   - Email: nil -> leave email and email_verified_at alone.
+//     "" (empty string) -> clear email and reset email_verified_at to NULL.
+//     non-empty string -> set email, reset email_verified_at to NULL,
+//     and (if the address changed) dispatch a verification mail.
 type UpdateUserInput struct {
 	Username *string
-	EmailSet bool
 	Email    *string
 }
 
@@ -180,16 +178,22 @@ func convertFormFileToImage(in huma.FormFile) (*storage.Image, error) {
 }
 
 func (s *Users) applyUserUpdate(ctx context.Context, userID pgtype.UUID, prevEmail pgtype.Text, in UpdateUserInput) (generated.User, error) {
+	if in.Email != nil && strings.TrimSpace(*in.Email) != "" {
+		if _, err := mail.ParseAddress(*in.Email); err != nil {
+			return generated.User{}, fmt.Errorf("invalid email address: %w", domain.ErrUnprocessableEntity)
+		}
+	}
+
 	user, err := s.users.Update(ctx, userID, repository.UpdateUserParams{
-		Username: in.Username,
-		EmailSet: in.EmailSet,
-		Email:    in.Email,
+		Username:   in.Username,
+		ClearEmail: in.Email != nil && strings.TrimSpace(*in.Email) == "",
+		Email:      in.Email,
 	})
 	if err != nil {
 		return generated.User{}, fmt.Errorf("update user: %w", err)
 	}
 
-	if in.EmailSet && user.Email.Valid && !pgTextEqual(prevEmail, user.Email) {
+	if in.Email != nil && strings.TrimSpace(*in.Email) != "" && user.Email.Valid && !pgTextEqual(prevEmail, user.Email) {
 		if err := issueAndSendEmailVerification(ctx, s.txRunner, s.emailSender, user.ID, user.Email.String); err != nil {
 			return generated.User{}, fmt.Errorf("send verification mail: %w", err)
 		}

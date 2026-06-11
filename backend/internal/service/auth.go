@@ -163,12 +163,12 @@ func (s *Auth) Login(ctx context.Context, in LoginInput) (generated.User, error)
 }
 
 func (s *Auth) Logout(ctx context.Context) error {
-	sessionUser, ok := middleware.SessionUserFromContext(ctx)
-	if !ok || !sessionUser.UserID.Valid {
-		return nil
+	sessionUser, err := requiresSessionUser(ctx, s.queries)
+	if err != nil {
+		return err
 	}
 
-	err := s.sessions.Delete(ctx, sessionUser.Token)
+	err = s.sessions.Delete(ctx, sessionUser.Token)
 	if err != nil {
 		return fmt.Errorf("delete session token: %w", err)
 	}

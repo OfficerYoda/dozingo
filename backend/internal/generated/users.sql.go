@@ -202,11 +202,13 @@ UPDATE users
 SET
     username = COALESCE($1, username),
     email = CASE
-        WHEN $2::bool THEN $3
+        WHEN $2::bool THEN NULL
+        WHEN $3::text IS NOT NULL THEN $3
         ELSE email
     END,
     email_verified_at = CASE
         WHEN $2::bool THEN NULL
+        WHEN $3::text IS NOT NULL THEN NULL
         ELSE email_verified_at
     END
 WHERE id = $4
@@ -214,21 +216,20 @@ RETURNING id, username, email, created_at, updated_at, email_verified_at, avatar
 `
 
 type UpdateUserParams struct {
-	Username pgtype.Text `json:"username"`
-	EmailSet bool        `json:"email_set"`
-	Email    pgtype.Text `json:"email"`
-	UserID   pgtype.UUID `json:"user_id"`
+	Username   pgtype.Text `json:"username"`
+	ClearEmail bool        `json:"clear_email"`
+	Email      pgtype.Text `json:"email"`
+	UserID     pgtype.UUID `json:"user_id"`
 }
 
 // Tri-state PATCH:
 //   - username: NULL means "leave alone", non-NULL means "set"
-//   - email_set=false means "leave email/email_verified_at alone";
-//     email_set=true writes whatever's in email (NULL = clear) and
-//     resets email_verified_at to NULL.
+//   - email: NULL means "leave alone", non-NULL means "set"
+//   - clear_email: true means "clear email and reset email_verified_at"
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) {
 	row := q.db.QueryRow(ctx, updateUser,
 		arg.Username,
-		arg.EmailSet,
+		arg.ClearEmail,
 		arg.Email,
 		arg.UserID,
 	)
