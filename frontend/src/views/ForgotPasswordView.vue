@@ -23,7 +23,7 @@
                         </button>
                     </form>
                     <small class="pwforgot-notice">
-                        Remember again? <RouterLink to="/login">Log In</RouterLink>
+                        Remember again? <button class="link-btn" @click="openLoginModal">Log In</button>
                     </small>
                 </div>
             </div>
@@ -119,12 +119,12 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
 import { Mail } from 'lucide-vue-next'
 import { useAuth } from '@/composables/useAuth'
+import { useLoginModal } from '@/composables/useLoginModal'
 
-const router = useRouter()
 const { pwRequest } = useAuth()
+const { openLoginModal } = useLoginModal()
 
 const email = ref('')
 const error = ref('')

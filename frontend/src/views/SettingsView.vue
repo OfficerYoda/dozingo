@@ -146,6 +146,7 @@
 import { useAuth } from '@/composables/useAuth'
 import { ref, watch, useTemplateRef } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { ShieldUser, Smartphone, Key, Bell, Palette, Moon, Eye, Languages, UserX } from 'lucide-vue-next'
 
 const auth = useAuth()
 if (!auth.state.ready) {
