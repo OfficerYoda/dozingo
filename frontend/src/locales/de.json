@@ -119,6 +119,21 @@
       "times": "{count} mal"
     }
   },
+  "notFound": {
+    "title": "Falsche Vorlesung erwischt.",
+    "subtitle": "Diese Seite hat sich früher abgemeldet als dein Dozent. Sie existiert nicht — genau wie deine Anwesenheitspunkte.",
+    "hint": "(Kein Bingo für dich.)",
+    "cta": "Zurück zur Startseite",
+    "grid": {
+      "wrongTurn": "Falsch abgebogen",
+      "lost": "Komplett lost",
+      "blame": "URL falsch",
+      "gone": "Weg.",
+      "oops": "Whoops",
+      "notHere": "Nicht hier",
+      "classic": "Klassiker"
+    }
+  },
   "cardEditor": {
     "title": "Neue Karte erstellen",
     "sessionTitle": "Sitzungstitel",

@@ -119,6 +119,21 @@
       "times": "{count} times"
     }
   },
+  "notFound": {
+    "title": "Wrong lecture hall.",
+    "subtitle": "This page left early — just like your professor on Fridays. It doesn't exist, and neither do your attendance points.",
+    "hint": "(No bingo for you.)",
+    "cta": "Back to home",
+    "grid": {
+      "wrongTurn": "Wrong turn",
+      "lost": "Totally lost",
+      "blame": "Bad URL",
+      "gone": "Gone.",
+      "oops": "Whoops",
+      "notHere": "Not here",
+      "classic": "Classic"
+    }
+  },
   "cardEditor": {
     "title": "Create a new board",
     "sessionTitle": "Session title",

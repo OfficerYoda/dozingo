@@ -10,6 +10,7 @@ import CardEditorView from '@/views/CardEditorView.vue'
 import BoardsView from '@/views/BoardsView.vue'
 import ForgotPasswordView from '@/views/ForgotPasswordView.vue'
 import GameView from '@/views/GameView.vue'
+import NotFoundView from '@/views/NotFoundView.vue'
 
 declare module 'vue-router' {
   interface RouteMeta {
@@ -27,6 +28,7 @@ const routes = [
   { path: '/cardeditor', name: 'cardeditor', component: CardEditorView, meta: { requiresAuth: true } },
   { path: '/boards', name: 'boards', component: BoardsView, meta: { requiresAuth: false } },
   { path: '/game/:game_id', name: 'game', component: GameView, meta: { requiresAuth: false } },
+  { path: '/:pathMatch(.*)*', name: 'not-found', component: NotFoundView },
 ]
 
 const router = createRouter({
