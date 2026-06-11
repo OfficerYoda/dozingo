@@ -156,6 +156,23 @@ components:
         - cell_id
         - position
       type: object
+    DeleteUserInputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/DeleteUserInputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        password:
+          maxLength: 72
+          minLength: 8
+          type: string
+      required:
+        - password
+      type: object
     EmailSentOutputBody:
       additionalProperties: false
       properties:
@@ -1579,6 +1596,26 @@ paths:
       tags:
         - Stats
   /api/users/me:
+    delete:
+      operationId: delete-current-user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeleteUserInputBody"
+        required: true
+      responses:
+        "204":
+          description: No Content
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Delete the current user
+      tags:
+        - Users
     get:
       operationId: get-current-user
       responses:

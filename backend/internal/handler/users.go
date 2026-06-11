@@ -96,7 +96,7 @@ func (h *UsersHandler) Register(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID: "delete-current-user",
 		Method:      http.MethodDelete,
-		Path:        "/users/delete",
+		Path:        "/users/me",
 		Summary:     "Delete the current user",
 		Tags:        []string{"Users"},
 		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.StrictAuthLimiter)},

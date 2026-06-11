@@ -8,12 +8,12 @@ import (
 	"time"
 )
 
-/// ===== DELETE /users/delete =====
+/// ===== DELETE /users/me =====
 
 func TestDeleteUser_Unauthenticated_401(t *testing.T) {
 	setupTest(t)
 
-	w := doRequest(http.MethodDelete, "/api/users/delete", map[string]any{
+	w := doRequest(http.MethodDelete, "/api/users/me", map[string]any{
 		"password": "somepassword1",
 	})
 	assertStatus(t, w, http.StatusUnauthorized)
@@ -24,7 +24,7 @@ func TestDeleteUser_AnonymousSessionOnly_401(t *testing.T) {
 
 	_, cookie := mintAnonSession(t, 30*24*time.Hour)
 
-	w := doRequestWithCookies(http.MethodDelete, "/api/users/delete", map[string]any{
+	w := doRequestWithCookies(http.MethodDelete, "/api/users/me", map[string]any{
 		"password": "somepassword1",
 	}, []*http.Cookie{cookie})
 	assertStatus(t, w, http.StatusUnauthorized)
@@ -37,7 +37,7 @@ func TestDeleteUser_Success(t *testing.T) {
 	userID := (*resp)["user_id"].(string)
 	cookie := cookiesFor(userID)
 
-	w := doRequestWithCookies(http.MethodDelete, "/api/users/delete", map[string]any{
+	w := doRequestWithCookies(http.MethodDelete, "/api/users/me", map[string]any{
 		"password": "correctpw1",
 	}, cookie)
 	if w.Code != http.StatusOK && w.Code != http.StatusNoContent {
@@ -60,7 +60,7 @@ func TestDeleteUser_WrongPassword_401(t *testing.T) {
 	userID := (*resp)["user_id"].(string)
 	cookie := cookiesFor(userID)
 
-	w := doRequestWithCookies(http.MethodDelete, "/api/users/delete", map[string]any{
+	w := doRequestWithCookies(http.MethodDelete, "/api/users/me", map[string]any{
 		"password": "wrongpassword1",
 	}, cookie)
 	assertStatus(t, w, http.StatusUnauthorized)
@@ -76,7 +76,7 @@ func TestDeleteUser_PasswordTooShort_422(t *testing.T) {
 	resp := createTestUserWithRegister(t, "delshort", "correctpw1", nil)
 	userID := (*resp)["user_id"].(string)
 
-	w := doRequestWithCookies(http.MethodDelete, "/api/users/delete", map[string]any{
+	w := doRequestWithCookies(http.MethodDelete, "/api/users/me", map[string]any{
 		"password": "short",
 	}, cookiesFor(userID))
 	if w.Code != http.StatusUnprocessableEntity && w.Code != http.StatusBadRequest {
@@ -90,7 +90,7 @@ func TestDeleteUser_PasswordTooLong_422(t *testing.T) {
 	resp := createTestUserWithRegister(t, "dellong", "correctpw1", nil)
 	userID := (*resp)["user_id"].(string)
 
-	w := doRequestWithCookies(http.MethodDelete, "/api/users/delete", map[string]any{
+	w := doRequestWithCookies(http.MethodDelete, "/api/users/me", map[string]any{
 		"password": strings.Repeat("a", 73),
 	}, cookiesFor(userID))
 	if w.Code != http.StatusUnprocessableEntity && w.Code != http.StatusBadRequest {
@@ -118,7 +118,7 @@ func TestDeleteUser_InvalidatesAllSessions(t *testing.T) {
 	}
 
 	// Delete the account using session B.
-	w := doRequestWithCookies(http.MethodDelete, "/api/users/delete", map[string]any{
+	w := doRequestWithCookies(http.MethodDelete, "/api/users/me", map[string]any{
 		"password": "correctpw1",
 	}, []*http.Cookie{cookieB})
 	if w.Code != http.StatusOK && w.Code != http.StatusNoContent {
@@ -140,7 +140,7 @@ func TestDeleteUser_DoesNotLeakDBDetails(t *testing.T) {
 	resp := createTestUserWithRegister(t, "delleak", "correctpw1", nil)
 	userID := (*resp)["user_id"].(string)
 
-	w := doRequestWithCookies(http.MethodDelete, "/api/users/delete", map[string]any{
+	w := doRequestWithCookies(http.MethodDelete, "/api/users/me", map[string]any{
 		"password": "wrongpassword1",
 	}, cookiesFor(userID))
 	assertResponseDoesNotLeak(t, w.Body.String(),
