@@ -1,24 +1,24 @@
 -- name: GetUserByID :one
 SELECT * FROM users
-WHERE id = $1;
+WHERE id = @user_id;
 
 -- name: GetUserByUsername :one
 SELECT * FROM users
-WHERE username = $1;
+WHERE username = @username;
 
 -- name: GetUserByEmail :one
 SELECT * FROM users
-WHERE email = $1;
+WHERE email = @email;
 
 -- name: CreateUser :one
 INSERT INTO users (username, email)
-VALUES ($1, sqlc.narg('email'))
+VALUES (@username, sqlc.narg('email'))
 RETURNING *;
 
 -- name: SetUserEmailVerifiedAt :one
 UPDATE users
 SET email_verified_at = sqlc.narg('email_verified_at')
-WHERE id = $1
+WHERE id = @user_id
 RETURNING *;
 
 -- name: UpdateUser :one
@@ -38,12 +38,12 @@ SET
         WHEN sqlc.arg('email_set')::bool THEN NULL
         ELSE email_verified_at
     END
-WHERE id = $1
+WHERE id = @user_id
 RETURNING *;
 
 -- name: DeleteUser :one
 DELETE FROM users
-WHERE id = $1
+WHERE id = @user_id
 RETURNING *;
 
 -- name: SetAvatar :one

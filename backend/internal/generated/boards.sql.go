@@ -50,8 +50,8 @@ WHERE id = $1
 RETURNING id, title, size, author_id, created_at, updated_at, description
 `
 
-func (q *Queries) DeleteBoard(ctx context.Context, id pgtype.UUID) (Board, error) {
-	row := q.db.QueryRow(ctx, deleteBoard, id)
+func (q *Queries) DeleteBoard(ctx context.Context, boardID pgtype.UUID) (Board, error) {
+	row := q.db.QueryRow(ctx, deleteBoard, boardID)
 	var i Board
 	err := row.Scan(
 		&i.ID,
@@ -70,8 +70,8 @@ SELECT id, title, size, author_id, created_at, updated_at, description FROM boar
 WHERE id = $1
 `
 
-func (q *Queries) GetBoardByID(ctx context.Context, id pgtype.UUID) (Board, error) {
-	row := q.db.QueryRow(ctx, getBoardByID, id)
+func (q *Queries) GetBoardByID(ctx context.Context, boardID pgtype.UUID) (Board, error) {
+	row := q.db.QueryRow(ctx, getBoardByID, boardID)
 	var i Board
 	err := row.Scan(
 		&i.ID,
@@ -135,8 +135,8 @@ type GetTotalGamesPlayedForBoardRow struct {
 	TotalGames int64       `json:"total_games"`
 }
 
-func (q *Queries) GetTotalGamesPlayedForBoard(ctx context.Context, id pgtype.UUID) (GetTotalGamesPlayedForBoardRow, error) {
-	row := q.db.QueryRow(ctx, getTotalGamesPlayedForBoard, id)
+func (q *Queries) GetTotalGamesPlayedForBoard(ctx context.Context, boardID pgtype.UUID) (GetTotalGamesPlayedForBoardRow, error) {
+	row := q.db.QueryRow(ctx, getTotalGamesPlayedForBoard, boardID)
 	var i GetTotalGamesPlayedForBoardRow
 	err := row.Scan(&i.BoardID, &i.BoardTitle, &i.TotalGames)
 	return i, err

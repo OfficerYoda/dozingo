@@ -44,8 +44,8 @@ WHERE id = $1
 RETURNING id, player_id, board_id, status, created_at, updated_at, session_id
 `
 
-func (q *Queries) DeleteGame(ctx context.Context, id pgtype.UUID) (Game, error) {
-	row := q.db.QueryRow(ctx, deleteGame, id)
+func (q *Queries) DeleteGame(ctx context.Context, gameID pgtype.UUID) (Game, error) {
+	row := q.db.QueryRow(ctx, deleteGame, gameID)
 	var i Game
 	err := row.Scan(
 		&i.ID,
@@ -64,8 +64,8 @@ SELECT id, player_id, board_id, status, created_at, updated_at, session_id FROM 
 WHERE id = $1
 `
 
-func (q *Queries) GetGameByID(ctx context.Context, id pgtype.UUID) (Game, error) {
-	row := q.db.QueryRow(ctx, getGameByID, id)
+func (q *Queries) GetGameByID(ctx context.Context, gameID pgtype.UUID) (Game, error) {
+	row := q.db.QueryRow(ctx, getGameByID, gameID)
 	var i Game
 	err := row.Scan(
 		&i.ID,
@@ -227,7 +227,7 @@ RETURNING id, player_id, board_id, status, created_at, updated_at, session_id
 
 type UpdateGameStatusParams struct {
 	Status    GameStatus  `json:"status"`
-	ID        pgtype.UUID `json:"id"`
+	GameID    pgtype.UUID `json:"game_id"`
 	PlayerID  pgtype.UUID `json:"player_id"`
 	SessionID pgtype.UUID `json:"session_id"`
 }
@@ -236,7 +236,7 @@ type UpdateGameStatusParams struct {
 func (q *Queries) UpdateGameStatus(ctx context.Context, arg UpdateGameStatusParams) (Game, error) {
 	row := q.db.QueryRow(ctx, updateGameStatus,
 		arg.Status,
-		arg.ID,
+		arg.GameID,
 		arg.PlayerID,
 		arg.SessionID,
 	)

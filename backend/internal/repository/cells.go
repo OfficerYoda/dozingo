@@ -90,7 +90,7 @@ func (r *Cells) Update(ctx context.Context, in UpdateCellInput) (generated.Cell,
 
 func (r *Cells) Delete(ctx context.Context, in DeleteCellInput) (generated.Cell, error) {
 	cell, err := r.queries.DeleteCell(ctx, generated.DeleteCellParams{
-		ID:      in.CellID,
+		CellID:  in.CellID,
 		BoardID: in.BoardID,
 	})
 	if err != nil {

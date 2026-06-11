@@ -40,14 +40,14 @@ const getVotesByBoardID = `-- name: GetVotesByBoardID :one
 SELECT
     COALESCE(SUM(vote_value), 0)::int AS score,
     COUNT(*)::int                     AS vote_count,
-    COALESCE(MAX(CASE WHEN user_id = $2 THEN vote_value END), 0)::int AS user_vote
+    COALESCE(MAX(CASE WHEN user_id = $1 THEN vote_value END), 0)::int AS user_vote
 FROM votes
-WHERE board_id = $1
+WHERE board_id = $2
 `
 
 type GetVotesByBoardIDParams struct {
-	BoardID pgtype.UUID `json:"board_id"`
 	UserID  pgtype.UUID `json:"user_id"`
+	BoardID pgtype.UUID `json:"board_id"`
 }
 
 type GetVotesByBoardIDRow struct {
@@ -57,7 +57,7 @@ type GetVotesByBoardIDRow struct {
 }
 
 func (q *Queries) GetVotesByBoardID(ctx context.Context, arg GetVotesByBoardIDParams) (GetVotesByBoardIDRow, error) {
-	row := q.db.QueryRow(ctx, getVotesByBoardID, arg.BoardID, arg.UserID)
+	row := q.db.QueryRow(ctx, getVotesByBoardID, arg.UserID, arg.BoardID)
 	var i GetVotesByBoardIDRow
 	err := row.Scan(&i.Score, &i.VoteCount, &i.UserVote)
 	return i, err

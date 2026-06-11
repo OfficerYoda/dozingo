@@ -64,7 +64,7 @@ func (r *Users) Create(ctx context.Context, username string, email *string) (gen
 
 func (r *Users) SetEmailVerifiedAt(ctx context.Context, userID pgtype.UUID, emailVerifiedAt *time.Time) (generated.User, error) {
 	user, err := r.queries.SetUserEmailVerifiedAt(ctx, generated.SetUserEmailVerifiedAtParams{
-		ID:              userID,
+		UserID:          userID,
 		EmailVerifiedAt: pgmap.PgTimestamptzFromTime(emailVerifiedAt),
 	})
 	if err != nil {
@@ -82,7 +82,7 @@ type UpdateUserParams struct {
 
 func (r *Users) Update(ctx context.Context, userID pgtype.UUID, in UpdateUserParams) (generated.User, error) {
 	user, err := r.queries.UpdateUser(ctx, generated.UpdateUserParams{
-		ID:       userID,
+		UserID:   userID,
 		Username: pgmap.PgTextFromString(in.Username),
 		EmailSet: in.EmailSet,
 		Email:    pgmap.PgTextFromString(in.Email),

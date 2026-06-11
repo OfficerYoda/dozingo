@@ -83,8 +83,8 @@ func (r *Sessions) DeleteByUserID(ctx context.Context, userID pgtype.UUID) error
 
 func (r *Sessions) DeleteOtherSessionsFromUser(ctx context.Context, userID, sessionID pgtype.UUID) error {
 	err := r.queries.DeleteOtherSessionsFromUser(ctx, generated.DeleteOtherSessionsFromUserParams{
-		UserID: userID,
-		ID:     sessionID,
+		UserID:    userID,
+		SessionID: sessionID,
 	})
 	if err != nil {
 		return pgmap.TranslatePgErr(err)

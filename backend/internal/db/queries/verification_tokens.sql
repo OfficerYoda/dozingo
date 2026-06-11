@@ -1,23 +1,23 @@
 -- name: CreateVerificationToken :one
 INSERT INTO verification_tokens (user_id, token, type, expires_at)
-VALUES ($1, $2, $3, $4)
+VALUES (@user_id, @token, @type, @expires_at)
 RETURNING *;
 
 -- name: GetVerificationTokenByToken :one
 SELECT * FROM verification_tokens
-WHERE token = $1 
+WHERE token = @token 
   AND expires_at > now();
 
 -- name: GetValidTokenForUser :one
 -- Fetches an unexpired token of a specific type for a user
 SELECT * FROM verification_tokens
-WHERE user_id = $1 
-  AND type = $2 
+WHERE user_id = @user_id 
+  AND type = @type 
   AND expires_at > now();
 
 -- name: DeleteVerificationToken :exec
 DELETE FROM verification_tokens
-WHERE token = $1;
+WHERE token = @token;
 
 -- name: DeleteExpiredTokens :exec
 DELETE FROM verification_tokens

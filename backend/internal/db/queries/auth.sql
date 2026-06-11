@@ -2,7 +2,7 @@
 SELECT u.id, u.username, u.email, u.avatar_key, up.password_hash
 FROM users u
 INNER JOIN user_passwords up ON up.user_id = u.id
-WHERE u.username = $1;
+WHERE u.username = @username;
 
 -- name: GetSessionUserByToken :one
 -- user_id may be NULL for anon sessions
@@ -17,5 +17,5 @@ SELECT
   u.avatar_key
 FROM sessions s
 LEFT JOIN users u ON u.id = s.user_id
-WHERE s.token = $1
+WHERE s.token = @token
   AND s.expires_at > now();

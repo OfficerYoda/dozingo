@@ -77,7 +77,7 @@ func (r *Games) Create(ctx context.Context, in CreateGameInput) (generated.Game,
 
 func (r *Games) UpdateStatus(ctx context.Context, in UpdateGameStatusInput) (generated.Game, error) {
 	game, err := r.queries.UpdateGameStatus(ctx, generated.UpdateGameStatusParams{
-		ID:        in.GameID,
+		GameID:    in.GameID,
 		PlayerID:  in.PlayerID,
 		SessionID: in.SessionID,
 		Status:    generated.GameStatus(in.Status),

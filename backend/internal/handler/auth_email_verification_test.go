@@ -56,7 +56,7 @@ func TestSendEmailVerification_AlreadyVerified_409(t *testing.T) {
 	q := generated.New(testPool)
 	now := time.Now()
 	if _, err := q.SetUserEmailVerifiedAt(context.Background(), generated.SetUserEmailVerifiedAtParams{
-		ID:              userID,
+		UserID:          userID,
 		EmailVerifiedAt: pgmap.PgTimestamptzFromTime(&now),
 	}); err != nil {
 		t.Fatalf("set email_verified_at: %v", err)
