@@ -282,6 +282,7 @@ onUnmounted(() => {
 
 .board-scroll {
     overflow-x: auto;
+    overflow-y: hidden;
     scroll-snap-type: both mandatory;
 }
 
@@ -298,6 +299,7 @@ onUnmounted(() => {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr 1fr;
     min-width: 100%;
+    overflow-y: hidden;
 }
 
 .board-container button{
@@ -327,7 +329,7 @@ onUnmounted(() => {
 }
 
 .board-container button::before {
-    content: '?';
+    content: '';
     color: #fff;
     display: flex;
     justify-content: center;
@@ -383,6 +385,7 @@ onUnmounted(() => {
 .board-container .checked{
     background-color: #5A5781;
     color: #E3DFFF;
+    transform: perspective(600px) rotateX(-360deg) !important;
 }
 
 .board-container button::after{
