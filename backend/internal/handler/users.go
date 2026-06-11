@@ -18,18 +18,26 @@ type userByIDInput struct {
 	UserID string `path:"user_id"  format:"uuid"`
 }
 
+type deleteUserInputBody struct {
+	Password string `json:"password" required:"true" minLength:"8" maxLength:"72"`
+}
+
+type deleteUserInput struct {
+	Body deleteUserInputBody
+}
+
 // updateUserInputBody is a tri-state PATCH payload:
 //
 //   - username: omit the key entirely to leave the username unchanged.
 //     Provide a non-empty string to rename. JSON null is rejected by the
 //     schema (the field is non-nullable).
-//   - email: omit the key entirely to leave the email unchanged. Send
-//     explicit JSON null to clear it. Send a string to set a new address;
-//     the server will reset email_verified_at and dispatch a verification
+//   - email: omit the key (or send JSON null) to leave the email unchanged.
+//     Send "" (empty string) to clear it. Send a valid address to set a new
+//     one; the server will reset email_verified_at and dispatch a verification
 //     mail to the new address.
 type updateUserInputBody struct {
-	Username *string              `json:"username,omitempty" maxLength:"200"`
-	Email    types.NullableString `json:"email,omitempty" format:"email" maxLength:"200"`
+	Username *string `json:"username,omitempty" maxLength:"200"`
+	Email    *string `json:"email,omitempty" maxLength:"200"`
 }
 
 type updateMeInput struct {
@@ -86,6 +94,15 @@ func (h *UsersHandler) Register(api huma.API) {
 	}, h.me)
 
 	huma.Register(api, huma.Operation{
+		OperationID: "delete-current-user",
+		Method:      http.MethodDelete,
+		Path:        "/users/me",
+		Summary:     "Delete the current user",
+		Tags:        []string{"Users"},
+		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.StrictAuthLimiter)},
+	}, h.delete)
+
+	huma.Register(api, huma.Operation{
 		OperationID: "get-user-by-id",
 		Method:      http.MethodGet,
 		Path:        "/users/{user_id}",
@@ -100,11 +117,10 @@ func (h *UsersHandler) Register(api huma.API) {
 		Path:        "/users/me",
 		Summary:     "Update the current User's username and/or email",
 		Description: "Resolves the user id from the session cookie. The " +
-			"`email` field is tri-state: omit the key to leave the column " +
-			"unchanged, send `null` to clear it, or send a new address to " +
-			"set it (which also resets verification and triggers a " +
-			"verification mail). Setting a new email triggers an outbound " +
-			"verification mail.",
+			"`email` field is tri-state: omit the key (or send `null`) to " +
+			"leave the column unchanged, send `\"\"` (empty string) to clear " +
+			"it, or send a valid address to set it (which also resets " +
+			"verification and triggers a verification mail).",
 		Tags:        []string{"Users"},
 		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.StrictAuthLimiter)},
 	}, h.updateMe)
@@ -146,6 +162,15 @@ func (h *UsersHandler) me(ctx context.Context, _ *struct{}) (*userOutput, error)
 	return &userOutput{Body: userToOutput(user, h.avatarURLs)}, nil
 }
 
+func (h *UsersHandler) delete(ctx context.Context, in *deleteUserInput) (*struct{}, error) {
+	err := h.users.Delete(ctx, in.Body.Password)
+	if err != nil {
+		return nil, toHumaErr(err, "", "failed to delete user")
+	}
+
+	return nil, nil
+}
+
 func (h *UsersHandler) userByID(ctx context.Context, in *userByIDInput) (*userOutput, error) {
 	user, err := h.users.UserByID(ctx, in.UserID)
 	if err != nil {
@@ -158,8 +183,7 @@ func (h *UsersHandler) userByID(ctx context.Context, in *userByIDInput) (*userOu
 func (h *UsersHandler) updateMe(ctx context.Context, in *updateMeInput) (*userOutput, error) {
 	user, err := h.users.UpdateMe(ctx, service.UpdateUserInput{
 		Username: in.Body.Username,
-		EmailSet: in.Body.Email.Set,
-		Email:    in.Body.Email.Value,
+		Email:    in.Body.Email,
 	})
 	if err != nil {
 		return nil, toHumaErr(err, "", "failed to update current user")

@@ -22,18 +22,15 @@ type Games struct {
 }
 
 func NewGames(
-	games *repository.Games,
-	gameCells *repository.GameCells,
-	boards *repository.Boards,
-	cells *repository.Cells,
+	repos *repository.Repos,
 	queries *generated.Queries,
 	txRunner repository.TxRunner,
 ) *Games {
 	return &Games{
-		games:     games,
-		gameCells: gameCells,
-		boards:    boards,
-		cells:     cells,
+		games:     repos.Games,
+		gameCells: repos.GameCells,
+		boards:    repos.Boards,
+		cells:     repos.Cells,
 		queries:   queries,
 		txRunner:  txRunner,
 	}

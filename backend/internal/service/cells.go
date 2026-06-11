@@ -18,10 +18,10 @@ type Cells struct {
 	queries *generated.Queries
 }
 
-func NewCells(cells *repository.Cells, boards *repository.Boards, queries *generated.Queries) *Cells {
+func NewCells(repos *repository.Repos, queries *generated.Queries) *Cells {
 	return &Cells{
-		cells:   cells,
-		boards:  boards,
+		cells:   repos.Cells,
+		boards:  repos.Boards,
 		queries: queries,
 	}
 }
