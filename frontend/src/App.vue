@@ -211,7 +211,7 @@ header {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-subheading);
+  color: var(--color-primary-600);
 }
 
 .profile-avatar {
@@ -246,7 +246,7 @@ header {
   background: none;
   border: none;
   cursor: pointer;
-  color: var(--color-text);
+  color: var(--color-primary-600);
   text-decoration: none;
   font: inherit;
 }
