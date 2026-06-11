@@ -8,6 +8,7 @@ import (
 
 	"github.com/officeryoda/dozingo/internal/domain"
 	"github.com/officeryoda/dozingo/internal/generated"
+	"github.com/officeryoda/dozingo/internal/middleware"
 	"github.com/officeryoda/dozingo/internal/repository"
 )
 
@@ -30,8 +31,13 @@ type UpsertVoteInput struct {
 	VoteValue int32
 }
 
-func (s *Votes) GetAggregateByBoardID(ctx context.Context, in GetVotesAggregateInput) (generated.GetVotesByBoardIDRow, error) {
-	return s.votes.GetAggregateByBoardID(ctx, repository.GetVotesAggregateInput(in))
+func (s *Votes) GetAggregateByBoardID(ctx context.Context, boardID pgtype.UUID) (generated.GetVotesByBoardIDRow, error) {
+	sessionUser, _ := middleware.SessionUserFromContext(ctx)
+
+	return s.votes.GetAggregateByBoardID(ctx, repository.GetVotesAggregateInput{
+		BoardID: boardID,
+		UserID:  sessionUser.UserID,
+	})
 }
 
 func (s *Votes) Upsert(ctx context.Context, in UpsertVoteInput) (generated.Vote, error) {
