@@ -57,13 +57,22 @@ function closeMenu(){
         </button> 
         <div class="header-spacing">
           <h1 class="mb-0">{{ $t('nav.settings') }}</h1>
-          <div class="dropdown">
-            <button class="btn"><Languages :size="20" /></button>
-            <ul class="dropdown-menu">
-              <li @click="locale = 'en'">English</li>
-              <li @click="locale = 'de'">Deutsch</li>
-            </ul>
+          <div v-if="auth.state.user" class="profile-menu" ref="profileMenuRef">
+            <img :src="auth.state.user.avatar_url ?? '/user.png'" class="profile-avatar" @click="profileOpen = !profileOpen" />
+            <div v-if="profileOpen" class="profile-dropdown">
+              <RouterLink to="/profile" class="dropdown-item" @click="profileOpen = false">
+                <UserCircle :size="16" /> {{ auth.state.user.username }}
+              </RouterLink>
+              <RouterLink to="/settings" class="dropdown-item" @click="profileOpen = false">
+                <Settings :size="16" /> {{ $t('nav.settings') }}
+              </RouterLink>
+              <hr class="dropdown-divider">
+              <button class="dropdown-item dropdown-item-danger" @click="handleLogout">
+                <LogOut :size="16" /> {{ $t('nav.signOut') }}
+              </button>
+            </div>
           </div>
+          <RouterLink v-else to="/login" class="btn btn-primary">{{ $t('nav.signIn') }}</RouterLink>
         </div>
       </header>
 
@@ -81,15 +90,26 @@ function closeMenu(){
 </template>
 
 <script setup lang="ts">
-import { watch } from 'vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { Home, Settings, LogOut, LogIn, UserCircle, Menu, Computer, SquarePen, Languages } from 'lucide-vue-next'
+import { Home, Settings, LogOut, LogIn, UserCircle, Menu, Computer, SquarePen } from 'lucide-vue-next'
 import { useAuth } from '@/composables/useAuth'
 
 const { locale } = useI18n()
 const router = useRouter()
 const auth = useAuth()
+const profileOpen = ref(false)
+const profileMenuRef = ref<HTMLElement | null>(null)
+
+function handleClickOutside(e: MouseEvent) {
+  if (profileMenuRef.value && !profileMenuRef.value.contains(e.target as Node)) {
+    profileOpen.value = false
+  }
+}
+
+onMounted(() => document.addEventListener('click', handleClickOutside))
+onUnmounted(() => document.removeEventListener('click', handleClickOutside))
 
 const fontSizes = ['12px', '14px', '16px', '18px', '20px']
 const savedFontSize = localStorage.getItem('fontSize')
@@ -167,5 +187,60 @@ header {
   flex: 1;
   align-items: center;
   justify-content: space-between;
+}
+
+.profile-menu {
+  position: relative;
+  cursor: pointer;
+}
+
+.profile-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+}
+
+.profile-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: var(--color-bg-card-tinted);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: var(--radius-sm);
+  min-width: 180px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  z-index: 100;
+  overflow: hidden;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  font-size: 0.875rem;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text);
+  text-decoration: none;
+  font: inherit;
+}
+
+.dropdown-item:hover {
+  background-color: var(--color-primary-200);
+}
+
+.dropdown-item-danger {
+  color: var(--color-accent-red);
+}
+
+.dropdown-divider {
+  margin: 0;
+  border-color: var(--color-border, #e2e8f0);
 }
 </style>

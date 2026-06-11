@@ -40,12 +40,18 @@
       "fontSize": "Font size adjustment",
       "small": "Small",
       "standard": "Standard",
-      "large": "Large"
+      "large": "Large",
+      "language": "Language",
+      "languageDesc": "Change the display language of the app",
+      "languages": {
+        "de": "German",
+        "en": "English"
+      }
     },
     "account": {
-      "deactivate": "Deactivate Account",
-      "deactivateDesc": "Temporarily hide your profile and rankings from the playground.",
-      "deactivateBtn": "Deactivate"
+      "deactivate": "Delete Account",
+      "deactivateDesc": "Permanently delete your account and all associated data.",
+      "deactivateBtn": "Delete"
     }
   },
   "boards": {

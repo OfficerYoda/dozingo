@@ -40,12 +40,18 @@
       "fontSize": "Schriftgröße anpassen",
       "small": "Klein",
       "standard": "Standard",
-      "large": "Groß"
+      "large": "Groß",
+      "language": "Sprache",
+      "languageDesc": "Anzeigesprache der App ändern",
+      "languages": {
+        "de": "Deutsch",
+        "en": "Englisch"
+      }
     },
     "account": {
-      "deactivate": "Konto deaktivieren",
-      "deactivateDesc": "Dein Profil und deine Ranglisten vorübergehend aus dem Playground ausblenden.",
-      "deactivateBtn": "Deaktivieren"
+      "deactivate": "Konto löschen",
+      "deactivateDesc": "Dein Konto und alle zugehörigen Daten dauerhaft löschen.",
+      "deactivateBtn": "Löschen"
     }
   },
   "boards": {

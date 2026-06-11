@@ -101,7 +101,19 @@
           </select>
         </div>
 
-        <div class="display-fontsize">
+        <div class="display-darkmode">
+          <Languages :size="23" />
+          <div class="display-darkmode-info">
+            <span>{{ $t('settings.display.language') }}</span>
+            <small>{{ $t('settings.display.languageDesc') }}</small>
+          </div>
+
+          <select v-model="locale" class="btn btn-secondary">
+            <option value="de">{{ $t('settings.display.languages.de') }}</option>
+            <option value="en">{{ $t('settings.display.languages.en') }}</option>
+          </select>
+        </div>
+        <!----- <div class="display-fontsize">
           <div class="display-fontsize-header">
             <ALargeSmall :size="23" />
             <small class="display-fontsize-title">{{ $t('settings.display.fontSize') }}</small>
@@ -112,7 +124,7 @@
             <small style="font-size: 16px;">{{ $t('settings.display.standard') }}</small>
             <small style="font-size: 20px;">{{ $t('settings.display.large') }}</small>
           </div>
-        </div>
+        </div>---->
 
       </article>
 
@@ -146,7 +158,7 @@ const usernameError = ref(false)
 
 const fileInput = useTemplateRef<HTMLInputElement>('fileInput')
 
-useI18n()
+const { locale } = useI18n({ useScope: 'global' })
 
 const isChecked = ref(localStorage.getItem('theme') === 'dark')
 const colorCorrection = ref(localStorage.getItem('colorCorrection') ?? 'standart')
@@ -158,8 +170,6 @@ watch(fontSize, (val) => {
   document.documentElement.style.fontSize = fontSizes[val - 1] ?? '16px'
   localStorage.setItem('fontSize', String(val))
 })
-
-
 
 watch(colorCorrection, (newValue) => {
   localStorage.setItem('colorCorrection', newValue)
