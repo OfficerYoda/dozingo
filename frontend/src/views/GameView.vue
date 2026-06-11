@@ -85,6 +85,7 @@ const { pageTitle } = usePageTitle('Bingo Game')
 const board = ref<Board | null>(null)
 const error = ref<string | null>(null)
 const selectedCells = ref<Cell[]>([])
+const gameId = ref<string>('')
 
 // 'stopped' | 'running'
 const gameState = ref<'stopped' | 'running'>('stopped')
@@ -113,16 +114,16 @@ function stopTimer() {
 
 // --- Data loading ---
 async function loadGame() {
-    const gameId = route.params.game_id as string
+    gameId.value = route.params.game_id as string
     error.value = null
 
-    const gameRes = await fetch(`/api/games/${gameId}`, { credentials: 'include' })
+    const gameRes = await fetch(`/api/games/${gameId.value}`, { credentials: 'include' })
     if (!gameRes.ok) { error.value = 'Spiel nicht gefunden'; return }
     const game = await gameRes.json()
 
     const [boardRes, cellsRes] = await Promise.all([
         fetch(`/api/boards/${game.board_id}`, { credentials: 'include' }),
-        fetch(`/api/games/${gameId}/cells`, { credentials: 'include' }),
+        fetch(`/api/games/${gameId.value}/cells`, { credentials: 'include' }),
     ])
 
     if (!boardRes.ok) { error.value = 'Board nicht gefunden'; return }
@@ -174,11 +175,31 @@ function resetGame() {
     gameState.value = 'stopped'
 }
 
-function handleCellClick(cellId: string) {
+async function handleCellClick(cellId: string) {
     if (gameState.value !== 'running') return
+
+    const wasChecked = checkedCells.value.has(cellId)
+    const nextChecked = !wasChecked
+
+    // optimistic update
     const next = new Set(checkedCells.value)
-    next.has(cellId) ? next.delete(cellId) : next.add(cellId)
+    nextChecked ? next.add(cellId) : next.delete(cellId)
     checkedCells.value = next
+
+    try {
+        const res = await fetch(`/api/games/${gameId.value}/cells/${cellId}`, {
+            method: 'PUT',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ is_marked: nextChecked }),
+        })
+        if (!res.ok) throw new Error('mark failed')
+    } catch {
+        // rollback on failure
+        const rollback = new Set(checkedCells.value)
+        wasChecked ? rollback.add(cellId) : rollback.delete(cellId)
+        checkedCells.value = rollback
+    }
 }
 
 // --- Board shadow ---
@@ -322,7 +343,7 @@ onUnmounted(() => {
     cursor: pointer;
     font: inherit;
     color: inherit;
-    transition: transform 0.6s ease, border-width 0.3s, padding 0.3s, border-color 0.3s;
+    transition: transform 0.6s ease, border-width 0.3s, padding 0.3s, border-color 0.3s, background-color 0.3s, color 0.3s;
     transform-style: preserve-3d;
     backface-visibility: hidden;
     will-change: transform;
@@ -385,7 +406,7 @@ onUnmounted(() => {
 .board-container .checked{
     background-color: #5A5781;
     color: #E3DFFF;
-    transform: perspective(600px) rotateX(-360deg) !important;
+    transform: perspective(600px) rotateX(0deg) !important;
 }
 
 .board-container button::after{
@@ -409,10 +430,21 @@ onUnmounted(() => {
 }
 
 .board-container .checked::after{
+    animation: check-marker 0.3s ease;
     top: 0;
     right: 0;
-    height: 40px;
-    width: 40px;
+    height: 30px;
+    width: 30px;
     opacity: 1;
+}
+
+@keyframes check-marker {
+    75%{
+        top: 0;
+        right: 0;
+        height: 40px;
+        width: 40px;
+        opacity: 1;
+    }
 }
 </style>
