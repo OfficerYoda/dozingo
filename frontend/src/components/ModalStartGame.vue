@@ -38,7 +38,7 @@
                     </div>
                     <div class="right-buttons-bottom">
                         <button class="btn btn-primary button-bottom-row"
-                            @click="router.push('/game/' + board.board_id)">
+                            @click="createGameAndNav()">
                             <Play :size="20" />
                             <p class="mb-0">{{ t('boards.modal.startGame') }}</p>
                         </button>
@@ -82,18 +82,26 @@ const emit = defineEmits<{
 }>()
 
 async function createGameAndNav() {
-    const cells: Cell[] = props.cells
+    const cells: Cell[] = [...props.cells]
 
-    shuffle(cells);
+    shuffle(cells)
 
-    const 
+    const body = cells.map((cell, index) => ({
+        cell_id: cell.cell_id,
+        position: index,
+    }))
 
     const createGame = await fetch('/api/boards/' + props.board.board_id + '/games', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: ,
+        body: JSON.stringify(body),
     })
+
+    if (!createGame.ok) return
+
+    const game = await createGame.json()
+    router.push('/game/' + game.game_id)
 }
 
 function shuffle(array: Cell[]) {
