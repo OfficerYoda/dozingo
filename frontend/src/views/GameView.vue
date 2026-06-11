@@ -42,6 +42,13 @@
                 <div class="board-shadow" v-bind:class="(showShadowRight)?'board-shadow-right':''"></div>
                 <div class="board-shadow" v-bind:class="(showShadowLeft)?'board-shadow-left':''"></div>
             </div>
+
+            <div v-if="gameState === 'completed'" class="completed-actions mt-3">
+                <RouterLink to="/" class="btn btn-primary">
+                    <Home :size="18"/>
+                    <span>Zur Startseite</span>
+                </RouterLink>
+            </div>
         </div>
 
         <Teleport to="body">
@@ -123,7 +130,7 @@
 import { ref, computed, nextTick, useTemplateRef, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
-import { Heart, LayoutGrid, Play, Timer, CheckSquare, Sparkles, Dices, Star } from 'lucide-vue-next'
+import { Heart, LayoutGrid, Play, Timer, CheckSquare, Sparkles, Dices, Star, Home } from 'lucide-vue-next'
 import { usePageTitle } from '@/composables/usePageTitle'
 
 interface Board {
@@ -663,6 +670,17 @@ onUnmounted(() => {
     }
 }
 /* === Party === */
+.completed-actions {
+    display: flex;
+    justify-content: center;
+}
+
+.completed-actions .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
 .party-overlay {
     position: fixed;
     inset: 0;
