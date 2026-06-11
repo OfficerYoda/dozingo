@@ -26,7 +26,7 @@
             </div>
             
             <div :class="['board', 'mt-3', { stopped: gameState === 'stopped' }]">
-                <div class="board-scroll" ref="boardContainerRef" @scroll="updateShadow">
+                <div :class="['board-scroll', { 'is-revealing': isRevealing }]" ref="boardContainerRef" @scroll="updateShadow">
                     <div class="board-container"
                      :style="`grid-template-columns: repeat(${board?.size ?? 4}, 1fr)`">
                         <button v-for="(cell, i) in selectedCells" :key="cell.cell_id"
@@ -150,8 +150,6 @@ async function loadGame() {
 // --- Game flow ---
 async function startGame() {
     if (gameState.value === 'running') return
-    const scrollEl = boardContainerRef.value
-    if (scrollEl) scrollEl.style.overflowX = 'hidden'
     isRevealing.value = true
     const indices = Array.from({ length: selectedCells.value.length }, (_, i) => i)
         .sort(() => Math.random() - 0.5)
@@ -161,8 +159,7 @@ async function startGame() {
         await nextTick()
         await new Promise(r => requestAnimationFrame(r))
     }
-    await new Promise(r => setTimeout(r, 500))
-    if (scrollEl) scrollEl.style.overflowX = ''
+    await new Promise(r => setTimeout(r, 600))
     isRevealing.value = false
     gameState.value = 'running'
     startTimer()
@@ -286,6 +283,15 @@ onUnmounted(() => {
 .board-scroll {
     overflow-x: auto;
     scroll-snap-type: both mandatory;
+}
+
+.board-scroll.is-revealing {
+    overflow: hidden;
+    scroll-snap-type: none;
+}
+
+.board-scroll.is-revealing button {
+    scroll-snap-align: none;
 }
 
 .board-container{
