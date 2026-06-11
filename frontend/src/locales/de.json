@@ -24,6 +24,7 @@
   },
   "settings": {
     "title": "Einstellungen",
+    "guest": "Hallo, Fremder!",
     "security": {
       "title": "Kontosicherheit",
       "subtitle": "Authentifizierung",
@@ -33,7 +34,9 @@
       "lastPasswordChange": "Letzte Passwortänderung",
       "change": "Ändern",
       "loginNotification": "Login-Benachrichtigung",
-      "loginNotificationDesc": "Bei jedem Login benachrichtigt werden"
+      "loginNotificationDesc": "Bei jedem Login benachrichtigt werden",
+      "loginRequired": "Bitte melde dich an, um die Sicherheitseinstellungen zu sehen.",
+      "loginBtn": "Anmelden"
     },
     "display": {
       "title": "Anzeige",
