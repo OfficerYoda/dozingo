@@ -3,7 +3,6 @@
         <div class="container">
             <div class="top-item-bar">
                 <div>
-                    <h2 class="mb-1">{{ board?.title }}</h2>
                     <div class="stats">
                         <span class="stat-item stat-plays">
                             <Play :size="15"/> {{ board?.play_count }}
@@ -265,7 +264,7 @@ onUnmounted(() => {
 
 .board{
     background-color: #E3DFFF;
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-lg);
     padding: 0.5rem;
     position: relative;
 }
@@ -349,7 +348,7 @@ onUnmounted(() => {
     top: 0;
     box-shadow: inset 0 0 0 #E3DFFF;
     pointer-events: none;
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-lg);
     transition: 0.3s;
 }
 
