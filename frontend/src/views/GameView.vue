@@ -301,7 +301,7 @@ onUnmounted(() => {
     cursor: pointer;
     font: inherit;
     color: inherit;
-    transition: transform 0.6s ease, border-width 0.3s, padding 0.3s;
+    transition: transform 0.6s ease, border-width 0.3s, padding 0.3s, border-color 0.3s;
     transform-style: preserve-3d;
     backface-visibility: hidden;
     will-change: transform;
@@ -333,8 +333,7 @@ onUnmounted(() => {
 }
 
 .board-container button:not(:disabled):not(.checked):hover {
-    border-width: 0.1rem;
-    padding: calc(5px + 0.4rem);
+    border-color: var(--color-primary-300);
 }
 
 .board-container button:focus-visible {
