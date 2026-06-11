@@ -17,8 +17,8 @@ type Votes struct {
 	queries *generated.Queries
 }
 
-func NewVotes(votes *repository.Votes, queries *generated.Queries) *Votes {
-	return &Votes{votes: votes, queries: queries}
+func NewVotes(repos *repository.Repos, queries *generated.Queries) *Votes {
+	return &Votes{votes: repos.Votes, queries: queries}
 }
 
 type GetVotesAggregateInput struct {

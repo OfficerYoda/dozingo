@@ -1,3 +1,4 @@
+// Package types contains shared parameter and JSON wrapper types used by the API layer.
 package types
 
 import (

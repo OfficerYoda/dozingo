@@ -602,11 +602,8 @@ components:
           readOnly: true
           type: string
         email:
-          format: email
           maxLength: 200
-          type:
-            - string
-            - "null"
+          type: string
         username:
           maxLength: 200
           type: string
@@ -1601,7 +1598,7 @@ paths:
       tags:
         - Users
     patch:
-      description: "Resolves the user id from the session cookie. The `email` field is tri-state: omit the key to leave the column unchanged, send `null` to clear it, or send a new address to set it (which also resets verification and triggers a verification mail). Setting a new email triggers an outbound verification mail."
+      description: "Resolves the user id from the session cookie. The `email` field is tri-state: omit the key (or send `null`) to leave the column unchanged, send `\"\"` (empty string) to clear it, or send a valid address to set it (which also resets verification and triggers a verification mail)."
       operationId: update-current-user
       requestBody:
         content:

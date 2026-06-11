@@ -17,8 +17,8 @@ type Boards struct {
 	queries *generated.Queries
 }
 
-func NewBoards(boards *repository.Boards, queries *generated.Queries) *Boards {
-	return &Boards{boards: boards, queries: queries}
+func NewBoards(repos *repository.Repos, queries *generated.Queries) *Boards {
+	return &Boards{boards: repos.Boards, queries: queries}
 }
 
 type BoardListFilter struct {

@@ -40,7 +40,7 @@ type Users struct {
 }
 
 func NewUsers(
-	repos repository.Repos,
+	repos *repository.Repos,
 	queries *generated.Queries,
 	emailSender email.Sender,
 	txRunner repository.TxRunner,

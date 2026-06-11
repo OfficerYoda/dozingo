@@ -42,8 +42,8 @@ type Auth struct {
 
 func NewAuth(
 	repos repository.Repos,
-	emailSender email.Sender,
 	queries *generated.Queries,
+	emailSender email.Sender,
 	txRunner repository.TxRunner,
 	avatarGen AvatarGenerator,
 	uploader storage.ObjectUploader,
