@@ -18,7 +18,7 @@ function closeMenu(){
     <aside id="aside">
       <div class="sidebar-header">
         <span class="brand-title">DOZINGO</span>
-        <small class="brand-subtitle">Schoolary Playground</small>
+        <small class="brand-subtitle">{{ $t("nav.subtitle") }}</small>
       </div>
 
       <div class="sidebar-content my-3">
@@ -159,6 +159,7 @@ nav li {
 .brand-subtitle {
   display: block;
   font-size: 0.875rem;
+  color: var(--color-text-secondary);
 }
 
 .sidebar-buttons {

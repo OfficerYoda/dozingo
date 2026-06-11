@@ -30,11 +30,14 @@
                 <div class="board-scroll" ref="boardContainerRef" @scroll="updateShadow">
                     <div class="board-container"
                      :style="`grid-template-columns: repeat(${board?.size ?? 4}, 1fr)`">
-                        <div v-for="(cell, i) in selectedCells" :key="cell.cell_id"
+                        <button v-for="(cell, i) in selectedCells" :key="cell.cell_id"
+                             type="button"
                              :class="{ revealed: revealedCells.has(i), checked: checkedCells.has(cell.cell_id) }"
+                             :disabled="!revealedCells.has(i) || gameState === 'stopped'"
+                             :aria-pressed="checkedCells.has(cell.cell_id)"
                              @click="handleCellClick(cell.cell_id)">
                             {{ cell.content }}
-                        </div>
+                        </button>
                     </div>
                 </div>
                 <div class="board-shadow" v-bind:class="(showShadowRight)?'board-shadow-right':''"></div>
@@ -278,7 +281,7 @@ onUnmounted(() => {
     min-width: 100%;
 }
 
-.board-container div{
+.board-container button{
     position: relative;
     width: 100%;
     min-width: 100px;
@@ -292,17 +295,19 @@ onUnmounted(() => {
     align-items: center;
     padding: 5px;
     text-align: center;
-    overflow-wrap: break-word; 
+    overflow-wrap: break-word;
     hyphens: auto;
     border-radius: var(--radius-lg);
     cursor: pointer;
+    font: inherit;
+    color: inherit;
     transition: transform 0.6s ease, border-width 0.3s, padding 0.3s;
     transform-style: preserve-3d;
     backface-visibility: hidden;
     will-change: transform;
 }
 
-.board-container div::before {
+.board-container button::before {
     content: '?';
     color: #fff;
     display: flex;
@@ -318,18 +323,23 @@ onUnmounted(() => {
     transform: perspective(600px) rotateY(180deg);
 }
 
-.board.stopped .board-container div:not(.revealed) {
+.board-container button:disabled {
     transform: perspective(600px) rotateY(180deg);
     cursor: default;
-    pointer-events: none;
 }
 
-.board-container div.revealed {
+.board-container button.revealed {
     transform: perspective(600px) rotateY(0deg);
 }
-.board-container div:hover:not(.checked):not(.board.stopped *){
+
+.board-container button:not(:disabled):not(.checked):hover {
     border-width: 0.1rem;
     padding: calc(5px + 0.4rem);
+}
+
+.board-container button:focus-visible {
+    outline: 3px solid #4052B6;
+    outline-offset: -3px;
 }
 
 .board-shadow{
@@ -357,7 +367,7 @@ onUnmounted(() => {
     color: #E3DFFF;
 }
 
-.board-container div::after{
+.board-container button::after{
     content: "✓";
     position: absolute;
     top: 10px;
@@ -384,6 +394,4 @@ onUnmounted(() => {
     width: 40px;
     opacity: 1;
 }
-
-
 </style>
