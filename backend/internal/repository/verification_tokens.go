@@ -24,6 +24,7 @@ type CreateVerificationTokenInput struct {
 	UserID    pgtype.UUID
 	TokenHash string
 	TokenType generated.TokenType
+	Email     *string
 	ExpiresAt time.Time
 }
 
@@ -37,6 +38,7 @@ func (r *VerificationTokens) Create(ctx context.Context, in CreateVerificationTo
 		UserID:    in.UserID,
 		Token:     in.TokenHash,
 		Type:      in.TokenType,
+		Email:     pgmap.PgTextFromString(in.Email),
 		ExpiresAt: pgmap.PgTimestamptzFromTime(&in.ExpiresAt),
 	})
 	if err != nil {

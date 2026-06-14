@@ -14,7 +14,7 @@ import (
 
 	"github.com/officeryoda/dozingo/internal/auth"
 	"github.com/officeryoda/dozingo/internal/domain"
-	"github.com/officeryoda/dozingo/internal/email"
+	emailpkg "github.com/officeryoda/dozingo/internal/email"
 	"github.com/officeryoda/dozingo/internal/generated"
 	"github.com/officeryoda/dozingo/internal/middleware"
 	"github.com/officeryoda/dozingo/internal/pgmap"
@@ -34,7 +34,7 @@ type Auth struct {
 	passwords          *repository.UserPasswords
 	sessions           *repository.Sessions
 	verificationTokens *repository.VerificationTokens
-	emailSender        email.Sender
+	emailSender        emailpkg.Sender
 	queries            *generated.Queries
 	txRunner           repository.TxRunner
 	avatarGen          AvatarGenerator
@@ -44,7 +44,7 @@ type Auth struct {
 func NewAuth(
 	repos repository.Repos,
 	queries *generated.Queries,
-	emailSender email.Sender,
+	emailSender emailpkg.Sender,
 	txRunner repository.TxRunner,
 	avatarGen AvatarGenerator,
 	uploader storage.ObjectUploader,
@@ -244,6 +244,7 @@ func (s *Auth) ForgotPassword(ctx context.Context, address string) error {
 		s.txRunner,
 		user.ID,
 		generated.TokenTypePasswordReset,
+		nil,
 		passwordResetTokenTTL,
 	)
 	if err != nil {
@@ -403,6 +404,7 @@ func upsertToken(
 	txRunner repository.TxRunner,
 	userID pgtype.UUID,
 	tokenType generated.TokenType,
+	email *string,
 	tokenTTL time.Duration,
 ) (string, error) {
 	plaintext := auth.GenerateToken()
@@ -418,8 +420,6 @@ func upsertToken(
 		}
 
 		if existingToken.UserID.Valid {
-			// existingToken.Token is already the SHA-256 hex digest stored
-			// in the DB, so pass it back as-is.
 			err = r.VerificationTokens.Delete(ctx, existingToken.Token)
 			if err != nil {
 				return fmt.Errorf("delete existing token: %w", err)
@@ -430,6 +430,7 @@ func upsertToken(
 			UserID:    userID,
 			TokenHash: auth.HashToken(plaintext),
 			TokenType: tokenType,
+			Email:     email,
 			ExpiresAt: time.Now().Add(tokenTTL),
 		})
 		if err != nil {

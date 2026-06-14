@@ -12,8 +12,8 @@ import (
 )
 
 const createVerificationToken = `-- name: CreateVerificationToken :one
-INSERT INTO verification_tokens (user_id, token, type, expires_at)
-VALUES ($1, $2, $3, $4)
+INSERT INTO verification_tokens (user_id, token, type, expires_at, email)
+VALUES ($1, $2, $3, $4, $5)
 RETURNING id, user_id, token, type, expires_at, created_at, updated_at, email
 `
 
@@ -22,6 +22,7 @@ type CreateVerificationTokenParams struct {
 	Token     string             `json:"token"`
 	Type      TokenType          `json:"type"`
 	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
+	Email     pgtype.Text        `json:"email"`
 }
 
 func (q *Queries) CreateVerificationToken(ctx context.Context, arg CreateVerificationTokenParams) (VerificationToken, error) {
@@ -30,6 +31,7 @@ func (q *Queries) CreateVerificationToken(ctx context.Context, arg CreateVerific
 		arg.Token,
 		arg.Type,
 		arg.ExpiresAt,
+		arg.Email,
 	)
 	var i VerificationToken
 	err := row.Scan(

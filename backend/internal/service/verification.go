@@ -25,6 +25,7 @@ func sendEmailVerification(
 		txRunner,
 		userID,
 		generated.TokenTypeEmailVerification,
+		&to,
 		emailVerificationTokenTTL,
 	)
 	if err != nil {
