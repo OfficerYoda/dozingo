@@ -291,15 +291,20 @@ func TestNewPassword_WrongTokenType_BadRequest(t *testing.T) {
 	// Insert an email_verification token; new-password must refuse it.
 	tok := insertVerificationToken(t, userID, generated.TokenTypeEmailVerification, time.Hour)
 
+	// Count valid email_verification tokens before the request so we can
+	// verify none were consumed regardless of how many exist (register may
+	// have already created one).
+	tokensBefore := countValidTokens(t, userID, generated.TokenTypeEmailVerification)
+
 	w := doRequest(http.MethodPost, "/api/auth/new-password", map[string]any{
 		"token":        tok,
 		"new_password": "newpw12345678",
 	})
 	assertStatus(t, w, http.StatusBadRequest)
 
-	// And the token must NOT have been consumed.
-	if got := countValidTokens(t, userID, generated.TokenTypeEmailVerification); got != 1 {
-		t.Errorf("wrong-type token should not be consumed, %d remaining", got)
+	// The token must NOT have been consumed.
+	if got := countValidTokens(t, userID, generated.TokenTypeEmailVerification); got != tokensBefore {
+		t.Errorf("wrong-type token should not be consumed: had %d tokens before, %d after", tokensBefore, got)
 	}
 }
 

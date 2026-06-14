@@ -62,6 +62,10 @@ func TestSendEmailVerification_AlreadyVerified_409(t *testing.T) {
 		t.Fatalf("set email_verified_at: %v", err)
 	}
 
+	// Registration sends a verification mail as a side effect; reset so we
+	// can assert only on what the endpoint under test does.
+	fakeMailer.reset()
+
 	w := doRequestWithCookies(http.MethodPost, "/api/auth/send-email-verification", nil, []*http.Cookie{cookie})
 	assertStatus(t, w, http.StatusConflict)
 	if fakeMailer.verifyCount() != 0 {
@@ -76,6 +80,10 @@ func TestSendEmailVerification_Success(t *testing.T) {
 	userIDStr := (*resp)["user_id"].(string)
 	userID := userIDFromString(t, userIDStr)
 	cookie := userCookies[userIDStr]
+
+	// Registration sends a verification mail as a side effect; reset so we
+	// can assert only on what the endpoint under test does.
+	fakeMailer.reset()
 
 	w := doRequestWithCookies(http.MethodPost, "/api/auth/send-email-verification", nil, []*http.Cookie{cookie})
 	assertStatus(t, w, http.StatusOK)
@@ -107,6 +115,10 @@ func TestSendEmailVerification_RotatesExistingToken(t *testing.T) {
 	userIDStr := (*resp)["user_id"].(string)
 	userID := userIDFromString(t, userIDStr)
 	cookie := userCookies[userIDStr]
+
+	// Registration sends a verification mail as a side effect; reset so we
+	// can assert only on what the endpoint under test does.
+	fakeMailer.reset()
 
 	for range 2 {
 		w := doRequestWithCookies(http.MethodPost, "/api/auth/send-email-verification", nil, []*http.Cookie{cookie})
