@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -92,8 +93,14 @@ func (s *Auth) Register(ctx context.Context, in RegisterInput) (generated.User, 
 		user = updated
 	}
 
-	// Run session stuff outside the transaction so the user can recover
-	// via login when something with the session fails
+	// send email verification
+	if in.Email != nil && strings.TrimSpace(*in.Email) != "" {
+		err = sendEmailVerification(ctx, s.txRunner, s.emailSender, user.ID, *in.Email)
+		if err != nil {
+			slog.Warn("failed to send email verification", "error", err)
+		}
+	}
+
 	err = s.attachUserToSession(ctx, user)
 	if err != nil {
 		return generated.User{}, fmt.Errorf("attach user to session: %w", err)
@@ -312,7 +319,7 @@ func (s *Auth) SendEmailVerification(ctx context.Context) error {
 		return fmt.Errorf("email already verified: %w", domain.ErrConflict)
 	}
 
-	return issueAndSendEmailVerification(ctx, s.txRunner, s.emailSender, sessionUser.UserID, sessionUser.Email.String)
+	return sendEmailVerification(ctx, s.txRunner, s.emailSender, sessionUser.UserID, sessionUser.Email.String)
 }
 
 func (s *Auth) VerifyEmail(ctx context.Context, token string) (generated.User, error) {

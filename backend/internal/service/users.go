@@ -234,7 +234,7 @@ func (s *Users) applyUserUpdate(ctx context.Context, userID pgtype.UUID, prevEma
 	}
 
 	if in.Email != nil && strings.TrimSpace(*in.Email) != "" && user.Email.Valid && !pgTextEqual(prevEmail, user.Email) {
-		if err := issueAndSendEmailVerification(ctx, s.txRunner, s.emailSender, user.ID, user.Email.String); err != nil {
+		if err := sendEmailVerification(ctx, s.txRunner, s.emailSender, user.ID, user.Email.String); err != nil {
 			return generated.User{}, fmt.Errorf("send verification mail: %w", err)
 		}
 	}
