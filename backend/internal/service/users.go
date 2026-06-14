@@ -218,23 +218,29 @@ func convertFormFileToImage(in huma.FormFile) (*storage.Image, error) {
 }
 
 func (s *Users) applyUserUpdate(ctx context.Context, userID pgtype.UUID, prevEmail pgtype.Text, in UpdateUserInput) (generated.User, error) {
-	if in.Email != nil && strings.TrimSpace(*in.Email) != "" {
-		if _, err := mail.ParseAddress(*in.Email); err != nil {
+	newEmail := ""
+	if in.Email != nil {
+		newEmail = strings.TrimSpace(*in.Email)
+	}
+
+	if newEmail != "" {
+		if _, err := mail.ParseAddress(newEmail); err != nil {
 			return generated.User{}, fmt.Errorf("invalid email address: %w", domain.ErrUnprocessableEntity)
 		}
 	}
 
 	user, err := s.users.Update(ctx, userID, repository.UpdateUserParams{
 		Username:   in.Username,
-		ClearEmail: in.Email != nil && strings.TrimSpace(*in.Email) == "",
+		ClearEmail: in.Email != nil && newEmail == "", // in.Email is a tri-state, so both conditions are necessary
 		Email:      in.Email,
 	})
 	if err != nil {
 		return generated.User{}, fmt.Errorf("update user: %w", err)
 	}
 
-	if in.Email != nil && strings.TrimSpace(*in.Email) != "" && user.Email.Valid && !pgTextEqual(prevEmail, user.Email) {
-		if err := issueAndSendEmailVerification(ctx, s.txRunner, s.emailSender, user.ID, user.Email.String); err != nil {
+	if newEmail != "" && !pgTextEqual(prevEmail, user.Email) {
+		err = sendEmailVerification(ctx, s.txRunner, s.emailSender, user.ID, newEmail)
+		if err != nil {
 			return generated.User{}, fmt.Errorf("send verification mail: %w", err)
 		}
 	}

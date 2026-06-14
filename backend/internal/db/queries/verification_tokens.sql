@@ -1,6 +1,6 @@
 -- name: CreateVerificationToken :one
-INSERT INTO verification_tokens (user_id, token, type, expires_at)
-VALUES (@user_id, @token, @type, @expires_at)
+INSERT INTO verification_tokens (user_id, token, type, expires_at, email)
+VALUES (@user_id, @token, @type, @expires_at, @email)
 RETURNING *;
 
 -- name: GetVerificationTokenByToken :one

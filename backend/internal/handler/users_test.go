@@ -239,6 +239,10 @@ func TestUpdateMe_Success_Username(t *testing.T) {
 	resp := createTestUserWithRegister(t, "merename", "mypassword123", stringPtr("merename@example.com"))
 	userID := (*resp)["user_id"].(string)
 
+	// Registration sends a verification mail as a side effect; reset so we
+	// can assert only on what the endpoint under test does.
+	fakeMailer.reset()
+
 	w := doRequestWithCookies(http.MethodPatch, "/api/users/me",
 		map[string]any{"username": "merenamed"}, cookiesFor(userID))
 	assertStatus(t, w, http.StatusOK)
@@ -273,6 +277,10 @@ func TestUpdateMe_Success_Email_SendsVerificationAndClearsVerifiedAt(t *testing.
 		t.Fatalf("seed email_verified_at: %v", err)
 	}
 
+	// Registration sends a verification mail as a side effect; reset so we
+	// can assert only on what the endpoint under test does.
+	fakeMailer.reset()
+
 	w := doRequestWithCookies(http.MethodPatch, "/api/users/me",
 		map[string]any{"email": "menew@example.com"}, cookiesFor(userID))
 	assertStatus(t, w, http.StatusOK)
@@ -304,6 +312,10 @@ func TestUpdateMe_ClearEmail(t *testing.T) {
 	resp := createTestUserWithRegister(t, "meclear", "mypassword123", stringPtr("meclear@example.com"))
 	userID := (*resp)["user_id"].(string)
 
+	// Registration sends a verification mail as a side effect; reset so we
+	// can assert only on what the endpoint under test does.
+	fakeMailer.reset()
+
 	w := doRequestWithCookies(http.MethodPatch, "/api/users/me",
 		map[string]any{"email": ""}, cookiesFor(userID))
 	assertStatus(t, w, http.StatusOK)
@@ -331,6 +343,10 @@ func TestUpdateMe_NoOpEmptyBody(t *testing.T) {
 	userID := (*resp)["user_id"].(string)
 	preEmail := (*resp)["email"]
 	preUsername := (*resp)["username"]
+
+	// Registration sends a verification mail as a side effect; reset so we
+	// can assert only on what the endpoint under test does.
+	fakeMailer.reset()
 
 	w := doRequestWithCookies(http.MethodPatch, "/api/users/me",
 		map[string]any{}, cookiesFor(userID))

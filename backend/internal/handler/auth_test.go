@@ -5,6 +5,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/officeryoda/dozingo/internal/generated"
 )
 
 func TestRegister_Success(t *testing.T) {
@@ -52,6 +54,51 @@ func TestRegister_WithoutEmail(t *testing.T) {
 	// Email should be null/nil when not provided
 	if resp["email"] != nil {
 		t.Errorf("expected email to be null, got %v", resp["email"])
+	}
+}
+
+func TestRegister_WithEmail_SendsVerificationMail(t *testing.T) {
+	setupTest(t)
+
+	w := doRequest(http.MethodPost, "/api/auth/register", map[string]any{
+		"username": "regverify",
+		"password": "mypassword123",
+		"email":    "regverify@example.com",
+	})
+	assertStatus(t, w, http.StatusOK)
+
+	// A verification mail must have been dispatched to the provided address.
+	if fakeMailer.verifyCount() != 1 {
+		t.Fatalf("expected exactly 1 verification mail after register, got %d", fakeMailer.verifyCount())
+	}
+	last, _ := fakeMailer.lastVerify()
+	if last.To != "regverify@example.com" {
+		t.Errorf("expected verification mail to=regverify@example.com, got %q", last.To)
+	}
+	if last.Token == "" {
+		t.Error("expected non-empty token in verification mail")
+	}
+
+	// A valid email_verification token row must exist in the DB.
+	var resp map[string]any
+	decodeJSON(t, w, &resp)
+	userID := userIDFromString(t, resp["user_id"].(string))
+	if got := countValidTokens(t, userID, generated.TokenTypeEmailVerification); got != 1 {
+		t.Errorf("expected 1 valid email_verification token in DB after register, got %d", got)
+	}
+}
+
+func TestRegister_WithoutEmail_NoVerificationMail(t *testing.T) {
+	setupTest(t)
+
+	w := doRequest(http.MethodPost, "/api/auth/register", map[string]any{
+		"username": "regnoemail",
+		"password": "mypassword123",
+	})
+	assertStatus(t, w, http.StatusOK)
+
+	if fakeMailer.verifyCount() != 0 {
+		t.Errorf("expected no verification mail when registering without email, got %d", fakeMailer.verifyCount())
 	}
 }
 
