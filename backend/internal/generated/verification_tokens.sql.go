@@ -14,7 +14,7 @@ import (
 const createVerificationToken = `-- name: CreateVerificationToken :one
 INSERT INTO verification_tokens (user_id, token, type, expires_at)
 VALUES ($1, $2, $3, $4)
-RETURNING id, user_id, token, type, expires_at, created_at, updated_at
+RETURNING id, user_id, token, type, expires_at, created_at, updated_at, email
 `
 
 type CreateVerificationTokenParams struct {
@@ -40,6 +40,7 @@ func (q *Queries) CreateVerificationToken(ctx context.Context, arg CreateVerific
 		&i.ExpiresAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Email,
 	)
 	return i, err
 }
@@ -65,7 +66,7 @@ func (q *Queries) DeleteVerificationToken(ctx context.Context, token string) err
 }
 
 const getValidTokenForUser = `-- name: GetValidTokenForUser :one
-SELECT id, user_id, token, type, expires_at, created_at, updated_at FROM verification_tokens
+SELECT id, user_id, token, type, expires_at, created_at, updated_at, email FROM verification_tokens
 WHERE user_id = $1 
   AND type = $2 
   AND expires_at > now()
@@ -88,12 +89,13 @@ func (q *Queries) GetValidTokenForUser(ctx context.Context, arg GetValidTokenFor
 		&i.ExpiresAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Email,
 	)
 	return i, err
 }
 
 const getVerificationTokenByToken = `-- name: GetVerificationTokenByToken :one
-SELECT id, user_id, token, type, expires_at, created_at, updated_at FROM verification_tokens
+SELECT id, user_id, token, type, expires_at, created_at, updated_at, email FROM verification_tokens
 WHERE token = $1 
   AND expires_at > now()
 `
@@ -109,6 +111,7 @@ func (q *Queries) GetVerificationTokenByToken(ctx context.Context, token string)
 		&i.ExpiresAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Email,
 	)
 	return i, err
 }

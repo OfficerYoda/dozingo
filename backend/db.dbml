@@ -69,6 +69,7 @@ Table verification_tokens {
   user_id uuid [not null]
   token text [unique, not null, note: 'SHA-256 hex digest; plaintext lives only in the email link']
   type token_type [not null]
+  email text [null, note: 'the email address this token is intended to verify']
   expires_at timestamptz [not null]
   ~timestamps
 
