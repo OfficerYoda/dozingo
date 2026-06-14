@@ -340,7 +340,8 @@ func (s *Auth) VerifyEmail(ctx context.Context, token string) (generated.User, e
 	now := time.Now()
 	var user generated.User
 	err = s.txRunner.WithTx(ctx, func(r repository.Repos) error {
-		if err = r.VerificationTokens.Delete(ctx, tokenHash); err != nil {
+		err = r.VerificationTokens.Delete(ctx, tokenHash)
+		if err != nil {
 			return fmt.Errorf("delete verification token : %w", err)
 		}
 
