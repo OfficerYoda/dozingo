@@ -198,7 +198,7 @@ func TestVerifyEmail_ExpiredToken_RejectsAndDoesNotVerify(t *testing.T) {
 	resp := createTestUserWithRegister(t, "veexp", "pw12345678", stringPtr("veexp@example.com"))
 	userID := userIDFromString(t, (*resp)["user_id"].(string))
 
-	tok := insertVerificationToken(t, userID, generated.TokenTypeEmailVerification, -1*time.Minute)
+	tok := insertVerificationToken(t, userID, generated.TokenTypeEmailVerification, stringPtr("veexp@example.com"), -1*time.Minute)
 
 	w := doRequest(http.MethodPost, "/api/auth/verify-email", map[string]any{
 		"token": tok,
@@ -228,7 +228,7 @@ func TestVerifyEmail_WrongTokenType_BadRequest(t *testing.T) {
 	userID := userIDFromString(t, (*resp)["user_id"].(string))
 
 	// Insert a password_reset token; verify-email must refuse it.
-	tok := insertVerificationToken(t, userID, generated.TokenTypePasswordReset, time.Hour)
+	tok := insertVerificationToken(t, userID, generated.TokenTypePasswordReset, nil, time.Hour)
 
 	w := doRequest(http.MethodPost, "/api/auth/verify-email", map[string]any{
 		"token": tok,
@@ -254,7 +254,7 @@ func TestVerifyEmail_TokenIsSingleUse(t *testing.T) {
 	resp := createTestUserWithRegister(t, "vesingle", "pw12345678", stringPtr("vesingle@example.com"))
 	userID := userIDFromString(t, (*resp)["user_id"].(string))
 
-	tok := insertVerificationToken(t, userID, generated.TokenTypeEmailVerification, time.Hour)
+	tok := insertVerificationToken(t, userID, generated.TokenTypeEmailVerification, stringPtr("vesingle@example.com"), time.Hour)
 
 	first := doRequest(http.MethodPost, "/api/auth/verify-email", map[string]any{
 		"token": tok,
@@ -265,6 +265,56 @@ func TestVerifyEmail_TokenIsSingleUse(t *testing.T) {
 		"token": tok,
 	})
 	assertStatus(t, second, http.StatusNotFound)
+}
+
+func TestVerifyEmail_StaleTokenAfterEmailChange_Gone(t *testing.T) {
+	setupTest(t)
+
+	// Register with emailA; this also mints a token for emailA.
+	resp := createTestUserWithRegister(t, "vestale", "pw12345678", stringPtr("stale-a@example.com"))
+	userIDStr := (*resp)["user_id"].(string)
+	userID := userIDFromString(t, userIDStr)
+	cookie := userCookies[userIDStr]
+
+	// Capture the token that was sent to emailA during registration.
+	fakeMailer.reset() // reset counts; we'll re-request explicitly below
+	send := doRequestWithCookies(http.MethodPost, "/api/auth/send-email-verification", nil, []*http.Cookie{cookie})
+	assertStatus(t, send, http.StatusOK)
+	mailA, ok := fakeMailer.lastVerify()
+	if !ok {
+		t.Fatal("expected a verification mail for emailA")
+	}
+
+	// Change the email to emailB — this rotates the token (old one deleted,
+	// new one for emailB issued).
+	update := doRequestWithCookies(http.MethodPatch, "/api/users/me",
+		map[string]any{"email": "stale-b@example.com"}, cookiesFor(userIDStr))
+	assertStatus(t, update, http.StatusOK)
+
+	// Verify that the DB no longer has a valid token for userID
+	// associated with emailA (the rotation deleted it).
+	if got := countValidTokens(t, userID, generated.TokenTypeEmailVerification); got != 1 {
+		t.Fatalf("expected exactly 1 valid token (for emailB) after email change, got %d", got)
+	}
+
+	// Now try to use the stale emailA token — it must be rejected.
+	w := doRequest(http.MethodPost, "/api/auth/verify-email", map[string]any{
+		"token": mailA.Token,
+	})
+	// Token was deleted by rotation, so the DB lookup returns not found.
+	if w.Code != http.StatusGone && w.Code != http.StatusNotFound {
+		t.Errorf("expected 410 Gone or 404 NotFound for stale token, got %d (body: %s)", w.Code, w.Body.String())
+	}
+
+	// Crucial: email must NOT have been verified.
+	q := generated.New(testPool)
+	user, err := q.GetUserByUsername(context.Background(), "vestale")
+	if err != nil {
+		t.Fatalf("look up user: %v", err)
+	}
+	if user.EmailVerifiedAt.Valid {
+		t.Error("stale token from old email must not verify the current email")
+	}
 }
 
 func TestVerifyEmail_DoesNotLeakDBDetails(t *testing.T) {

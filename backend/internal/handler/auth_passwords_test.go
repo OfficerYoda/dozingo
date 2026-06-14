@@ -17,21 +17,29 @@ import (
 
 // insertVerificationToken inserts a row into verification_tokens directly
 // for the given user. Pass a negative TTL to mint an already-expired token.
+// Pass email as nil for password_reset tokens; for email_verification tokens
+// pass the user's current email so VerifyEmail's mismatch guard passes.
 // Returns the plaintext token string so the test can replay it against the
 // API; the row stores the SHA-256 hex digest.
 func insertVerificationToken(
 	t *testing.T,
 	userID pgtype.UUID,
 	tokenType generated.TokenType,
+	email *string,
 	ttl time.Duration,
 ) string {
 	t.Helper()
 	q := generated.New(testPool)
 	tok := auth.GenerateToken()
+	var pgEmail pgtype.Text
+	if email != nil {
+		pgEmail = pgtype.Text{String: *email, Valid: true}
+	}
 	_, err := q.CreateVerificationToken(context.Background(), generated.CreateVerificationTokenParams{
 		UserID: userID,
 		Token:  auth.HashToken(tok),
 		Type:   tokenType,
+		Email:  pgEmail,
 		ExpiresAt: pgtype.Timestamptz{
 			Time:  time.Now().Add(ttl),
 			Valid: true,
@@ -266,7 +274,7 @@ func TestNewPassword_ExpiredToken_410Gone(t *testing.T) {
 	resp := createTestUserWithRegister(t, "expired", "pw12345678", stringPtr("expired@example.com"))
 	userID := userIDFromString(t, (*resp)["user_id"].(string))
 
-	tok := insertVerificationToken(t, userID, generated.TokenTypePasswordReset, -1*time.Minute)
+	tok := insertVerificationToken(t, userID, generated.TokenTypePasswordReset, nil, -1*time.Minute)
 
 	w := doRequest(http.MethodPost, "/api/auth/new-password", map[string]any{
 		"token":        tok,
@@ -289,7 +297,7 @@ func TestNewPassword_WrongTokenType_BadRequest(t *testing.T) {
 	userID := userIDFromString(t, (*resp)["user_id"].(string))
 
 	// Insert an email_verification token; new-password must refuse it.
-	tok := insertVerificationToken(t, userID, generated.TokenTypeEmailVerification, time.Hour)
+	tok := insertVerificationToken(t, userID, generated.TokenTypeEmailVerification, stringPtr("wt@example.com"), time.Hour)
 
 	// Count valid email_verification tokens before the request so we can
 	// verify none were consumed regardless of how many exist (register may
@@ -313,7 +321,7 @@ func TestNewPassword_PasswordTooLong_Rejected(t *testing.T) {
 
 	resp := createTestUserWithRegister(t, "longpwnp", "pw12345678", stringPtr("longnp@example.com"))
 	userID := userIDFromString(t, (*resp)["user_id"].(string))
-	tok := insertVerificationToken(t, userID, generated.TokenTypePasswordReset, time.Hour)
+	tok := insertVerificationToken(t, userID, generated.TokenTypePasswordReset, nil, time.Hour)
 
 	w := doRequest(http.MethodPost, "/api/auth/new-password", map[string]any{
 		"token":        tok,

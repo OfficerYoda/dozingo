@@ -338,8 +338,16 @@ func (s *Auth) VerifyEmail(ctx context.Context, token string) (generated.User, e
 		return generated.User{}, fmt.Errorf("expired token: %w", domain.ErrGone)
 	}
 
+	user, err := s.users.GetByID(ctx, verificationToken.UserID)
+	if err != nil {
+		return generated.User{}, fmt.Errorf("retrieve user: %w", err)
+	}
+
+	if !pgTextEqual(verificationToken.Email, user.Email) {
+		return generated.User{}, fmt.Errorf("token email mismatch: %w", domain.ErrGone)
+	}
+
 	now := time.Now()
-	var user generated.User
 	err = s.txRunner.WithTx(ctx, func(r repository.Repos) error {
 		err = r.VerificationTokens.Delete(ctx, tokenHash)
 		if err != nil {
