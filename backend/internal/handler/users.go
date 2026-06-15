@@ -167,7 +167,7 @@ func (h *UsersHandler) Register(api huma.API) {
 		OperationID: "get-security-information",
 		Method:      http.MethodGet,
 		Path:        "/users/me/security",
-		Summary:     "List security information",
+		Summary:     "Get security information",
 		Tags:        []string{"Users"},
 		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.ReadListLimiter)},
 	}, h.securityInformation)

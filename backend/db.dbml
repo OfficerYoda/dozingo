@@ -45,6 +45,30 @@ Table user_authentications {
 
 Ref: user_authentications.user_id > users.id [delete: cascade]
 
+Table user_two_factors {
+  id uuid [pk, default: `gen_random_uuid()`]
+  user_id uuid [not null, unique]
+  totp_secret text [not null]
+  totp_verified_at timestamptz [null]
+  ~timestamps
+}
+
+Ref: user_two_factors.user_id - users.id [delete: cascade]
+
+Table recovery_codes {
+  id uuid [pk, default: `gen_random_uuid()`]
+  user_id uuid [not null]
+  code_hash text [not null]
+  used_at timestamptz [null]
+  ~timestamps
+
+  indexes {
+    user_id
+  }
+}
+
+Ref: recovery_codes.user_id > users.id [delete: cascade]
+
 Table sessions {
   id uuid [pk, default: `gen_random_uuid()`]
   user_id uuid [note: 'null for anonymous sessions']

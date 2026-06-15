@@ -137,6 +137,15 @@ type GameCell struct {
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }
 
+type RecoveryCode struct {
+	ID        pgtype.UUID        `json:"id"`
+	UserID    pgtype.UUID        `json:"user_id"`
+	CodeHash  string             `json:"code_hash"`
+	UsedAt    pgtype.Timestamptz `json:"used_at"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
 type Session struct {
 	ID        pgtype.UUID        `json:"id"`
 	UserID    pgtype.UUID        `json:"user_id"`
@@ -171,6 +180,15 @@ type UserPassword struct {
 	PasswordHash string             `json:"password_hash"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+}
+
+type UserTwoFactor struct {
+	ID             pgtype.UUID        `json:"id"`
+	UserID         pgtype.UUID        `json:"user_id"`
+	TotpSecret     string             `json:"totp_secret"`
+	TotpVerifiedAt pgtype.Timestamptz `json:"totp_verified_at"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
 }
 
 type VerificationToken struct {
