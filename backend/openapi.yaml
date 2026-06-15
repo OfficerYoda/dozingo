@@ -435,7 +435,7 @@ components:
           format: int64
           type: integer
         size:
-          format: int32
+          format: int64
           type: integer
         title:
           type: string
@@ -448,7 +448,7 @@ components:
           format: int64
           type: integer
         vote_value:
-          format: int32
+          format: int64
           type: integer
       required:
         - vote_id

@@ -50,15 +50,15 @@ type listVotesFromUserInput struct {
 
 type listVotesFromUserOutputBody struct {
 	VoteID        string `json:"vote_id"`
-	VoteValue     int32  `json:"vote_value"`
+	VoteValue     int    `json:"vote_value"`
 	BoardID       string `json:"board_id"`
 	Title         string `json:"title"`
 	Description   string `json:"description"`
-	Size          int32  `json:"size"`
+	Size          int    `json:"size"`
 	BoardAuthorID string `json:"board_author_id"`
-	Score         int64  `json:"vote_score"`
-	VoteCount     int64  `json:"vote_count"`
-	PlayCount     int64  `json:"play_count"`
+	Score         int    `json:"vote_score"`
+	VoteCount     int    `json:"vote_count"`
+	PlayCount     int    `json:"play_count"`
 }
 
 type listVotesFromUserOutput struct {
@@ -203,15 +203,15 @@ func (h *UsersHandler) listVotesFromUser(ctx context.Context, in *listVotesFromU
 		vote := &votes[i]
 		body[i] = listVotesFromUserOutputBody{
 			VoteID:        vote.VoteID.String(),
-			VoteValue:     vote.VoteValue,
+			VoteValue:     int(vote.VoteValue),
 			BoardID:       vote.BoardID.String(),
 			Title:         vote.Title,
 			Description:   vote.Description.String,
-			Size:          vote.Size,
+			Size:          int(vote.Size),
 			BoardAuthorID: vote.BoardAuthorID.String(),
-			Score:         vote.Score,
-			VoteCount:     vote.VoteCount,
-			PlayCount:     vote.PlayCount,
+			Score:         int(vote.Score),
+			VoteCount:     int(vote.VoteCount),
+			PlayCount:     int(vote.PlayCount),
 		}
 	}
 
@@ -229,15 +229,15 @@ func (h *UsersHandler) listVotesFromMe(ctx context.Context, _ *struct{}) (*listV
 		vote := &votes[i]
 		body[i] = listVotesFromUserOutputBody{
 			VoteID:        vote.VoteID.String(),
-			VoteValue:     vote.VoteValue,
+			VoteValue:     int(vote.VoteValue),
 			BoardID:       vote.BoardID.String(),
 			Title:         vote.Title,
 			Description:   vote.Description.String,
-			Size:          vote.Size,
+			Size:          int(vote.Size),
 			BoardAuthorID: vote.BoardAuthorID.String(),
-			Score:         vote.Score,
-			VoteCount:     vote.VoteCount,
-			PlayCount:     vote.PlayCount,
+			Score:         int(vote.Score),
+			VoteCount:     int(vote.VoteCount),
+			PlayCount:     int(vote.PlayCount),
 		}
 	}
 
