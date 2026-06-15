@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/mail"
 	"strings"
+	"time"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/google/uuid"
@@ -33,12 +34,13 @@ var allowedAvatarMIMEs = map[string]string{
 }
 
 type Users struct {
-	users       *repository.Users
-	passwords   *repository.UserPasswords
-	queries     *generated.Queries
-	emailSender email.Sender
-	txRunner    repository.TxRunner
-	uploader    storage.ObjectUploader
+	users        *repository.Users
+	informations *repository.Informations
+	passwords    *repository.UserPasswords
+	queries      *generated.Queries
+	emailSender  email.Sender
+	txRunner     repository.TxRunner
+	uploader     storage.ObjectUploader
 }
 
 func NewUsers(
@@ -49,13 +51,20 @@ func NewUsers(
 	uploader storage.ObjectUploader,
 ) *Users {
 	return &Users{
-		users:       repos.Users,
-		passwords:   repos.Passwords,
-		queries:     queries,
-		emailSender: emailSender,
-		txRunner:    txRunner,
-		uploader:    uploader,
+		users:        repos.Users,
+		informations: repos.Informations,
+		passwords:    repos.Passwords,
+		queries:      queries,
+		emailSender:  emailSender,
+		txRunner:     txRunner,
+		uploader:     uploader,
 	}
+}
+
+type SecurityInformation struct {
+	PasswordLastChanged time.Time
+	ActiveSessions      int
+	LastLogin           time.Time
 }
 
 func (s *Users) Me(ctx context.Context) (generated.User, error) {
@@ -177,6 +186,20 @@ func (s *Users) UploadAvatar(ctx context.Context, in huma.FormFile) (generated.U
 	}
 
 	return user, nil
+}
+
+func (s *Users) GetSecurityInformation(ctx context.Context) (generated.GetSecurityInformationRow, error) {
+	sessionUser, err := requiresSessionUser(ctx, s.queries)
+	if err != nil {
+		return generated.GetSecurityInformationRow{}, err
+	}
+
+	infos, err := s.informations.GetSecurityInformation(ctx, sessionUser.UserID)
+	if err != nil {
+		return generated.GetSecurityInformationRow{}, fmt.Errorf("retrieve security information: %w", err)
+	}
+
+	return infos, nil
 }
 
 func convertFormFileToImage(in huma.FormFile) (*storage.Image, error) {
