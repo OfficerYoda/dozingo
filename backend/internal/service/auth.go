@@ -31,7 +31,7 @@ type AvatarGenerator func(seed string) (*storage.Image, error)
 
 type Auth struct {
 	users              *repository.Users
-	passwords          *repository.UserPasswords
+	passwords          *repository.Passwords
 	sessions           *repository.Sessions
 	verificationTokens *repository.VerificationTokens
 	emailSender        emailpkg.Sender

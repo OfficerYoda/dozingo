@@ -36,7 +36,7 @@ var allowedAvatarMIMEs = map[string]string{
 type Users struct {
 	users        *repository.Users
 	informations *repository.Informations
-	passwords    *repository.UserPasswords
+	passwords    *repository.Passwords
 	queries      *generated.Queries
 	emailSender  email.Sender
 	txRunner     repository.TxRunner
