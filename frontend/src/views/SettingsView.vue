@@ -57,7 +57,7 @@
             <span>{{ $t('settings.security.lastPasswordChange') }}</span>
             <small>3 Months ago</small>
           </div>
-          <button class="btn btn-primary">{{ $t('settings.security.change') }}</button>
+          <button class="btn btn-primary" @click="openChangePasswordModal">{{ $t('settings.security.change') }}</button>
         </div>
 
         <div class="display-darkmode">
@@ -148,10 +148,13 @@
           </div>
           <small>{{ $t('settings.account.deactivateDesc') }}</small>
         </div>
-        <button class="btn btn-danger deactivateaccount-btn">{{ $t('settings.account.deactivateBtn') }}</button>
+        <button class="btn btn-danger deactivateaccount-btn" @click="openDeleteModal">{{ $t('settings.account.deactivateBtn') }}</button>
       </article>
     </div>
   </section>
+
+  <DeleteAccount/>
+  <ChangePassword/>
 </template>
 
 <script setup lang="ts">
@@ -160,6 +163,13 @@ import { ref, watch, useTemplateRef } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { usePageTitle } from '@/composables/usePageTitle'
 import { ShieldUser, Smartphone, Key, Bell, Palette, Moon, Eye, Languages, UserX, UserCircle } from 'lucide-vue-next'
+import DeleteAccount from '@/components/DeleteAccount.vue';
+import ChangePassword from '@/components/ChangePassword.vue';
+import { useChangePasswordModal } from '@/composables/useChangePasswordModal'
+import { useDeleteModal } from '@/composables/useDeleteModal'
+
+const { openChangePasswordModal } = useChangePasswordModal()
+const { openDeleteModal } = useDeleteModal()
 
 const auth = useAuth()
 if (!auth.state.ready) {
