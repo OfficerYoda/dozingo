@@ -7,7 +7,7 @@ INSERT INTO user_two_factors (user_id, totp_secret)
 VALUES (@user_id, @totp_secret)
 RETURNING *;
 
--- name: VerifyTwoFactor :one
+-- name: MarkTwoFactorVerified :one
 UPDATE user_two_factors
 SET totp_verified_at = now(),
     updated_at = now()

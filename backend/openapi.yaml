@@ -1735,7 +1735,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorModel"
           description: Error
-      summary: List security information
+      summary: Get security information
       tags:
         - Users
   /api/users/me/votes:

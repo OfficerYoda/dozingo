@@ -65,6 +65,28 @@ func (q *Queries) GetTwoFactorByUserID(ctx context.Context, userID pgtype.UUID) 
 	return i, err
 }
 
+const markTwoFactorVerified = `-- name: MarkTwoFactorVerified :one
+UPDATE user_two_factors
+SET totp_verified_at = now(),
+    updated_at = now()
+WHERE user_id = $1
+RETURNING id, user_id, totp_secret, totp_verified_at, created_at, updated_at
+`
+
+func (q *Queries) MarkTwoFactorVerified(ctx context.Context, userID pgtype.UUID) (UserTwoFactor, error) {
+	row := q.db.QueryRow(ctx, markTwoFactorVerified, userID)
+	var i UserTwoFactor
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.TotpSecret,
+		&i.TotpVerifiedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const upsertTwoFactor = `-- name: UpsertTwoFactor :one
 INSERT INTO user_two_factors (user_id, totp_secret)
 VALUES ($1, $2)
@@ -82,28 +104,6 @@ type UpsertTwoFactorParams struct {
 
 func (q *Queries) UpsertTwoFactor(ctx context.Context, arg UpsertTwoFactorParams) (UserTwoFactor, error) {
 	row := q.db.QueryRow(ctx, upsertTwoFactor, arg.UserID, arg.TotpSecret)
-	var i UserTwoFactor
-	err := row.Scan(
-		&i.ID,
-		&i.UserID,
-		&i.TotpSecret,
-		&i.TotpVerifiedAt,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
-}
-
-const verifyTwoFactor = `-- name: VerifyTwoFactor :one
-UPDATE user_two_factors
-SET totp_verified_at = now(),
-    updated_at = now()
-WHERE user_id = $1
-RETURNING id, user_id, totp_secret, totp_verified_at, created_at, updated_at
-`
-
-func (q *Queries) VerifyTwoFactor(ctx context.Context, userID pgtype.UUID) (UserTwoFactor, error) {
-	row := q.db.QueryRow(ctx, verifyTwoFactor, userID)
 	var i UserTwoFactor
 	err := row.Scan(
 		&i.ID,

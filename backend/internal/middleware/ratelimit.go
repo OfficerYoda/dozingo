@@ -29,7 +29,6 @@ func RateLimit(
 		key = key + ":" + ctx.Operation().Path
 
 		if rl.RespondOnLimit(w, r, key) {
-			// RespondOnLimit wrote 429 + headers; stop the chain.
 			return
 		}
 
@@ -48,8 +47,8 @@ func sessKeyFn(r *http.Request) (string, error) {
 
 func ipKeyFn(r *http.Request) (string, error) {
 	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		if i := strings.Index(xff, ","); i != -1 {
-			return strings.TrimSpace(xff[:i]), nil
+		if before, _, ok := strings.Cut(xff, ","); ok {
+			return strings.TrimSpace(before), nil
 		}
 
 		return strings.TrimSpace(xff), nil
