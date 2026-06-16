@@ -287,8 +287,13 @@ func requiresSessionUser(ctx context.Context, queries *generated.Queries) (gener
 	if err != nil {
 		return generated.GetSessionUserByTokenRow{}, fmt.Errorf("session required: %w", err)
 	}
+
 	if !sessionUser.UserID.Valid {
 		return generated.GetSessionUserByTokenRow{}, fmt.Errorf("requires authenticated user: %w", domain.ErrUnauthorized)
+	}
+
+	if sessionUser.IsTwoFaPending {
+		return generated.GetSessionUserByTokenRow{}, fmt.Errorf("2fa is pending: %w", domain.ErrUnauthorized)
 	}
 
 	return sessionUser, nil
