@@ -181,20 +181,23 @@ function dismissParty() {
     stopTechno()
 }
 
-// --- Techno-Beat (Web Audio) ---
+// --- Techno-Beat (Web Audio, look-ahead scheduler) ---
 let audioCtx: AudioContext | null = null
 let beatScheduler: ReturnType<typeof setInterval> | null = null
+let nextStepTime = 0
 let beatStep = 0
+
+const BPM = 130
+const STEP_DURATION = (60 / BPM) / 4   // 16tel = 0.115s
+const LOOK_AHEAD = 0.1                  // 100ms in die Zukunft schedulen
 
 function startTechno() {
     if (audioCtx) return
     const Ctx = (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)
     audioCtx = new Ctx()
-
-    // 130 BPM → 16th note = 60/130/4 ≈ 0.115s
-    const stepMs = (60 / 130) * 1000 / 4
     beatStep = 0
-    beatScheduler = setInterval(() => playStep(beatStep++), stepMs)
+    nextStepTime = audioCtx.currentTime + 0.05
+    beatScheduler = setInterval(scheduleAhead, 25)
 }
 
 function stopTechno() {
@@ -202,16 +205,24 @@ function stopTechno() {
     if (audioCtx) { audioCtx.close(); audioCtx = null }
 }
 
-function playStep(step: number) {
+function scheduleAhead() {
     if (!audioCtx) return
-    const t = audioCtx.currentTime
+    while (nextStepTime < audioCtx.currentTime + LOOK_AHEAD) {
+        playStep(beatStep, nextStepTime)
+        nextStepTime += STEP_DURATION
+        beatStep++
+    }
+}
+
+function playStep(step: number, t: number) {
+    if (!audioCtx) return
     const beat = step % 16
 
     // Kick auf jedem Viertel (0, 4, 8, 12)
     if (beat % 4 === 0) playKick(t)
     // Snare/Clap auf 4 und 12
     if (beat === 4 || beat === 12) playClap(t)
-    // Hi-Hat auf jedem 8tel (0, 2, 4, ...)
+    // Hi-Hat auf jedem 8tel
     if (beat % 2 === 0) playHat(t, beat % 4 === 2)
     // Synth-Stab Riff (Acid)
     const stabPattern: Record<number, number> = { 0: 55, 3: 62, 6: 69, 7: 55, 10: 62, 14: 73 }
@@ -889,12 +900,13 @@ onUnmounted(() => {
     background: linear-gradient(135deg, #fff, #E3DFFF);
     border: 4px solid #5A5781;
     border-radius: var(--radius-lg);
-    padding: 32px 56px;
+    padding: 24px clamp(20px, 5vw, 56px);
     text-align: center;
     box-shadow: 0 20px 60px rgba(44, 42, 81, 0.6);
     animation: banner-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), banner-shake 0.4s ease-in-out 0.6s infinite;
     z-index: 2;
-    max-width: 90vw;
+    max-width: min(90vw, 500px);
+    box-sizing: border-box;
 }
 
 /* Konfetti-Burst seitlich aus dem Banner */
@@ -985,9 +997,11 @@ onUnmounted(() => {
 
 .party-title {
     margin: 16px 0 4px;
-    font-size: 5rem;
+    font-size: clamp(2.5rem, 12vw, 5rem);
     font-weight: 900;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.05em;
+    line-height: 1;
+    word-break: break-word;
     background: linear-gradient(90deg, #4052B6, #C0185A, #F79F1F, #2E7D32, #4052B6);
     background-size: 300% 100%;
     -webkit-background-clip: text;
