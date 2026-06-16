@@ -201,55 +201,43 @@ function dismissParty() {
     stopTechno()
 }
 
-// --- Techno-Beat (Web Audio, look-ahead scheduler) ---
+// --- Techno-Beat (Web Audio, full-bar pre-scheduling) ---
 let audioCtx: AudioContext | null = null
-let beatScheduler: ReturnType<typeof setInterval> | null = null
-let nextStepTime = 0
-let beatStep = 0
+let beatScheduler: ReturnType<typeof setTimeout> | null = null
 
 const BPM = 130
-const STEP_DURATION = (60 / BPM) / 4   // 16tel = 0.115s
-const LOOK_AHEAD = 0.1                  // 100ms in die Zukunft schedulen
+const STEP = 60 / BPM / 4          // 16tel in Sekunden ≈ 0.115s
+const BAR  = STEP * 16              // eine Bar ≈ 1.846s
 
 function startTechno() {
     if (audioCtx) return
-    const Ctx = (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)
+    const Ctx = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
     audioCtx = new Ctx()
-    beatStep = 0
-    nextStepTime = audioCtx.currentTime + 0.05
-    beatScheduler = setInterval(scheduleAhead, 25)
+    scheduleBar(audioCtx.currentTime + 0.05)
 }
 
 function stopTechno() {
-    if (beatScheduler) { clearInterval(beatScheduler); beatScheduler = null }
+    if (beatScheduler) { clearTimeout(beatScheduler); beatScheduler = null }
     if (audioCtx) { audioCtx.close(); audioCtx = null }
 }
 
-function scheduleAhead() {
+function scheduleBar(barStart: number) {
     if (!audioCtx) return
-    while (nextStepTime < audioCtx.currentTime + LOOK_AHEAD) {
-        playStep(beatStep, nextStepTime)
-        nextStepTime += STEP_DURATION
-        beatStep++
+    for (let step = 0; step < 16; step++) {
+        playStep(step, barStart + step * STEP)
     }
+    const msUntilNext = (barStart + BAR - audioCtx.currentTime - 0.1) * 1000
+    beatScheduler = setTimeout(() => scheduleBar(barStart + BAR), Math.max(0, msUntilNext))
 }
 
-function playStep(step: number, t: number) {
+function playStep(beat: number, t: number) {
     if (!audioCtx) return
-    const beat = step % 16
-
-    // Kick auf jedem Viertel (0, 4, 8, 12)
-    if (beat % 4 === 0) playKick(t)
-    // Snare/Clap auf 4 und 12
-    if (beat === 4 || beat === 12) playClap(t)
-    // Hi-Hat auf jedem 8tel
-    if (beat % 2 === 0) playHat(t, beat % 4 === 2)
-    // Synth-Stab Riff (Acid)
+    if (beat % 4 === 0)              playKick(t)
+    if (beat === 4 || beat === 12)   playClap(t)
+    if (beat % 2 === 0)              playHat(t, beat % 4 === 2)
     const stabPattern: Record<number, number> = { 0: 55, 3: 62, 6: 69, 7: 55, 10: 62, 14: 73 }
     const stab = stabPattern[beat]
-    if (stab !== undefined) {
-        playStab(t, stab)
-    }
+    if (stab !== undefined)          playStab(t, stab)
 }
 
 function playKick(t: number) {
