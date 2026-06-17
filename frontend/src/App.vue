@@ -17,7 +17,7 @@ function closeMenu(){
   <div class="app-layout">
     <aside id="aside">
       <div class="sidebar-header">
-        <span class="brand-title">DOZINGO</span>
+        <span class="brand-title"><a href="/">DOZINGO</a></span>
         <small class="brand-subtitle">{{ $t("nav.subtitle") }}</small>
       </div>
 
@@ -154,6 +154,10 @@ nav li {
   font-size: 2.5rem;
   font-weight: 700;
   color: var(--color-primary-800);
+}
+
+.brand-title a:hover {
+  text-decoration: none;
 }
 
 .brand-subtitle {
