@@ -370,6 +370,7 @@ func TestMain(m *testing.M) {
 	NewVotesHandler(votesSvc).Register(apiGroup)
 	NewAuthHandler(service.NewAuth(repos, queries, fakeMailer, txRunner, fakeAvatarGen.Generate, fakeUploader), testAvatarURLs).Register(apiGroup)
 	NewUsersHandler(service.NewUsers(&repos, queries, fakeMailer, txRunner, fakeUploader), votesSvc, testAvatarURLs).Register(apiGroup)
+	NewTwoFactor(service.NewTwoFactor(&repos, queries, txRunner)).Register(apiGroup)
 
 	// Clean tables before running tests to ensure a fresh state
 	truncateAllTables()
@@ -398,14 +399,14 @@ func setupTest(t *testing.T) {
 // order. Used by both TestMain (for a clean baseline) and cleanupTables.
 func truncateAllTables() {
 	_, _ = testPool.Exec(context.Background(),
-		"TRUNCATE TABLE game_cells, games, votes, cells, boards, sessions, verification_tokens, user_passwords, users RESTART IDENTITY CASCADE")
+		"TRUNCATE TABLE game_cells, games, votes, cells, boards, recovery_codes, user_two_factors, sessions, verification_tokens, user_passwords, users RESTART IDENTITY CASCADE")
 }
 
 // cleanupTables truncates all tables in the correct order (respecting foreign keys).
 func cleanupTables(t *testing.T) {
 	t.Helper()
 	_, err := testPool.Exec(context.Background(),
-		"TRUNCATE TABLE game_cells, games, votes, cells, boards, sessions, verification_tokens, user_passwords, users RESTART IDENTITY CASCADE")
+		"TRUNCATE TABLE game_cells, games, votes, cells, boards, recovery_codes, user_two_factors, sessions, verification_tokens, user_passwords, users RESTART IDENTITY CASCADE")
 	if err != nil {
 		t.Fatalf("failed to clean up tables: %v", err)
 	}
