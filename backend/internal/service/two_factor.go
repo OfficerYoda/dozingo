@@ -97,10 +97,7 @@ func (s *TwoFactor) Confirm(ctx context.Context, passcode string) ([]string, err
 		return []string{}, fmt.Errorf("generate recovery codes: %w", err)
 	}
 
-	hashedCodes := make([]string, len(recoveryCodes))
-	for i := range recoveryCodes {
-		hashedCodes[i] = auth.HashToken(recoveryCodes[i])
-	}
+	hashedCodes := hashCodes(recoveryCodes)
 
 	err = s.txRunner.WithTx(ctx, func(r repository.Repos) error {
 		_, err = r.TwoFactor.MarkVerified(ctx, user2fa.UserID)
@@ -196,10 +193,7 @@ func (s *TwoFactor) RegenerateCodes(ctx context.Context, password string, totpCo
 		return nil, fmt.Errorf("generate recovery codes: %w", err)
 	}
 
-	hashedCodes := make([]string, len(newCodes))
-	for i := range newCodes {
-		hashedCodes[i] = auth.HashToken(newCodes[i])
-	}
+	hashedCodes := hashCodes(newCodes)
 
 	err = s.txRunner.WithTx(ctx, func(r repository.Repos) error {
 		err = r.RecoveryCodes.DeleteByUserID(ctx, sessionUser.UserID)
@@ -258,10 +252,10 @@ func (s *TwoFactor) Disable(ctx context.Context, password string, totpCode, reco
 
 // verifyPasswordAndAuth requires exactly one of totpCode and recoveryCode to be nil
 func (s *TwoFactor) verifyPasswordAndAuth(ctx context.Context, userID pgtype.UUID, totpSecret, password string, totpCode, recoveryCode *string) error {
-	if totpCode == nil && recoveryCode == nil {
+	switch {
+	case totpCode == nil && recoveryCode == nil:
 		return fmt.Errorf("totp code or recovery code required: %w", domain.ErrBadInput)
-	}
-	if totpCode != nil && recoveryCode != nil {
+	case totpCode != nil && recoveryCode != nil:
 		return fmt.Errorf("provide only one of totp code or recovery code: %w", domain.ErrBadInput)
 	}
 
@@ -355,4 +349,13 @@ func requiresAuthenticatedSession(ctx context.Context, queries *generated.Querie
 	}
 
 	return sessionUser, nil
+}
+
+func hashCodes(recoveryCodes []string) []string {
+	hashedCodes := make([]string, len(recoveryCodes))
+	for i := range recoveryCodes {
+		hashedCodes[i] = auth.HashToken(recoveryCodes[i])
+	}
+
+	return hashedCodes
 }
