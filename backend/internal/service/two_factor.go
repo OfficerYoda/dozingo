@@ -58,7 +58,7 @@ func (s *TwoFactor) Setup(ctx context.Context) (*otp.Key, error) {
 
 	key, err := totp.Generate(totp.GenerateOpts{
 		Issuer:      "Dozingo",
-		AccountName: sessionUser.Email.String, // NOTE: Make email necessary?
+		AccountName: sessionUser.Email.String,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("generate otp key: %w", err)
@@ -176,6 +176,10 @@ func (s *TwoFactor) RegenerateCodes(ctx context.Context, password string, totpCo
 
 	user2fa, err := s.twoFactor.GetByUserID(ctx, sessionUser.UserID)
 	if err != nil {
+		if errors.Is(err, domain.ErrNotFound) {
+			return nil, fmt.Errorf("2fa not active: %w", domain.ErrForbidden)
+		}
+
 		return nil, fmt.Errorf("retrieve user two factor: %w", err)
 	}
 	if !user2fa.TotpVerifiedAt.Valid {
@@ -225,6 +229,10 @@ func (s *TwoFactor) Disable(ctx context.Context, password string, totpCode, reco
 
 	user2fa, err := s.twoFactor.GetByUserID(ctx, sessionUser.UserID)
 	if err != nil {
+		if errors.Is(err, domain.ErrNotFound) {
+			return fmt.Errorf("2fa not active: %w", domain.ErrForbidden)
+		}
+
 		return fmt.Errorf("retrieve user two factor: %w", err)
 	}
 	if !user2fa.TotpVerifiedAt.Valid {
