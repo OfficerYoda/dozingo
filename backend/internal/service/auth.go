@@ -177,6 +177,7 @@ func (s *Auth) Login(ctx context.Context, in LoginInput) (generated.User, error)
 		if err != nil {
 			return generated.User{}, fmt.Errorf("mark session pending 2fa: %w", err)
 		}
+
 		return generated.User{}, fmt.Errorf("2fa required: %w", domain.ErrTwoFARequired)
 	}
 

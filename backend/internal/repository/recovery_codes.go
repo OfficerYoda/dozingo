@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
+
 	"github.com/officeryoda/dozingo/internal/generated"
 	"github.com/officeryoda/dozingo/internal/pgmap"
 )
@@ -22,15 +23,6 @@ func (r *RecoveryCodes) Create(ctx context.Context, userID pgtype.UUID, codeHash
 	}
 
 	return code, nil
-}
-
-func (r *RecoveryCodes) ListUnusedByUserID(ctx context.Context, userID pgtype.UUID) ([]generated.RecoveryCode, error) {
-	codes, err := r.queries.ListUnusedRecoveryCodesByUserID(ctx, userID)
-	if err != nil {
-		return nil, pgmap.TranslatePgErr(err)
-	}
-
-	return codes, nil
 }
 
 func (r *RecoveryCodes) MarkUsed(ctx context.Context, codeID pgtype.UUID) (generated.RecoveryCode, error) {

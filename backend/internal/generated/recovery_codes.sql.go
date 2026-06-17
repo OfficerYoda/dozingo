@@ -59,39 +59,6 @@ func (q *Queries) DeleteRecoveryCodesByUserID(ctx context.Context, userID pgtype
 	return err
 }
 
-const listUnusedRecoveryCodesByUserID = `-- name: ListUnusedRecoveryCodesByUserID :many
-SELECT id, user_id, code_hash, used_at, created_at, updated_at FROM recovery_codes
-WHERE user_id = $1
-  AND used_at IS NULL
-`
-
-func (q *Queries) ListUnusedRecoveryCodesByUserID(ctx context.Context, userID pgtype.UUID) ([]RecoveryCode, error) {
-	rows, err := q.db.Query(ctx, listUnusedRecoveryCodesByUserID, userID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []RecoveryCode{}
-	for rows.Next() {
-		var i RecoveryCode
-		if err := rows.Scan(
-			&i.ID,
-			&i.UserID,
-			&i.CodeHash,
-			&i.UsedAt,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const markRecoveryCodeUsed = `-- name: MarkRecoveryCodeUsed :one
 UPDATE recovery_codes
 SET used_at    = now(),

@@ -3,11 +3,6 @@ INSERT INTO recovery_codes (user_id, code_hash)
 VALUES (@user_id, @code_hash)
 RETURNING *;
 
--- name: ListUnusedRecoveryCodesByUserID :many
-SELECT * FROM recovery_codes
-WHERE user_id = @user_id
-  AND used_at IS NULL;
-
 -- name: MarkRecoveryCodeUsed :one
 UPDATE recovery_codes
 SET used_at    = now(),

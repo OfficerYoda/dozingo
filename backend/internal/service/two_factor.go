@@ -6,12 +6,13 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/pquerna/otp"
+	"github.com/pquerna/otp/totp"
+
 	"github.com/officeryoda/dozingo/internal/domain"
 	"github.com/officeryoda/dozingo/internal/generated"
 	"github.com/officeryoda/dozingo/internal/middleware"
 	"github.com/officeryoda/dozingo/internal/repository"
-	"github.com/pquerna/otp"
-	"github.com/pquerna/otp/totp"
 )
 
 type TwoFactor struct {
@@ -112,7 +113,7 @@ func (s *TwoFactor) Verify(ctx context.Context, passcode string) error {
 	return nil
 }
 
-func (s *TwoFactor) validateTOTP(ctx context.Context, userID pgtype.UUID, sessionToken string, passcode string) (*generated.UserTwoFactor, error) {
+func (s *TwoFactor) validateTOTP(ctx context.Context, userID pgtype.UUID, sessionToken, passcode string) (*generated.UserTwoFactor, error) {
 	user2fa, err := s.twoFactor.GetByUserID(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("retrieve user two factor: %w", err)
