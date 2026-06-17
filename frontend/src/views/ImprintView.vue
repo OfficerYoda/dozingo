@@ -3,7 +3,7 @@
     <div class="container">
 
       <div class="imprint-hero">
-        <div class="hero-badge">§ TMG</div>
+        <div class="hero-badge">§ DDG</div>
         <h1>Impressum</h1>
         <p class="hero-sub">Das langweiligste Board, das wir je gebaut haben.<br>
           <span class="hero-sub-muted">Aber hey — auch Pflichtfelder verdienen Liebe.</span>
