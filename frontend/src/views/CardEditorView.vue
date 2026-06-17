@@ -245,6 +245,11 @@ async function saveBoard() {
   )
 
   console.log('Board created:', board.board_id)
+  title.value = ''
+  description.value = ''
+  selectedSize.value = '5x5'
+  entries.value = [{ term: '', rarity: 'common' }, { term: '', rarity: 'common' }, { term: '', rarity: 'common' }]
+  submitted.value = false
   saveSuccess.value = true
 }
 
