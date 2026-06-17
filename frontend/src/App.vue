@@ -31,6 +31,11 @@ function closeMenu(){
           </ul>
         </nav>
       </div>
+
+      <div class="sidebar-footer">
+        <RouterLink to="/imprint" class="sidebar-buttons sidebar-legal-link">Impressum</RouterLink>
+        <RouterLink to="/privacy" class="sidebar-buttons sidebar-legal-link">Datenschutz</RouterLink>
+      </div>
     </aside>
 
     <div class="content-area">
@@ -177,6 +182,34 @@ nav li {
 
 .sidebar-footer-signout {
   color: var(--color-accent-red);
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding: 12px 0;
+  border-top: 1px solid var(--color-border, #e2e8f0);
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-legal-link {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.sidebar-legal-link:hover {
+  background-color: var(--color-primary-200);
+  color: var(--color-primary-600);
+}
+
+.router-link-exact-active.sidebar-legal-link {
+  color: var(--color-primary-600);
+  font-weight: 600;
 }
 
 .router-link-exact-active.upper-buttons {
