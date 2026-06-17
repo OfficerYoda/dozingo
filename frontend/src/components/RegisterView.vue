@@ -35,6 +35,12 @@
                             <input v-model="confirmPassword" type="password" id="reg-confirm-password" required>
                         </div>
                     </div>
+                    <div class="privacy-consent mb-3">
+                        <input type="checkbox" id="reg-privacy" v-model="privacyAccepted" required>
+                        <label for="reg-privacy">
+                            Ich schwöre feierlich, die <RouterLink to="/privacy" @click="closeRegisterModal" class="consent-link">Datenschutzerklärung</RouterLink> überflogen zu haben — und akzeptiere sie hiermit vollständig, bedingungslos und ohne meine Rechte zu kennen.
+                        </label>
+                    </div>
                     <p v-if="error" class="auth-error">{{ error }}</p>
                     <button type="submit" class="btn btn-primary register-btn" :disabled="loading">
                         {{ loading ? 'Creating account...' : 'Create Account' }}
@@ -130,11 +136,38 @@
         font-size: 0.85rem;
         margin-bottom: 8px;
     }
+
+    .privacy-consent {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .privacy-consent input[type="checkbox"] {
+        flex-shrink: 0;
+        margin-top: 3px;
+        width: 16px;
+        height: 16px;
+        accent-color: var(--color-primary-600);
+        cursor: pointer;
+    }
+
+    .privacy-consent label {
+        font-size: 0.8rem;
+        color: var(--color-text-subtle);
+        cursor: pointer;
+        line-height: 1.5;
+    }
+
+    .consent-link {
+        color: var(--color-primary-600);
+        text-decoration: underline;
+    }
 </style>
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import { User, Mail, KeyRound } from 'lucide-vue-next'
 import { useAuth } from '@/composables/useAuth'
 import { useRegisterModal } from '@/composables/useRegisterModal'
@@ -149,6 +182,7 @@ const username = ref('')
 const email = ref('')
 const password = ref('')
 const confirmPassword = ref('')
+const privacyAccepted = ref(false)
 const error = ref('')
 const loading = ref(false)
 
@@ -158,6 +192,7 @@ watch(registerModalOpen, (open) => {
         email.value = ''
         password.value = ''
         confirmPassword.value = ''
+        privacyAccepted.value = false
         error.value = ''
     }
 })
