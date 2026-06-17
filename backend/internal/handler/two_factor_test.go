@@ -126,12 +126,9 @@ func TestSetup2FA_Retry_SucceedsWithUpsert(t *testing.T) {
 	// First setup call — marks the session pending.
 	secret1 := setup2FA(t, userID)
 
-	// Clear the pending state so setup can be called again (simulating a user
-	// who wants to restart setup without confirming first).
-	clearSessionPending(t, userCookies[userID].Value)
-
-	// Second setup call before confirming — must succeed (not 409) because
-	// Setup uses Upsert instead of Create.
+	// Second setup call while session is still pending — must succeed because
+	// Setup now uses requiresAuthenticatedSession (pending-agnostic) and
+	// Upsert instead of Create.
 	secret2 := setup2FA(t, userID)
 
 	if secret1 == "" || secret2 == "" {
@@ -166,18 +163,6 @@ func TestSetup2FA_Unauthenticated_Returns401(t *testing.T) {
 	setupTest(t)
 
 	w := doRequest(http.MethodPost, "/api/auth/2fa/setup", nil)
-	assertStatus(t, w, http.StatusUnauthorized)
-}
-
-func TestSetup2FA_PendingSession_Returns401(t *testing.T) {
-	setupTest(t)
-
-	// Setup marks the session as pending. A second call to setup while pending
-	// must be rejected because requiresSessionUser blocks pending sessions.
-	userID := createTestUser(t, "pendingsetup", "pendingsetup@example.com")
-	setup2FA(t, userID) // marks session pending
-
-	w := doRequestWithCookies(http.MethodPost, "/api/auth/2fa/setup", nil, cookiesFor(userID))
 	assertStatus(t, w, http.StatusUnauthorized)
 }
 
@@ -494,7 +479,51 @@ func TestLogin_With2FA_FullFlow(t *testing.T) {
 	assertStatus(t, meW, http.StatusOK)
 }
 
-// ===== Session scoping =====
+// ===== Pending session access control =====
+
+// TestPendingSession_BlocksProtectedEndpoints verifies that a session marked
+// two_fa_pending=true is rejected by endpoints guarded by requiresVerifiedSession.
+// This is the server-side guarantee that mirrors the client-side two_fa_pending
+// flag: even if the client ignores the flag, the backend will not serve
+// protected resources until the 2FA challenge is completed.
+func TestPendingSession_BlocksProtectedEndpoints(t *testing.T) {
+	setupTest(t)
+
+	// Set up a user with verified 2FA, then simulate a fresh login that
+	// leaves the session pending.
+	userID := createTestUser(t, "pendingblockuser", "pendingblock@example.com")
+	secret := setup2FA(t, userID)
+	confirm2FA(t, userID, secret)
+
+	doRequestWithCookies(http.MethodPost, "/api/auth/logout", nil, cookiesFor(userID))
+
+	tok, anonCookie := mintAnonSession(t, 24*time.Hour)
+	loginW := doRequestWithCookies(http.MethodPost, "/api/auth/login",
+		map[string]any{"username": "pendingblockuser", "password": "testpassword123"},
+		[]*http.Cookie{anonCookie})
+	assertStatus(t, loginW, http.StatusOK)
+
+	pendingCookie := &http.Cookie{Name: "session_token", Value: tok}
+
+	// All endpoints guarded by requiresVerifiedSession must return 401.
+	protectedEndpoints := []struct {
+		method string
+		path   string
+		body   any
+	}{
+		{http.MethodGet, "/api/users/me", nil},
+		{http.MethodGet, "/api/users/me/security", nil},
+		{http.MethodPost, "/api/boards", map[string]any{"title": "test", "size": 5}},
+	}
+
+	for _, ep := range protectedEndpoints {
+		w := doRequestWithCookies(ep.method, ep.path, ep.body, []*http.Cookie{pendingCookie})
+		if w.Code != http.StatusUnauthorized {
+			t.Errorf("%s %s: expected 401 for pending session, got %d (body: %s)",
+				ep.method, ep.path, w.Code, w.Body.String())
+		}
+	}
+}
 
 func TestSetup2FA_OnlyCurrentSessionMarkedPending(t *testing.T) {
 	setupTest(t)

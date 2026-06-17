@@ -41,7 +41,7 @@ func (s *Votes) GetAggregateByBoardID(ctx context.Context, boardID pgtype.UUID) 
 }
 
 func (s *Votes) Upsert(ctx context.Context, in UpsertVoteInput) (generated.Vote, error) {
-	sessionUser, err := requiresSessionUser(ctx, s.queries)
+	sessionUser, err := requiresVerifiedSession(ctx, s.queries)
 	if err != nil {
 		return generated.Vote{}, err
 	}
@@ -58,7 +58,7 @@ func (s *Votes) Upsert(ctx context.Context, in UpsertVoteInput) (generated.Vote,
 }
 
 func (s *Votes) Delete(ctx context.Context, boardID pgtype.UUID) error {
-	sessionUser, err := requiresSessionUser(ctx, s.queries)
+	sessionUser, err := requiresVerifiedSession(ctx, s.queries)
 	if err != nil {
 		return err
 	}
@@ -81,7 +81,7 @@ func (s *Votes) ListVotesFromUser(ctx context.Context, userID pgtype.UUID) ([]ge
 }
 
 func (s *Votes) ListVotesFromMe(ctx context.Context) ([]generated.ListVotesFromUserRow, error) {
-	sessionUser, err := requiresSessionUser(ctx, s.queries)
+	sessionUser, err := requiresVerifiedSession(ctx, s.queries)
 	if err != nil {
 		return []generated.ListVotesFromUserRow{}, err
 	}

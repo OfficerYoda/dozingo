@@ -56,7 +56,7 @@ func (s *Games) Get(ctx context.Context, gameID pgtype.UUID) (generated.Game, er
 }
 
 func (s *Games) ListBySession(ctx context.Context) ([]generated.Game, error) {
-	sessionUser, err := requiresSessionUser(ctx, s.queries)
+	sessionUser, err := requiresVerifiedSession(ctx, s.queries)
 	if err != nil {
 		return []generated.Game{}, err
 	}

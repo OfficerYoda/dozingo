@@ -42,7 +42,7 @@ func NewTwoFactor(
 }
 
 func (s *TwoFactor) Setup(ctx context.Context) (*otp.Key, error) {
-	sessionUser, err := requiresSessionUser(ctx, s.queries)
+	sessionUser, err := requiresAuthenticatedSession(ctx, s.queries)
 	if err != nil {
 		return nil, err
 	}
@@ -169,7 +169,7 @@ func (s *TwoFactor) VerifyRecoveryCode(ctx context.Context, recoveryCode string)
 }
 
 func (s *TwoFactor) RegenerateCodes(ctx context.Context, password string, totpCode, recoveryCode *string) ([]string, error) {
-	sessionUser, err := requiresSessionUser(ctx, s.queries)
+	sessionUser, err := requiresVerifiedSession(ctx, s.queries)
 	if err != nil {
 		return nil, err
 	}
@@ -218,7 +218,7 @@ func (s *TwoFactor) RegenerateCodes(ctx context.Context, password string, totpCo
 }
 
 func (s *TwoFactor) Disable(ctx context.Context, password string, totpCode, recoveryCode *string) error {
-	sessionUser, err := requiresSessionUser(ctx, s.queries)
+	sessionUser, err := requiresVerifiedSession(ctx, s.queries)
 	if err != nil {
 		return err
 	}
@@ -327,6 +327,23 @@ func requiresPendingSession(ctx context.Context, queries *generated.Queries) (ge
 
 	if !sessionUser.TwoFaPending {
 		return generated.GetSessionUserByTokenRow{}, fmt.Errorf("no 2fa is pending: %w", domain.ErrUnauthorized)
+	}
+
+	return sessionUser, nil
+}
+
+// requiresAuthenticatedSession returns the session user when the session is
+// bound to a user, regardless of TwoFaPending state. Use this in flows that
+// need to identify the caller but must work whether 2FA is pending or not
+// (e.g. /auth/2fa/setup, which can be retried while the session is pending).
+func requiresAuthenticatedSession(ctx context.Context, queries *generated.Queries) (generated.GetSessionUserByTokenRow, error) {
+	sessionUser, err := middleware.RequireSession(ctx, queries)
+	if err != nil {
+		return generated.GetSessionUserByTokenRow{}, fmt.Errorf("session required: %w", err)
+	}
+
+	if !sessionUser.UserID.Valid {
+		return generated.GetSessionUserByTokenRow{}, fmt.Errorf("requires authenticated user: %w", domain.ErrUnauthorized)
 	}
 
 	return sessionUser, nil

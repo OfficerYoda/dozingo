@@ -194,7 +194,7 @@ func (s *Auth) Login(ctx context.Context, in LoginInput) (LoginResult, error) {
 }
 
 func (s *Auth) Logout(ctx context.Context) error {
-	sessionUser, err := requiresSessionUser(ctx, s.queries)
+	sessionUser, err := requiresVerifiedSession(ctx, s.queries)
 	if err != nil {
 		return err
 	}
@@ -213,7 +213,7 @@ func (s *Auth) Logout(ctx context.Context) error {
 }
 
 func (s *Auth) ChangePassword(ctx context.Context, oldPassword, newPassword string) error {
-	sessionUser, err := requiresSessionUser(ctx, s.queries)
+	sessionUser, err := requiresVerifiedSession(ctx, s.queries)
 	if err != nil {
 		return err
 	}
@@ -331,7 +331,7 @@ func (s *Auth) NewPassword(ctx context.Context, in NewPasswordInput) (generated.
 }
 
 func (s *Auth) SendEmailVerification(ctx context.Context) error {
-	sessionUser, err := requiresSessionUser(ctx, s.queries)
+	sessionUser, err := requiresVerifiedSession(ctx, s.queries)
 	if err != nil {
 		return err
 	}

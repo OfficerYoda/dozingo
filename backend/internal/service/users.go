@@ -68,7 +68,7 @@ type SecurityInformation struct {
 }
 
 func (s *Users) Me(ctx context.Context) (generated.User, error) {
-	sessionUser, err := requiresSessionUser(ctx, s.queries)
+	sessionUser, err := requiresVerifiedSession(ctx, s.queries)
 	if err != nil {
 		return generated.User{}, err
 	}
@@ -82,7 +82,7 @@ func (s *Users) Me(ctx context.Context) (generated.User, error) {
 }
 
 func (s *Users) Delete(ctx context.Context, password string) error {
-	sessionUser, err := requiresSessionUser(ctx, s.queries)
+	sessionUser, err := requiresVerifiedSession(ctx, s.queries)
 	if err != nil {
 		return err
 	}
@@ -150,7 +150,7 @@ type UpdateUserInput struct {
 }
 
 func (s *Users) UpdateMe(ctx context.Context, in UpdateUserInput) (generated.User, error) {
-	sessionUser, err := requiresSessionUser(ctx, s.queries)
+	sessionUser, err := requiresVerifiedSession(ctx, s.queries)
 	if err != nil {
 		return generated.User{}, err
 	}
@@ -159,7 +159,7 @@ func (s *Users) UpdateMe(ctx context.Context, in UpdateUserInput) (generated.Use
 }
 
 func (s *Users) UploadAvatar(ctx context.Context, in huma.FormFile) (generated.User, error) {
-	sessionUser, err := requiresSessionUser(ctx, s.queries)
+	sessionUser, err := requiresVerifiedSession(ctx, s.queries)
 	if err != nil {
 		return generated.User{}, err
 	}
@@ -189,7 +189,7 @@ func (s *Users) UploadAvatar(ctx context.Context, in huma.FormFile) (generated.U
 }
 
 func (s *Users) GetSecurityInformation(ctx context.Context) (generated.GetSecurityInformationRow, error) {
-	sessionUser, err := requiresSessionUser(ctx, s.queries)
+	sessionUser, err := requiresVerifiedSession(ctx, s.queries)
 	if err != nil {
 		return generated.GetSecurityInformationRow{}, err
 	}
@@ -282,7 +282,7 @@ func pgTextEqual(a, b pgtype.Text) bool {
 	return a.String == b.String
 }
 
-func requiresSessionUser(ctx context.Context, queries *generated.Queries) (generated.GetSessionUserByTokenRow, error) {
+func requiresVerifiedSession(ctx context.Context, queries *generated.Queries) (generated.GetSessionUserByTokenRow, error) {
 	sessionUser, err := middleware.RequireSession(ctx, queries)
 	if err != nil {
 		return generated.GetSessionUserByTokenRow{}, fmt.Errorf("session required: %w", err)
