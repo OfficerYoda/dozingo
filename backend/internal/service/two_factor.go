@@ -62,7 +62,7 @@ func (s *TwoFactor) Setup(ctx context.Context) (*otp.Key, error) {
 		return nil, fmt.Errorf("store otp key: %w", err)
 	}
 
-	_, err = s.sessions.SetTwoFAPending(ctx, sessionUser.UserID, true)
+	_, err = s.sessions.SetTwoFAPending(ctx, sessionUser.Token, true)
 	if err != nil {
 		return nil, fmt.Errorf("mark session pending 2fa: %w", err)
 	}
@@ -76,7 +76,7 @@ func (s *TwoFactor) Confirm(ctx context.Context, passcode string) error {
 		return err
 	}
 
-	user2fa, err := s.validateTOTP(ctx, pendingSession.UserID, passcode)
+	user2fa, err := s.validateTOTP(ctx, pendingSession.UserID, pendingSession.Token, passcode)
 	if err != nil {
 		return err
 	}
@@ -100,7 +100,7 @@ func (s *TwoFactor) Verify(ctx context.Context, passcode string) error {
 		return err
 	}
 
-	user2fa, err := s.validateTOTP(ctx, sessionUser.UserID, passcode)
+	user2fa, err := s.validateTOTP(ctx, sessionUser.UserID, sessionUser.Token, passcode)
 	if err != nil {
 		return err
 	}
@@ -112,7 +112,7 @@ func (s *TwoFactor) Verify(ctx context.Context, passcode string) error {
 	return nil
 }
 
-func (s *TwoFactor) validateTOTP(ctx context.Context, userID pgtype.UUID, passcode string) (*generated.UserTwoFactor, error) {
+func (s *TwoFactor) validateTOTP(ctx context.Context, userID pgtype.UUID, sessionToken string, passcode string) (*generated.UserTwoFactor, error) {
 	user2fa, err := s.twoFactor.GetByUserID(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("retrieve user two factor: %w", err)
@@ -123,7 +123,7 @@ func (s *TwoFactor) validateTOTP(ctx context.Context, userID pgtype.UUID, passco
 		return nil, fmt.Errorf("invalid code: %w", domain.ErrBadInput)
 	}
 
-	_, err = s.sessions.SetTwoFAPending(ctx, user2fa.UserID, false)
+	_, err = s.sessions.SetTwoFAPending(ctx, sessionToken, false)
 	if err != nil {
 		return nil, fmt.Errorf("clear 2fa pending status: %w", err)
 	}

@@ -63,9 +63,9 @@ func (r *Sessions) AttachUser(ctx context.Context, tokenHash string, userID pgty
 	return session, nil
 }
 
-func (r *Sessions) SetTwoFAPending(ctx context.Context, userID pgtype.UUID, status bool) (generated.Session, error) {
+func (r *Sessions) SetTwoFAPending(ctx context.Context, tokenHash string, status bool) (generated.Session, error) {
 	session, err := r.queries.SetTwoFAPending(ctx, generated.SetTwoFAPendingParams{
-		UserID:       userID,
+		Token:        tokenHash,
 		TwoFaPending: status,
 	})
 	if err != nil {
