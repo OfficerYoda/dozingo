@@ -585,6 +585,18 @@ onUnmounted(() => {
     background-color: var(--color-bg-muted);
     border-radius: var(--radius-sm);
     padding: 3px 8px;
+    text-decoration: none;
+}
+
+.stat-item.back {
+    color: inherit;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.15s;
+}
+
+.stat-item.back:hover {
+    background-color: color-mix(in srgb, var(--color-bg-muted) 70%, #000 15%);
 }
 
 .stat-plays { color: #4052B6; }
