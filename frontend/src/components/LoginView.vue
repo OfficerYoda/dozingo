@@ -11,27 +11,27 @@
                         <label for="username">Username or Email</label>
                         <div class="input-group">
                             <span><User :size="20" /></span>
-                            <input v-model="username" type="text" id="username" required>
+                            <input v-model="username" type="text" id="username" required tabindex="1">
                         </div>
                     </div>
                     <div class="mb-3">
                         <div class="password-top">
                             <label for="password">Password</label>
-                            <a href="/forgotpw">Forgot Password?</a>
+                            <a href="/forgotpw" tabindex="5">Forgot Password?</a>
                         </div>
                         <div class="input-group">
                             <span><KeyRound :size="20" /></span>
-                            <input v-model="password" type="password" id="password" required>
+                            <input v-model="password" type="password" id="password" required tabindex="2">
                         </div>
                     </div>
                     <p v-if="error" class="auth-error">{{ error }}</p>
-                    <button type="submit" class="btn btn-primary login-btn" :disabled="loading">
+                    <button type="submit" class="btn btn-primary login-btn" :disabled="loading" tabindex="3">
                         {{ loading ? 'Logging in...' : 'Log In' }}
                     </button>
                 </form>
                 <small class="register-notice">
                     Don't have an account?
-                    <button class="link-btn" @click="closeLoginModal(); openRegisterModal()">Join the Squad</button>
+                    <button class="link-btn" @click="closeLoginModal(); openRegisterModal()" tabindex="4">Join the Squad</button>
                 </small>
             </div>
         </div>
