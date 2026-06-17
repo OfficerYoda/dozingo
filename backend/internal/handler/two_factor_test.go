@@ -63,19 +63,6 @@ func load2FARow(t *testing.T, userID pgtype.UUID) (generated.UserTwoFactor, bool
 	return row, true
 }
 
-// clearSessionPending directly resets two_fa_pending on the session for the
-// given plaintext token. Used to manufacture specific session states in tests
-// that need to bypass the normal guard flow.
-func clearSessionPending(t *testing.T, plaintextToken string) {
-	t.Helper()
-	_, err := testPool.Exec(context.Background(),
-		"UPDATE sessions SET two_fa_pending = false WHERE token = $1",
-		auth.HashToken(plaintextToken))
-	if err != nil {
-		t.Fatalf("clearSessionPending: %v", err)
-	}
-}
-
 // setSessionPending directly sets two_fa_pending on the session for the
 // given plaintext token.
 func setSessionPending(t *testing.T, plaintextToken string) {
