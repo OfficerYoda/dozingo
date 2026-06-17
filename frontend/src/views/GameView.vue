@@ -8,9 +8,9 @@
                         <span class="stat-item stat-plays">
                             <Play :size="13"/> {{ board?.play_count ?? '—' }}
                         </span>
-                        <span class="stat-item stat-likes">
-                            <Heart :size="13"/> {{ board?.score ?? '—' }}
-                        </span>
+                        <button class="stat-item stat-likes" :class="{ liked: userVote === 1 }" @click="handleLikeClick" type="button" aria-label="Board liken">
+                            <Heart :size="13" :fill="userVote === 1 ? 'currentColor' : 'none'"/> {{ board?.score ?? '—' }}
+                        </button>
                     </div>
                 </div>
                 <div class="top-stat-pill">
@@ -181,6 +181,7 @@ const board = ref<Board | null>(null)
 const error = ref<string | null>(null)
 const selectedCells = ref<Cell[]>([])
 const gameId = ref<string>('')
+const userVote = ref<number | null>(null)
 
 // 'stopped' | 'running' | 'completed'
 const gameState = ref<'stopped' | 'running' | 'completed'>('stopped')
@@ -318,6 +319,50 @@ function stopTimer() {
     if (timerInterval) { clearInterval(timerInterval); timerInterval = null }
 }
 
+// --- Vote ---
+async function loadVote(boardId: string) {
+    try {
+        const res = await fetch(`/api/boards/${boardId}/vote`, { credentials: 'include' })
+        if (res.ok) {
+            const data = await res.json()
+            userVote.value = data.user_vote
+            if (board.value) board.value.score = data.score
+        }
+    } catch { /* ignore */ }
+}
+
+async function handleLikeClick() {
+    if (!board.value) return
+    const boardId = board.value.board_id
+    const wasLiked = userVote.value === 1
+
+    if (wasLiked) {
+        userVote.value = null
+        board.value.score--
+        try {
+            await fetch(`/api/boards/${boardId}/vote`, { method: 'DELETE', credentials: 'include' })
+        } catch {
+            userVote.value = 1
+            board.value.score++
+        }
+    } else {
+        const prev = userVote.value
+        userVote.value = 1
+        board.value.score += prev === -1 ? 2 : 1
+        try {
+            await fetch(`/api/boards/${boardId}/vote`, {
+                method: 'PUT',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ vote_value: 1 }),
+            })
+        } catch {
+            userVote.value = prev
+            board.value.score -= prev === -1 ? 2 : 1
+        }
+    }
+}
+
 // --- Data loading ---
 async function loadGame() {
     gameId.value = route.params.game_id as string
@@ -336,7 +381,10 @@ async function loadGame() {
     if (!cellsRes.ok) { error.value = 'Zellen nicht gefunden'; return }
 
     board.value = await boardRes.json()
-    if (board.value) pageTitle.value = board.value.title
+    if (board.value) {
+        pageTitle.value = board.value.title
+        loadVote(board.value.board_id)
+    }
     const gameCells: GameCell[] = await cellsRes.json()
 
     selectedCells.value = gameCells
@@ -540,7 +588,14 @@ onUnmounted(() => {
 }
 
 .stat-plays { color: #4052B6; }
-.stat-likes { color: #C0185A; }
+.stat-likes {
+    color: #C0185A;
+    cursor: pointer;
+    border: none;
+    transition: transform 0.15s ease, background-color 0.15s;
+}
+.stat-likes:hover { background-color: #f8d0de; }
+.stat-likes.liked { background-color: #fce4ec; }
 
 .top-stat-pill {
     display: flex;
