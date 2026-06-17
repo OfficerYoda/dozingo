@@ -33,6 +33,7 @@ type Auth struct {
 	users              *repository.Users
 	passwords          *repository.Passwords
 	sessions           *repository.Sessions
+	twoFactor          *repository.TwoFactor
 	verificationTokens *repository.VerificationTokens
 	emailSender        emailpkg.Sender
 	queries            *generated.Queries
@@ -53,6 +54,7 @@ func NewAuth(
 		users:              repos.Users,
 		passwords:          repos.Passwords,
 		sessions:           repos.Sessions,
+		twoFactor:          repos.TwoFactor,
 		verificationTokens: repos.VerificationTokens,
 		emailSender:        emailSender,
 		txRunner:           txRunner,
@@ -101,7 +103,7 @@ func (s *Auth) Register(ctx context.Context, in RegisterInput) (generated.User, 
 		}
 	}
 
-	err = s.attachUserToSession(ctx, user)
+	_, err = s.attachUserToSession(ctx, user)
 	if err != nil {
 		return generated.User{}, fmt.Errorf("attach user to session: %w", err)
 	}
@@ -161,9 +163,21 @@ func (s *Auth) Login(ctx context.Context, in LoginInput) (generated.User, error)
 		Email:     user.Email,
 		AvatarKey: user.AvatarKey,
 	}
-	err = s.attachUserToSession(ctx, vanillaUser)
+	sessionToken, err := s.attachUserToSession(ctx, vanillaUser)
 	if err != nil {
 		return generated.User{}, fmt.Errorf("attach user to session: %w", err)
+	}
+
+	twoFA, err := s.twoFactor.GetByUserID(ctx, vanillaUser.ID)
+	if err != nil && !errors.Is(err, domain.ErrNotFound) {
+		return generated.User{}, fmt.Errorf("check 2fa status: %w", err)
+	}
+	if twoFA.TotpVerifiedAt.Valid {
+		_, err = s.sessions.SetTwoFAPending(ctx, sessionToken, true)
+		if err != nil {
+			return generated.User{}, fmt.Errorf("mark session pending 2fa: %w", err)
+		}
+		return generated.User{}, fmt.Errorf("2fa required: %w", domain.ErrTwoFARequired)
 	}
 
 	return vanillaUser, nil
@@ -394,17 +408,17 @@ func (s *Auth) generateUser(ctx context.Context, in RegisterInput) (generated.Us
 	return user, nil
 }
 
-func (s *Auth) attachUserToSession(ctx context.Context, user generated.User) error {
+func (s *Auth) attachUserToSession(ctx context.Context, user generated.User) (string, error) {
 	sessionUser, err := middleware.RequireSession(ctx, s.queries)
 	if err != nil {
-		return fmt.Errorf("session required: %w", err)
+		return "", fmt.Errorf("session required: %w", err)
 	}
 	_, err = s.sessions.AttachUser(ctx, sessionUser.Token, user.ID)
 	if err != nil {
-		return fmt.Errorf("attach user to session: %w", err)
+		return "", fmt.Errorf("attach user to session: %w", err)
 	}
 
-	return nil
+	return sessionUser.Token, nil
 }
 
 func upsertToken(

@@ -24,4 +24,7 @@ var (
 
 	// ErrGone indicates the resource is no longer valid because it expired.
 	ErrGone = errors.New("gone")
+
+	// ErrTwoFARequired indicates the user has 2FA enabled and must verify their TOTP code.
+	ErrTwoFARequired = errors.New("two-factor authentication required")
 )

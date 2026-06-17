@@ -95,7 +95,7 @@ func (s *TwoFactor) Confirm(ctx context.Context, passcode string) error {
 }
 
 func (s *TwoFactor) Verify(ctx context.Context, passcode string) error {
-	sessionUser, err := requiresSessionUser(ctx, s.queries)
+	sessionUser, err := requiresPendingSession(ctx, s.queries)
 	if err != nil {
 		return err
 	}

@@ -17,6 +17,7 @@ const (
 	msgBadRequest          = "bad request"
 	msgUnprocessableEntity = "unprocessable entity"
 	msgGone                = "gone"
+	msgTwoFARequired       = "two-factor authentication required"
 )
 
 // toHumaErr maps a domain error to a huma HTTP error. Sentinel-matched
@@ -56,6 +57,9 @@ func toHumaErr(err error, notFoundMsg, opMsg string) error {
 	case errors.Is(err, domain.ErrGone):
 		slog.Warn(opMsg, "error", err)
 		return huma.Error410Gone(msgGone)
+	case errors.Is(err, domain.ErrTwoFARequired):
+		slog.Warn(opMsg, "error", err)
+		return huma.Error403Forbidden(msgTwoFARequired)
 	}
 
 	slog.Error(opMsg, "error", err)
