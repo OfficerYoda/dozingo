@@ -45,10 +45,6 @@
               <h3 class="mb-0">{{ $t('cardEditor.entries') }}</h3>
               <small :class="['entry-count-hint', entryHintReady ? 'hint-ready' : 'hint-warn']">{{ entryHintText }}</small>
             </div>
-            <button class="btn btn-secondary add-entry-btn" @click="addRow">
-              <CirclePlus :size="20" />
-              <p class="mb-0">{{ $t('cardEditor.addRow') }}</p>
-            </button>
           </div>
 
           <table class="entries-table">
@@ -64,7 +60,9 @@
               <tr v-for="(entry, index) in entries" :key="index">
                 <td class="td-term">
                   <input type="text" :class="['entry-term-input', submitted && !entry.term.trim() ? 'input-error' : '']" v-model="entry.term"
-                    :placeholder="$t('cardEditor.termPlaceholder')" />
+                    :placeholder="$t('cardEditor.termPlaceholder')"
+                    :data-index="index"
+                    @keydown.enter.prevent="addRowAt(index)" />
                 </td>
                 <td class="td-rarity">
                   <select class="entry-select" v-model="entry.rarity">
@@ -81,6 +79,17 @@
                 </td>
               </tr>
             </tbody>
+
+            <tfoot>
+              <tr>
+                <td colspan="3" class="td-add-row">
+                  <button class="btn btn-secondary add-entry-btn" @click="addRow">
+                    <CirclePlus :size="20" />
+                    <p class="mb-0">{{ $t('cardEditor.addRow') }}</p>
+                  </button>
+                </td>
+              </tr>
+            </tfoot>
           </table>
         </div>
 
@@ -113,7 +122,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { FilePlus, CirclePlus, Trash2, Play } from 'lucide-vue-next';
@@ -161,6 +170,13 @@ const rarityValue: Record<string, number> = { common: 1, uncommon: 2, rare: 3, l
 
 function addRow() {
   entries.value.push({ term: '', rarity: 'common' })
+}
+
+async function addRowAt(index: number) {
+  entries.value.splice(index + 1, 0, { term: '', rarity: 'common' })
+  await nextTick()
+  const inputs = document.querySelectorAll<HTMLInputElement>('input[data-index]')
+  inputs[index + 1]?.focus()
 }
 
 function removeRow(index: number) {
@@ -486,6 +502,11 @@ h3 {
   align-items: center;
   gap: 8px;
   height: 40px;
+}
+
+.td-add-row {
+  padding: 6px;
+  border-top: 1px solid var(--color-text-secondary);
 }
 
 /* === Other === */
