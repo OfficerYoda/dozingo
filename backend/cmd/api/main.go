@@ -151,6 +151,7 @@ func registerRoutes(
 	gameCellsSvc := service.NewGameCells(&repos, queries)
 	gamesSvc := service.NewGames(&repos, queries, txRunner)
 	statsSvc := service.NewStats(&repos, queries)
+	twoFASvc := service.NewTwoFactor(&repos, queries, txRunner)
 	usersSvc := service.NewUsers(&repos, queries, emailSender, txRunner, garage)
 	votesSvc := service.NewVotes(&repos, queries)
 
@@ -161,8 +162,9 @@ func registerRoutes(
 	handler.NewGamesHandler(gamesSvc).Register(apiGroup)
 	handler.NewHealthHandler(pool).Register(api) // Don't use apiGroup here to get around middleware
 	handler.NewStatsHandler(statsSvc).Register(apiGroup)
-	handler.NewVotesHandler(votesSvc).Register(apiGroup)
+	handler.NewTwoFactor(twoFASvc).Register(apiGroup)
 	handler.NewUsersHandler(usersSvc, votesSvc, avatarURLs).Register(apiGroup)
+	handler.NewVotesHandler(votesSvc).Register(apiGroup)
 
 	createOpenAPIFile(api)
 }

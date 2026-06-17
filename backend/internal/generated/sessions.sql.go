@@ -138,3 +138,30 @@ func (q *Queries) ExtendSessionByToken(ctx context.Context, arg ExtendSessionByT
 	)
 	return i, err
 }
+
+const setTwoFAPending = `-- name: SetTwoFAPending :one
+UPDATE sessions
+SET two_fa_pending = $1
+WHERE user_id = $2
+RETURNING id, user_id, token, expires_at, created_at, updated_at, two_fa_pending
+`
+
+type SetTwoFAPendingParams struct {
+	TwoFaPending bool        `json:"two_fa_pending"`
+	UserID       pgtype.UUID `json:"user_id"`
+}
+
+func (q *Queries) SetTwoFAPending(ctx context.Context, arg SetTwoFAPendingParams) (Session, error) {
+	row := q.db.QueryRow(ctx, setTwoFAPending, arg.TwoFaPending, arg.UserID)
+	var i Session
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Token,
+		&i.ExpiresAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.TwoFaPending,
+	)
+	return i, err
+}
