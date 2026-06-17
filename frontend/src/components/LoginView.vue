@@ -1,7 +1,7 @@
 <template>
     <Teleport to="body">
-        <div v-if="loginModalOpen" class="modal-overlay" @click.self="closeLoginModal">
-            <div class="card login-card">
+        <div v-if="loginModalOpen" class="modal-overlay" @click.self="closeLoginModal" @keydown.esc="closeLoginModal">
+            <div class="card login-card" ref="loginCardRef" @keydown="handleTabTrap">
                 <div class="heading mb-3">
                     <h2 class="mb-0">Welcome Back</h2>
                     <small>Continue your bingo journey</small>
@@ -139,7 +139,7 @@
 </style>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { User, KeyRound } from 'lucide-vue-next'
 import { useAuth } from '@/composables/useAuth'
@@ -155,14 +155,51 @@ const username = ref('')
 const password = ref('')
 const error = ref('')
 const loading = ref(false)
+const loginCardRef = ref<HTMLElement | null>(null)
 
 watch(loginModalOpen, (open) => {
     if (open) {
         username.value = ''
         password.value = ''
         error.value = ''
+        nextTick(() => {
+            loginCardRef.value?.querySelector<HTMLElement>('input, button, a, [tabindex]')?.focus()
+        })
     }
 })
+
+function getFocusable(): HTMLElement[] {
+    const els = Array.from(
+        loginCardRef.value?.querySelectorAll<HTMLElement>(
+            'a, button, input, textarea, select, [tabindex]:not([tabindex="-1"])'
+        ) ?? []
+    ).filter(el => !el.hasAttribute('disabled'))
+
+    const withIndex = els.filter(el => (el.tabIndex ?? 0) > 0)
+        .sort((a, b) => a.tabIndex - b.tabIndex)
+    const withoutIndex = els.filter(el => (el.tabIndex ?? 0) === 0)
+    return [...withIndex, ...withoutIndex]
+}
+
+function handleTabTrap(e: KeyboardEvent) {
+    if (e.key !== 'Tab') return
+    const focusable = getFocusable()
+    if (!focusable.length) return
+    const first = focusable[0]
+    const last = focusable[focusable.length - 1]
+    if (!first || !last) return
+    if (e.shiftKey) {
+        if (document.activeElement === first) {
+            e.preventDefault()
+            last.focus()
+        }
+    } else {
+        if (document.activeElement === last) {
+            e.preventDefault()
+            first.focus()
+        }
+    }
+}
 
 async function handleLogin() {
     error.value = ''
