@@ -374,10 +374,17 @@ components:
         password_last_changed_at:
           format: date-time
           type: string
+        two_factor_enabled:
+          type: boolean
+        unused_recovery_keys:
+          format: int64
+          type: integer
       required:
         - password_last_changed_at
         - active_sessions
         - last_login_at
+        - two_factor_enabled
+        - unused_recovery_keys
       type: object
     GetTotalGamesPlayedBody:
       additionalProperties: false

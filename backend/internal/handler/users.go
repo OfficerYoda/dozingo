@@ -76,6 +76,8 @@ type getSecurityInformationOutputBody struct {
 	PasswordLastChanged time.Time `json:"password_last_changed_at"`
 	ActiveSessions      int       `json:"active_sessions"`
 	LastLogin           time.Time `json:"last_login_at"`
+	TwoFactorEnabled    bool      `json:"two_factor_enabled"`
+	UnusedRecoveryKeys  int       `json:"unused_recovery_keys"`
 }
 
 type getSecurityInformationOutput struct {
@@ -283,5 +285,7 @@ func (h *UsersHandler) securityInformation(ctx context.Context, _ *struct{}) (*g
 		PasswordLastChanged: infos.PasswordLastChangedAt.Time.UTC(),
 		ActiveSessions:      int(infos.ActiveSessionsCount),
 		LastLogin:           infos.LastLoginAt.Time.UTC(),
+		TwoFactorEnabled:    infos.TwoFactorEnabled,
+		UnusedRecoveryKeys:  int(infos.UnusedRecoveryKeys),
 	}}, nil
 }
