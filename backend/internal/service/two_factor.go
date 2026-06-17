@@ -57,7 +57,7 @@ func (s *TwoFactor) Setup(ctx context.Context) (*otp.Key, error) {
 		return nil, fmt.Errorf("generating otp key: %w", err)
 	}
 
-	_, err = s.twoFactor.Create(ctx, sessionUser.UserID, key.Secret())
+	_, err = s.twoFactor.Upsert(ctx, sessionUser.UserID, key.Secret())
 	if err != nil {
 		return nil, fmt.Errorf("store otp key: %w", err)
 	}
