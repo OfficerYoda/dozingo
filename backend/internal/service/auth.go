@@ -367,7 +367,7 @@ func (s *Auth) VerifyEmail(ctx context.Context, token string) (generated.User, e
 		return generated.User{}, fmt.Errorf("retrieve user: %w", err)
 	}
 
-	if !pgTextEqual(verificationToken.Email, user.Email) {
+	if verificationToken.Email.String != user.Email {
 		return generated.User{}, fmt.Errorf("token email mismatch: %w", domain.ErrGone)
 	}
 

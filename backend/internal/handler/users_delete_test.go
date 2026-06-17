@@ -73,7 +73,7 @@ func TestDeleteUser_WrongPassword_401(t *testing.T) {
 func TestDeleteUser_PasswordTooShort_422(t *testing.T) {
 	setupTest(t)
 
-	resp := createTestUserWithRegister(t, "delshort", "correctpw1", nil)
+	resp := createTestUserWithRegister(t, "delshort", "correctpw1", stringPtr("delshort@example.com"))
 	userID := (*resp)["user_id"].(string)
 
 	w := doRequestWithCookies(http.MethodDelete, "/api/users/me", map[string]any{
@@ -87,7 +87,7 @@ func TestDeleteUser_PasswordTooShort_422(t *testing.T) {
 func TestDeleteUser_PasswordTooLong_422(t *testing.T) {
 	setupTest(t)
 
-	resp := createTestUserWithRegister(t, "dellong", "correctpw1", nil)
+	resp := createTestUserWithRegister(t, "dellong", "correctpw1", stringPtr("dellong@example.com"))
 	userID := (*resp)["user_id"].(string)
 
 	w := doRequestWithCookies(http.MethodDelete, "/api/users/me", map[string]any{
@@ -102,7 +102,7 @@ func TestDeleteUser_InvalidatesAllSessions(t *testing.T) {
 	setupTest(t)
 
 	// Register produces session A.
-	resp := createTestUserWithRegister(t, "delmulti", "correctpw1", nil)
+	resp := createTestUserWithRegister(t, "delmulti", "correctpw1", stringPtr("delmulti@example.com"))
 	userID := (*resp)["user_id"].(string)
 	cookieA := cookiesFor(userID)[0]
 
@@ -137,7 +137,7 @@ func TestDeleteUser_InvalidatesAllSessions(t *testing.T) {
 func TestDeleteUser_DoesNotLeakDBDetails(t *testing.T) {
 	setupTest(t)
 
-	resp := createTestUserWithRegister(t, "delleak", "correctpw1", nil)
+	resp := createTestUserWithRegister(t, "delleak", "correctpw1", stringPtr("delleak@example.com"))
 	userID := (*resp)["user_id"].(string)
 
 	w := doRequestWithCookies(http.MethodDelete, "/api/users/me", map[string]any{

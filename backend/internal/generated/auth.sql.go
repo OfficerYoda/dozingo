@@ -68,7 +68,7 @@ WHERE u.username = $1
 type GetUserForPasswordLoginRow struct {
 	ID           pgtype.UUID `json:"id"`
 	Username     string      `json:"username"`
-	Email        pgtype.Text `json:"email"`
+	Email        string      `json:"email"`
 	AvatarKey    string      `json:"avatar_key"`
 	PasswordHash string      `json:"password_hash"`
 }

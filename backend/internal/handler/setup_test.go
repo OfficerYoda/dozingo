@@ -357,6 +357,7 @@ func TestMain(m *testing.M) {
 		slog.Error("failed to build test avatar URL builder", "error", err2)
 		os.Exit(1)
 	}
+	testFallbackAvatarURL := testAvatarURLs.URL("default.svg", "")
 
 	// Health is registered on the bare api (not apiGroup) to bypass session
 	// middleware; its operation Path is the absolute "/api/health".
@@ -368,8 +369,8 @@ func TestMain(m *testing.M) {
 	NewStatsHandler(service.NewStats(&repos, queries)).Register(apiGroup)
 	votesSvc := service.NewVotes(&repos, queries)
 	NewVotesHandler(votesSvc).Register(apiGroup)
-	NewAuthHandler(service.NewAuth(repos, queries, fakeMailer, txRunner, fakeAvatarGen.Generate, fakeUploader), testAvatarURLs).Register(apiGroup)
-	NewUsersHandler(service.NewUsers(&repos, queries, fakeMailer, txRunner, fakeUploader), votesSvc, testAvatarURLs).Register(apiGroup)
+	NewAuthHandler(service.NewAuth(repos, queries, fakeMailer, txRunner, fakeAvatarGen.Generate, fakeUploader), testAvatarURLs, testFallbackAvatarURL).Register(apiGroup)
+	NewUsersHandler(service.NewUsers(&repos, queries, fakeMailer, txRunner, fakeUploader), votesSvc, testAvatarURLs, testFallbackAvatarURL).Register(apiGroup)
 	NewTwoFactor(service.NewTwoFactor(&repos, queries, txRunner)).Register(apiGroup)
 
 	// Clean tables before running tests to ensure a fresh state

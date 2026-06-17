@@ -192,7 +192,9 @@ components:
       additionalProperties: false
       properties:
         location:
-          description: Where the error occurred, e.g. 'body.items[3].tags' or 'path.thing-id'
+          description:
+            Where the error occurred, e.g. 'body.items[3].tags' or
+            'path.thing-id'
           type: string
         message:
           description: Error message text
@@ -211,7 +213,9 @@ components:
           readOnly: true
           type: string
         detail:
-          description: A human-readable explanation specific to this occurrence of the problem.
+          description:
+            A human-readable explanation specific to this occurrence of the
+            problem.
           examples:
             - Property foo is required but is missing.
           type: string
@@ -223,7 +227,9 @@ components:
             - array
             - "null"
         instance:
-          description: A URI reference that identifies the specific occurrence of the problem.
+          description:
+            A URI reference that identifies the specific occurrence of the
+            problem.
           examples:
             - https://example.com/error-log/abc123
           format: uri
@@ -235,13 +241,16 @@ components:
           format: int64
           type: integer
         title:
-          description: A short, human-readable summary of the problem type. This value should not change between occurrences of the error.
+          description:
+            A short, human-readable summary of the problem type. This value
+            should not change between occurrences of the error.
           examples:
             - Bad Request
           type: string
         type:
           default: about:blank
-          description: A URI reference to human-readable documentation for the error.
+          description:
+            A URI reference to human-readable documentation for the error.
           examples:
             - https://example.com/errors/example
           format: uri
@@ -514,6 +523,33 @@ components:
         - username
         - password
       type: object
+    LoginOutputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/LoginOutputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        avatar_url:
+          format: uri
+          type: string
+        email:
+          format: email
+          type: string
+        two_fa_pending:
+          type: boolean
+        user_id:
+          format: uuid
+          type: string
+        username:
+          pattern: ^[^\s\x00-\x1F\x7F]+$
+          type: string
+      required:
+        - two_fa_pending
+      type: object
     NewPasswordInputBody:
       additionalProperties: false
       properties:
@@ -738,7 +774,8 @@ components:
           readOnly: true
           type: string
         status:
-          description: "Game lifecycle state. Must be one of: active, completed, abandoned."
+          description:
+            "Game lifecycle state. Must be one of: active, completed, abandoned."
           enum:
             - active
             - completed
@@ -797,9 +834,7 @@ components:
           type: string
         email:
           format: email
-          type:
-            - string
-            - "null"
+          type: string
         user_id:
           format: uuid
           type: string
@@ -809,7 +844,7 @@ components:
       required:
         - user_id
         - username
-        - email
+        - avatar_url
       type: object
     VerifyEmailInputBody:
       additionalProperties: false
@@ -861,7 +896,9 @@ openapi: 3.1.0
 paths:
   /api/auth/2fa:
     delete:
-      description: Remove 2FA from the account. Requires the current password and either a TOTP code or a recovery code.
+      description:
+        Remove 2FA from the account. Requires the current password and either a
+        TOTP code or a recovery code.
       operationId: disable-2fa
       requestBody:
         content:
@@ -883,7 +920,9 @@ paths:
         - Auth
   /api/auth/2fa/confirm:
     post:
-      description: Confirms that the user has the correct secret to generate the correct codes.
+      description:
+        Confirms that the user has the correct secret to generate the correct
+        codes.
       operationId: confirm-2fa
       requestBody:
         content:
@@ -909,7 +948,9 @@ paths:
         - Auth
   /api/auth/2fa/regenerate-codes:
     post:
-      description: Invalidate all existing recovery codes and issue a fresh set. Requires the current password and either a TOTP code or a recovery code.
+      description:
+        Invalidate all existing recovery codes and issue a fresh set. Requires
+        the current password and either a TOTP code or a recovery code.
       operationId: regenerate-2fa-codes
       requestBody:
         content:
@@ -955,7 +996,8 @@ paths:
         - Auth
   /api/auth/2fa/verify:
     post:
-      description: The normal endpoint for a normal login, with 2fa already set up.
+      description:
+        The normal endpoint for a normal login, with 2fa already set up.
       operationId: verify-2fa
       requestBody:
         content:
@@ -977,7 +1019,8 @@ paths:
         - Auth
   /api/auth/2fa/verify-recovery:
     post:
-      description: Use a one-time recovery code instead of a TOTP code to complete login.
+      description:
+        Use a one-time recovery code instead of a TOTP code to complete login.
       operationId: verify-2fa-recovery
       requestBody:
         content:
@@ -1057,7 +1100,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UserOutputBody"
+                $ref: "#/components/schemas/LoginOutputBody"
           description: OK
         default:
           content:
@@ -1912,7 +1955,11 @@ paths:
       tags:
         - Users
     patch:
-      description: "Resolves the user id from the session cookie. The `email` field is tri-state: omit the key (or send `null`) to leave the column unchanged, send `\"\"` (empty string) to clear it, or send a valid address to set it (which also resets verification and triggers a verification mail)."
+      description:
+        'Resolves the user id from the session cookie. The `email` field is
+        tri-state: omit the key (or send `null`) to leave the column unchanged,
+        send `""` (empty string) to clear it, or send a valid address to set it
+        (which also resets verification and triggers a verification mail).'
       operationId: update-current-user
       requestBody:
         content:
@@ -1950,7 +1997,9 @@ paths:
                 avatar:
                   contentEncoding: binary
                   contentMediaType: application/octet-stream
-                  description: "The avatar image file. Allowed types: PNG, JPEG, WEBP. Max size: 20MB."
+                  description:
+                    "The avatar image file. Allowed types: PNG, JPEG, WEBP. Max
+                    size: 20MB."
                   format: binary
                   type: string
               required:

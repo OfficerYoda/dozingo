@@ -58,10 +58,10 @@ func (s *TwoFactor) Setup(ctx context.Context) (*otp.Key, error) {
 
 	key, err := totp.Generate(totp.GenerateOpts{
 		Issuer:      "Dozingo",
-		AccountName: sessionUser.Email.String,
+		AccountName: sessionUser.Email.String, // NOTE: Make email necessary?
 	})
 	if err != nil {
-		return nil, fmt.Errorf("generating otp key: %w", err)
+		return nil, fmt.Errorf("generate otp key: %w", err)
 	}
 
 	_, err = s.twoFactor.Upsert(ctx, sessionUser.UserID, key.Secret())

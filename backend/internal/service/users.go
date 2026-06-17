@@ -76,7 +76,7 @@ func (s *Users) Me(ctx context.Context) (generated.User, error) {
 	return generated.User{
 		ID:        sessionUser.UserID,
 		Username:  sessionUser.Username.String,
-		Email:     sessionUser.Email,
+		Email:     sessionUser.Email.String,
 		AvatarKey: sessionUser.AvatarKey.String,
 	}, nil
 }
@@ -129,9 +129,10 @@ func (s *Users) UserByID(ctx context.Context, userIDStr string) (generated.User,
 		return generated.User{}, fmt.Errorf("get user by id: %w", err)
 	}
 
+	// Hide email from other users
 	sessionUser, _ := middleware.SessionUserFromContext(ctx)
 	if sessionUser.UserID != user.ID {
-		user.Email = pgmap.PgTextFromString(nil)
+		user.Email = ""
 	}
 
 	return user, nil
@@ -155,7 +156,7 @@ func (s *Users) UpdateMe(ctx context.Context, in UpdateUserInput) (generated.Use
 		return generated.User{}, err
 	}
 
-	return s.applyUserUpdate(ctx, sessionUser.UserID, sessionUser.Email, in)
+	return s.applyUserUpdate(ctx, sessionUser.UserID, sessionUser.Email.String, in)
 }
 
 func (s *Users) UploadAvatar(ctx context.Context, in huma.FormFile) (generated.User, error) {
@@ -240,7 +241,7 @@ func convertFormFileToImage(in huma.FormFile) (*storage.Image, error) {
 	return img, nil
 }
 
-func (s *Users) applyUserUpdate(ctx context.Context, userID pgtype.UUID, prevEmail pgtype.Text, in UpdateUserInput) (generated.User, error) {
+func (s *Users) applyUserUpdate(ctx context.Context, userID pgtype.UUID, prevEmail string, in UpdateUserInput) (generated.User, error) {
 	newEmail := ""
 	if in.Email != nil {
 		newEmail = strings.TrimSpace(*in.Email)
@@ -261,7 +262,7 @@ func (s *Users) applyUserUpdate(ctx context.Context, userID pgtype.UUID, prevEma
 		return generated.User{}, fmt.Errorf("update user: %w", err)
 	}
 
-	if newEmail != "" && !pgTextEqual(prevEmail, user.Email) {
+	if newEmail != "" && prevEmail != user.Email {
 		err = sendEmailVerification(ctx, s.txRunner, s.emailSender, user.ID, newEmail)
 		if err != nil {
 			return generated.User{}, fmt.Errorf("send verification mail: %w", err)
@@ -269,17 +270,6 @@ func (s *Users) applyUserUpdate(ctx context.Context, userID pgtype.UUID, prevEma
 	}
 
 	return user, nil
-}
-
-func pgTextEqual(a, b pgtype.Text) bool {
-	if a.Valid != b.Valid {
-		return false
-	}
-	if !a.Valid {
-		return true
-	}
-
-	return a.String == b.String
 }
 
 func requiresVerifiedSession(ctx context.Context, queries *generated.Queries) (generated.GetSessionUserByTokenRow, error) {

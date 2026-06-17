@@ -159,7 +159,7 @@ type Session struct {
 type User struct {
 	ID              pgtype.UUID        `json:"id"`
 	Username        string             `json:"username"`
-	Email           pgtype.Text        `json:"email"`
+	Email           string             `json:"email"`
 	CreatedAt       pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
 	EmailVerifiedAt pgtype.Timestamptz `json:"email_verified_at"`
