@@ -355,6 +355,30 @@ components:
         - session_id
         - status
       type: object
+    GetSecurityInformationOutputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/GetSecurityInformationOutputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        active_sessions:
+          format: int64
+          type: integer
+        last_login_at:
+          format: date-time
+          type: string
+        password_last_changed_at:
+          format: date-time
+          type: string
+      required:
+        - password_last_changed_at
+        - active_sessions
+        - last_login_at
+      type: object
     GetTotalGamesPlayedBody:
       additionalProperties: false
       properties:
@@ -435,7 +459,7 @@ components:
           format: int64
           type: integer
         size:
-          format: int32
+          format: int64
           type: integer
         title:
           type: string
@@ -448,7 +472,7 @@ components:
           format: int64
           type: integer
         vote_value:
-          format: int32
+          format: int64
           type: integer
       required:
         - vote_id
@@ -1693,6 +1717,25 @@ paths:
                 $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Upload a new profile picture
+      tags:
+        - Users
+  /api/users/me/security:
+    get:
+      operationId: get-security-information
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetSecurityInformationOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: List security information
       tags:
         - Users
   /api/users/me/votes:

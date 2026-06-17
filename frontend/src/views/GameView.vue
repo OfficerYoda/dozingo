@@ -4,15 +4,13 @@
             <div class="top-item-bar">
                 <div class="top-board-info">
                     <div class="stats">
+                        <a href="/" class="stat-item back"><ArrowLeft :size="13"/> Back</a>
                         <span class="stat-item stat-plays">
                             <Play :size="13"/> {{ board?.play_count ?? '—' }}
                         </span>
-                        <span class="stat-item stat-likes">
-                            <Heart :size="13"/> {{ board?.score ?? '—' }}
-                        </span>
-                        <span class="stat-item stat-size">
-                            <LayoutGrid :size="13"/> {{ board?.size ?? '—' }}x{{ board?.size ?? '—' }}
-                        </span>
+                        <button class="stat-item stat-likes" :class="{ liked: userVote === 1 }" @click="handleLikeClick" type="button" aria-label="Board liken">
+                            <Heart :size="13" :fill="userVote === 1 ? 'currentColor' : 'none'"/> {{ board?.score ?? '—' }}
+                        </button>
                     </div>
                 </div>
                 <div class="top-stat-pill">
@@ -42,17 +40,34 @@
                 <div class="board-shadow" v-bind:class="(showShadowRight)?'board-shadow-right':''"></div>
                 <div class="board-shadow" v-bind:class="(showShadowLeft)?'board-shadow-left':''"></div>
             </div>
-
-            <div v-if="gameState === 'completed'" class="completed-actions mt-3">
-                <RouterLink to="/" class="btn btn-primary">
-                    <Home :size="18"/>
-                    <span>Zur Startseite</span>
-                </RouterLink>
-            </div>
         </div>
 
+        <Transition name="bingo-toast">
+            <div v-if="bingoToast" class="bingo-toast">
+                <span class="toast-cannon toast-cannon-left">
+                    <span v-for="n in 12" :key="n" class="cannon-piece"
+                          :style="{
+                              '--angle': (180 + n * 15) + 'deg',
+                              '--dist': (60 + (n % 4) * 30) + 'px',
+                              '--delay': ((n % 5) * 0.06) + 's',
+                              backgroundColor: confettiColors[n % confettiColors.length],
+                          }"></span>
+                </span>
+                🎯 BINGO!
+                <span class="toast-cannon toast-cannon-right">
+                    <span v-for="n in 12" :key="n" class="cannon-piece"
+                          :style="{
+                              '--angle': (n * 15) + 'deg',
+                              '--dist': (60 + (n % 4) * 30) + 'px',
+                              '--delay': ((n % 5) * 0.06) + 's',
+                              backgroundColor: confettiColors[(n + 3) % confettiColors.length],
+                          }"></span>
+                </span>
+            </div>
+        </Transition>
+
         <Teleport to="body">
-            <div v-if="showParty" class="party-overlay" @click="dismissParty">
+            <div v-if="gameState === 'completed'" class="party-overlay" @click="$router.push('/')">
                 <div class="party-beat party-beat-1"></div>
                 <div class="party-beat party-beat-2"></div>
                 <div class="party-beat party-beat-3"></div>
@@ -119,7 +134,7 @@
                     </div>
                     <h1 class="party-title">DOZINGO!</h1>
                     <p class="party-subtitle">{{ formattedTime }} · alle {{ selectedCells.length }} Felder geschafft</p>
-                    <button class="btn btn-primary mt-3" @click.stop="dismissParty">Weiter</button>
+                    <RouterLink to="/" class="btn btn-primary mt-3" @click="dismissParty">Zur Startseite</RouterLink>
                 </div>
             </div>
         </Teleport>
@@ -130,7 +145,7 @@
 import { ref, computed, nextTick, useTemplateRef, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
-import { Heart, LayoutGrid, Play, Timer, CheckSquare, Sparkles, Dices, Star, Home } from 'lucide-vue-next'
+import { Heart, Play, Timer, CheckSquare, Sparkles, Dices, Star, ArrowLeft } from 'lucide-vue-next'
 import { usePageTitle } from '@/composables/usePageTitle'
 
 interface Board {
@@ -166,6 +181,7 @@ const board = ref<Board | null>(null)
 const error = ref<string | null>(null)
 const selectedCells = ref<Cell[]>([])
 const gameId = ref<string>('')
+const userVote = ref<number | null>(null)
 
 // 'stopped' | 'running' | 'completed'
 const gameState = ref<'stopped' | 'running' | 'completed'>('stopped')
@@ -173,6 +189,9 @@ const revealedCells = ref<Set<number>>(new Set())
 const checkedCells = ref<Set<string>>(new Set())
 const isRevealing = ref(false)
 const showParty = ref(false)
+const bingoToast = ref(false)
+const completedLines = ref(new Set<string>())
+let bingoToastTimeout: ReturnType<typeof setTimeout> | null = null
 const confettiColors = ['#4052B6', '#C0185A', '#2E7D32', '#F79F1F', '#5A5781', '#E3DFFF', '#EA2027']
 const partyEmojis = ['🎉', '🎊', '🥳', '🎲', '🏆', '⭐', '✨', '🎯', '🍾', '🎈', '💫', '🔥', '🎉', '🎊', '🥳', '🎲', '🏆', '⭐', '✨', '🎯']
 
@@ -181,44 +200,43 @@ function dismissParty() {
     stopTechno()
 }
 
-// --- Techno-Beat (Web Audio) ---
+// --- Techno-Beat (Web Audio, full-bar pre-scheduling) ---
 let audioCtx: AudioContext | null = null
-let beatScheduler: ReturnType<typeof setInterval> | null = null
-let beatStep = 0
+let beatScheduler: ReturnType<typeof setTimeout> | null = null
+
+const BPM = 130
+const STEP = 60 / BPM / 4          // 16tel in Sekunden ≈ 0.115s
+const BAR  = STEP * 16              // eine Bar ≈ 1.846s
 
 function startTechno() {
     if (audioCtx) return
-    const Ctx = (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)
+    const Ctx = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
     audioCtx = new Ctx()
-
-    // 130 BPM → 16th note = 60/130/4 ≈ 0.115s
-    const stepMs = (60 / 130) * 1000 / 4
-    beatStep = 0
-    beatScheduler = setInterval(() => playStep(beatStep++), stepMs)
+    scheduleBar(audioCtx.currentTime + 0.05)
 }
 
 function stopTechno() {
-    if (beatScheduler) { clearInterval(beatScheduler); beatScheduler = null }
+    if (beatScheduler) { clearTimeout(beatScheduler); beatScheduler = null }
     if (audioCtx) { audioCtx.close(); audioCtx = null }
 }
 
-function playStep(step: number) {
+function scheduleBar(barStart: number) {
     if (!audioCtx) return
-    const t = audioCtx.currentTime
-    const beat = step % 16
+    for (let step = 0; step < 16; step++) {
+        playStep(step, barStart + step * STEP)
+    }
+    const msUntilNext = (barStart + BAR - audioCtx.currentTime - 0.1) * 1000
+    beatScheduler = setTimeout(() => scheduleBar(barStart + BAR), Math.max(0, msUntilNext))
+}
 
-    // Kick auf jedem Viertel (0, 4, 8, 12)
-    if (beat % 4 === 0) playKick(t)
-    // Snare/Clap auf 4 und 12
-    if (beat === 4 || beat === 12) playClap(t)
-    // Hi-Hat auf jedem 8tel (0, 2, 4, ...)
-    if (beat % 2 === 0) playHat(t, beat % 4 === 2)
-    // Synth-Stab Riff (Acid)
+function playStep(beat: number, t: number) {
+    if (!audioCtx) return
+    if (beat % 4 === 0)              playKick(t)
+    if (beat === 4 || beat === 12)   playClap(t)
+    if (beat % 2 === 0)              playHat(t, beat % 4 === 2)
     const stabPattern: Record<number, number> = { 0: 55, 3: 62, 6: 69, 7: 55, 10: 62, 14: 73 }
     const stab = stabPattern[beat]
-    if (stab !== undefined) {
-        playStab(t, stab)
-    }
+    if (stab !== undefined)          playStab(t, stab)
 }
 
 function playKick(t: number) {
@@ -301,6 +319,50 @@ function stopTimer() {
     if (timerInterval) { clearInterval(timerInterval); timerInterval = null }
 }
 
+// --- Vote ---
+async function loadVote(boardId: string) {
+    try {
+        const res = await fetch(`/api/boards/${boardId}/vote`, { credentials: 'include' })
+        if (res.ok) {
+            const data = await res.json()
+            userVote.value = data.user_vote
+            if (board.value) board.value.score = data.score
+        }
+    } catch { /* ignore */ }
+}
+
+async function handleLikeClick() {
+    if (!board.value) return
+    const boardId = board.value.board_id
+    const wasLiked = userVote.value === 1
+
+    if (wasLiked) {
+        userVote.value = null
+        board.value.score--
+        try {
+            await fetch(`/api/boards/${boardId}/vote`, { method: 'DELETE', credentials: 'include' })
+        } catch {
+            userVote.value = 1
+            board.value.score++
+        }
+    } else {
+        const prev = userVote.value
+        userVote.value = 1
+        board.value.score += prev === -1 ? 2 : 1
+        try {
+            await fetch(`/api/boards/${boardId}/vote`, {
+                method: 'PUT',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ vote_value: 1 }),
+            })
+        } catch {
+            userVote.value = prev
+            board.value.score -= prev === -1 ? 2 : 1
+        }
+    }
+}
+
 // --- Data loading ---
 async function loadGame() {
     gameId.value = route.params.game_id as string
@@ -319,7 +381,10 @@ async function loadGame() {
     if (!cellsRes.ok) { error.value = 'Zellen nicht gefunden'; return }
 
     board.value = await boardRes.json()
-    if (board.value) pageTitle.value = board.value.title
+    if (board.value) {
+        pageTitle.value = board.value.title
+        loadVote(board.value.board_id)
+    }
     const gameCells: GameCell[] = await cellsRes.json()
 
     selectedCells.value = gameCells
@@ -420,6 +485,43 @@ async function handleCellClick(cellId: string) {
     // alle Zellen abgehakt? → Spiel abschließen
     if (checkedCells.value.size === selectedCells.value.length && selectedCells.value.length > 0) {
         completeGame()
+    } else {
+        checkBingo()
+    }
+}
+
+function checkBingo() {
+    const size = board.value?.size ?? 4
+    const cells = selectedCells.value
+    const checked = checkedCells.value
+
+    const isChecked = (row: number, col: number) =>
+        checked.has(cells[row * size + col]?.cell_id ?? '')
+
+    const lines: Array<{ key: string; indices: [number, number][] }> = []
+
+    for (let r = 0; r < size; r++) {
+        lines.push({ key: `row${r}`, indices: Array.from({ length: size }, (_, c) => [r, c]) })
+    }
+    for (let c = 0; c < size; c++) {
+        lines.push({ key: `col${c}`, indices: Array.from({ length: size }, (_, r) => [r, c]) })
+    }
+    lines.push({ key: 'diag0', indices: Array.from({ length: size }, (_, i) => [i, i]) })
+    lines.push({ key: 'diag1', indices: Array.from({ length: size }, (_, i) => [i, size - 1 - i]) })
+
+    let newBingo = false
+    for (const line of lines) {
+        if (completedLines.value.has(line.key)) continue
+        if (line.indices.every(([r, c]) => isChecked(r, c))) {
+            completedLines.value.add(line.key)
+            newBingo = true
+        }
+    }
+
+    if (newBingo) {
+        if (bingoToastTimeout) clearTimeout(bingoToastTimeout)
+        bingoToast.value = true
+        bingoToastTimeout = setTimeout(() => { bingoToast.value = false }, 2500)
     }
 }
 
@@ -450,6 +552,7 @@ onUnmounted(() => {
     resizeObserver?.disconnect()
     stopTimer()
     stopTechno()
+    if (bingoToastTimeout) clearTimeout(bingoToastTimeout)
 })
 
 </script>
@@ -482,11 +585,29 @@ onUnmounted(() => {
     background-color: var(--color-bg-muted);
     border-radius: var(--radius-sm);
     padding: 3px 8px;
+    text-decoration: none;
+}
+
+.stat-item.back {
+    color: inherit;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.15s;
+}
+
+.stat-item.back:hover {
+    background-color: color-mix(in srgb, var(--color-bg-muted) 70%, #000 15%);
 }
 
 .stat-plays { color: #4052B6; }
-.stat-likes { color: #C0185A; }
-.stat-size  { color: #2E7D32; }
+.stat-likes {
+    color: #C0185A;
+    cursor: pointer;
+    border: none;
+    transition: transform 0.15s ease, background-color 0.15s;
+}
+.stat-likes:hover { background-color: #f8d0de; }
+.stat-likes.liked { background-color: #fce4ec; }
 
 .top-stat-pill {
     display: flex;
@@ -679,6 +800,77 @@ onUnmounted(() => {
     display: inline-flex;
     align-items: center;
     gap: 8px;
+}
+
+/* Bingo Toast */
+.bingo-toast {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    translate: -50% 0;
+    background: linear-gradient(135deg, #4052B6, #5A5781);
+    color: #fff;
+    font-size: 1.4rem;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    padding: 14px 32px;
+    border-radius: var(--radius-lg);
+    box-shadow: 0 8px 32px rgba(64, 82, 182, 0.5);
+    z-index: 8888;
+    pointer-events: none;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    overflow: visible;
+}
+
+.toast-cannon {
+    position: relative;
+    display: inline-block;
+    width: 0;
+    height: 0;
+}
+
+.cannon-piece {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 8px;
+    height: 12px;
+    border-radius: 2px;
+    animation: cannon-shoot var(--duration, 0.8s) cubic-bezier(0.2, 0.8, 0.4, 1) var(--delay) both;
+}
+
+.bingo-toast-enter-active .cannon-piece {
+    --duration: 0.8s;
+}
+
+@keyframes cannon-shoot {
+    0% {
+        transform: rotate(var(--angle)) translateX(0) scale(0.3);
+        opacity: 1;
+    }
+    60% {
+        opacity: 1;
+    }
+    100% {
+        transform: rotate(var(--angle)) translateX(var(--dist)) scale(1);
+        opacity: 0;
+    }
+}
+
+.bingo-toast-enter-active { animation: toast-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.bingo-toast-leave-active { animation: toast-out 0.3s ease-in forwards; }
+
+@keyframes toast-in {
+    from { opacity: 0; translate: -50% 40px; scale: 0.8; }
+    to   { opacity: 1; translate: -50% 0;    scale: 1; }
+}
+
+@keyframes toast-out {
+    from { opacity: 1; translate: -50% 0;     scale: 1; }
+    to   { opacity: 0; translate: -50% -20px; scale: 0.9; }
 }
 
 .party-overlay {
@@ -889,12 +1081,13 @@ onUnmounted(() => {
     background: linear-gradient(135deg, #fff, #E3DFFF);
     border: 4px solid #5A5781;
     border-radius: var(--radius-lg);
-    padding: 32px 56px;
+    padding: 24px clamp(20px, 5vw, 56px);
     text-align: center;
     box-shadow: 0 20px 60px rgba(44, 42, 81, 0.6);
     animation: banner-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), banner-shake 0.4s ease-in-out 0.6s infinite;
     z-index: 2;
-    max-width: 90vw;
+    max-width: min(90vw, 500px);
+    box-sizing: border-box;
 }
 
 /* Konfetti-Burst seitlich aus dem Banner */
@@ -985,9 +1178,11 @@ onUnmounted(() => {
 
 .party-title {
     margin: 16px 0 4px;
-    font-size: 5rem;
+    font-size: clamp(2.5rem, 12vw, 5rem);
     font-weight: 900;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.05em;
+    line-height: 1;
+    word-break: break-word;
     background: linear-gradient(90deg, #4052B6, #C0185A, #F79F1F, #2E7D32, #4052B6);
     background-size: 300% 100%;
     -webkit-background-clip: text;

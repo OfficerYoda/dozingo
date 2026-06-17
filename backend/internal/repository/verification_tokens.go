@@ -10,12 +10,6 @@ import (
 	"github.com/officeryoda/dozingo/internal/pgmap"
 )
 
-// All token-typed parameters and fields in this package are SHA-256 hex
-// digests, never plaintext. Callers (the service layer) are responsible
-// for hashing the user-supplied token via auth.HashToken before invoking
-// any of these methods. Token-typed fields on returned rows likewise
-// hold the hash and can be passed back to other methods as-is.
-
 type VerificationTokens struct {
 	queries *generated.Queries
 }

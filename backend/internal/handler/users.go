@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/danielgtaylor/huma/v2"
 
@@ -50,15 +51,15 @@ type listVotesFromUserInput struct {
 
 type listVotesFromUserOutputBody struct {
 	VoteID        string `json:"vote_id"`
-	VoteValue     int32  `json:"vote_value"`
+	VoteValue     int    `json:"vote_value"`
 	BoardID       string `json:"board_id"`
 	Title         string `json:"title"`
 	Description   string `json:"description"`
-	Size          int32  `json:"size"`
+	Size          int    `json:"size"`
 	BoardAuthorID string `json:"board_author_id"`
-	Score         int64  `json:"vote_score"`
-	VoteCount     int64  `json:"vote_count"`
-	PlayCount     int64  `json:"play_count"`
+	Score         int    `json:"vote_score"`
+	VoteCount     int    `json:"vote_count"`
+	PlayCount     int    `json:"play_count"`
 }
 
 type listVotesFromUserOutput struct {
@@ -69,6 +70,16 @@ type avatarUploadInput struct {
 	RawBody huma.MultipartFormFiles[struct {
 		Avatar huma.FormFile `form:"avatar" required:"true" doc:"The avatar image file. Allowed types: PNG, JPEG, WEBP. Max size: 20MB."`
 	}]
+}
+
+type getSecurityInformationOutputBody struct {
+	PasswordLastChanged time.Time `json:"password_last_changed_at"`
+	ActiveSessions      int       `json:"active_sessions"`
+	LastLogin           time.Time `json:"last_login_at"`
+}
+
+type getSecurityInformationOutput struct {
+	Body getSecurityInformationOutputBody
 }
 
 // ===== Handler =====
@@ -151,6 +162,15 @@ func (h *UsersHandler) Register(api huma.API) {
 		Tags:        []string{"Users"},
 		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.WriteHeavyLimiter)},
 	}, h.uploadAvatar)
+
+	huma.Register(api, huma.Operation{
+		OperationID: "get-security-information",
+		Method:      http.MethodGet,
+		Path:        "/users/me/security",
+		Summary:     "List security information",
+		Tags:        []string{"Users"},
+		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.ReadListLimiter)},
+	}, h.securityInformation)
 }
 
 func (h *UsersHandler) me(ctx context.Context, _ *struct{}) (*userOutput, error) {
@@ -203,15 +223,15 @@ func (h *UsersHandler) listVotesFromUser(ctx context.Context, in *listVotesFromU
 		vote := &votes[i]
 		body[i] = listVotesFromUserOutputBody{
 			VoteID:        vote.VoteID.String(),
-			VoteValue:     vote.VoteValue,
+			VoteValue:     int(vote.VoteValue),
 			BoardID:       vote.BoardID.String(),
 			Title:         vote.Title,
 			Description:   vote.Description.String,
-			Size:          vote.Size,
+			Size:          int(vote.Size),
 			BoardAuthorID: vote.BoardAuthorID.String(),
-			Score:         vote.Score,
-			VoteCount:     vote.VoteCount,
-			PlayCount:     vote.PlayCount,
+			Score:         int(vote.Score),
+			VoteCount:     int(vote.VoteCount),
+			PlayCount:     int(vote.PlayCount),
 		}
 	}
 
@@ -229,15 +249,15 @@ func (h *UsersHandler) listVotesFromMe(ctx context.Context, _ *struct{}) (*listV
 		vote := &votes[i]
 		body[i] = listVotesFromUserOutputBody{
 			VoteID:        vote.VoteID.String(),
-			VoteValue:     vote.VoteValue,
+			VoteValue:     int(vote.VoteValue),
 			BoardID:       vote.BoardID.String(),
 			Title:         vote.Title,
 			Description:   vote.Description.String,
-			Size:          vote.Size,
+			Size:          int(vote.Size),
 			BoardAuthorID: vote.BoardAuthorID.String(),
-			Score:         vote.Score,
-			VoteCount:     vote.VoteCount,
-			PlayCount:     vote.PlayCount,
+			Score:         int(vote.Score),
+			VoteCount:     int(vote.VoteCount),
+			PlayCount:     int(vote.PlayCount),
 		}
 	}
 
@@ -251,4 +271,17 @@ func (h *UsersHandler) uploadAvatar(ctx context.Context, in *avatarUploadInput) 
 	}
 
 	return &userOutput{Body: userToOutput(user, h.avatarURLs)}, nil
+}
+
+func (h *UsersHandler) securityInformation(ctx context.Context, _ *struct{}) (*getSecurityInformationOutput, error) {
+	infos, err := h.users.GetSecurityInformation(ctx)
+	if err != nil {
+		return nil, toHumaErr(err, "", "failed to get security information")
+	}
+
+	return &getSecurityInformationOutput{Body: getSecurityInformationOutputBody{
+		PasswordLastChanged: infos.PasswordLastChangedAt.Time.UTC(),
+		ActiveSessions:      int(infos.ActiveSessionsCount),
+		LastLogin:           infos.LastLoginAt.Time.UTC(),
+	}}, nil
 }
