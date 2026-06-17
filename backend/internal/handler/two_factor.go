@@ -53,7 +53,7 @@ func (h *TwoFactor) Register(api huma.API) {
 		Method:      http.MethodPost,
 		Path:        "/auth/2fa/confirm",
 		Summary:     "2FA Confirmation",
-		Description: "Confirms that the use has the correct secret to generate the correct codes.",
+		Description: "Confirms that the user has the correct secret to generate the correct codes.",
 		Tags:        []string{"Auth"},
 		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.HeavyAuthLimiter)},
 	}, h.confirm)
