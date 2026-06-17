@@ -9,7 +9,9 @@
     "signIn": "Sign In",
     "register": "Register",
     "cardEditor": "Board Editor",
-    "boards": "Explore boards"
+    "boards": "Explore boards",
+    "imprint": "Imprint",
+    "privacy": "Privacy Policy"
   },
   "header": {
     "home": "Home",
@@ -132,6 +134,75 @@
       "oops": "Whoops",
       "notHere": "Not here",
       "classic": "Classic"
+    }
+  },
+  "register": {
+    "privacyConsentBefore": "I solemnly swear I have skimmed the ",
+    "privacyConsentAfter": " — and hereby accept it fully, unconditionally, and without knowing my rights.",
+    "privacyLink": "Privacy Policy"
+  },
+  "imprint": {
+    "title": "Imprint",
+    "heroSub": "The most boring board we've ever built.",
+    "heroSubMuted": "But hey — even mandatory fields deserve some love.",
+    "cells": {
+      "details": "DETAILS",
+      "contact": "CONTACT",
+      "free": "No complaints so far 🎉",
+      "responsible": "RESPONSIBLE",
+      "liability": "LIABILITY",
+      "liabilityContent": "Contents were created with care. We assume no liability for accuracy, completeness or timeliness. (Classic.)",
+      "copyright": "COPYRIGHT",
+      "copyrightContent": "All content © Dozingo Team. Please don't steal. 🙏"
+    },
+    "outro": "Imprint fully completed."
+  },
+  "privacy": {
+    "title": "Privacy Policy",
+    "heroBadge": "🔒 GDPR",
+    "heroSub": "We know you're scrolling straight to the bottom.",
+    "heroSubMuted": "But if anyone asks: you totally read this. Pinky promise.",
+    "stamp": "GDPR-COMPLIANT",
+    "outro": "No data monsters. No fine print. Just Bingo. 🎲",
+    "items": {
+      "responsible": {
+        "title": "1. Controller",
+        "content": "Dozingo Team, DHBW Baden-Württemberg, Karlsruhe",
+        "badge": "Required"
+      },
+      "data": {
+        "title": "2. What data?",
+        "content": "Email and username (on registration), game states, created boards, and technical connection data (IP, browser) in server logs.",
+        "note": "No data about your favourite colour. Promise.",
+        "badge": "Important"
+      },
+      "purpose": {
+        "title": "3. What for?",
+        "content": "Exclusively for authentication, game states and board management. Not for ads, not for data brokers, not for evil things.",
+        "badge": "Harmless"
+      },
+      "cookies": {
+        "title": "4. Cookies",
+        "content": "Just one session cookie for login. No tracking, no marketing, no annoying banners (except this one).",
+        "note": "This cookie is purely technical — and unfortunately not edible.",
+        "badge": "Minimal"
+      },
+      "sharing": {
+        "title": "5. Data Sharing",
+        "content": "No sharing with third parties. No transfer to third countries. Your data stays here — boringly safe.",
+        "badge": "Clean"
+      },
+      "rights": {
+        "title": "6. Your Rights",
+        "content": "Access, correction, deletion, restriction, portability — you've got them all. Just email us:",
+        "badge": "Yours"
+      },
+      "retention": {
+        "title": "7. Retention",
+        "content": "As long as your account exists. After deletion, all personal data is removed within 30 days.",
+        "note": "Your high scores too, unfortunately. Sorry.",
+        "badge": "30 days"
+      }
     }
   },
   "cardEditor": {

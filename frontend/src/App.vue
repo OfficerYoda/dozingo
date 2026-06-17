@@ -33,8 +33,8 @@ function closeMenu(){
       </div>
 
       <div class="sidebar-footer">
-        <RouterLink to="/imprint" class="sidebar-buttons sidebar-legal-link">Impressum</RouterLink>
-        <RouterLink to="/privacy" class="sidebar-buttons sidebar-legal-link">Datenschutz</RouterLink>
+        <RouterLink to="/imprint" class="sidebar-buttons sidebar-legal-link">{{ $t('nav.imprint') }}</RouterLink>
+        <RouterLink to="/privacy" class="sidebar-buttons sidebar-legal-link">{{ $t('nav.privacy') }}</RouterLink>
       </div>
     </aside>
 

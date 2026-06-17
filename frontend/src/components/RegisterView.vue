@@ -38,7 +38,7 @@
                     <div class="privacy-consent mb-3">
                         <input type="checkbox" id="reg-privacy" v-model="privacyAccepted" required>
                         <label for="reg-privacy">
-                            Ich schwöre feierlich, die <RouterLink to="/privacy" @click="closeRegisterModal" class="consent-link">Datenschutzerklärung</RouterLink> überflogen zu haben — und akzeptiere sie hiermit vollständig, bedingungslos und ohne meine Rechte zu kennen.
+                            {{ $t('register.privacyConsentBefore') }}<RouterLink to="/privacy" target="_blank" class="consent-link">{{ $t('register.privacyLink') }}</RouterLink>{{ $t('register.privacyConsentAfter') }}
                         </label>
                     </div>
                     <p v-if="error" class="auth-error">{{ error }}</p>

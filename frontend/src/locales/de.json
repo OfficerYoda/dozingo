@@ -9,7 +9,9 @@
     "signIn": "Anmelden",
     "register": "Registrieren",
     "cardEditor": "Karten-Editor",
-    "boards": "Karten entdecken"
+    "boards": "Karten entdecken",
+    "imprint": "Impressum",
+    "privacy": "Datenschutz"
   },
   "header": {
     "home": "Startseite",
@@ -132,6 +134,75 @@
       "oops": "Whoops",
       "notHere": "Nicht hier",
       "classic": "Klassiker"
+    }
+  },
+  "register": {
+    "privacyConsentBefore": "Ich schwöre feierlich, die ",
+    "privacyConsentAfter": " überflogen zu haben — und akzeptiere sie hiermit vollständig, bedingungslos und ohne meine Rechte zu kennen.",
+    "privacyLink": "Datenschutzerklärung"
+  },
+  "imprint": {
+    "title": "Impressum",
+    "heroSub": "Das langweiligste Board, das wir je gebaut haben.",
+    "heroSubMuted": "Aber hey — auch Pflichtfelder verdienen Liebe.",
+    "cells": {
+      "details": "ANGABEN",
+      "contact": "KONTAKT",
+      "free": "Keine Beschwerden bisher 🎉",
+      "responsible": "VERANTWORTLICH",
+      "liability": "HAFTUNG",
+      "liabilityContent": "Inhalte wurden sorgfältig erstellt. Für Richtigkeit, Vollständigkeit und Aktualität übernehmen wir keine Gewähr. (Klassiker.)",
+      "copyright": "URHEBERRECHT",
+      "copyrightContent": "Alle Inhalte © Dozingo-Team. Bitte nicht klauen. 🙏"
+    },
+    "outro": "Impressum vollständig ausgefüllt."
+  },
+  "privacy": {
+    "title": "Datenschutzerklärung",
+    "heroBadge": "🔒 DSGVO",
+    "heroSub": "Wir wissen, du scrollst direkt ans Ende.",
+    "heroSubMuted": "Aber falls dich jemand fragt: Du hast das hier gelesen. Versprochen.",
+    "stamp": "DSGVO-KONFORM",
+    "outro": "Keine Datenkraken. Kein Kleingedrucktes. Nur Bingo. 🎲",
+    "items": {
+      "responsible": {
+        "title": "1. Verantwortlicher",
+        "content": "Dozingo-Team, Duale Hochschule Baden-Württemberg, Karlsruhe",
+        "badge": "Pflicht"
+      },
+      "data": {
+        "title": "2. Welche Daten?",
+        "content": "E-Mail und Benutzername (bei Registrierung), Spielstände, erstellte Boards sowie technische Verbindungsdaten (IP, Browser) in Server-Logs.",
+        "note": "Keine Daten über deine Lieblingsfarbe. Versprochen.",
+        "badge": "Wichtig"
+      },
+      "purpose": {
+        "title": "3. Wozu?",
+        "content": "Ausschließlich für Authentifizierung, Spielstände und Board-Verwaltung. Nicht für Werbung, nicht für Datenhändler, nicht für böse Dinge.",
+        "badge": "Harmlos"
+      },
+      "cookies": {
+        "title": "4. Cookies",
+        "content": "Nur ein Session-Cookie für den Login. Kein Tracking, kein Marketing, keine nervigen Banner (außer diesem hier).",
+        "note": "Dieser Cookie ist rein technisch — und leider nicht essbar.",
+        "badge": "Minimal"
+      },
+      "sharing": {
+        "title": "5. Weitergabe",
+        "content": "Keine Weitergabe an Dritte. Keine Übermittlung in Drittländer. Deine Daten bleiben hier — gähnend langweilig, aber gut.",
+        "badge": "Sauber"
+      },
+      "rights": {
+        "title": "6. Deine Rechte",
+        "content": "Auskunft, Berichtigung, Löschung, Einschränkung, Datenübertragbarkeit — du hast sie alle. Einfach mailen:",
+        "badge": "Deine"
+      },
+      "retention": {
+        "title": "7. Speicherdauer",
+        "content": "So lange dein Konto existiert. Nach Löschung werden alle personenbezogenen Daten innerhalb von 30 Tagen entfernt.",
+        "note": "Deine Highscores leider auch. Sorry.",
+        "badge": "30 Tage"
+      }
     }
   },
   "cardEditor": {
