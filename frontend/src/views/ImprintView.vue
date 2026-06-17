@@ -4,15 +4,15 @@
 
       <div class="imprint-hero">
         <div class="hero-badge">§ DDG</div>
-        <h1>Impressum</h1>
-        <p class="hero-sub">Das langweiligste Board, das wir je gebaut haben.<br>
-          <span class="hero-sub-muted">Aber hey — auch Pflichtfelder verdienen Liebe.</span>
+        <h1>{{ t('imprint.title') }}</h1>
+        <p class="hero-sub">{{ t('imprint.heroSub') }}<br>
+          <span class="hero-sub-muted">{{ t('imprint.heroSubMuted') }}</span>
         </p>
       </div>
 
       <div class="imprint-board">
         <div class="board-cell cell-wide">
-          <span class="cell-label">ANGABEN</span>
+          <span class="cell-label">{{ t('imprint.cells.details') }}</span>
           <div class="cell-content">
             <strong>Dozingo</strong><br>
             Erzbergerstraße 121<br>
@@ -23,7 +23,7 @@
         </div>
 
         <div class="board-cell">
-          <span class="cell-label">KONTAKT</span>
+          <span class="cell-label">{{ t('imprint.cells.contact') }}</span>
           <div class="cell-content">
             <a href="mailto:kontakt@dozingo.de">kontakt@dozingo.de</a>
           </div>
@@ -32,11 +32,11 @@
 
         <div class="board-cell board-cell-free">
           <span class="cell-label">FREE</span>
-          <div class="cell-content cell-free-text">Keine Beschwerden bisher 🎉</div>
+          <div class="cell-content cell-free-text">{{ t('imprint.cells.free') }}</div>
         </div>
 
         <div class="board-cell">
-          <span class="cell-label">VERANTWORTLICH</span>
+          <span class="cell-label">{{ t('imprint.cells.responsible') }}</span>
           <div class="cell-content">
             Dozingo-Team<br>
             DHBW Karlsruhe
@@ -45,26 +45,20 @@
         </div>
 
         <div class="board-cell cell-wide">
-          <span class="cell-label">HAFTUNG</span>
-          <div class="cell-content">
-            Inhalte wurden sorgfältig erstellt. Für Richtigkeit, Vollständigkeit und
-            Aktualität übernehmen wir keine Gewähr. (Klassiker.)
-          </div>
+          <span class="cell-label">{{ t('imprint.cells.liability') }}</span>
+          <div class="cell-content">{{ t('imprint.cells.liabilityContent') }}</div>
           <span class="cell-check">✓</span>
         </div>
 
         <div class="board-cell">
-          <span class="cell-label">URHEBERRECHT</span>
-          <div class="cell-content">
-            Alle Inhalte © Dozingo-Team.<br>
-            Bitte nicht klauen. 🙏
-          </div>
+          <span class="cell-label">{{ t('imprint.cells.copyright') }}</span>
+          <div class="cell-content">{{ t('imprint.cells.copyrightContent') }}</div>
           <span class="cell-check">✓</span>
         </div>
       </div>
 
       <p class="imprint-outro">
-        Impressum vollständig ausgefüllt. <strong>BINGO!</strong> 🎯
+        {{ t('imprint.outro') }} <strong>BINGO!</strong> 🎯
       </p>
 
     </div>
@@ -72,8 +66,11 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { usePageTitle } from '@/composables/usePageTitle'
-usePageTitle('Impressum')
+
+const { t } = useI18n()
+usePageTitle(t('imprint.title'))
 </script>
 
 <style scoped>

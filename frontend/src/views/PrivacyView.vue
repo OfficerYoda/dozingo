@@ -3,11 +3,11 @@
     <div class="container">
 
       <div class="privacy-hero">
-        <div class="hero-badge">🔒 DSGVO</div>
-        <h1>Datenschutz&shy;erklärung</h1>
+        <div class="hero-badge">{{ t('privacy.heroBadge') }}</div>
+        <h1>{{ t('privacy.title') }}</h1>
         <p class="hero-sub">
-          Wir wissen, du scrollst direkt ans Ende.<br>
-          <span class="hero-sub-muted">Aber falls dich jemand fragt: Du hast das hier gelesen. Versprochen.</span>
+          {{ t('privacy.heroSub') }}<br>
+          <span class="hero-sub-muted">{{ t('privacy.heroSubMuted') }}</span>
         </p>
       </div>
 
@@ -16,76 +16,76 @@
         <div class="privacy-item">
           <span class="item-icon">🏢</span>
           <div class="item-body">
-            <h2>1. Verantwortlicher</h2>
-            <p>Dozingo-Team, Duale Hochschule Baden-Württemberg, Karlsruhe<br>
+            <h2>{{ t('privacy.items.responsible.title') }}</h2>
+            <p>{{ t('privacy.items.responsible.content') }}<br>
               <a href="mailto:kontakt@dozingo.de">kontakt@dozingo.de</a></p>
           </div>
-          <span class="item-badge">Pflicht</span>
+          <span class="item-badge">{{ t('privacy.items.responsible.badge') }}</span>
         </div>
 
         <div class="privacy-item">
           <span class="item-icon">📋</span>
           <div class="item-body">
-            <h2>2. Welche Daten?</h2>
-            <p>E-Mail und Benutzername (bei Registrierung), Spielstände, erstellte Boards sowie technische Verbindungsdaten (IP, Browser) in Server-Logs.</p>
-            <p class="item-note">Keine Daten über deine Lieblingsfarbe. Versprochen.</p>
+            <h2>{{ t('privacy.items.data.title') }}</h2>
+            <p>{{ t('privacy.items.data.content') }}</p>
+            <p class="item-note">{{ t('privacy.items.data.note') }}</p>
           </div>
-          <span class="item-badge">Wichtig</span>
+          <span class="item-badge">{{ t('privacy.items.data.badge') }}</span>
         </div>
 
         <div class="privacy-item">
           <span class="item-icon">🎯</span>
           <div class="item-body">
-            <h2>3. Wozu?</h2>
-            <p>Ausschließlich für Authentifizierung, Spielstände und Board-Verwaltung. Nicht für Werbung, nicht für Datenhändler, nicht für böse Dinge.</p>
+            <h2>{{ t('privacy.items.purpose.title') }}</h2>
+            <p>{{ t('privacy.items.purpose.content') }}</p>
           </div>
-          <span class="item-badge item-badge-green">Harmlos</span>
+          <span class="item-badge item-badge-green">{{ t('privacy.items.purpose.badge') }}</span>
         </div>
 
         <div class="privacy-item">
           <span class="item-icon">🍪</span>
           <div class="item-body">
-            <h2>4. Cookies</h2>
-            <p>Nur ein Session-Cookie für den Login. Kein Tracking, kein Marketing, keine nervigen Banner (außer diesem hier).</p>
-            <p class="item-note">Dieser Cookie ist rein technisch — und leider nicht essbar.</p>
+            <h2>{{ t('privacy.items.cookies.title') }}</h2>
+            <p>{{ t('privacy.items.cookies.content') }}</p>
+            <p class="item-note">{{ t('privacy.items.cookies.note') }}</p>
           </div>
-          <span class="item-badge item-badge-green">Minimal</span>
+          <span class="item-badge item-badge-green">{{ t('privacy.items.cookies.badge') }}</span>
         </div>
 
         <div class="privacy-item">
           <span class="item-icon">🤝</span>
           <div class="item-body">
-            <h2>5. Weitergabe</h2>
-            <p>Keine Weitergabe an Dritte. Keine Übermittlung in Drittländer. Deine Daten bleiben hier — gähnend langweilig, aber gut.</p>
+            <h2>{{ t('privacy.items.sharing.title') }}</h2>
+            <p>{{ t('privacy.items.sharing.content') }}</p>
           </div>
-          <span class="item-badge item-badge-green">Sauber</span>
+          <span class="item-badge item-badge-green">{{ t('privacy.items.sharing.badge') }}</span>
         </div>
 
         <div class="privacy-item">
           <span class="item-icon">⚖️</span>
           <div class="item-body">
-            <h2>6. Deine Rechte</h2>
-            <p>Auskunft, Berichtigung, Löschung, Einschränkung, Datenübertragbarkeit — du hast sie alle. Einfach mailen:
+            <h2>{{ t('privacy.items.rights.title') }}</h2>
+            <p>{{ t('privacy.items.rights.content') }}
               <a href="mailto:kontakt@dozingo.de">kontakt@dozingo.de</a></p>
           </div>
-          <span class="item-badge">Deine</span>
+          <span class="item-badge">{{ t('privacy.items.rights.badge') }}</span>
         </div>
 
         <div class="privacy-item">
           <span class="item-icon">🗑️</span>
           <div class="item-body">
-            <h2>7. Speicherdauer</h2>
-            <p>So lange dein Konto existiert. Nach Löschung werden alle personenbezogenen Daten innerhalb von 30 Tagen entfernt.</p>
-            <p class="item-note">Deine Highscores leider auch. Sorry.</p>
+            <h2>{{ t('privacy.items.retention.title') }}</h2>
+            <p>{{ t('privacy.items.retention.content') }}</p>
+            <p class="item-note">{{ t('privacy.items.retention.note') }}</p>
           </div>
-          <span class="item-badge">30 Tage</span>
+          <span class="item-badge">{{ t('privacy.items.retention.badge') }}</span>
         </div>
 
       </div>
 
       <div class="privacy-outro">
-        <span class="outro-stamp">DSGVO-KONFORM</span>
-        <p>Keine Datenkraken. Kein Kleingedrucktes. Nur Bingo. 🎲</p>
+        <span class="outro-stamp">{{ t('privacy.stamp') }}</span>
+        <p>{{ t('privacy.outro') }}</p>
       </div>
 
     </div>
@@ -93,8 +93,11 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { usePageTitle } from '@/composables/usePageTitle'
-usePageTitle('Datenschutz')
+
+const { t } = useI18n()
+usePageTitle(t('privacy.title'))
 </script>
 
 <style scoped>
