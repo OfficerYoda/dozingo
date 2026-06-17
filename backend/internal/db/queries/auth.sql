@@ -11,7 +11,7 @@ SELECT
   s.user_id,
   s.token,
   s.expires_at,
-  s.is_two_fa_pending,
+  s.two_fa_pending,
   u.username,
   u.email,
   u.email_verified_at,

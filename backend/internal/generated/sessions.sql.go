@@ -15,7 +15,7 @@ const attachUserToSession = `-- name: AttachUserToSession :one
 UPDATE sessions
 SET user_id = $1
 WHERE token = $2
-RETURNING id, user_id, token, expires_at, created_at, updated_at, is_two_fa_pending
+RETURNING id, user_id, token, expires_at, created_at, updated_at, two_fa_pending
 `
 
 type AttachUserToSessionParams struct {
@@ -34,7 +34,7 @@ func (q *Queries) AttachUserToSession(ctx context.Context, arg AttachUserToSessi
 		&i.ExpiresAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.IsTwoFaPending,
+		&i.TwoFaPending,
 	)
 	return i, err
 }
@@ -42,7 +42,7 @@ func (q *Queries) AttachUserToSession(ctx context.Context, arg AttachUserToSessi
 const createSession = `-- name: CreateSession :one
 INSERT INTO sessions (user_id, token, expires_at)
 VALUES ($1, $2, $3)
-RETURNING id, user_id, token, expires_at, created_at, updated_at, is_two_fa_pending
+RETURNING id, user_id, token, expires_at, created_at, updated_at, two_fa_pending
 `
 
 type CreateSessionParams struct {
@@ -61,7 +61,7 @@ func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (S
 		&i.ExpiresAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.IsTwoFaPending,
+		&i.TwoFaPending,
 	)
 	return i, err
 }
@@ -116,7 +116,7 @@ const extendSessionByToken = `-- name: ExtendSessionByToken :one
 UPDATE sessions
 SET expires_at = $1
 WHERE token = $2
-RETURNING id, user_id, token, expires_at, created_at, updated_at, is_two_fa_pending
+RETURNING id, user_id, token, expires_at, created_at, updated_at, two_fa_pending
 `
 
 type ExtendSessionByTokenParams struct {
@@ -134,7 +134,7 @@ func (q *Queries) ExtendSessionByToken(ctx context.Context, arg ExtendSessionByT
 		&i.ExpiresAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.IsTwoFaPending,
+		&i.TwoFaPending,
 	)
 	return i, err
 }

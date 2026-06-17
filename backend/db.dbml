@@ -73,7 +73,7 @@ Table sessions {
   id uuid [pk, default: `gen_random_uuid()`]
   user_id uuid [note: 'null for anonymous sessions']
   token text [unique, not null, note: 'SHA-256 hex digest; plaintext lives only in the session_token cookie']
-  is_two_fa_pending boolean [not null, default: false, note: 'true = awaiting 2FA verification']
+  two_fa_pending boolean [not null, default: false, note: 'true = awaiting 2FA verification']
   expires_at timestamptz [not null]
   ~timestamps
 

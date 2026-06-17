@@ -17,7 +17,7 @@ SELECT
   s.user_id,
   s.token,
   s.expires_at,
-  s.is_two_fa_pending,
+  s.two_fa_pending,
   u.username,
   u.email,
   u.email_verified_at,
@@ -33,7 +33,7 @@ type GetSessionUserByTokenRow struct {
 	UserID          pgtype.UUID        `json:"user_id"`
 	Token           string             `json:"token"`
 	ExpiresAt       pgtype.Timestamptz `json:"expires_at"`
-	IsTwoFaPending  bool               `json:"is_two_fa_pending"`
+	TwoFaPending    bool               `json:"two_fa_pending"`
 	Username        pgtype.Text        `json:"username"`
 	Email           pgtype.Text        `json:"email"`
 	EmailVerifiedAt pgtype.Timestamptz `json:"email_verified_at"`
@@ -49,7 +49,7 @@ func (q *Queries) GetSessionUserByToken(ctx context.Context, token string) (GetS
 		&i.UserID,
 		&i.Token,
 		&i.ExpiresAt,
-		&i.IsTwoFaPending,
+		&i.TwoFaPending,
 		&i.Username,
 		&i.Email,
 		&i.EmailVerifiedAt,
