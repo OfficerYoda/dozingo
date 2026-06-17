@@ -2,8 +2,6 @@
   <section>
     <div class="container">
       <div class="legal-wrapper">
-        <h1>Datenschutzerklärung</h1>
-
         <div class="legal-section">
           <h2>1. Verantwortlicher</h2>
           <p>
@@ -81,14 +79,7 @@ usePageTitle('Datenschutz')
 <style scoped>
 .legal-wrapper {
   max-width: 720px;
-  padding: 40px 0 60px;
-}
-
-.legal-wrapper h1 {
-  font-size: 2rem;
-  font-weight: 800;
-  color: var(--color-heading);
-  margin-bottom: 32px;
+  padding: 20px 0 40px;
 }
 
 .legal-section {

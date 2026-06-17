@@ -2,8 +2,6 @@
   <section>
     <div class="container">
       <div class="legal-wrapper">
-        <h1>Impressum</h1>
-
         <div class="legal-section">
           <h2>Angaben gemäß § 5 TMG</h2>
           <p>
@@ -62,14 +60,7 @@ usePageTitle('Impressum')
 <style scoped>
 .legal-wrapper {
   max-width: 720px;
-  padding: 40px 0 60px;
-}
-
-.legal-wrapper h1 {
-  font-size: 2rem;
-  font-weight: 800;
-  color: var(--color-heading);
-  margin-bottom: 32px;
+  padding: 20px 0 40px;
 }
 
 .legal-section {
