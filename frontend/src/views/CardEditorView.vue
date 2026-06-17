@@ -326,6 +326,13 @@ async function saveAndPlay() {
 .save-btn-row {
   display: flex;
   justify-content: center;
+  gap: 10px;
+}
+
+.save-play-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 /* === Typography === */
