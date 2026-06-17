@@ -4,14 +4,12 @@
             <div class="top-item-bar">
                 <div class="top-board-info">
                     <div class="stats">
+                        <a href="/" class="stat-item back"><ArrowLeft :size="13"/> Back</a>
                         <span class="stat-item stat-plays">
                             <Play :size="13"/> {{ board?.play_count ?? '—' }}
                         </span>
                         <span class="stat-item stat-likes">
                             <Heart :size="13"/> {{ board?.score ?? '—' }}
-                        </span>
-                        <span class="stat-item stat-size">
-                            <LayoutGrid :size="13"/> {{ board?.size ?? '—' }}x{{ board?.size ?? '—' }}
                         </span>
                     </div>
                 </div>
@@ -147,7 +145,7 @@
 import { ref, computed, nextTick, useTemplateRef, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
-import { Heart, LayoutGrid, Play, Timer, CheckSquare, Sparkles, Dices, Star } from 'lucide-vue-next'
+import { Heart, Play, Timer, CheckSquare, Sparkles, Dices, Star, ArrowLeft } from 'lucide-vue-next'
 import { usePageTitle } from '@/composables/usePageTitle'
 
 interface Board {
@@ -543,7 +541,6 @@ onUnmounted(() => {
 
 .stat-plays { color: #4052B6; }
 .stat-likes { color: #C0185A; }
-.stat-size  { color: #2E7D32; }
 
 .top-stat-pill {
     display: flex;
