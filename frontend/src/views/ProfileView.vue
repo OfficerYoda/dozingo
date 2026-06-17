@@ -7,10 +7,30 @@
       <img v-else src="/user.png" alt="Profile picture" class="profile-avatar" />
       <h1>Welcome, {{ auth.state.user.username }}!</h1>
     </div>
+
     <div class="container" style="padding-right: 0%; padding-left: 0%;">
-      <h2 class="mb-0">Explore your {{boards.length}} boards</h2>
+      <h2 class="mb-0">Continue your unfinished Boards:</h2>
 
       <p v-if="error" class="error-text">{{ error }}</p>
+
+      <SliderSection :items="activeGames" :per-page="3" :per-page-md="2" :per-page-sm="1">
+        <template #slide="{ item: game }">
+          <button class="card card-border-blue profile-slider-card" @click="router.push('/game/' + game.game_id)">
+            <div class="card-body">
+              <h3>{{ game.board_title }}</h3>
+              <small>{{ game.marked_count }} / {{ game.total_count }} cells marked</small>
+            </div>
+            <hr class="mb-2">
+            <div class="card-footer">
+              <span class="card-meta-text">Continue playing</span>
+            </div>
+          </button>
+        </template>
+      </SliderSection>
+
+      <p v-if="error" class="error-text">{{ error }}</p>
+
+      <h2 class="mb-0">Explore your {{ boards.length }} boards</h2>
 
       <SliderSection :items="boards" :per-page="3" :per-page-md="2" :per-page-sm="1">
         <template #slide="{ item: board }">
@@ -31,29 +51,26 @@
         </template>
       </SliderSection>
     </div>
-    <div class="container" style="padding-right: 0%; padding-left: 0%; padding-top: 2%;">
-      <div class="list-header mb-4">
-          <h2 class="mb-0">Explore your {{ likedBoards.length }} liked boards</h2>
-      </div>
+    
+        <h2 class="mb-0">Explore your {{ likedBoards.length }} liked boards</h2>
 
-      <SliderSection :items="likedBoards" :per-page="4" :per-page-md="2" :per-page-sm="1">
-        <template #slide="{ item: vote }">
-          <button class="card card-border-blue profile-slider-card" @click="clickBoard(vote.board_id)">
-            <div class="card-body">
-              <h3>{{ vote.board_title }}</h3>
-              <small>{{ vote.board_description }}</small>
+    <SliderSection :items="likedBoards" :per-page="3" :per-page-md="2" :per-page-sm="1">
+      <template #slide="{ item: vote }">
+        <button class="card card-border-blue profile-slider-card" @click="clickBoard(vote.board_id)">
+          <div class="card-body">
+            <h3>{{ vote.title }}</h3>
+            <small>{{ vote.description }}</small>
+          </div>
+          <hr class="mb-2">
+          <div class="card-footer">
+            <div class="like-group">
+              <Heart :size="20" />
+              <span class="card-meta-text">{{ vote.vote_score }}</span>
             </div>
-            <hr class="mb-2">
-            <div class="card-footer">
-              <div class="like-group">
-                <Heart :size="20" />
-                <span class="card-meta-text">{{ vote.vote_score }}</span>
-              </div>
-            </div>
-          </button>
-        </template>
-      </SliderSection>
-    </div>
+          </div>
+        </button>
+      </template>
+    </SliderSection>
 
   <ModalStartGame
     v-if="selecetedBoard"
@@ -70,7 +87,7 @@
 import { useAuth } from '@/composables/useAuth'
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n';
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { Heart } from 'lucide-vue-next'
 import SliderSection from '@/components/SliderSection.vue'
 import ModalStartGame from '@/components/ModalStartGame.vue'
@@ -101,18 +118,28 @@ interface Vote {
     vote_id: string
     board_id: string
     vote_value: number
-    board_title: string
-    board_description: string
+    title: string
+    description: string
     vote_score: number
     vote_count: number
 }
 
+interface ActiveGame {
+    game_id: string
+    board_id: string
+    board_title: string
+    marked_count: number
+    total_count: number
+}
+
 const route = useRoute()
+const router = useRouter()
 const { t } = useI18n()
 
 const error = ref<string | null>(null)
 const boards = ref<Board[]>([])
 const likedBoards = ref<Vote[]>([])
+const activeGames = ref<ActiveGame[]>([])
 const cells = ref<Cell[]>([])
 const selecetedBoard = ref<Board>()
 const selectedCells = ref<Cell[]>()
@@ -134,6 +161,34 @@ async function fetchAllUserBoards() {
     }
 
     boards.value = await boardsRes.json()
+}
+
+async function fetchActiveGames() {
+    if (!auth.state.user) return
+    const res = await fetch(`/api/users/${auth.state.user.user_id}/games`, { credentials: 'include' })
+    if (!res.ok) return
+    const games = await res.json()
+    const active = games.filter((g: any) => g.status === 'active')
+
+    activeGames.value = await Promise.all(active.map(async (g: any) => {
+        let board_title = g.board_id ?? 'Unknown board'
+        if (g.board_id) {
+            const boardRes = await fetch(`/api/boards/${g.board_id}`, { credentials: 'include' })
+            if (boardRes.ok) {
+                const board = await boardRes.json()
+                board_title = board.title
+            }
+        }
+        const cellsRes = await fetch(`/api/games/${g.game_id}/cells`, { credentials: 'include' })
+        let marked_count = 0
+        let total_count = 0
+        if (cellsRes.ok) {
+            const cells = await cellsRes.json()
+            total_count = cells.length
+            marked_count = cells.filter((c: any) => c.is_marked).length
+        }
+        return { game_id: g.game_id, board_id: g.board_id, board_title, marked_count, total_count }
+    }))
 }
 
 async function fetchLikedBoards() {
@@ -175,6 +230,7 @@ watch([appliedFiler, search], () => {
 }, { immediate: true })
 
 fetchLikedBoards()
+fetchActiveGames()
 
 const showModal = ref(false)
 
@@ -208,6 +264,10 @@ function clickBoard(boardID: string) {
 .profile-slider-card {
   width: 100%;
   height: 100%;
+  min-height: 8rem;
   text-align: left;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 </style>

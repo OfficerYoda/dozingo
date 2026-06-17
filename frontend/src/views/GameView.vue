@@ -29,7 +29,8 @@
                      :style="`grid-template-columns: repeat(${board?.size ?? 4}, 1fr)`">
                         <button v-for="(cell, i) in selectedCells" :key="cell.cell_id"
                              type="button"
-                             :class="{ revealed: revealedCells.has(i), checked: checkedCells.has(cell.cell_id) }"
+                             :class="{ revealed: revealedCells.has(i), checked: checkedCells.has(cell.cell_id), 'bingo-sweep': sweepingCells.has(cell.cell_id) }"
+                             :style="sweepingCells.has(cell.cell_id) ? { '--sweep-delay': sweepingCells.get(cell.cell_id)! * 90 + 'ms' } : {}"
                              :disabled="!revealedCells.has(i) || gameState === 'stopped'"
                              :aria-pressed="checkedCells.has(cell.cell_id)"
                              @click="handleCellClick(cell.cell_id)">
@@ -191,6 +192,7 @@ const isRevealing = ref(false)
 const showParty = ref(false)
 const bingoToast = ref(false)
 const completedLines = ref(new Set<string>())
+const sweepingCells = ref(new Map<string, number>())
 let bingoToastTimeout: ReturnType<typeof setTimeout> | null = null
 const confettiColors = ['#4052B6', '#C0185A', '#2E7D32', '#F79F1F', '#5A5781', '#E3DFFF', '#EA2027']
 const partyEmojis = ['🎉', '🎊', '🥳', '🎲', '🏆', '⭐', '✨', '🎯', '🍾', '🎈', '💫', '🔥', '🎉', '🎊', '🥳', '🎲', '🏆', '⭐', '✨', '🎯']
@@ -510,15 +512,38 @@ function checkBingo() {
     lines.push({ key: 'diag1', indices: Array.from({ length: size }, (_, i) => [i, size - 1 - i]) })
 
     let newBingo = false
+    const newLineIndices: [number, number][][] = []
     for (const line of lines) {
         if (completedLines.value.has(line.key)) continue
         if (line.indices.every(([r, c]) => isChecked(r, c))) {
             completedLines.value.add(line.key)
             newBingo = true
+            newLineIndices.push(line.indices)
         }
     }
 
     if (newBingo) {
+        // Lauflicht: jede neue Linie sequenziell durchleuchten
+        const next = new Map(sweepingCells.value)
+        for (const indices of newLineIndices) {
+            indices.forEach(([r, c], step) => {
+                const cellId = cells[r * size + c]?.cell_id
+                if (cellId) next.set(cellId, step)
+            })
+        }
+        sweepingCells.value = next
+        const duration = (size - 1) * 90 + 400 // letzter delay + animationsdauer
+        setTimeout(() => {
+            const cleaned = new Map(sweepingCells.value)
+            for (const indices of newLineIndices) {
+                indices.forEach(([r, c]) => {
+                    const cellId = cells[r * size + c]?.cell_id
+                    if (cellId) cleaned.delete(cellId)
+                })
+            }
+            sweepingCells.value = cleaned
+        }, duration)
+
         if (bingoToastTimeout) clearTimeout(bingoToastTimeout)
         bingoToast.value = true
         bingoToastTimeout = setTimeout(() => { bingoToast.value = false }, 2500)
@@ -1212,6 +1237,29 @@ onUnmounted(() => {
 @keyframes subtitle-pulse {
     0%, 100% { opacity: 1; }
     50%      { opacity: 0.6; }
+}
+
+/* === Bingo sweep === */
+.board-container button.bingo-sweep {
+    animation: bingo-sweep 0.35s ease both;
+    animation-delay: var(--sweep-delay, 0ms);
+}
+
+@keyframes bingo-sweep {
+    0%   { background-color: #fff; color: inherit; box-shadow: none; }
+    40%  { background-color: #4CAF50; color: #fff; box-shadow: 0 0 14px rgba(76, 175, 80, 0.7); }
+    100% { background-color: #fff; color: inherit; box-shadow: none; }
+}
+
+.board-container button.checked.bingo-sweep {
+    animation: bingo-sweep-checked 0.35s ease both;
+    animation-delay: var(--sweep-delay, 0ms);
+}
+
+@keyframes bingo-sweep-checked {
+    0%   { background-color: #5A5781; color: #E3DFFF; box-shadow: none; }
+    40%  { background-color: #4CAF50; color: #fff; box-shadow: 0 0 14px rgba(76, 175, 80, 0.7); }
+    100% { background-color: #5A5781; color: #E3DFFF; box-shadow: none; }
 }
 
 </style>
