@@ -28,6 +28,22 @@ type userOutput struct {
 	Body userOutputBody
 }
 
+// loginOutputBody is the response body for POST /auth/login.
+// When TwoFAPending is true the session has been marked pending and the
+// user must call POST /auth/2fa/verify or /auth/2fa/verify-recovery before
+// accessing protected endpoints. The user fields are empty in that case.
+type loginOutputBody struct {
+	TwoFAPending bool    `json:"two_fa_pending"`
+	UserID       string  `json:"user_id,omitempty"    format:"uuid"`
+	Username     string  `json:"username,omitempty"   pattern:"^[^\\s\\x00-\\x1F\\x7F]+$"`
+	Email        *string `json:"email,omitempty"      format:"email"`
+	AvatarURL    *string `json:"avatar_url,omitempty" format:"uri"`
+}
+
+type loginOutput struct {
+	Body loginOutputBody
+}
+
 type registerInputBody struct {
 	Username string  `json:"username" required:"true" maxLength:"200"`
 	Password string  `json:"password" required:"true" minLength:"8" maxLength:"72"`
@@ -187,8 +203,8 @@ func (h *AuthHandler) register(ctx context.Context, in *registerInput) (*userOut
 	return &userOutput{Body: userToOutput(user, h.avatarURLs)}, nil
 }
 
-func (h *AuthHandler) login(ctx context.Context, in *loginInput) (*userOutput, error) {
-	user, err := h.svc.Login(ctx, service.LoginInput{
+func (h *AuthHandler) login(ctx context.Context, in *loginInput) (*loginOutput, error) {
+	result, err := h.svc.Login(ctx, service.LoginInput{
 		Username: in.Body.Username,
 		Password: in.Body.Password,
 	})
@@ -196,7 +212,19 @@ func (h *AuthHandler) login(ctx context.Context, in *loginInput) (*userOutput, e
 		return nil, toHumaErr(err, "", "failed to login user")
 	}
 
-	return &userOutput{Body: userToOutput(user, h.avatarURLs)}, nil
+	if result.TwoFAPending {
+		return &loginOutput{Body: loginOutputBody{TwoFAPending: true}}, nil
+	}
+
+	u := userToOutput(result.User, h.avatarURLs)
+
+	return &loginOutput{Body: loginOutputBody{
+		TwoFAPending: false,
+		UserID:       u.UserID,
+		Username:     u.Username,
+		Email:        u.Email,
+		AvatarURL:    u.AvatarURL,
+	}}, nil
 }
 
 func (h *AuthHandler) logout(ctx context.Context, _ *struct{}) (*struct{}, error) {

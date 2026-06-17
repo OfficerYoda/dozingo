@@ -153,16 +153,3 @@ func TestToHumaErr_UnmatchedReturns500WithOpMsg(t *testing.T) {
 	}
 	assertNoLeak(t, body, "raw db connection")
 }
-
-func TestToHumaErr_TwoFARequired_Returns403(t *testing.T) {
-	wrapped := fmt.Errorf("2fa required: %w", domain.ErrTwoFARequired)
-	got := toHumaErr(wrapped, "", "failed to login user")
-	status, body := statusAndBody(t, got)
-	if status != http.StatusForbidden {
-		t.Errorf("expected status 403, got %d", status)
-	}
-	if body != msgTwoFARequired {
-		t.Errorf("expected body %q, got %q", msgTwoFARequired, body)
-	}
-	assertNoLeak(t, body, "2fa required", "failed to login user")
-}

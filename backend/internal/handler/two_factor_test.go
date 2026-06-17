@@ -351,7 +351,7 @@ func TestVerify2FA_TotpNotYetVerified_Returns403(t *testing.T) {
 
 // ===== Login enforcement =====
 
-func TestLogin_With2FAEnabled_Returns403(t *testing.T) {
+func TestLogin_With2FAEnabled_ReturnsTwoFAPending(t *testing.T) {
 	setupTest(t)
 
 	// Register, complete 2FA setup+confirm, then log out and log back in.
@@ -366,14 +366,19 @@ func TestLogin_With2FAEnabled_Returns403(t *testing.T) {
 		map[string]any{"username": "login2fauser", "password": "testpassword123"},
 		[]*http.Cookie{anonCookie})
 
-	assertStatus(t, w, http.StatusForbidden)
+	// Login succeeds (200) but signals that 2FA is required
+	assertStatus(t, w, http.StatusOK)
 
-	// Response body must say "two-factor authentication required"
 	var resp map[string]any
 	decodeJSON(t, w, &resp)
-	detail, _ := resp["detail"].(string)
-	if detail != msgTwoFARequired {
-		t.Errorf("expected detail %q, got %q", msgTwoFARequired, detail)
+
+	pending, _ := resp["two_fa_pending"].(bool)
+	if !pending {
+		t.Errorf("expected two_fa_pending=true in login response, got %v", resp["two_fa_pending"])
+	}
+	// No user data should be present until 2FA is verified
+	if resp["user_id"] != nil && resp["user_id"] != "" {
+		t.Errorf("expected user_id to be absent when two_fa_pending=true, got %v", resp["user_id"])
 	}
 
 	// The session must be marked pending in the DB
@@ -397,6 +402,18 @@ func TestLogin_Without2FA_Succeeds(t *testing.T) {
 		[]*http.Cookie{anonCookie})
 
 	assertStatus(t, w, http.StatusOK)
+
+	var resp map[string]any
+	decodeJSON(t, w, &resp)
+
+	// two_fa_pending must be absent or false
+	if pending, _ := resp["two_fa_pending"].(bool); pending {
+		t.Error("expected two_fa_pending=false for user without 2FA")
+	}
+	// User data must be present
+	if resp["username"] == nil || resp["username"] == "" {
+		t.Error("expected username in login response for user without 2FA")
+	}
 
 	// Session must NOT be pending
 	session, ok := loadSessionByToken(t, tok)
@@ -436,19 +453,25 @@ func TestLogin_With2FA_FullFlow(t *testing.T) {
 	setupTest(t)
 
 	// End-to-end: register → setup → confirm → logout →
-	// login (403) → verify (204) → protected endpoint works.
+	// login (200 with two_fa_pending=true) → verify (204) → protected endpoint works.
 	userID := createTestUser(t, "fullflowuser", "fullflow@example.com")
 	secret := setup2FA(t, userID)
 	confirm2FA(t, userID, secret)
 
 	doRequestWithCookies(http.MethodPost, "/api/auth/logout", nil, cookiesFor(userID))
 
-	// Login returns 403 and marks session pending
+	// Login returns 200 with two_fa_pending=true and marks session pending
 	tok, anonCookie := mintAnonSession(t, 24*time.Hour)
 	loginW := doRequestWithCookies(http.MethodPost, "/api/auth/login",
 		map[string]any{"username": "fullflowuser", "password": "testpassword123"},
 		[]*http.Cookie{anonCookie})
-	assertStatus(t, loginW, http.StatusForbidden)
+	assertStatus(t, loginW, http.StatusOK)
+
+	var loginResp map[string]any
+	decodeJSON(t, loginW, &loginResp)
+	if pending, _ := loginResp["two_fa_pending"].(bool); !pending {
+		t.Error("expected two_fa_pending=true in login response")
+	}
 
 	// The user calls /verify with the pending session cookie
 	pendingCookie := &http.Cookie{Name: "session_token", Value: tok}
