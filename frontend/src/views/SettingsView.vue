@@ -55,7 +55,7 @@
           <Key :size="23" />
           <div class="account-security-info">
             <span>{{ $t('settings.security.lastPasswordChange') }}</span>
-            <small>3 Months ago</small>
+            <small>{{ passwordLastChanged }}</small>
           </div>
           <button class="btn btn-primary" @click="openChangePasswordModal">{{ $t('settings.security.change') }}</button>
         </div>
@@ -190,6 +190,29 @@ const { pageTitle } = usePageTitle(t('header.settings'))
 const isChecked = ref(localStorage.getItem('theme') === 'dark')
 const colorCorrection = ref(localStorage.getItem('colorCorrection') ?? 'standart')
 const fontSize = ref(Number(localStorage.getItem('fontSize') ?? 3))
+
+const passwordLastChanged = ref<string>('')
+
+async function fetchSecurityInfo() {
+  const res = await fetch('/api/users/me/security', { credentials: 'include' })
+  if (!res.ok) return
+  const data = await res.json()
+  const date = new Date(data.password_last_changed_at)
+  passwordLastChanged.value = date.toLocaleDateString(locale.value === 'de' ? 'de-DE' : 'en-US', {
+    year: 'numeric', month: 'long', day: 'numeric'
+  })
+}
+
+if (auth.state.user) {
+  fetchSecurityInfo()
+} else {
+  const stop = watch(() => auth.state.user, (user) => {
+    if (user) {
+      fetchSecurityInfo()
+      stop()
+    }
+  })
+}
 
 const fontSizes = ['12px', '14px', '16px', '18px', '20px']
 
