@@ -24,29 +24,42 @@ func (q *Queries) CountUnusedRecoveryCodesByUserID(ctx context.Context, userID p
 	return count, err
 }
 
-const createRecoveryCode = `-- name: CreateRecoveryCode :one
+const createRecoveryCodes = `-- name: CreateRecoveryCodes :many
 INSERT INTO recovery_codes (user_id, code_hash)
-VALUES ($1, $2)
+VALUES ($1, unnest($2::text[]))
 RETURNING id, user_id, code_hash, used_at, created_at, updated_at
 `
 
-type CreateRecoveryCodeParams struct {
-	UserID   pgtype.UUID `json:"user_id"`
-	CodeHash string      `json:"code_hash"`
+type CreateRecoveryCodesParams struct {
+	UserID     pgtype.UUID `json:"user_id"`
+	CodeHashes []string    `json:"code_hashes"`
 }
 
-func (q *Queries) CreateRecoveryCode(ctx context.Context, arg CreateRecoveryCodeParams) (RecoveryCode, error) {
-	row := q.db.QueryRow(ctx, createRecoveryCode, arg.UserID, arg.CodeHash)
-	var i RecoveryCode
-	err := row.Scan(
-		&i.ID,
-		&i.UserID,
-		&i.CodeHash,
-		&i.UsedAt,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
+func (q *Queries) CreateRecoveryCodes(ctx context.Context, arg CreateRecoveryCodesParams) ([]RecoveryCode, error) {
+	rows, err := q.db.Query(ctx, createRecoveryCodes, arg.UserID, arg.CodeHashes)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []RecoveryCode{}
+	for rows.Next() {
+		var i RecoveryCode
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.CodeHash,
+			&i.UsedAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const deleteRecoveryCodesByUserID = `-- name: DeleteRecoveryCodesByUserID :exec
@@ -57,6 +70,39 @@ WHERE user_id = $1
 func (q *Queries) DeleteRecoveryCodesByUserID(ctx context.Context, userID pgtype.UUID) error {
 	_, err := q.db.Exec(ctx, deleteRecoveryCodesByUserID, userID)
 	return err
+}
+
+const getUnusedRecoveryCodesByUserID = `-- name: GetUnusedRecoveryCodesByUserID :many
+SELECT id, user_id, code_hash, used_at, created_at, updated_at FROM recovery_codes
+WHERE user_id = $1
+  AND used_at IS NULL
+`
+
+func (q *Queries) GetUnusedRecoveryCodesByUserID(ctx context.Context, userID pgtype.UUID) ([]RecoveryCode, error) {
+	rows, err := q.db.Query(ctx, getUnusedRecoveryCodesByUserID, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []RecoveryCode{}
+	for rows.Next() {
+		var i RecoveryCode
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.CodeHash,
+			&i.UsedAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const markRecoveryCodeUsed = `-- name: MarkRecoveryCodeUsed :one

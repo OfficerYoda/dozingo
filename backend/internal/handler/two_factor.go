@@ -27,6 +27,31 @@ type twoFACodeInput struct {
 	}
 }
 
+type twoFAConfirmOutputBody struct {
+	RecoveryCodes []string `json:"recovery_codes"`
+}
+
+type twoFAConfirmOutput struct {
+	Body twoFAConfirmOutputBody
+}
+
+type twoFARecoveryCodeInput struct {
+	Body struct {
+		Code string `json:"code" required:"true" pattern:"^[0-9A-F]{8}-[0-9A-F]{8}$" minLength:"17" maxLength:"17" example:"A1B2C3D4-E5F6A7B8"`
+	}
+}
+
+// Exactly one of Code (TOTP) or RecoveryCode must be provided alongside Password
+type twoFADestructiveInputBody struct {
+	Password     string  `json:"password" required:"true" minLength:"8" maxLength:"72"`
+	Code         *string `json:"code,omitempty" pattern:"^\\d{6}$" minLength:"6" maxLength:"6" example:"123456"`
+	RecoveryCode *string `json:"recovery_code,omitempty" pattern:"^[0-9A-F]{8}-[0-9A-F]{8}$" minLength:"17" maxLength:"17" example:"A1B2C3D4-E5F6A7B8"`
+}
+
+type twoFADestructiveInput struct {
+	Body twoFADestructiveInputBody
+}
+
 // ===== Handler =====
 
 type TwoFactor struct {
@@ -67,6 +92,36 @@ func (h *TwoFactor) Register(api huma.API) {
 		Tags:        []string{"Auth"},
 		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.HeavyAuthLimiter)},
 	}, h.verify)
+
+	huma.Register(api, huma.Operation{
+		OperationID: "verify-2fa-recovery",
+		Method:      http.MethodPost,
+		Path:        "/auth/2fa/verify-recovery",
+		Summary:     "2FA Recovery Code Verification",
+		Description: "Use a one-time recovery code instead of a TOTP code to complete login.",
+		Tags:        []string{"Auth"},
+		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.HeavyAuthLimiter)},
+	}, h.verifyRecovery)
+
+	huma.Register(api, huma.Operation{
+		OperationID: "regenerate-2fa-codes",
+		Method:      http.MethodPost,
+		Path:        "/auth/2fa/regenerate-codes",
+		Summary:     "Regenerate 2FA Recovery Codes",
+		Description: "Invalidate all existing recovery codes and issue a fresh set. Requires the current password and either a TOTP code or a recovery code.",
+		Tags:        []string{"Auth"},
+		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.HeavyAuthLimiter)},
+	}, h.regenerateCodes)
+
+	huma.Register(api, huma.Operation{
+		OperationID: "disable-2fa",
+		Method:      http.MethodDelete,
+		Path:        "/auth/2fa",
+		Summary:     "Disable 2FA",
+		Description: "Remove 2FA from the account. Requires the current password and either a TOTP code or a recovery code.",
+		Tags:        []string{"Auth"},
+		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.HeavyAuthLimiter)},
+	}, h.disable)
 }
 
 func (h *TwoFactor) setup(ctx context.Context, _ *struct{}) (*twoFASetupOutput, error) {
@@ -83,19 +138,54 @@ func (h *TwoFactor) setup(ctx context.Context, _ *struct{}) (*twoFASetupOutput, 
 	}, nil
 }
 
-func (h *TwoFactor) confirm(ctx context.Context, in *twoFACodeInput) (*struct{}, error) {
-	err := h.svc.Confirm(ctx, in.Body.Code)
+func (h *TwoFactor) confirm(ctx context.Context, in *twoFACodeInput) (*twoFAConfirmOutput, error) {
+	codes, err := h.svc.Confirm(ctx, in.Body.Code)
 	if err != nil {
 		return nil, toHumaErr(err, "", "failed to confirm 2fa setup")
 	}
 
-	return &struct{}{}, nil
+	return &twoFAConfirmOutput{
+		Body: twoFAConfirmOutputBody{
+			RecoveryCodes: codes,
+		},
+	}, nil
 }
 
 func (h *TwoFactor) verify(ctx context.Context, in *twoFACodeInput) (*struct{}, error) {
 	err := h.svc.Verify(ctx, in.Body.Code)
 	if err != nil {
 		return nil, toHumaErr(err, "", "failed to verify 2fa")
+	}
+
+	return &struct{}{}, nil
+}
+
+func (h *TwoFactor) verifyRecovery(ctx context.Context, in *twoFARecoveryCodeInput) (*struct{}, error) {
+	err := h.svc.VerifyRecoveryCode(ctx, in.Body.Code)
+	if err != nil {
+		return nil, toHumaErr(err, "", "failed to verify recovery code")
+	}
+
+	return &struct{}{}, nil
+}
+
+func (h *TwoFactor) regenerateCodes(ctx context.Context, in *twoFADestructiveInput) (*twoFAConfirmOutput, error) {
+	codes, err := h.svc.RegenerateCodes(ctx, in.Body.Password, in.Body.Code, in.Body.RecoveryCode)
+	if err != nil {
+		return nil, toHumaErr(err, "", "failed to regenerate recovery codes")
+	}
+
+	return &twoFAConfirmOutput{
+		Body: twoFAConfirmOutputBody{
+			RecoveryCodes: codes,
+		},
+	}, nil
+}
+
+func (h *TwoFactor) disable(ctx context.Context, in *twoFADestructiveInput) (*struct{}, error) {
+	err := h.svc.Disable(ctx, in.Body.Password, in.Body.Code, in.Body.RecoveryCode)
+	if err != nil {
+		return nil, toHumaErr(err, "", "failed to disable 2fa")
 	}
 
 	return &struct{}{}, nil

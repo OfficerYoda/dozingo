@@ -13,16 +13,25 @@ type RecoveryCodes struct {
 	queries *generated.Queries
 }
 
-func (r *RecoveryCodes) Create(ctx context.Context, userID pgtype.UUID, codeHash string) (generated.RecoveryCode, error) {
-	code, err := r.queries.CreateRecoveryCode(ctx, generated.CreateRecoveryCodeParams{
-		UserID:   userID,
-		CodeHash: codeHash,
+func (r *RecoveryCodes) Create(ctx context.Context, userID pgtype.UUID, codeHashes []string) ([]generated.RecoveryCode, error) {
+	code, err := r.queries.CreateRecoveryCodes(ctx, generated.CreateRecoveryCodesParams{
+		UserID:     userID,
+		CodeHashes: codeHashes,
 	})
 	if err != nil {
-		return generated.RecoveryCode{}, pgmap.TranslatePgErr(err)
+		return []generated.RecoveryCode{}, pgmap.TranslatePgErr(err)
 	}
 
 	return code, nil
+}
+
+func (r *RecoveryCodes) GetUnusedByUserID(ctx context.Context, userID pgtype.UUID) ([]generated.RecoveryCode, error) {
+	codes, err := r.queries.GetUnusedRecoveryCodesByUserID(ctx, userID)
+	if err != nil {
+		return nil, pgmap.TranslatePgErr(err)
+	}
+
+	return codes, nil
 }
 
 func (r *RecoveryCodes) MarkUsed(ctx context.Context, codeID pgtype.UUID) (generated.RecoveryCode, error) {

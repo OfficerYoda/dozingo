@@ -1,6 +1,6 @@
--- name: CreateRecoveryCode :one
+-- name: CreateRecoveryCodes :many
 INSERT INTO recovery_codes (user_id, code_hash)
-VALUES (@user_id, @code_hash)
+VALUES (@user_id, unnest(@code_hashes::text[]))
 RETURNING *;
 
 -- name: MarkRecoveryCodeUsed :one
@@ -13,6 +13,11 @@ RETURNING *;
 
 -- name: CountUnusedRecoveryCodesByUserID :one
 SELECT COUNT(*) FROM recovery_codes
+WHERE user_id = @user_id
+  AND used_at IS NULL;
+
+-- name: GetUnusedRecoveryCodesByUserID :many
+SELECT * FROM recovery_codes
 WHERE user_id = @user_id
   AND used_at IS NULL;
 

@@ -14,10 +14,13 @@ import (
 	"github.com/officeryoda/dozingo/internal/domain"
 )
 
-// PasswordCost is exposed so it can be reduced in tests to improve runtime
-var PasswordCost = bcrypt.DefaultCost
+const recoveryCodeCount = 10
 
-var dummyPasswordHash string
+// PasswordCost is exposed so it can be reduced in tests to improve runtime
+var (
+	PasswordCost      = bcrypt.DefaultCost
+	dummyPasswordHash string
+)
 
 func init() {
 	// Dummy hash for timing attack prevention
@@ -71,4 +74,19 @@ func HashToken(token string) string {
 
 func CheckPasswordAgainstDummy(password string) {
 	_ = CheckPassword(password, dummyPasswordHash)
+}
+
+// GenerateRecoveryCodes generates codes in format: XXXXX-XXXXX
+func GenerateRecoveryCodes() ([]string, error) {
+	codes := make([]string, recoveryCodeCount)
+
+	for i := range codes {
+		b := make([]byte, 8)
+		if _, err := rand.Read(b); err != nil {
+			return nil, fmt.Errorf("generating recovery code: %w", err)
+		}
+		codes[i] = fmt.Sprintf("%08X-%08X", b[:4], b[4:])
+	}
+
+	return codes, nil
 }

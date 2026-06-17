@@ -42,13 +42,13 @@ func generateTOTPCode(t *testing.T, secret string) string {
 }
 
 // confirm2FA calls POST /api/auth/2fa/confirm with a valid TOTP code as the
-// given user. Fails the test if confirm does not return 204.
+// given user. Fails the test if confirm does not return 200 with recovery codes.
 func confirm2FA(t *testing.T, userID, secret string) {
 	t.Helper()
 	code := generateTOTPCode(t, secret)
 	w := doRequestWithCookies(http.MethodPost, "/api/auth/2fa/confirm",
 		map[string]any{"code": code}, cookiesFor(userID))
-	assertStatus(t, w, http.StatusNoContent)
+	assertStatus(t, w, http.StatusOK)
 }
 
 // load2FARow fetches the user_two_factors row for the given user UUID directly
@@ -192,7 +192,14 @@ func TestConfirm2FA_Success(t *testing.T) {
 	code := generateTOTPCode(t, secret)
 	w := doRequestWithCookies(http.MethodPost, "/api/auth/2fa/confirm",
 		map[string]any{"code": code}, cookiesFor(userID))
-	assertStatus(t, w, http.StatusNoContent)
+	assertStatus(t, w, http.StatusOK)
+
+	var resp map[string]any
+	decodeJSON(t, w, &resp)
+	codes, ok := resp["recovery_codes"].([]any)
+	if !ok || len(codes) == 0 {
+		t.Error("expected non-empty recovery_codes in confirm response")
+	}
 
 	// Session must no longer be pending
 	session, ok := loadSessionByToken(t, userCookies[userID].Value)
