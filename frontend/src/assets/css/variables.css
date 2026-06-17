@@ -188,11 +188,11 @@
 }
 
 [color-correction="redgreen"] {
-  filter: hue-rotate(90deg);
+  filter: url(#filter-redgreen);
 }
 
-[color-correction="blueyellow"]{
-  filter: hue-rotate(180deg)
+[color-correction="blueyellow"] {
+  filter: url(#filter-blueyellow);
 }
 
 [color-correction="gray"] {

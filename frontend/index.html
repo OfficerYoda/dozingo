@@ -7,6 +7,31 @@
     <title>Dozingo</title>
   </head>
   <body>
+    <!-- SVG color correction filters for visual impairments -->
+    <svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute">
+      <defs>
+        <!-- Red-Green (Deuteranopia) correction:
+             R and G channels are merged so both carry the R-G difference.
+             B gets (G - R) encoded so the distinction becomes visible via blue. -->
+        <filter id="filter-redgreen">
+          <feColorMatrix type="matrix" values="
+            0.56  0.44  0     0 0
+            0.44  0.56  0     0 0
+           -0.4   0.4   1     0 0
+            0     0     0     1 0"/>
+        </filter>
+        <!-- Blue-Yellow (Tritanopia) correction:
+             Blue receptor missing — yellow (R+G mix) and blue are indistinguishable.
+             G gets (B - G) encoded so the distinction becomes visible via green. -->
+        <filter id="filter-blueyellow">
+          <feColorMatrix type="matrix" values="
+            1     0     0     0 0
+            0     0.56  0.44  0 0
+            0     0.44  0.56  0 0
+            0     0     0     1 0"/>
+        </filter>
+      </defs>
+    </svg>
     <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
