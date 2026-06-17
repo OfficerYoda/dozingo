@@ -184,7 +184,7 @@ const stats = ref<Stats>({
 })
 
 async function loadStats(){
-  const statsFetched = await fetch('api/stats/recent?duration=24h' , { credentials: 'include' })
+  const statsFetched = await fetch('api/stats/recent?duration=168h' , { credentials: 'include' })
   stats.value = await statsFetched.json()
 }
 
