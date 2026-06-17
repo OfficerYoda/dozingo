@@ -99,7 +99,7 @@
       "cta": "Browse Cards"
     },
     "activity": {
-      "title": "Last Week's Activity",
+      "title": "Community Activity Last Week",
       "bingos": "BINGOS",
       "games": "GAMES",
       "boards": "BOARDS",
@@ -149,6 +149,7 @@
     "entryCountHint": "{count} entries added. You need {needed} more for a {size} layout.",
     "entryCountHintReady": "Ready! {count} entries for a {size} layout.",
     "save": "Save board to your templates",
+    "saveAndPlay": "Play directly",
     "saveSuccess": "Board created successfully!",
     "saveError": "Failed to create board. Please try again.",
     "validationError": "Please fill in the title and all entries before saving.",

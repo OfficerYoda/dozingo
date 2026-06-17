@@ -101,7 +101,11 @@
         </div>
 
         <div class="save-btn-row">
-          <button type="submit" class="btn btn-primary" @click="saveBoard">{{ $t('cardEditor.save') }}</button>
+          <button type="submit" class="btn btn-secondary" @click="saveBoard">{{ $t('cardEditor.save') }}</button>
+          <button type="submit" class="btn btn-primary save-play-btn" @click="saveAndPlay">
+            <Play :size="18" />
+            {{ $t('cardEditor.saveAndPlay') }}
+          </button>
         </div>
       </article>
     </div>
@@ -111,7 +115,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { FilePlus, CirclePlus, Trash2 } from 'lucide-vue-next';
+import { useRouter } from 'vue-router';
+import { FilePlus, CirclePlus, Trash2, Play } from 'lucide-vue-next';
 import { usePageTitle } from '@/composables/usePageTitle'
 
 useI18n()
@@ -132,6 +137,7 @@ const entries = ref<Entry[]>([{ term: '', rarity: 'common' }, { term: '', rarity
 const selectedSize = ref('5x5')
 
 const { t } = useI18n()
+const router = useRouter()
 
 const { pageTitle } = usePageTitle(t('header.cardEditor'))
 
@@ -211,6 +217,80 @@ async function saveBoard() {
 
   console.log('Board created:', board.board_id)
   saveSuccess.value = true
+}
+
+async function saveAndPlay() {
+  submitted.value = true
+  saveSuccess.value = false
+  saveError.value = false
+  validationError.value = false
+  notEnoughEntriesError.value = false
+
+  const titleEmpty = !title.value.trim()
+  const hasEmptyEntries = entries.value.some(e => !e.term.trim())
+  const notEnoughEntries = entries.value.filter(e => e.term.trim()).length < requiredEntries.value
+
+  if (titleEmpty || hasEmptyEntries) {
+    validationError.value = true
+    return
+  }
+  if (notEnoughEntries) {
+    notEnoughEntriesError.value = true
+    return
+  }
+
+  const size = parseInt(selectedSize.value)
+
+  const boardRes = await fetch('/api/boards', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ title: title.value, description: description.value || undefined, size }),
+  })
+  if (!boardRes.ok) {
+    saveError.value = true
+    return
+  }
+  const board = await boardRes.json()
+
+  const cells = entries.value.filter(e => e.term.trim())
+
+  await Promise.all(
+    cells.map(e =>
+      fetch(`/api/boards/${board.board_id}/cells`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ content: e.term, value: rarityValue[e.rarity] }),
+      })
+    )
+  )
+
+  const cellsRes = await fetch(`/api/boards/${board.board_id}/cells`, { credentials: 'include' })
+  if (!cellsRes.ok) {
+    saveError.value = true
+    return
+  }
+  const savedCells = await cellsRes.json()
+
+  const shuffled = [...savedCells].sort(() => Math.random() - 0.5)
+  const body = shuffled.map((cell: { cell_id: string }, index: number) => ({
+    cell_id: cell.cell_id,
+    position: index,
+  }))
+
+  const gameRes = await fetch(`/api/boards/${board.board_id}/games`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(body),
+  })
+  if (!gameRes.ok) {
+    saveError.value = true
+    return
+  }
+  const game = await gameRes.json()
+  router.push('/game/' + game.game_id)
 }
 </script>
 

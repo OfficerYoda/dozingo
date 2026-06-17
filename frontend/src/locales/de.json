@@ -43,7 +43,7 @@
       "darkMode": "Dunkelmodus",
       "darkModeDesc": "Für nächtliches Lernen anpassen",
       "colorCorrection": "Farbkorrektur",
-      "colorCorrectionDesc": "Farben für Sehbeeinträchtigungen anpassen",
+      "colorCorrectionDesc": "Farben für Sehbeeinträchtigungen",
       "colorTheme": "Farbschema",
       "colorFilters": {
         "standard": "Standard",
@@ -99,7 +99,7 @@
       "cta": "Karten durchsuchen"
     },
     "activity": {
-      "title": "Aktivität der letzten Woche",
+      "title": "Community-Aktivität der letzten Woche",
       "bingos": "BINGOS",
       "games": "SPIELE",
       "boards": "KARTEN",
@@ -149,6 +149,7 @@
     "entryCountHint": "{count} Einträge hinzugefügt. Noch {needed} mehr für ein {size}-Layout.",
     "entryCountHintReady": "Bereit! {count} Einträge für ein {size}-Layout.",
     "save": "Als Vorlage speichern",
+    "saveAndPlay": "Direkt spielen",
     "saveSuccess": "Board erfolgreich erstellt!",
     "saveError": "Board konnte nicht erstellt werden. Bitte versuche es erneut.",
     "validationError": "Bitte fülle den Titel und alle Einträge aus, bevor du speicherst.",
