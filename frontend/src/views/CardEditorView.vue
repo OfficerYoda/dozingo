@@ -62,7 +62,8 @@
                   <input type="text" :class="['entry-term-input', submitted && !entry.term.trim() ? 'input-error' : '']" v-model="entry.term"
                     :placeholder="$t('cardEditor.termPlaceholder')"
                     :data-index="index"
-                    @keydown.enter.prevent="addRowAt(index)" />
+                    @keydown.enter.prevent="addRowAt(index)"
+                    @keydown.backspace="onBackspace(index, entry)" />
                 </td>
                 <td class="td-rarity">
                   <select class="entry-select" v-model="entry.rarity">
@@ -173,10 +174,22 @@ function addRow() {
 }
 
 async function addRowAt(index: number) {
-  entries.value.splice(index + 1, 0, { term: '', rarity: 'common' })
-  await nextTick()
+  const next = entries.value[index + 1]
+  if (!next || next.term.trim() !== '') {
+    entries.value.splice(index + 1, 0, { term: '', rarity: 'common' })
+    await nextTick()
+  }
   const inputs = document.querySelectorAll<HTMLInputElement>('input[data-index]')
   inputs[index + 1]?.focus()
+}
+
+async function onBackspace(index: number, entry: Entry) {
+  if (entry.term !== '') return
+  if (entries.value.length <= 1) return
+  entries.value.splice(index, 1)
+  await nextTick()
+  const inputs = document.querySelectorAll<HTMLInputElement>('input[data-index]')
+  inputs[Math.max(0, index - 1)]?.focus()
 }
 
 function removeRow(index: number) {
