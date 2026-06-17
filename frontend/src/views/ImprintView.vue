@@ -1,55 +1,72 @@
 <template>
   <section>
     <div class="container">
-      <div class="legal-wrapper">
-        <h1>Impressum</h1>
 
-        <div class="legal-section">
-          <h2>Angaben gemäß § 5 TMG</h2>
-          <p>
-            Dozingo<br>
+      <div class="imprint-hero">
+        <div class="hero-badge">§ TMG</div>
+        <h1>Impressum</h1>
+        <p class="hero-sub">Das langweiligste Board, das wir je gebaut haben.<br>
+          <span class="hero-sub-muted">Aber hey — auch Pflichtfelder verdienen Liebe.</span>
+        </p>
+      </div>
+
+      <div class="imprint-board">
+        <div class="board-cell cell-wide">
+          <span class="cell-label">ANGABEN</span>
+          <div class="cell-content">
+            <strong>Dozingo</strong><br>
             Erzbergerstraße 121<br>
             76133 Karlsruhe<br>
             Deutschland
-          </p>
+          </div>
+          <span class="cell-check">✓</span>
         </div>
 
-        <div class="legal-section">
-          <h2>Kontakt</h2>
-          <p>
-            E-Mail: <a href="mailto:kontakt@dozingo.de">kontakt@dozingo.de</a>
-          </p>
+        <div class="board-cell">
+          <span class="cell-label">KONTAKT</span>
+          <div class="cell-content">
+            <a href="mailto:kontakt@dozingo.de">kontakt@dozingo.de</a>
+          </div>
+          <span class="cell-check">✓</span>
         </div>
 
-        <div class="legal-section">
-          <h2>Verantwortlich für den Inhalt</h2>
-          <p>
+        <div class="board-cell board-cell-free">
+          <span class="cell-label">FREE</span>
+          <div class="cell-content cell-free-text">Keine Beschwerden bisher 🎉</div>
+        </div>
+
+        <div class="board-cell">
+          <span class="cell-label">VERANTWORTLICH</span>
+          <div class="cell-content">
             Dozingo-Team<br>
-            Duale Hochschule Baden-Württemberg<br>
-            Karlsruhe
-          </p>
+            DHBW Karlsruhe
+          </div>
+          <span class="cell-check">✓</span>
         </div>
 
-        <div class="legal-section">
-          <h2>Haftungsausschluss</h2>
-          <p>
-            Die Inhalte dieser Seite wurden mit größter Sorgfalt erstellt.
-            Für die Richtigkeit, Vollständigkeit und Aktualität der Inhalte
-            können wir jedoch keine Gewähr übernehmen.
-          </p>
+        <div class="board-cell cell-wide">
+          <span class="cell-label">HAFTUNG</span>
+          <div class="cell-content">
+            Inhalte wurden sorgfältig erstellt. Für Richtigkeit, Vollständigkeit und
+            Aktualität übernehmen wir keine Gewähr. (Klassiker.)
+          </div>
+          <span class="cell-check">✓</span>
         </div>
 
-        <div class="legal-section">
-          <h2>Urheberrecht</h2>
-          <p>
-            Die durch die Seitenbetreiber erstellten Inhalte und Werke auf
-            diesen Seiten unterliegen dem deutschen Urheberrecht. Die
-            Vervielfältigung, Bearbeitung, Verbreitung und jede Art der
-            Verwertung außerhalb der Grenzen des Urheberrechtes bedürfen der
-            schriftlichen Zustimmung des jeweiligen Autors bzw. Erstellers.
-          </p>
+        <div class="board-cell">
+          <span class="cell-label">URHEBERRECHT</span>
+          <div class="cell-content">
+            Alle Inhalte © Dozingo-Team.<br>
+            Bitte nicht klauen. 🙏
+          </div>
+          <span class="cell-check">✓</span>
         </div>
       </div>
+
+      <p class="imprint-outro">
+        Impressum vollständig ausgefüllt. <strong>BINGO!</strong> 🎯
+      </p>
+
     </div>
   </section>
 </template>
@@ -60,38 +77,134 @@ usePageTitle('Impressum')
 </script>
 
 <style scoped>
-.legal-wrapper {
-  max-width: 720px;
-  padding: 40px 0 60px;
+.imprint-hero {
+  padding: 40px 0 32px;
+  max-width: 600px;
 }
 
-.legal-wrapper h1 {
-  font-size: 2rem;
+.hero-badge {
+  display: inline-block;
+  background-color: #4052B6;
+  color: #fff;
+  font-size: 0.7rem;
   font-weight: 800;
+  letter-spacing: 0.1em;
+  padding: 3px 10px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 12px;
+}
+
+.imprint-hero h1 {
+  font-size: 2.4rem;
+  font-weight: 900;
   color: var(--color-heading);
-  margin-bottom: 32px;
+  margin: 0 0 10px;
 }
 
-.legal-section {
-  margin-bottom: 28px;
-}
-
-.legal-section h2 {
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--color-subheading);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 8px;
-}
-
-.legal-section p {
+.hero-sub {
   color: var(--color-text-secondary);
-  line-height: 1.7;
+  line-height: 1.6;
   margin: 0;
 }
 
-.legal-section a {
-  color: var(--color-primary-600);
+.hero-sub-muted {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.imprint-board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  max-width: 760px;
+  margin-bottom: 28px;
+}
+
+.board-cell {
+  background-color: #fff;
+  border: 3px solid #E3DFFF;
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: border-color 0.2s;
+}
+
+.board-cell:hover {
+  border-color: #5A5781;
+}
+
+.cell-wide {
+  grid-column: span 2;
+}
+
+.board-cell-free {
+  background-color: #5A5781;
+  border-color: #5A5781;
+}
+
+.cell-label {
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+}
+
+.board-cell-free .cell-label {
+  color: #E3DFFF;
+}
+
+.cell-content {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+.cell-content a {
+  color: #4052B6;
+}
+
+.cell-free-text {
+  color: #fff !important;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.cell-check {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  width: 22px;
+  height: 22px;
+  background-color: #E3DFFF;
+  color: #5A5781;
+  border-radius: 50%;
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.imprint-outro {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  padding-bottom: 40px;
+}
+
+.imprint-outro strong {
+  color: #C0185A;
+}
+
+@media (max-width: 600px) {
+  .imprint-board {
+    grid-template-columns: 1fr;
+  }
+  .cell-wide {
+    grid-column: span 1;
+  }
 }
 </style>
