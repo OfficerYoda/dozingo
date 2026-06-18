@@ -19,21 +19,13 @@
             <p v-if="error" class="error-text">{{ error }}</p>
 
             <div class="grid">
-                <button v-for="board in boards" :key="board.board_id" @click="clickBoard(board.board_id)"
-                    class="card card-border-blue col-4 md-6 sm-12">
-                    <div class="card-body">
-                        <h3>{{ board.title }}</h3>
-                        <small>{{ board.description }}</small>
-                    </div>
-                    <hr class="mb-2">
-                    <div class="card-footer">
-                        <span class="card-meta-text">{{ t('boards.card.played', { count: board.play_count }) }}</span>
-                        <div class="like-group">
-                            <Heart :size="20" />
-                            <span class="card-meta-text">{{ board.score }}</span>
-                        </div>
-                    </div>
-                </button>
+                <BoardCard
+                    v-for="board in boards" :key="board.board_id"
+                    :board="board"
+                    :played-label="t('boards.card.played', { count: board.play_count })"
+                    class="col-4 md-6 sm-12"
+                    @click="clickBoard(board.board_id)"
+                />
             </div>
         </div>
     </section>
@@ -51,8 +43,8 @@
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
-import { Heart } from 'lucide-vue-next'
 import ModalStartGame from '@/components/ModalStartGame.vue'
+import BoardCard from '@/components/BoardCard.vue'
 import { usePageTitle } from '@/composables/usePageTitle'
 import * as boardService from '@/services/board.service'
 import * as userService from '@/services/user.service'
@@ -119,7 +111,6 @@ function clickBoard(boardID: string) {
 </script>
 
 <style scoped>
-/* Header */
 .list-header {
     display: flex;
     flex-direction: row;
@@ -131,36 +122,4 @@ function clickBoard(boardID: string) {
     flex-direction: row;
     gap: 8px;
 }
-
-/* Card body */
-.card-body {
-    text-align: left;
-}
-
-/* Card footer */
-.card-footer {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-}
-
-.like-group {
-    display: flex;
-    flex-direction: row;
-    gap: 4px;
-}
-
-.like-group svg {
-    color: var(--color-subheading);
-}
-
-.card-meta-text {
-    color: var(--color-subheading);
-    font-weight: 600;
-    font-size: 0.8125rem;
-}
-
-
-
-
 </style>
