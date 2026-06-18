@@ -140,32 +140,12 @@ import { Heart, GamepadDirectional, SquarePlus, LayoutGrid, Medal } from 'lucide
 import SliderSection from '@/components/SliderSection.vue'
 import ModalStartGame from '@/components/ModalStartGame.vue'
 import { usePageTitle } from '@/composables/usePageTitle'
+import * as boardService from '@/services/board.service'
+import * as userService from '@/services/user.service'
+import * as statsService from '@/services/stats.service'
+import type { Board, Cell, Stats } from '@/services/api.type'
 
 const { t } = useI18n()
-
-interface Board {
-  board_id: string
-  title: string
-  description: string
-  size: number
-  author_id: string
-  score: number
-  vote_count: number
-  play_count: number
-}
-
-interface Cell {
-  cell_id: string
-  content: string
-  value: number
-}
-
-interface Stats {
-  bingos: number
-  boards: number
-  cells: number
-  games: number
-}
 
 const { pageTitle } = usePageTitle(t('header.home'))
 
@@ -177,15 +157,14 @@ const authorName = ref<string | null>(null)
 const showModal = ref(false)
 
 const stats = ref<Stats>({
-  bingos:0,
+  bingos: 0,
   boards: 0,
   cells: 0,
   games: 0,
 })
 
-async function loadStats(){
-  const statsFetched = await fetch('api/stats/recent?duration=168h' , { credentials: 'include' })
-  stats.value = await statsFetched.json()
+async function loadStats() {
+  stats.value = await statsService.getRecentStats()
 }
 
 function formatCount(n: number): string {
@@ -194,32 +173,27 @@ function formatCount(n: number): string {
 }
 
 async function fetchBoards() {
-  const [likedRes, newestRes] = await Promise.all([
-    fetch('/api/boards?sort=most-liked&limit=5', { credentials: 'include' }),
-    fetch('/api/boards?sort=newest&limit=5', { credentials: 'include' }),
+  const [liked, newest] = await Promise.all([
+    boardService.getBoards({ sort: 'most-liked', limit: 5 }),
+    boardService.getBoards({ sort: 'newest', limit: 5 }),
   ])
-
-  if (likedRes.ok) mostLikedBoards.value = await likedRes.json()
-  if (newestRes.ok) newestBoards.value = await newestRes.json()
+  mostLikedBoards.value = liked
+  newestBoards.value = newest
 }
 
 async function clickBoard(board: Board) {
   selectedBoard.value = board
   authorName.value = null
 
-  const cellsRes = await fetch('/api/boards/' + board.board_id + '/cells')
-  if (cellsRes.ok) {
-    const allCells: Cell[] = await cellsRes.json()
-    const count = board.size ** 2
-    selectedCells.value = [...allCells].sort(() => Math.random() - 0.5).slice(0, count)
-  }
+  const allCells = await boardService.getCellsForBoard(board.board_id)
+  const count = board.size ** 2
+  selectedCells.value = [...allCells].sort(() => Math.random() - 0.5).slice(0, count)
 
   if (board.author_id) {
-    const userRes = await fetch('/api/users/' + board.author_id)
-    if (userRes.ok) {
-      const user = await userRes.json()
+    try {
+      const user = await userService.getUserById(board.author_id)
       authorName.value = user.username
-    }
+    } catch { /* author is optional */ }
   }
 
   showModal.value = true

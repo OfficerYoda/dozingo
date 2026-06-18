@@ -167,6 +167,7 @@ import DeleteAccount from '@/components/DeleteAccount.vue';
 import ChangePassword from '@/components/ChangePassword.vue';
 import { useChangePasswordModal } from '@/composables/useChangePasswordModal'
 import { useDeleteModal } from '@/composables/useDeleteModal'
+import * as userService from '@/services/user.service'
 
 const { openChangePasswordModal } = useChangePasswordModal()
 const { openDeleteModal } = useDeleteModal()
@@ -194,13 +195,13 @@ const fontSize = ref(Number(localStorage.getItem('fontSize') ?? 3))
 const passwordLastChanged = ref<string>('')
 
 async function fetchSecurityInfo() {
-  const res = await fetch('/api/users/me/security', { credentials: 'include' })
-  if (!res.ok) return
-  const data = await res.json()
-  const date = new Date(data.password_last_changed_at)
-  passwordLastChanged.value = date.toLocaleDateString(locale.value === 'de' ? 'de-DE' : 'en-US', {
-    year: 'numeric', month: 'long', day: 'numeric'
-  })
+  try {
+    const data = await userService.getMeSecurity()
+    const date = new Date(data.password_last_changed_at)
+    passwordLastChanged.value = date.toLocaleDateString(locale.value === 'de' ? 'de-DE' : 'en-US', {
+      year: 'numeric', month: 'long', day: 'numeric'
+    })
+  } catch { /* ignore */ }
 }
 
 if (auth.state.user) {
@@ -245,16 +246,10 @@ function changeDarkMode() {
 async function uploadAvatar(event: Event) {
     const file = (event.target as HTMLInputElement).files?.[0]
     if (!file) return
-    const form = new FormData()
-    form.append('avatar', file)
-    const res = await fetch('/api/users/me/avatar', {
-        method: 'PUT',
-        credentials: 'include',
-        body: form
-    })
-    if (res.ok) {
+    try {
+        await userService.uploadAvatar(file)
         window.location.reload()
-    }
+    } catch { /* ignore */ }
 }
 
 function startEditing() {
@@ -264,19 +259,13 @@ function startEditing() {
 
 async function saveUsername() {
   if (!newUsername.value.trim()) return
-  const res = await fetch('/api/users/me', {
-    method: 'PATCH',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: newUsername.value })
-  })
-  if (res.ok) {
+  try {
+    await userService.updateUsername(newUsername.value)
     usernameError.value = false
     editingUsername.value = false
     await auth.fetchUser()
-  }
-  else{
-      usernameError.value = true
+  } catch {
+    usernameError.value = true
   }
 }
 

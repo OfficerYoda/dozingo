@@ -92,36 +92,15 @@ import { Heart } from 'lucide-vue-next'
 import SliderSection from '@/components/SliderSection.vue'
 import ModalStartGame from '@/components/ModalStartGame.vue'
 import { usePageTitle } from '@/composables/usePageTitle'
+import * as boardService from '@/services/board.service'
+import * as userService from '@/services/user.service'
+import * as gameService from '@/services/game.service'
+import * as voteService from '@/services/vote.service'
+import type { Board, Cell, Vote, Game } from '@/services/api.type'
 
 const auth = useAuth()
 if (!auth.state.ready) {
   auth.fetchUser()
-}
-
-interface Board {
-    board_id: string
-    title: string
-    description: string
-    play_count: number
-    score: number
-    size: number
-    author_id: string
-}
-
-interface Cell {
-    cell_id: string,
-    content: string,
-    value: number,
-}
-
-interface Vote {
-    vote_id: string
-    board_id: string
-    vote_value: number
-    title: string
-    description: string
-    vote_score: number
-    vote_count: number
 }
 
 interface ActiveGame {
@@ -148,75 +127,68 @@ const authorName = ref<string | null>(null)
 const { pageTitle } = usePageTitle(t('header.profile'))
 
 async function fetchAllUserBoards() {
-    const params = new URLSearchParams()
-    if(auth.state.user) params.set('author_id', auth.state.user.user_id)
-    if (appliedFiler.value) params.set('sort', appliedFiler.value)
-    if (search.value) params.set('search', search.value)
-
-    const query = params.toString() ? '?' + params.toString() : ''
-    const boardsRes = await fetch('/api/boards' + query, { credentials: 'include' })
-    if (!boardsRes.ok) {
+    try {
+        boards.value = await boardService.getBoards({
+            author_id: auth.state.user?.user_id,
+            sort: appliedFiler.value || undefined,
+            search: search.value || undefined,
+        })
+    } catch {
         error.value = 'Failed to load boards'
-        return
     }
-
-    boards.value = await boardsRes.json()
 }
 
 async function fetchActiveGames() {
     if (!auth.state.user) return
-    const res = await fetch(`/api/users/${auth.state.user.user_id}/games`, { credentials: 'include' })
-    if (!res.ok) return
-    const games = await res.json()
-    const active = games.filter((g: any) => g.status === 'active')
+    try {
+        const games: Game[] = await gameService.getGamesByUser(auth.state.user.user_id)
+        const active = games.filter(g => g.status === 'active')
 
-    activeGames.value = await Promise.all(active.map(async (g: any) => {
-        let board_title = g.board_id ?? 'Unknown board'
-        if (g.board_id) {
-            const boardRes = await fetch(`/api/boards/${g.board_id}`, { credentials: 'include' })
-            if (boardRes.ok) {
-                const board = await boardRes.json()
+        activeGames.value = await Promise.all(active.map(async (g) => {
+            let board_title = g.board_id ?? 'Unknown board'
+            try {
+                const board = await boardService.getBoardById(g.board_id)
                 board_title = board.title
-            }
-        }
-        const cellsRes = await fetch(`/api/games/${g.game_id}/cells`, { credentials: 'include' })
-        let marked_count = 0
-        let total_count = 0
-        if (cellsRes.ok) {
-            const cells = await cellsRes.json()
-            total_count = cells.length
-            marked_count = cells.filter((c: any) => c.is_marked).length
-        }
-        return { game_id: g.game_id, board_id: g.board_id, board_title, marked_count, total_count }
-    }))
+            } catch { /* board title stays as fallback */ }
+
+            let marked_count = 0
+            let total_count = 0
+            try {
+                const gameCells = await gameService.getGameCells(g.game_id)
+                total_count = gameCells.length
+                marked_count = gameCells.filter(c => c.is_marked).length
+            } catch { /* counts stay 0 */ }
+
+            return { game_id: g.game_id, board_id: g.board_id, board_title, marked_count, total_count }
+        }))
+    } catch { /* ignore */ }
 }
 
 async function fetchLikedBoards() {
-    const res = await fetch('/api/users/me/votes', { credentials: 'include' })
-    if (!res.ok) return
-    const votes: Vote[] = await res.json()
-    likedBoards.value = votes.filter(v => v.vote_value === 1)
+    try {
+        const votes = await voteService.getMyVotes()
+        likedBoards.value = votes.filter(v => v.vote_value === 1)
+    } catch { /* ignore */ }
 }
 
 async function fetchAllCellsForBoard(boardID: string) {
-    const cellsRes = await fetch('/api/boards/' + boardID + '/cells')
-    if (!cellsRes.ok) {
+    try {
+        cells.value = await boardService.getCellsForBoard(boardID)
+    } catch {
         error.value = 'Failed to load cells for board ' + boardID
         return
     }
 
-    cells.value = await cellsRes.json()
     selecetedBoard.value = boards.value.find(b => b.board_id === boardID)
     const numberOfCells = (selecetedBoard.value?.size ?? 0) ** 2
     selectedCells.value = [...cells.value].sort(() => Math.random() - 0.5).slice(0, numberOfCells)
 
     authorName.value = null
     if (selecetedBoard.value?.author_id) {
-        const userRes = await fetch('/api/users/' + selecetedBoard.value.author_id)
-        if (userRes.ok) {
-            const user = await userRes.json()
+        try {
+            const user = await userService.getUserById(selecetedBoard.value.author_id)
             authorName.value = user.username
-        }
+        } catch { /* author is optional */ }
     }
 
     showModal.value = true
@@ -233,7 +205,6 @@ fetchLikedBoards()
 fetchActiveGames()
 
 const showModal = ref(false)
-
 
 function clickBoard(boardID: string) {
     fetchAllCellsForBoard(boardID)
