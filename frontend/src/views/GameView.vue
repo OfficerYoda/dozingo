@@ -229,7 +229,7 @@ function onFullscreenChange() {
 }
 const sweepingCells = ref(new Map<string, number>())
 let bingoToastTimeout: ReturnType<typeof setTimeout> | null = null
-const confettiColors = ['#4052B6', '#C0185A', '#2E7D32', '#F79F1F', '#5A5781', '#E3DFFF', '#EA2027']
+const confettiColors = ['var(--color-heading)', '#C0185A', '#2E7D32', '#F79F1F', 'var(--color-subheading)', 'var(--color-input-bg)', '#EA2027']
 const partyEmojis = ['🎉', '🎊', '🥳', '🎲', '🏆', '⭐', '✨', '🎯', '🍾', '🎈', '💫', '🔥', '🎉', '🎊', '🥳', '🎲', '🏆', '⭐', '✨', '🎯']
 
 // --- Techno-Beat (Web Audio, full-bar pre-scheduling) ---
@@ -654,41 +654,41 @@ onUnmounted(() => {
     gap: 6px;
     font-size: 0.75rem;
     font-weight: 700;
-    background-color: #E3DFFF;
+    background-color: var(--color-input-bg);
     border-radius: var(--radius-sm);
     padding: 6px 12px;
     white-space: nowrap;
     text-decoration: none;
-    color: #5A5781;
+    color: var(--color-subheading);
 }
 
 .stat-item.back {
-    color: #2C2A51;
+    color: var(--color-heading);
     border: none;
     cursor: pointer;
     transition: background-color 0.2s, color 0.2s;
 }
 
 .stat-item.back:hover {
-    background-color: #c7c2f5;
-    color: #2C2A51;
+    background-color: var(--color-interactive-track);
+    color: var(--color-heading);
 }
 
-.stat-plays { color: #4052B6; }
+.stat-plays { color: var(--color-heading); }
 .stat-likes {
     color: #C0185A;
     cursor: pointer;
     border: none;
     transition: background-color 0.2s;
 }
-.stat-likes:hover { background-color: #c7c2f5; }
-.stat-likes.liked { background-color: #fce4ec; color: #C0185A; }
+.stat-likes:hover { background-color: var(--color-interactive-track); }
+.stat-likes.liked { background-color: color-mix(in srgb, #C0185A 15%, var(--color-input-bg)); color: #C0185A; }
 
 .top-stat-pill {
     display: flex;
     align-items: center;
     gap: 6px;
-    background-color: #E3DFFF;
+    background-color: var(--color-input-bg);
     border-radius: var(--radius-sm);
     padding: 6px 12px;
     white-space: nowrap;
@@ -697,36 +697,36 @@ onUnmounted(() => {
 .top-fullscreen-btn {
     border: none;
     cursor: pointer;
-    color: #5A5781;
+    color: var(--color-subheading);
     padding: 6px 10px;
     transition: background-color 0.2s, color 0.2s;
 }
 
 .top-fullscreen-btn:hover {
-    background-color: #c7c2f5;
-    color: #2C2A51;
+    background-color: var(--color-interactive-track);
+    color: var(--color-heading);
 }
 
 .top-stat-icon {
-    color: #5A5781;
+    color: var(--color-subheading);
     flex-shrink: 0;
 }
 
 .top-stat-value {
     font-size: 1rem;
     font-weight: 700;
-    color: #2C2A51;
+    color: var(--color-heading);
     line-height: 1;
 }
 
 .top-stat-total {
     font-size: 0.75rem;
     font-weight: 500;
-    color: #5A5781;
+    color: var(--color-subheading);
 }
 
 .board{
-    background-color: #E3DFFF;
+    background-color: var(--color-input-bg);
     border-radius: var(--radius-lg);
     padding: 0.5rem;
     position: relative;
@@ -761,8 +761,8 @@ onUnmounted(() => {
     height: 100%;
     min-height: 100px;
     scroll-snap-align: start;
-    background-color: #fff;
-    border: solid 0.5rem #E3DFFF;
+    background-color: var(--game-cell-bg);
+    border: solid 0.5rem var(--color-input-bg);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -782,7 +782,7 @@ onUnmounted(() => {
 
 .board-container button::before {
     content: '';
-    color: #fff;
+    color: var(--game-cell-accent-text);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -790,7 +790,7 @@ onUnmounted(() => {
     font-weight: 700;
     position: absolute;
     inset: 0;
-    background-color: #5A5781;
+    background-color: var(--game-cell-accent-bg);
     border-radius: var(--radius-lg);
     backface-visibility: hidden;
     transform: perspective(600px) rotateY(180deg);
@@ -810,7 +810,7 @@ onUnmounted(() => {
 }
 
 .board-container button:focus-visible {
-    outline: 3px solid #4052B6;
+    outline: 3px solid var(--color-heading);
     outline-offset: -3px;
 }
 
@@ -820,23 +820,23 @@ onUnmounted(() => {
     height: 100%;
     left: 0;
     top: 0;
-    box-shadow: inset 0 0 0 #E3DFFF;
+    box-shadow: inset 0 0 0 var(--color-input-bg);
     pointer-events: none;
     border-radius: var(--radius-lg);
     transition: 0.3s;
 }
 
 .board-shadow-right{
-    box-shadow: inset -30px 0 30px #E3DFFF;
+    box-shadow: inset -30px 0 30px var(--color-input-bg);
 }
 
 .board-shadow-left{
-    box-shadow: inset 30px 0 30px #E3DFFF;
+    box-shadow: inset 30px 0 30px var(--color-input-bg);
 }
 
 .board-container .checked{
-    background-color: #5A5781;
-    color: #E3DFFF;
+    background-color: var(--game-cell-accent-bg);
+    color: var(--game-cell-accent-text);
     transform: perspective(600px) rotateX(0deg) !important;
 }
 
@@ -851,8 +851,8 @@ onUnmounted(() => {
     display: flex;
     justify-content: center;
     align-items: center;
-    color: #5A5781;
-    background-color: #E3DFFF;
+    color: var(--game-cell-accent-bg);
+    background-color: var(--game-cell-accent-text);
     transform: translate(10%, -10%);
     box-shadow: 0 0 5px #000;
     opacity: 0;
@@ -905,8 +905,8 @@ onUnmounted(() => {
 
 .bingo-modal {
     position: relative;
-    background: linear-gradient(135deg, #fff, #E3DFFF);
-    border: 3px solid #5A5781;
+    background: linear-gradient(135deg, var(--game-cell-bg), var(--color-input-bg));
+    border: 3px solid var(--color-subheading);
     border-radius: var(--radius-lg);
     padding: 32px 40px;
     text-align: center;
@@ -928,7 +928,7 @@ onUnmounted(() => {
     font-weight: 900;
     letter-spacing: 0.06em;
     margin: 0 0 8px;
-    background: linear-gradient(90deg, #4052B6, #C0185A, #5A5781, #C0185A, #4052B6);
+    background: linear-gradient(90deg, var(--color-heading), #C0185A, var(--color-subheading), #C0185A, var(--color-heading));
     background-size: 300% 100%;
     -webkit-background-clip: text;
     background-clip: text;
@@ -937,7 +937,7 @@ onUnmounted(() => {
 }
 
 .bingo-modal-sub {
-    color: #5A5781;
+    color: var(--color-subheading);
     font-weight: 600;
     margin: 0 0 24px;
 }
@@ -981,7 +981,7 @@ onUnmounted(() => {
     bottom: 40px;
     left: 50%;
     translate: -50% 0;
-    background: linear-gradient(135deg, #2C2A51, #4052B6, #C0185A);
+    background: linear-gradient(135deg, var(--game-cell-accent-bg), var(--color-heading), #C0185A);
     background-size: 200% 100%;
     color: #fff;
     font-size: 2rem;
@@ -1095,7 +1095,7 @@ onUnmounted(() => {
     width: 42px;
     height: 42px;
     border-radius: 50%;
-    color: #2C2A51;
+    color: var(--game-cell-accent-bg);
     font-weight: 800;
     font-size: 0.95rem;
     display: flex;
@@ -1141,8 +1141,8 @@ onUnmounted(() => {
     top: -40px;
     width: 26px;
     height: 38px;
-    background: #fff;
-    border: 2px solid #5A5781;
+    background: var(--game-cell-bg);
+    border: 2px solid var(--color-subheading);
     border-radius: 3px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
     animation-name: card-fall;
@@ -1156,10 +1156,10 @@ onUnmounted(() => {
     inset: 3px;
     background: repeating-linear-gradient(
         45deg,
-        #4052B6,
-        #4052B6 3px,
-        #5A5781 3px,
-        #5A5781 6px
+        var(--color-heading),
+        var(--color-heading) 3px,
+        var(--color-subheading) 3px,
+        var(--color-subheading) 6px
     );
     border-radius: 1px;
 }
@@ -1176,8 +1176,8 @@ onUnmounted(() => {
     top: -50px;
     width: 32px;
     height: 32px;
-    background: #fff;
-    border: 3px solid #2C2A51;
+    background: var(--game-cell-bg);
+    border: 3px solid var(--color-heading);
     border-radius: 6px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
     display: grid;
@@ -1191,7 +1191,7 @@ onUnmounted(() => {
 }
 
 .party-falling-dice .dot {
-    background: #2C2A51;
+    background: var(--color-heading);
     border-radius: 50%;
 }
 
@@ -1251,7 +1251,7 @@ onUnmounted(() => {
 }
 
 .party-beat-1 { border-color: #C0185A; animation-delay: 0s; }
-.party-beat-2 { border-color: #4052B6; animation-delay: 0.4s; }
+.party-beat-2 { border-color: var(--color-heading); animation-delay: 0.4s; }
 .party-beat-3 { border-color: #F79F1F; animation-delay: 0.8s; }
 
 @keyframes beat-expand {
@@ -1261,8 +1261,8 @@ onUnmounted(() => {
 
 .party-banner {
     position: relative;
-    background: linear-gradient(135deg, #fff, #E3DFFF);
-    border: 4px solid #5A5781;
+    background: linear-gradient(135deg, var(--game-cell-bg), var(--color-input-bg));
+    border: 4px solid var(--color-subheading);
     border-radius: var(--radius-lg);
     padding: 24px clamp(20px, 5vw, 56px);
     text-align: center;
@@ -1331,7 +1331,7 @@ onUnmounted(() => {
 }
 
 .party-dice {
-    color: #4052B6;
+    color: var(--color-heading);
     filter: drop-shadow(0 4px 8px rgba(64, 82, 182, 0.4));
 }
 
@@ -1366,7 +1366,7 @@ onUnmounted(() => {
     letter-spacing: 0.05em;
     line-height: 1;
     word-break: break-word;
-    background: linear-gradient(90deg, #4052B6, #C0185A, #F79F1F, #2E7D32, #4052B6);
+    background: linear-gradient(90deg, var(--color-heading), #C0185A, #F79F1F, #2E7D32, var(--color-heading));
     background-size: 300% 100%;
     -webkit-background-clip: text;
     background-clip: text;
@@ -1387,7 +1387,7 @@ onUnmounted(() => {
 
 .party-subtitle {
     margin: 0;
-    color: #5A5781;
+    color: var(--color-subheading);
     font-weight: 600;
     animation: subtitle-pulse 0.8s ease-in-out infinite;
 }
@@ -1404,9 +1404,9 @@ onUnmounted(() => {
 }
 
 @keyframes bingo-sweep {
-    0%   { background-color: #fff; color: inherit; box-shadow: none; }
+    0%   { background-color: var(--game-cell-bg); color: inherit; box-shadow: none; }
     40%  { background-color: #4CAF50; color: #fff; box-shadow: 0 0 14px rgba(76, 175, 80, 0.7); }
-    100% { background-color: #fff; color: inherit; box-shadow: none; }
+    100% { background-color: var(--game-cell-bg); color: inherit; box-shadow: none; }
 }
 
 .board-container button.checked.bingo-sweep {
@@ -1415,9 +1415,9 @@ onUnmounted(() => {
 }
 
 @keyframes bingo-sweep-checked {
-    0%   { background-color: #5A5781; color: #E3DFFF; box-shadow: none; }
+    0%   { background-color: var(--game-cell-accent-bg); color: var(--game-cell-accent-text); box-shadow: none; }
     40%  { background-color: #4CAF50; color: #fff; box-shadow: 0 0 14px rgba(76, 175, 80, 0.7); }
-    100% { background-color: #5A5781; color: #E3DFFF; box-shadow: none; }
+    100% { background-color: var(--game-cell-accent-bg); color: var(--game-cell-accent-text); box-shadow: none; }
 }
 
 </style>

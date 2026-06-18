@@ -121,6 +121,11 @@
     --color-hero-bg: #4B4AC8;
     --color-icon-circle-bg: #EEEEF8;
     --color-icon-svg: var(--card-blue);
+
+    /* Game page */
+    --game-cell-bg: #ffffff;
+    --game-cell-accent-bg: #5A5781;
+    --game-cell-accent-text: #E3DFFF;
 }
 
 
@@ -179,6 +184,11 @@
   --color-hero-bg: #3a3880;
   --color-icon-circle-bg: #2a2550;
   --color-icon-svg: #a5b4fc;
+
+  /* Game page */
+  --game-cell-bg: #111827;
+  --game-cell-accent-bg: #1e1b4b;
+  --game-cell-accent-text: #c7d2fe;
 
   /* Cards */
   --card-blue: var(--color-primary-600);
