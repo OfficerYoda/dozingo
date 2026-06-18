@@ -16,13 +16,13 @@ type Config struct {
 
 	TOTPEncryptionKey string `env:"TOTP_ENCRYPTION_KEY,required"`
 
-	ResendAPIKey      string `env:"RESEND_API_KEY" required:"true"`
-	MailSenderAddress string `env:"MAIL_SENDER_ADDRESS" required:"true"`
+	ResendAPIKey      string `env:"RESEND_API_KEY,required"`
+	MailSenderAddress string `env:"MAIL_SENDER_ADDRESS,required"`
 
-	GarageEndpoint   string `env:"GARAGE_ENDPOINT" required:"true"`
-	GaragePublicURL  string `env:"GARAGE_PUBLIC_URL" required:"true"`
-	GarageAccessKey  string `env:"GARAGE_ACCESS_KEY" required:"true"`
-	GarageSecretKey  string `env:"GARAGE_SECRET_KEY" required:"true"`
+	GarageEndpoint   string `env:"GARAGE_ENDPOINT,required"`
+	GaragePublicURL  string `env:"GARAGE_PUBLIC_URL,required"`
+	GarageAccessKey  string `env:"GARAGE_ACCESS_KEY,required"`
+	GarageSecretKey  string `env:"GARAGE_SECRET_KEY,required"`
 	GarageBucketName string `env:"GARAGE_BUCKET_NAME" envDefault:"profile-pictures"`
 }
 
