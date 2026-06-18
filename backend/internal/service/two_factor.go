@@ -128,6 +128,11 @@ func (s *TwoFactor) Confirm(ctx context.Context, passcode string) ([]string, err
 			return fmt.Errorf("clear 2fa pending status: %w", err)
 		}
 
+		txErr = r.Sessions.DeleteOtherSessionsFromUser(ctx, pendingSession.UserID, pendingSession.SessionID)
+		if txErr != nil {
+			return fmt.Errorf("invalidate other sessions: %w", txErr)
+		}
+
 		return nil
 	})
 	if err != nil {

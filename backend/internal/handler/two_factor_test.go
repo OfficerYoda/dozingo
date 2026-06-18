@@ -281,6 +281,45 @@ func TestConfirm2FA_AlreadyVerified_Returns409(t *testing.T) {
 	assertStatus(t, w, http.StatusConflict)
 }
 
+func TestConfirm2FA_InvalidatesOtherSessions(t *testing.T) {
+	setupTest(t)
+
+	// Session A: created during registration.
+	userID := createTestUser(t, "multisession", "multisession@example.com")
+	cookieA := cookiesFor(userID)
+
+	// Session B: a second login on a fresh anonymous session.
+	_, anonCookie := mintAnonSession(t, 24*time.Hour)
+	w := doRequestWithCookies(http.MethodPost, "/api/auth/login",
+		map[string]any{"username": "multisession", "password": "testpassword123"},
+		[]*http.Cookie{anonCookie})
+	assertStatus(t, w, http.StatusOK)
+	cookieB := anonCookie // session promoted to authenticated
+
+	// Both sessions should be valid before 2FA setup.
+	_, okA := loadSessionByToken(t, cookieA[0].Value)
+	_, okB := loadSessionByToken(t, cookieB.Value)
+	if !okA || !okB {
+		t.Fatal("expected both sessions to exist before 2FA confirm")
+	}
+
+	// Setup and confirm 2FA on session A.
+	secret := setup2FA(t, userID)
+	confirm2FA(t, userID, secret)
+
+	// Session A should still be valid.
+	_, okA = loadSessionByToken(t, cookieA[0].Value)
+	if !okA {
+		t.Fatal("expected session A to survive 2FA confirm")
+	}
+
+	// Session B should have been invalidated.
+	_, okB = loadSessionByToken(t, cookieB.Value)
+	if okB {
+		t.Fatal("expected session B to be invalidated after 2FA confirm")
+	}
+}
+
 // ===== Verify =====
 
 func TestVerify2FA_Success(t *testing.T) {
