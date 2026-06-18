@@ -148,22 +148,10 @@ import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { Heart, Play, Timer, CheckSquare, Sparkles, Dices, Star, ArrowLeft } from 'lucide-vue-next'
 import { usePageTitle } from '@/composables/usePageTitle'
-
-interface Board {
-    board_id: string
-    title: string
-    description: string
-    play_count: number
-    score: number
-    size: number
-    author_id: string
-}
-
-interface Cell {
-    cell_id: string
-    content: string
-    value: 0
-}
+import * as boardService from '@/services/board.service'
+import * as gameService from '@/services/game.service'
+import * as voteService from '@/services/vote.service'
+import type { Board, Cell } from '@/services/api.type'
 
 interface GameCell {
     game_cell_id: string
@@ -324,12 +312,9 @@ function stopTimer() {
 // --- Vote ---
 async function loadVote(boardId: string) {
     try {
-        const res = await fetch(`/api/boards/${boardId}/vote`, { credentials: 'include' })
-        if (res.ok) {
-            const data = await res.json()
-            userVote.value = data.user_vote
-            if (board.value) board.value.score = data.score
-        }
+        const data = await voteService.getBoardVote(boardId)
+        userVote.value = data.user_vote
+        if (board.value) board.value.score = data.score
     } catch { /* ignore */ }
 }
 
@@ -342,7 +327,7 @@ async function handleLikeClick() {
         userVote.value = null
         board.value.score--
         try {
-            await fetch(`/api/boards/${boardId}/vote`, { method: 'DELETE', credentials: 'include' })
+            await voteService.deleteVote(boardId)
         } catch {
             userVote.value = 1
             board.value.score++
@@ -352,12 +337,7 @@ async function handleLikeClick() {
         userVote.value = 1
         board.value.score += prev === -1 ? 2 : 1
         try {
-            await fetch(`/api/boards/${boardId}/vote`, {
-                method: 'PUT',
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ vote_value: 1 }),
-            })
+            await voteService.voteBoard(boardId, 1)
         } catch {
             userVote.value = prev
             board.value.score -= prev === -1 ? 2 : 1

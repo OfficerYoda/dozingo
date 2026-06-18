@@ -128,6 +128,7 @@ import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { FilePlus, CirclePlus, Trash2, Play } from 'lucide-vue-next';
 import { usePageTitle } from '@/composables/usePageTitle'
+import * as boardService from '@/services/board.service'
 
 useI18n()
 
@@ -218,39 +219,25 @@ async function saveBoard() {
 
   const size = parseInt(selectedSize.value)
 
-  const boardRes = await fetch('/api/boards', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-    body: JSON.stringify({ title: title.value, description: description.value || undefined, size }),
-  })
-  if (!boardRes.ok) {
+  try {
+    const board = await boardService.createBoard(title.value, size, description.value || undefined)
+
+    await Promise.all(
+      entries.value
+        .filter(e => e.term.trim())
+        .map(e => boardService.createCell(board.board_id, e.term, rarityValue[e.rarity] ?? 1))
+    )
+
+    title.value = ''
+    description.value = ''
+    selectedSize.value = '5x5'
+    entries.value = [{ term: '', rarity: 'common' }, { term: '', rarity: 'common' }, { term: '', rarity: 'common' }]
+    submitted.value = false
+    saveSuccess.value = true
+  } catch {
     saveError.value = true
     saveSuccess.value = false
-    return
   }
-  const board = await boardRes.json()
-
-  await Promise.all(
-    entries.value
-      .filter(e => e.term.trim())
-      .map(e =>
-        fetch(`/api/boards/${board.board_id}/cells`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ content: e.term, value: rarityValue[e.rarity] }),
-        })
-      )
-  )
-
-  console.log('Board created:', board.board_id)
-  title.value = ''
-  description.value = ''
-  selectedSize.value = '5x5'
-  entries.value = [{ term: '', rarity: 'common' }, { term: '', rarity: 'common' }, { term: '', rarity: 'common' }]
-  submitted.value = false
-  saveSuccess.value = true
 }
 
 async function saveAndPlay() {
@@ -275,56 +262,23 @@ async function saveAndPlay() {
 
   const size = parseInt(selectedSize.value)
 
-  const boardRes = await fetch('/api/boards', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-    body: JSON.stringify({ title: title.value, description: description.value || undefined, size }),
-  })
-  if (!boardRes.ok) {
-    saveError.value = true
-    return
-  }
-  const board = await boardRes.json()
+  try {
+    const board = await boardService.createBoard(title.value, size, description.value || undefined)
 
-  const cells = entries.value.filter(e => e.term.trim())
-
-  await Promise.all(
-    cells.map(e =>
-      fetch(`/api/boards/${board.board_id}/cells`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ content: e.term, value: rarityValue[e.rarity] }),
-      })
+    await Promise.all(
+      entries.value.filter(e => e.term.trim())
+        .map(e => boardService.createCell(board.board_id, e.term, rarityValue[e.rarity] ?? 1))
     )
-  )
 
-  const cellsRes = await fetch(`/api/boards/${board.board_id}/cells`, { credentials: 'include' })
-  if (!cellsRes.ok) {
+    const savedCells = await boardService.getCellsForBoard(board.board_id)
+    const shuffled = [...savedCells].sort(() => Math.random() - 0.5)
+    const cellPositions = shuffled.map((cell, index) => ({ cell_id: cell.cell_id, position: index }))
+
+    const game = await boardService.createGame(board.board_id, cellPositions)
+    router.push('/game/' + game.game_id)
+  } catch {
     saveError.value = true
-    return
   }
-  const savedCells = await cellsRes.json()
-
-  const shuffled = [...savedCells].sort(() => Math.random() - 0.5)
-  const body = shuffled.map((cell: { cell_id: string }, index: number) => ({
-    cell_id: cell.cell_id,
-    position: index,
-  }))
-
-  const gameRes = await fetch(`/api/boards/${board.board_id}/games`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-    body: JSON.stringify(body),
-  })
-  if (!gameRes.ok) {
-    saveError.value = true
-    return
-  }
-  const game = await gameRes.json()
-  router.push('/game/' + game.game_id)
 }
 </script>
 

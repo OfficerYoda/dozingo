@@ -54,22 +54,9 @@ import { useRoute } from 'vue-router'
 import { Heart } from 'lucide-vue-next'
 import ModalStartGame from '@/components/ModalStartGame.vue'
 import { usePageTitle } from '@/composables/usePageTitle'
-
-interface Board {
-    board_id: string
-    title: string
-    description: string
-    play_count: number
-    score: number
-    size: number
-    author_id: string
-}
-
-interface Cell {
-    cell_id: string,
-    content: string,
-    value: 0,
-}
+import * as boardService from '@/services/board.service'
+import * as userService from '@/services/user.service'
+import type { Board, Cell } from '@/services/api.type'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -84,39 +71,34 @@ const authorName = ref<string | null>(null)
 const { pageTitle } = usePageTitle(t('header.boards'))
 
 async function fetchAllBoards() {
-    const params = new URLSearchParams()
-    if (appliedFiler.value) params.set('sort', appliedFiler.value)
-    if (search.value) params.set('search', search.value)
-
-    const query = params.toString() ? '?' + params.toString() : ''
-    const boardsRes = await fetch('/api/boards' + query, { credentials: 'include' })
-    if (!boardsRes.ok) {
+    try {
+        boards.value = await boardService.getBoards({
+            sort: appliedFiler.value || undefined,
+            search: search.value || undefined,
+        })
+    } catch {
         error.value = t('boards.error.loadBoards')
-        return
     }
-
-    boards.value = await boardsRes.json()
 }
 
 async function fetchAllCellsForBoard(boardID: string) {
-    const cellsRes = await fetch('/api/boards/' + boardID + '/cells')
-    if (!cellsRes.ok) {
+    try {
+        cells.value = await boardService.getCellsForBoard(boardID)
+    } catch {
         error.value = t('boards.error.loadCells') + ' ' + boardID
         return
     }
 
-    cells.value = await cellsRes.json()
     selecetedBoard.value = boards.value.find(b => b.board_id === boardID)
     const numberOfCells = (selecetedBoard.value?.size ?? 0) ** 2
     selectedCells.value = [...cells.value].sort(() => Math.random() - 0.5).slice(0, numberOfCells)
 
     authorName.value = null
     if (selecetedBoard.value?.author_id) {
-        const userRes = await fetch('/api/users/' + selecetedBoard.value.author_id)
-        if (userRes.ok) {
-            const user = await userRes.json()
+        try {
+            const user = await userService.getUserById(selecetedBoard.value.author_id)
             authorName.value = user.username
-        }
+        } catch { /* author is optional */ }
     }
 
     showModal.value = true
@@ -132,11 +114,8 @@ watch([appliedFiler, search], () => {
 const showModal = ref(false)
 
 function clickBoard(boardID: string) {
-    console.log("Statet loading the cells for board with boardid " + boardID)
     fetchAllCellsForBoard(boardID)
 }
-
-
 </script>
 
 <style scoped>
