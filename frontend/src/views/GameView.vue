@@ -461,6 +461,10 @@ async function loadGame() {
         gameCells.filter(gc => gc.is_marked).map(gc => gc.game_cell_id)
     )
 
+    // Bereits abgeschlossene Linien still eintragen (kein Toast/Modal)
+    seedCompletedLines(selectedCells.value, checkedCells.value, board.value?.size ?? 4)
+    if (completedLines.value.size > 0) bingoModalDismissed.value = true
+
     // Falls Spiel server-seitig bereits abgeschlossen → direkt locken
     if (game.status === 'completed') {
         await startGame()
@@ -570,6 +574,20 @@ function finishGame() {
     router.push('/')
 }
 
+function seedCompletedLines(cells: Cell[], checked: Set<string>, size: number) {
+    const isChecked = (r: number, c: number) => checked.has(cells[r * size + c]?.cell_id ?? '')
+    for (let r = 0; r < size; r++)
+        if (Array.from({ length: size }, (_, c) => isChecked(r, c)).every(Boolean))
+            completedLines.value.add(`row${r}`)
+    for (let c = 0; c < size; c++)
+        if (Array.from({ length: size }, (_, r) => isChecked(r, c)).every(Boolean))
+            completedLines.value.add(`col${c}`)
+    if (Array.from({ length: size }, (_, i) => isChecked(i, i)).every(Boolean))
+        completedLines.value.add('diag0')
+    if (Array.from({ length: size }, (_, i) => isChecked(i, size - 1 - i)).every(Boolean))
+        completedLines.value.add('diag1')
+}
+
 function checkBingo() {
     const size = board.value?.size ?? 4
     const cells = selectedCells.value
@@ -588,6 +606,13 @@ function checkBingo() {
     }
     lines.push({ key: 'diag0', indices: Array.from({ length: size }, (_, i) => [i, i]) })
     lines.push({ key: 'diag1', indices: Array.from({ length: size }, (_, i) => [i, size - 1 - i]) })
+
+    // Linien die jetzt nicht mehr komplett sind aus completedLines entfernen
+    for (const line of lines) {
+        if (completedLines.value.has(line.key) && !line.indices.every(([r, c]) => isChecked(r, c))) {
+            completedLines.value.delete(line.key)
+        }
+    }
 
     let newBingo = false
     const newLineIndices: [number, number][][] = []
@@ -1015,24 +1040,34 @@ onUnmounted(() => {
 
 .bingo-toast {
     position: fixed;
-    bottom: 32px;
+    bottom: 40px;
     left: 50%;
     translate: -50% 0;
-    background: linear-gradient(135deg, #4052B6, #5A5781);
+    background: linear-gradient(135deg, #2C2A51, #4052B6, #C0185A);
+    background-size: 200% 100%;
     color: #fff;
-    font-size: 1.4rem;
+    font-size: 2rem;
     font-weight: 900;
-    letter-spacing: 0.06em;
-    padding: 14px 32px;
+    letter-spacing: 0.1em;
+    padding: 18px 48px;
     border-radius: var(--radius-lg);
-    box-shadow: 0 8px 32px rgba(64, 82, 182, 0.5);
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    box-shadow:
+        0 12px 48px rgba(64, 82, 182, 0.6),
+        0 0 0 0 rgba(192, 24, 90, 0.4);
     z-index: 8888;
     pointer-events: none;
     white-space: nowrap;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
     overflow: visible;
+    animation: toast-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), toast-pulse 0.6s ease-in-out 0.4s 3;
+}
+
+@keyframes toast-pulse {
+    0%, 100% { box-shadow: 0 12px 48px rgba(64, 82, 182, 0.6), 0 0 0 0 rgba(192, 24, 90, 0.4); }
+    50%       { box-shadow: 0 12px 48px rgba(64, 82, 182, 0.8), 0 0 0 16px rgba(192, 24, 90, 0); }
 }
 
 .toast-cannon {
@@ -1046,14 +1081,14 @@ onUnmounted(() => {
     position: absolute;
     bottom: 0;
     left: 0;
-    width: 8px;
-    height: 12px;
+    width: 10px;
+    height: 14px;
     border-radius: 2px;
-    animation: cannon-shoot var(--duration, 0.8s) cubic-bezier(0.2, 0.8, 0.4, 1) var(--delay) both;
+    animation: cannon-shoot var(--duration, 0.9s) cubic-bezier(0.2, 0.8, 0.4, 1) var(--delay) both;
 }
 
 .bingo-toast-enter-active .cannon-piece {
-    --duration: 0.8s;
+    --duration: 0.9s;
 }
 
 @keyframes cannon-shoot {
@@ -1070,11 +1105,11 @@ onUnmounted(() => {
     }
 }
 
-.bingo-toast-enter-active { animation: toast-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
-.bingo-toast-leave-active { animation: toast-out 0.3s ease-in forwards; }
+.bingo-toast-enter-active { animation: toast-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), toast-pulse 0.6s ease-in-out 0.4s 3; }
+.bingo-toast-leave-active { animation: toast-out 0.25s ease-in forwards; }
 
 @keyframes toast-in {
-    from { opacity: 0; translate: -50% 40px; scale: 0.8; }
+    from { opacity: 0; translate: -50% 60px; scale: 0.7; }
     to   { opacity: 1; translate: -50% 0;    scale: 1; }
 }
 
