@@ -35,6 +35,7 @@
 import { ref, watch } from 'vue'
 import { useChangePasswordModal } from '@/composables/useChangePasswordModal'
 import * as authService from '@/services/auth.services'
+import { ApiError } from '@/services/api'
 
 const { changePasswordModalOpen, closeChangePasswordModal } = useChangePasswordModal()
 
@@ -77,8 +78,8 @@ async function submit() {
     await authService.changePassword(oldPassword.value, newPassword.value)
     success.value = true
     setTimeout(close, 1500)
-  } catch (e: unknown) {
-    if (e instanceof Error && e.message.includes('401')) {
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 401) {
       error.value = 'Das aktuelle Passwort ist falsch.'
     } else {
       error.value = 'Ein Fehler ist aufgetreten. Bitte versuche es erneut.'

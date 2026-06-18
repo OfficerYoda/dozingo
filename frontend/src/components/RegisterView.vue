@@ -172,6 +172,7 @@ import { User, Mail, KeyRound } from 'lucide-vue-next'
 import { useAuth } from '@/composables/useAuth'
 import { useRegisterModal } from '@/composables/useRegisterModal'
 import { useLoginModal } from '@/composables/useLoginModal'
+import { ApiError } from '@/services/api'
 
 const router = useRouter()
 const { register } = useAuth()
@@ -205,17 +206,15 @@ async function handleRegister() {
     }
     loading.value = true
     try {
-        const status = await register(username.value, password.value, email.value || undefined)
-        if (status === 409) {
-            error.value = 'Username or email is already taken.'
-            return
-        }
-        if (status !== null) {
-            error.value = 'Something went wrong. Please try again.'
-            return
-        }
+        await register(username.value, password.value, email.value || undefined)
         closeRegisterModal()
         router.push('/')
+    } catch (e) {
+        if (e instanceof ApiError && e.status === 409) {
+            error.value = 'Username or email is already taken.'
+        } else {
+            error.value = 'Something went wrong. Please try again.'
+        }
     } finally {
         loading.value = false
     }

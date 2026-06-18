@@ -145,6 +145,7 @@ import { User, KeyRound } from 'lucide-vue-next'
 import { useAuth } from '@/composables/useAuth'
 import { useLoginModal } from '@/composables/useLoginModal'
 import { useRegisterModal } from '@/composables/useRegisterModal'
+import { ApiError } from '@/services/api'
 
 const router = useRouter()
 const { login } = useAuth()
@@ -205,17 +206,17 @@ async function handleLogin() {
     error.value = ''
     loading.value = true
     try {
-        const status = await login(username.value, password.value)
-        if (status === 401) {
-            error.value = 'Invalid username or password.'
-            return
-        }
-        if (status !== null) {
-            error.value = 'Something went wrong. Please try again.'
-            return
-        }
+        await login(username.value, password.value)
         closeLoginModal()
         router.push('/')
+    } catch (e) {
+        if (e instanceof ApiError && e.status === 401) {
+            error.value = 'Invalid username or password.'
+        } else if (e instanceof ApiError && e.status === 429) {
+            error.value = 'Too many attempts. Please wait a moment.'
+        } else {
+            error.value = 'Something went wrong. Please try again.'
+        }
     } finally {
         loading.value = false
     }

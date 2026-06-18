@@ -29,6 +29,7 @@ import { useRouter } from 'vue-router'
 import { useDeleteModal } from '@/composables/useDeleteModal'
 import { useAuth } from '@/composables/useAuth'
 import * as userService from '@/services/user.service'
+import { ApiError } from '@/services/api'
 
 const { deleteModalOpen, closeDeleteModal } = useDeleteModal()
 const { logout } = useAuth()
@@ -57,8 +58,8 @@ async function submit() {
     await userService.deleteMe(password.value)
     await logout()
     router.push('/')
-  } catch (e: unknown) {
-    if (e instanceof Error && e.message.includes('401')) {
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 401) {
       error.value = 'Falsches Passwort.'
     } else {
       error.value = 'Ein Fehler ist aufgetreten. Bitte versuche es erneut.'
