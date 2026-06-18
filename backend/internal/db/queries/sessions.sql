@@ -16,6 +16,12 @@ SET user_id = @user_id
 WHERE token = @token
 RETURNING *;
 
+-- name: SetTwoFAPending :one
+UPDATE sessions
+SET two_fa_pending = @two_fa_pending
+WHERE token = @token
+RETURNING *;
+
 -- name: DeleteSessionByToken :exec
 DELETE FROM sessions
 WHERE token = @token;

@@ -63,6 +63,18 @@ func (r *Sessions) AttachUser(ctx context.Context, tokenHash string, userID pgty
 	return session, nil
 }
 
+func (r *Sessions) SetTwoFAPending(ctx context.Context, tokenHash string, status bool) (generated.Session, error) {
+	session, err := r.queries.SetTwoFAPending(ctx, generated.SetTwoFAPendingParams{
+		Token:        tokenHash,
+		TwoFaPending: status,
+	})
+	if err != nil {
+		return generated.Session{}, pgmap.TranslatePgErr(err)
+	}
+
+	return session, nil
+}
+
 func (r *Sessions) Delete(ctx context.Context, tokenHash string) error {
 	err := r.queries.DeleteSessionByToken(ctx, tokenHash)
 	if err != nil {

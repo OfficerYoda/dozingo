@@ -27,7 +27,18 @@ SELECT
         FROM sessions s
         WHERE s.user_id = $1
           AND s.expires_at > now()
-    ) AS active_sessions_count
+    ) AS active_sessions_count,
+    EXISTS (
+        SELECT 1 FROM user_two_factors utf
+        WHERE utf.user_id = $1
+          AND utf.totp_verified_at IS NOT NULL
+    ) AS two_factor_enabled,
+    (
+        SELECT COUNT(*)
+        FROM recovery_codes rc
+        WHERE rc.user_id = $1
+          AND rc.used_at IS NULL
+    ) AS unused_recovery_keys
 FROM user_passwords up
 WHERE up.user_id = $1
 `
@@ -36,11 +47,19 @@ type GetSecurityInformationRow struct {
 	PasswordLastChangedAt pgtype.Timestamptz `json:"password_last_changed_at"`
 	LastLoginAt           pgtype.Timestamptz `json:"last_login_at"`
 	ActiveSessionsCount   int64              `json:"active_sessions_count"`
+	TwoFactorEnabled      bool               `json:"two_factor_enabled"`
+	UnusedRecoveryKeys    int64              `json:"unused_recovery_keys"`
 }
 
 func (q *Queries) GetSecurityInformation(ctx context.Context, userID pgtype.UUID) (GetSecurityInformationRow, error) {
 	row := q.db.QueryRow(ctx, getSecurityInformation, userID)
 	var i GetSecurityInformationRow
-	err := row.Scan(&i.PasswordLastChangedAt, &i.LastLoginAt, &i.ActiveSessionsCount)
+	err := row.Scan(
+		&i.PasswordLastChangedAt,
+		&i.LastLoginAt,
+		&i.ActiveSessionsCount,
+		&i.TwoFactorEnabled,
+		&i.UnusedRecoveryKeys,
+	)
 	return i, err
 }

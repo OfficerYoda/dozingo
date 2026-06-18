@@ -116,7 +116,7 @@ func TestUploadAvatar_AnonymousSessionOnly_401(t *testing.T) {
 func TestUploadAvatar_MissingAvatarField_422(t *testing.T) {
 	setupTest(t)
 
-	resp := createTestUserWithRegister(t, "missingfield", "mypassword123", nil)
+	resp := createTestUserWithRegister(t, "missingfield", "mypassword123", stringPtr("missingfield@example.com"))
 	userID := (*resp)["user_id"].(string)
 
 	// Register itself uploads one avatar (best-effort auto-generation),
@@ -236,7 +236,7 @@ func TestUploadAvatar_SVG_Rejected(t *testing.T) {
 func TestUploadAvatar_TooLarge_Rejected(t *testing.T) {
 	setupTest(t)
 
-	resp := createTestUserWithRegister(t, "biguser", "mypassword123", nil)
+	resp := createTestUserWithRegister(t, "biguser", "mypassword123", stringPtr("biguser@example.com"))
 	userID := (*resp)["user_id"].(string)
 
 	preCount := fakeUploader.uploadCount()
@@ -261,7 +261,7 @@ func TestUploadAvatar_TooLarge_Rejected(t *testing.T) {
 func TestUploadAvatar_MIMEMismatch_Rejected(t *testing.T) {
 	setupTest(t)
 
-	resp := createTestUserWithRegister(t, "mimeuser", "mypassword123", nil)
+	resp := createTestUserWithRegister(t, "mimeuser", "mypassword123", stringPtr("mimeuser@example.com"))
 	userID := (*resp)["user_id"].(string)
 
 	preCount := fakeUploader.uploadCount()
@@ -289,7 +289,7 @@ func TestUploadAvatar_MIMEMismatch_Rejected(t *testing.T) {
 func TestUploadAvatar_FilenameExtensionIgnored(t *testing.T) {
 	setupTest(t)
 
-	resp := createTestUserWithRegister(t, "extuser", "mypassword123", nil)
+	resp := createTestUserWithRegister(t, "extuser", "mypassword123", stringPtr("extuser@example.com"))
 	userID := (*resp)["user_id"].(string)
 
 	pngBytes := fakePNG([]byte("payload"))
@@ -315,7 +315,7 @@ func TestUploadAvatar_FilenameExtensionIgnored(t *testing.T) {
 func TestUploadAvatar_Success_OverwritesPreviousKey(t *testing.T) {
 	setupTest(t)
 
-	resp := createTestUserWithRegister(t, "overwriteuser", "mypassword123", nil)
+	resp := createTestUserWithRegister(t, "overwriteuser", "mypassword123", stringPtr("overwriteuser@example.com"))
 	userID := (*resp)["user_id"].(string)
 
 	// Register itself uploads one avatar, so count from this point on.
@@ -362,7 +362,7 @@ func TestUploadAvatar_Success_OverwritesPreviousKey(t *testing.T) {
 func TestUploadAvatar_UploaderFails_500(t *testing.T) {
 	setupTest(t)
 
-	resp := createTestUserWithRegister(t, "uploaderfail", "mypassword123", nil)
+	resp := createTestUserWithRegister(t, "uploaderfail", "mypassword123", stringPtr("uploaderfail@example.com"))
 	userID := (*resp)["user_id"].(string)
 
 	// Register already auto-generated an avatar; capture the resulting

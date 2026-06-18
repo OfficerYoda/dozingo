@@ -148,6 +148,7 @@ func RequireSession(ctx context.Context, queries *generated.Queries) (generated.
 		return generated.GetSessionUserByTokenRow{}, errors.New("RequireSession called without Session middleware")
 	}
 
+	// return existing session
 	if slot.filled {
 		return slot.row, nil
 	}

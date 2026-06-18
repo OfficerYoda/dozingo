@@ -17,7 +17,7 @@ TablePartial timestamps {
 Table users {
   id uuid [pk, default: `gen_random_uuid()`]
   username text [unique, not null]
-  email text [unique]
+  email text [unique, not null]
   email_verified_at timestamptz [note: 'null means unverified or no email']
   ~timestamps
 }
@@ -45,10 +45,35 @@ Table user_authentications {
 
 Ref: user_authentications.user_id > users.id [delete: cascade]
 
+Table user_two_factors {
+  id uuid [pk, default: `gen_random_uuid()`]
+  user_id uuid [not null, unique]
+  totp_secret text [not null]
+  totp_verified_at timestamptz [null]
+  ~timestamps
+}
+
+Ref: user_two_factors.user_id - users.id [delete: cascade]
+
+Table recovery_codes {
+  id uuid [pk, default: `gen_random_uuid()`]
+  user_id uuid [not null]
+  code_hash text [not null]
+  used_at timestamptz [null]
+  ~timestamps
+
+  indexes {
+    user_id
+  }
+}
+
+Ref: recovery_codes.user_id > users.id [delete: cascade]
+
 Table sessions {
   id uuid [pk, default: `gen_random_uuid()`]
   user_id uuid [note: 'null for anonymous sessions']
   token text [unique, not null, note: 'SHA-256 hex digest; plaintext lives only in the session_token cookie']
+  two_fa_pending boolean [not null, default: false, note: 'true = awaiting 2FA verification']
   expires_at timestamptz [not null]
   ~timestamps
 
