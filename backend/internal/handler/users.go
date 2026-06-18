@@ -76,6 +76,8 @@ type getSecurityInformationOutputBody struct {
 	PasswordLastChanged time.Time `json:"password_last_changed_at"`
 	ActiveSessions      int       `json:"active_sessions"`
 	LastLogin           time.Time `json:"last_login_at"`
+	TwoFactorEnabled    bool      `json:"two_factor_enabled"`
+	UnusedRecoveryKeys  int       `json:"unused_recovery_keys"`
 }
 
 type getSecurityInformationOutput struct {
@@ -85,13 +87,19 @@ type getSecurityInformationOutput struct {
 // ===== Handler =====
 
 type UsersHandler struct {
-	users      *service.Users
-	votes      *service.Votes
-	avatarURLs *avatar.URLBuilder
+	users       *service.Users
+	votes       *service.Votes
+	avatarURLs  *avatar.URLBuilder
+	fallbackURL string
 }
 
-func NewUsersHandler(users *service.Users, votes *service.Votes, avatarURLs *avatar.URLBuilder) *UsersHandler {
-	return &UsersHandler{users: users, votes: votes, avatarURLs: avatarURLs}
+func NewUsersHandler(users *service.Users, votes *service.Votes, avatarURLs *avatar.URLBuilder, fallbackURL string) *UsersHandler {
+	return &UsersHandler{
+		users:       users,
+		votes:       votes,
+		avatarURLs:  avatarURLs,
+		fallbackURL: fallbackURL,
+	}
 }
 
 func (h *UsersHandler) Register(api huma.API) {
@@ -167,7 +175,7 @@ func (h *UsersHandler) Register(api huma.API) {
 		OperationID: "get-security-information",
 		Method:      http.MethodGet,
 		Path:        "/users/me/security",
-		Summary:     "List security information",
+		Summary:     "Get security information",
 		Tags:        []string{"Users"},
 		Middlewares: huma.Middlewares{middleware.RateLimit(api, middleware.ReadListLimiter)},
 	}, h.securityInformation)
@@ -179,7 +187,7 @@ func (h *UsersHandler) me(ctx context.Context, _ *struct{}) (*userOutput, error)
 		return nil, toHumaErr(err, "", "failed to get me")
 	}
 
-	return &userOutput{Body: userToOutput(user, h.avatarURLs)}, nil
+	return &userOutput{Body: userToOutput(user, h.avatarURLs, h.fallbackURL)}, nil
 }
 
 func (h *UsersHandler) delete(ctx context.Context, in *deleteUserInput) (*struct{}, error) {
@@ -197,7 +205,7 @@ func (h *UsersHandler) userByID(ctx context.Context, in *userByIDInput) (*userOu
 		return nil, toHumaErr(err, "", "failed to get user by ID")
 	}
 
-	return &userOutput{Body: userToOutput(user, h.avatarURLs)}, nil
+	return &userOutput{Body: userToOutput(user, h.avatarURLs, h.fallbackURL)}, nil
 }
 
 func (h *UsersHandler) updateMe(ctx context.Context, in *updateMeInput) (*userOutput, error) {
@@ -209,7 +217,7 @@ func (h *UsersHandler) updateMe(ctx context.Context, in *updateMeInput) (*userOu
 		return nil, toHumaErr(err, "", "failed to update current user")
 	}
 
-	return &userOutput{Body: userToOutput(user, h.avatarURLs)}, nil
+	return &userOutput{Body: userToOutput(user, h.avatarURLs, h.fallbackURL)}, nil
 }
 
 func (h *UsersHandler) listVotesFromUser(ctx context.Context, in *listVotesFromUserInput) (*listVotesFromUserOutput, error) {
@@ -270,7 +278,7 @@ func (h *UsersHandler) uploadAvatar(ctx context.Context, in *avatarUploadInput) 
 		return nil, toHumaErr(err, "", "failed to upload avatar")
 	}
 
-	return &userOutput{Body: userToOutput(user, h.avatarURLs)}, nil
+	return &userOutput{Body: userToOutput(user, h.avatarURLs, h.fallbackURL)}, nil
 }
 
 func (h *UsersHandler) securityInformation(ctx context.Context, _ *struct{}) (*getSecurityInformationOutput, error) {
@@ -283,5 +291,7 @@ func (h *UsersHandler) securityInformation(ctx context.Context, _ *struct{}) (*g
 		PasswordLastChanged: infos.PasswordLastChangedAt.Time.UTC(),
 		ActiveSessions:      int(infos.ActiveSessionsCount),
 		LastLogin:           infos.LastLoginAt.Time.UTC(),
+		TwoFactorEnabled:    infos.TwoFactorEnabled,
+		UnusedRecoveryKeys:  int(infos.UnusedRecoveryKeys),
 	}}, nil
 }

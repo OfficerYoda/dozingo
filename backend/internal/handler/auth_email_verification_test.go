@@ -31,19 +31,6 @@ func TestSendEmailVerification_AnonSession_401(t *testing.T) {
 	assertStatus(t, w, http.StatusUnauthorized)
 }
 
-func TestSendEmailVerification_NoEmailOnAccount_401(t *testing.T) {
-	setupTest(t)
-
-	resp := createTestUserWithRegister(t, "noemailver", "pw12345678", nil)
-	cookie := userCookies[(*resp)["user_id"].(string)]
-
-	w := doRequestWithCookies(http.MethodPost, "/api/auth/send-email-verification", nil, []*http.Cookie{cookie})
-	assertStatus(t, w, http.StatusUnauthorized)
-	if fakeMailer.verifyCount() != 0 {
-		t.Errorf("expected no mail when user has no email, got %d", fakeMailer.verifyCount())
-	}
-}
-
 func TestSendEmailVerification_AlreadyVerified_409(t *testing.T) {
 	setupTest(t)
 

@@ -31,8 +31,9 @@ type AvatarGenerator func(seed string) (*storage.Image, error)
 
 type Auth struct {
 	users              *repository.Users
-	passwords          *repository.UserPasswords
+	passwords          *repository.Passwords
 	sessions           *repository.Sessions
+	twoFactor          *repository.TwoFactor
 	verificationTokens *repository.VerificationTokens
 	emailSender        emailpkg.Sender
 	queries            *generated.Queries
@@ -53,6 +54,7 @@ func NewAuth(
 		users:              repos.Users,
 		passwords:          repos.Passwords,
 		sessions:           repos.Sessions,
+		twoFactor:          repos.TwoFactor,
 		verificationTokens: repos.VerificationTokens,
 		emailSender:        emailSender,
 		txRunner:           txRunner,
@@ -71,6 +73,15 @@ type RegisterInput struct {
 type LoginInput struct {
 	Username string
 	Password string
+}
+
+// LoginResult is the return value of Login. When TwoFAPending is true the
+// session has been marked pending and the caller must direct the user to
+// POST /auth/2fa/verify (or /auth/2fa/verify-recovery) before accessing
+// protected endpoints. User is zero-value in that case.
+type LoginResult struct {
+	User         generated.User
+	TwoFAPending bool
 }
 
 type NewPasswordInput struct {
@@ -101,7 +112,7 @@ func (s *Auth) Register(ctx context.Context, in RegisterInput) (generated.User, 
 		}
 	}
 
-	err = s.attachUserToSession(ctx, user)
+	_, err = s.attachUserToSession(ctx, user)
 	if err != nil {
 		return generated.User{}, fmt.Errorf("attach user to session: %w", err)
 	}
@@ -139,20 +150,20 @@ func (s *Auth) assignGeneratedAvatar(ctx context.Context, user generated.User) (
 	return updatedUser, nil
 }
 
-func (s *Auth) Login(ctx context.Context, in LoginInput) (generated.User, error) {
+func (s *Auth) Login(ctx context.Context, in LoginInput) (LoginResult, error) {
 	user, err := s.users.GetForPasswordLogin(ctx, in.Username)
 	if err != nil {
 		if errors.Is(err, domain.ErrNotFound) {
 			auth.CheckPasswordAgainstDummy(in.Password)
-			return generated.User{}, domain.ErrUnauthorized
+			return LoginResult{}, domain.ErrUnauthorized
 		}
 
-		return generated.User{}, fmt.Errorf("user retrieval for login: %w", err)
+		return LoginResult{}, fmt.Errorf("user retrieval for login: %w", err)
 	}
 
 	err = auth.CheckPassword(in.Password, user.PasswordHash)
 	if err != nil {
-		return generated.User{}, fmt.Errorf("password mismatch: %w", err)
+		return LoginResult{}, fmt.Errorf("password mismatch: %w", err)
 	}
 
 	vanillaUser := generated.User{
@@ -161,16 +172,29 @@ func (s *Auth) Login(ctx context.Context, in LoginInput) (generated.User, error)
 		Email:     user.Email,
 		AvatarKey: user.AvatarKey,
 	}
-	err = s.attachUserToSession(ctx, vanillaUser)
+	sessionToken, err := s.attachUserToSession(ctx, vanillaUser)
 	if err != nil {
-		return generated.User{}, fmt.Errorf("attach user to session: %w", err)
+		return LoginResult{}, fmt.Errorf("attach user to session: %w", err)
 	}
 
-	return vanillaUser, nil
+	twoFA, err := s.twoFactor.GetByUserID(ctx, vanillaUser.ID)
+	if err != nil && !errors.Is(err, domain.ErrNotFound) {
+		return LoginResult{}, fmt.Errorf("check 2fa status: %w", err)
+	}
+	if twoFA.TotpVerifiedAt.Valid {
+		_, err = s.sessions.SetTwoFAPending(ctx, sessionToken, true)
+		if err != nil {
+			return LoginResult{}, fmt.Errorf("mark session pending 2fa: %w", err)
+		}
+
+		return LoginResult{TwoFAPending: true}, nil
+	}
+
+	return LoginResult{User: vanillaUser}, nil
 }
 
 func (s *Auth) Logout(ctx context.Context) error {
-	sessionUser, err := requiresSessionUser(ctx, s.queries)
+	sessionUser, err := requiresVerifiedSession(ctx, s.queries)
 	if err != nil {
 		return err
 	}
@@ -189,7 +213,7 @@ func (s *Auth) Logout(ctx context.Context) error {
 }
 
 func (s *Auth) ChangePassword(ctx context.Context, oldPassword, newPassword string) error {
-	sessionUser, err := requiresSessionUser(ctx, s.queries)
+	sessionUser, err := requiresVerifiedSession(ctx, s.queries)
 	if err != nil {
 		return err
 	}
@@ -307,7 +331,7 @@ func (s *Auth) NewPassword(ctx context.Context, in NewPasswordInput) (generated.
 }
 
 func (s *Auth) SendEmailVerification(ctx context.Context) error {
-	sessionUser, err := requiresSessionUser(ctx, s.queries)
+	sessionUser, err := requiresVerifiedSession(ctx, s.queries)
 	if err != nil {
 		return err
 	}
@@ -343,7 +367,7 @@ func (s *Auth) VerifyEmail(ctx context.Context, token string) (generated.User, e
 		return generated.User{}, fmt.Errorf("retrieve user: %w", err)
 	}
 
-	if !pgTextEqual(verificationToken.Email, user.Email) {
+	if verificationToken.Email.String != user.Email {
 		return generated.User{}, fmt.Errorf("token email mismatch: %w", domain.ErrGone)
 	}
 
@@ -394,17 +418,17 @@ func (s *Auth) generateUser(ctx context.Context, in RegisterInput) (generated.Us
 	return user, nil
 }
 
-func (s *Auth) attachUserToSession(ctx context.Context, user generated.User) error {
+func (s *Auth) attachUserToSession(ctx context.Context, user generated.User) (string, error) {
 	sessionUser, err := middleware.RequireSession(ctx, s.queries)
 	if err != nil {
-		return fmt.Errorf("session required: %w", err)
+		return "", fmt.Errorf("session required: %w", err)
 	}
 	_, err = s.sessions.AttachUser(ctx, sessionUser.Token, user.ID)
 	if err != nil {
-		return fmt.Errorf("attach user to session: %w", err)
+		return "", fmt.Errorf("attach user to session: %w", err)
 	}
 
-	return nil
+	return sessionUser.Token, nil
 }
 
 func upsertToken(

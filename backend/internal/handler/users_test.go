@@ -70,6 +70,7 @@ func TestMe_AfterLogout_401(t *testing.T) {
 	r := doRequest(http.MethodPost, "/api/auth/register", map[string]any{
 		"username": "logmeout",
 		"password": "pw12345678",
+		"email":    "logmeout@example.com",
 	})
 	assertStatus(t, r, http.StatusOK)
 	cookie := extractSessionCookie(r)
@@ -290,8 +291,8 @@ func TestUpdateMe_Success_Email_SendsVerificationAndClearsVerifiedAt(t *testing.
 	assertJSONField(t, got, "email", "menew@example.com")
 
 	user := loadUserByID(t, userID)
-	if !user.Email.Valid || user.Email.String != "menew@example.com" {
-		t.Errorf("expected stored email 'menew@example.com', got Valid=%v String=%q", user.Email.Valid, user.Email.String)
+	if user.Email != "menew@example.com" {
+		t.Errorf("expected stored email 'menew@example.com', got %q", user.Email)
 	}
 	if user.EmailVerifiedAt.Valid {
 		t.Errorf("expected email_verified_at to be NULL after email change, got %v", user.EmailVerifiedAt.Time)
@@ -303,36 +304,6 @@ func TestUpdateMe_Success_Email_SendsVerificationAndClearsVerifiedAt(t *testing.
 	last, _ := fakeMailer.lastVerify()
 	if last.To != "menew@example.com" {
 		t.Errorf("expected mail to 'menew@example.com', got %q", last.To)
-	}
-}
-
-func TestUpdateMe_ClearEmail(t *testing.T) {
-	setupTest(t)
-
-	resp := createTestUserWithRegister(t, "meclear", "mypassword123", stringPtr("meclear@example.com"))
-	userID := (*resp)["user_id"].(string)
-
-	// Registration sends a verification mail as a side effect; reset so we
-	// can assert only on what the endpoint under test does.
-	fakeMailer.reset()
-
-	w := doRequestWithCookies(http.MethodPatch, "/api/users/me",
-		map[string]any{"email": ""}, cookiesFor(userID))
-	assertStatus(t, w, http.StatusOK)
-
-	var got map[string]any
-	decodeJSON(t, w, &got)
-	if got["email"] != nil {
-		t.Errorf("expected email to be null in response, got %v", got["email"])
-	}
-
-	user := loadUserByID(t, userID)
-	if user.Email.Valid {
-		t.Errorf("expected stored email to be NULL after clear, got %q", user.Email.String)
-	}
-
-	if fakeMailer.verifyCount() != 0 {
-		t.Errorf("expected 0 verification mails for an email clear, got %d", fakeMailer.verifyCount())
 	}
 }
 
@@ -420,7 +391,7 @@ func TestUpdateMe_DuplicateUsername_409(t *testing.T) {
 func TestUpdateMe_InvalidEmailFormat_422(t *testing.T) {
 	setupTest(t)
 
-	resp := createTestUserWithRegister(t, "mebademail", "mypassword123", nil)
+	resp := createTestUserWithRegister(t, "mebademail", "mypassword123", stringPtr("mebademail@example.com"))
 	userID := (*resp)["user_id"].(string)
 
 	w := doRequestWithCookies(http.MethodPatch, "/api/users/me",

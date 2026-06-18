@@ -2,13 +2,11 @@ package service
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/officeryoda/dozingo/internal/domain"
 	"github.com/officeryoda/dozingo/internal/generated"
-	"github.com/officeryoda/dozingo/internal/middleware"
 	"github.com/officeryoda/dozingo/internal/repository"
 )
 
@@ -36,7 +34,7 @@ type CreateBoardInput struct {
 }
 
 func (s *Boards) ListBySession(ctx context.Context, filter BoardListFilter) ([]repository.BoardWithStats, error) {
-	sessionUser, err := requiresSessionUser(ctx, s.queries)
+	sessionUser, err := requiresVerifiedSession(ctx, s.queries)
 	if err != nil {
 		return []repository.BoardWithStats{}, err
 	}
@@ -64,12 +62,9 @@ func (s *Boards) Get(ctx context.Context, boardID pgtype.UUID) (repository.Board
 }
 
 func (s *Boards) Create(ctx context.Context, in CreateBoardInput) (repository.BoardWithStats, error) {
-	sessionUser, err := middleware.RequireSession(ctx, s.queries)
+	sessionUser, err := requiresVerifiedSession(ctx, s.queries)
 	if err != nil {
-		return repository.BoardWithStats{}, fmt.Errorf("session required: %w", err)
-	}
-	if !sessionUser.UserID.Valid {
-		return repository.BoardWithStats{}, fmt.Errorf("authenticated user required: %w", domain.ErrUnauthorized)
+		return repository.BoardWithStats{}, err
 	}
 
 	return s.boards.Create(ctx, repository.CreateBoardInput{
@@ -81,7 +76,7 @@ func (s *Boards) Create(ctx context.Context, in CreateBoardInput) (repository.Bo
 }
 
 func (s *Boards) Delete(ctx context.Context, boardID pgtype.UUID) error {
-	sessionUser, err := requiresSessionUser(ctx, s.queries)
+	sessionUser, err := requiresVerifiedSession(ctx, s.queries)
 	if err != nil {
 		return err
 	}

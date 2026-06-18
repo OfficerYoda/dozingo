@@ -137,19 +137,29 @@ type GameCell struct {
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }
 
-type Session struct {
+type RecoveryCode struct {
 	ID        pgtype.UUID        `json:"id"`
 	UserID    pgtype.UUID        `json:"user_id"`
-	Token     string             `json:"token"`
-	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
+	CodeHash  string             `json:"code_hash"`
+	UsedAt    pgtype.Timestamptz `json:"used_at"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
+type Session struct {
+	ID           pgtype.UUID        `json:"id"`
+	UserID       pgtype.UUID        `json:"user_id"`
+	Token        string             `json:"token"`
+	ExpiresAt    pgtype.Timestamptz `json:"expires_at"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+	TwoFaPending bool               `json:"two_fa_pending"`
 }
 
 type User struct {
 	ID              pgtype.UUID        `json:"id"`
 	Username        string             `json:"username"`
-	Email           pgtype.Text        `json:"email"`
+	Email           string             `json:"email"`
 	CreatedAt       pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
 	EmailVerifiedAt pgtype.Timestamptz `json:"email_verified_at"`
@@ -171,6 +181,16 @@ type UserPassword struct {
 	PasswordHash string             `json:"password_hash"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+}
+
+type UserTwoFactor struct {
+	ID                  pgtype.UUID        `json:"id"`
+	UserID              pgtype.UUID        `json:"user_id"`
+	TotpSecretEncrypted string             `json:"totp_secret_encrypted"`
+	TotpVerifiedAt      pgtype.Timestamptz `json:"totp_verified_at"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+	LastUsedCode        pgtype.Text        `json:"last_used_code"`
 }
 
 type VerificationToken struct {

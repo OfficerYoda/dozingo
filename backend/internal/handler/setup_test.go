@@ -349,6 +349,14 @@ func TestMain(m *testing.M) {
 	repos := repository.New(testPool)
 	txRunner := repository.NewTxRunner(testPool)
 
+	// Fixed 32-byte test key for TOTP encryption (not used in production).
+	testTOTPKey := []byte("test-totp-key-32-bytes-long!!!!!")
+	testTOTPCipher, err3 := auth.NewTOTPCipher(testTOTPKey)
+	if err3 != nil {
+		slog.Error("failed to create test TOTP cipher", "error", err3)
+		os.Exit(1)
+	}
+
 	// Build a deterministic avatar.URLBuilder for tests. With this config
 	// avatar URLs come out as http://profile-pictures.garage.test/<key>.
 	var err2 error
@@ -357,6 +365,7 @@ func TestMain(m *testing.M) {
 		slog.Error("failed to build test avatar URL builder", "error", err2)
 		os.Exit(1)
 	}
+	testFallbackAvatarURL := testAvatarURLs.URL("default.svg", "")
 
 	// Health is registered on the bare api (not apiGroup) to bypass session
 	// middleware; its operation Path is the absolute "/api/health".
@@ -368,8 +377,9 @@ func TestMain(m *testing.M) {
 	NewStatsHandler(service.NewStats(&repos, queries)).Register(apiGroup)
 	votesSvc := service.NewVotes(&repos, queries)
 	NewVotesHandler(votesSvc).Register(apiGroup)
-	NewAuthHandler(service.NewAuth(repos, queries, fakeMailer, txRunner, fakeAvatarGen.Generate, fakeUploader), testAvatarURLs).Register(apiGroup)
-	NewUsersHandler(service.NewUsers(&repos, queries, fakeMailer, txRunner, fakeUploader), votesSvc, testAvatarURLs).Register(apiGroup)
+	NewAuthHandler(service.NewAuth(repos, queries, fakeMailer, txRunner, fakeAvatarGen.Generate, fakeUploader), testAvatarURLs, testFallbackAvatarURL).Register(apiGroup)
+	NewUsersHandler(service.NewUsers(&repos, queries, fakeMailer, txRunner, fakeUploader), votesSvc, testAvatarURLs, testFallbackAvatarURL).Register(apiGroup)
+	NewTwoFactor(service.NewTwoFactor(&repos, queries, txRunner, testTOTPCipher)).Register(apiGroup)
 
 	// Clean tables before running tests to ensure a fresh state
 	truncateAllTables()
@@ -398,14 +408,14 @@ func setupTest(t *testing.T) {
 // order. Used by both TestMain (for a clean baseline) and cleanupTables.
 func truncateAllTables() {
 	_, _ = testPool.Exec(context.Background(),
-		"TRUNCATE TABLE game_cells, games, votes, cells, boards, sessions, verification_tokens, user_passwords, users RESTART IDENTITY CASCADE")
+		"TRUNCATE TABLE game_cells, games, votes, cells, boards, recovery_codes, user_two_factors, sessions, verification_tokens, user_passwords, users RESTART IDENTITY CASCADE")
 }
 
 // cleanupTables truncates all tables in the correct order (respecting foreign keys).
 func cleanupTables(t *testing.T) {
 	t.Helper()
 	_, err := testPool.Exec(context.Background(),
-		"TRUNCATE TABLE game_cells, games, votes, cells, boards, sessions, verification_tokens, user_passwords, users RESTART IDENTITY CASCADE")
+		"TRUNCATE TABLE game_cells, games, votes, cells, boards, recovery_codes, user_two_factors, sessions, verification_tokens, user_passwords, users RESTART IDENTITY CASCADE")
 	if err != nil {
 		t.Fatalf("failed to clean up tables: %v", err)
 	}

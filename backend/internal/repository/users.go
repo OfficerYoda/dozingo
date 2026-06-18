@@ -42,7 +42,7 @@ func (r *Users) GetByUsername(ctx context.Context, username string) (generated.U
 }
 
 func (r *Users) GetByEmail(ctx context.Context, email string) (generated.User, error) {
-	user, err := r.queries.GetUserByEmail(ctx, pgmap.PgTextFromString(&email))
+	user, err := r.queries.GetUserByEmail(ctx, email)
 	if err != nil {
 		return generated.User{}, pgmap.TranslatePgErr(err)
 	}
