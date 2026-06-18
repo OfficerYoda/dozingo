@@ -21,6 +21,10 @@
                     <CheckSquare :size="15" class="top-stat-icon"/>
                     <span class="top-stat-value">{{ checkedCells.size }}<span class="top-stat-total"> / {{ selectedCells.length }}</span></span>
                 </div>
+                <button class="top-stat-pill top-fullscreen-btn" type="button" @click="toggleFullscreen" :aria-label="isFullscreen ? 'Fullscreen beenden' : 'Fullscreen'">
+                    <Minimize2 v-if="isFullscreen" :size="15"/>
+                    <Maximize2 v-else :size="15"/>
+                </button>
             </div>
             
             <div :class="['board', 'mt-3', { stopped: gameState === 'stopped', completed: gameState === 'completed' }]">
@@ -44,7 +48,7 @@
         </div>
 
         <Transition name="bingo-toast">
-            <div v-if="bingoToast" class="bingo-toast">
+            <div v-if="bingoToast && bingoModalDismissed" class="bingo-toast">
                 <span class="toast-cannon toast-cannon-left">
                     <span v-for="n in 12" :key="n" class="cannon-piece"
                           :style="{
@@ -66,6 +70,31 @@
                 </span>
             </div>
         </Transition>
+
+        <Teleport to="body">
+            <Transition name="bingo-modal">
+                <div v-if="showBingoModal" class="bingo-modal-overlay">
+                    <div class="bingo-modal">
+                        <div class="bingo-modal-burst">
+                            <span v-for="n in 40" :key="n" class="burst-piece"
+                                  :style="{
+                                      '--angle': ((n * 360) / 40) + 'deg',
+                                      '--distance': (100 + (n % 4) * 50) + 'px',
+                                      '--delay': ((n % 6) * 0.06) + 's',
+                                      '--duration': (0.8 + (n % 3) * 0.2) + 's',
+                                      backgroundColor: confettiColors[n % confettiColors.length],
+                                  }"></span>
+                        </div>
+                        <p class="bingo-modal-title">BINGO!</p>
+                        <p class="bingo-modal-sub">Du hast eine Reihe vervollständigt!</p>
+                        <div class="bingo-modal-actions">
+                            <button class="btn btn-secondary" @click="continuePlaying">Weiterspielen</button>
+                            <button class="btn btn-primary" @click="finishGame">Fertig!</button>
+                        </div>
+                    </div>
+                </div>
+            </Transition>
+        </Teleport>
 
         <Teleport to="body">
             <div v-if="gameState === 'completed'" class="party-overlay" @click="$router.push('/')">
@@ -145,8 +174,8 @@
 <script setup lang="ts">
 import { ref, computed, nextTick, useTemplateRef, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute } from 'vue-router'
-import { Heart, Play, Timer, CheckSquare, Sparkles, Dices, Star, ArrowLeft } from 'lucide-vue-next'
+import { useRoute, useRouter } from 'vue-router'
+import { Heart, Play, Timer, CheckSquare, Sparkles, Dices, Star, ArrowLeft, Maximize2, Minimize2 } from 'lucide-vue-next'
 import { usePageTitle } from '@/composables/usePageTitle'
 
 interface Board {
@@ -176,6 +205,7 @@ interface GameCell {
 
 useI18n()
 const route = useRoute()
+const router = useRouter()
 const { pageTitle } = usePageTitle('Bingo Game')
 
 const board = ref<Board | null>(null)
@@ -191,7 +221,24 @@ const checkedCells = ref<Set<string>>(new Set())
 const isRevealing = ref(false)
 const showParty = ref(false)
 const bingoToast = ref(false)
+const showBingoModal = ref(false)
+const bingoModalDismissed = ref(false)
 const completedLines = ref(new Set<string>())
+
+// --- Fullscreen ---
+const isFullscreen = ref(!!document.fullscreenElement)
+
+function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen()
+    } else {
+        document.exitFullscreen()
+    }
+}
+
+function onFullscreenChange() {
+    isFullscreen.value = !!document.fullscreenElement
+}
 const sweepingCells = ref(new Map<string, number>())
 let bingoToastTimeout: ReturnType<typeof setTimeout> | null = null
 const confettiColors = ['#4052B6', '#C0185A', '#2E7D32', '#F79F1F', '#5A5781', '#E3DFFF', '#EA2027']
@@ -492,6 +539,24 @@ async function handleCellClick(cellId: string) {
     }
 }
 
+function continuePlaying() {
+    showBingoModal.value = false
+    bingoModalDismissed.value = true
+}
+
+function finishGame() {
+    showBingoModal.value = false
+    bingoModalDismissed.value = true
+    stopTimer()
+    fetch(`/api/games/${gameId.value}/status`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'completed' }),
+    }).catch(() => {})
+    router.push('/')
+}
+
 function checkBingo() {
     const size = board.value?.size ?? 4
     const cells = selectedCells.value
@@ -545,8 +610,12 @@ function checkBingo() {
         }, duration)
 
         if (bingoToastTimeout) clearTimeout(bingoToastTimeout)
-        bingoToast.value = true
-        bingoToastTimeout = setTimeout(() => { bingoToast.value = false }, 2500)
+        if (!bingoModalDismissed.value) {
+            showBingoModal.value = true
+        } else {
+            bingoToast.value = true
+            bingoToastTimeout = setTimeout(() => { bingoToast.value = false }, 2500)
+        }
     }
 }
 
@@ -571,6 +640,7 @@ onMounted(() => {
     if (boardContainerRef.value) resizeObserver.observe(boardContainerRef.value)
     updateShadow()
     loadGame()
+    document.addEventListener('fullscreenchange', onFullscreenChange)
 })
 
 onUnmounted(() => {
@@ -578,6 +648,7 @@ onUnmounted(() => {
     stopTimer()
     stopTechno()
     if (bingoToastTimeout) clearTimeout(bingoToastTimeout)
+    document.removeEventListener('fullscreenchange', onFullscreenChange)
 })
 
 </script>
@@ -604,24 +675,27 @@ onUnmounted(() => {
 .stat-item {
     display: inline-flex;
     align-items: center;
-    gap: 3px;
+    gap: 6px;
     font-size: 0.75rem;
-    font-weight: 600;
-    background-color: var(--color-bg-muted);
+    font-weight: 700;
+    background-color: #E3DFFF;
     border-radius: var(--radius-sm);
-    padding: 3px 8px;
+    padding: 6px 12px;
+    white-space: nowrap;
     text-decoration: none;
+    color: #5A5781;
 }
 
 .stat-item.back {
-    color: inherit;
+    color: #2C2A51;
     border: none;
     cursor: pointer;
-    transition: background-color 0.15s;
+    transition: background-color 0.2s, color 0.2s;
 }
 
 .stat-item.back:hover {
-    background-color: color-mix(in srgb, var(--color-bg-muted) 70%, #000 15%);
+    background-color: #c7c2f5;
+    color: #2C2A51;
 }
 
 .stat-plays { color: #4052B6; }
@@ -629,10 +703,10 @@ onUnmounted(() => {
     color: #C0185A;
     cursor: pointer;
     border: none;
-    transition: transform 0.15s ease, background-color 0.15s;
+    transition: background-color 0.2s;
 }
-.stat-likes:hover { background-color: #f8d0de; }
-.stat-likes.liked { background-color: #fce4ec; }
+.stat-likes:hover { background-color: #c7c2f5; }
+.stat-likes.liked { background-color: #fce4ec; color: #C0185A; }
 
 .top-stat-pill {
     display: flex;
@@ -642,6 +716,19 @@ onUnmounted(() => {
     border-radius: var(--radius-sm);
     padding: 6px 12px;
     white-space: nowrap;
+}
+
+.top-fullscreen-btn {
+    border: none;
+    cursor: pointer;
+    color: #5A5781;
+    padding: 6px 10px;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.top-fullscreen-btn:hover {
+    background-color: #c7c2f5;
+    color: #2C2A51;
 }
 
 .top-stat-icon {
@@ -828,6 +915,93 @@ onUnmounted(() => {
 }
 
 /* Bingo Toast */
+/* === Bingo Modal === */
+.bingo-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(44, 42, 81, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 8000;
+    backdrop-filter: blur(4px);
+}
+
+.bingo-modal {
+    position: relative;
+    background: linear-gradient(135deg, #fff, #E3DFFF);
+    border: 3px solid #5A5781;
+    border-radius: var(--radius-lg);
+    padding: 32px 40px;
+    text-align: center;
+    box-shadow: 0 12px 48px rgba(44, 42, 81, 0.5);
+    max-width: min(90vw, 380px);
+}
+
+.bingo-modal-cannon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+}
+
+.bingo-modal-burst {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+    z-index: -1;
+}
+
+.bingo-modal-enter-active .bingo-modal-burst .burst-piece {
+    opacity: 0;
+    animation: burst-fly var(--duration) cubic-bezier(0.2, 0.7, 0.4, 1) calc(var(--delay) + 0.75s) forwards;
+}
+
+.bingo-modal-title {
+    font-size: 3rem;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    margin: 0 0 8px;
+    background: linear-gradient(90deg, #4052B6, #C0185A, #5A5781, #C0185A, #4052B6);
+    background-size: 300% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: title-shine 4s linear infinite;
+}
+
+.bingo-modal-sub {
+    color: #5A5781;
+    font-weight: 600;
+    margin: 0 0 24px;
+}
+
+.bingo-modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.bingo-modal-enter-active { animation: overlay-fade 0.25s ease-out; }
+.bingo-modal-leave-active { animation: overlay-fade 0.2s ease-in reverse forwards; }
+.bingo-modal-enter-active .bingo-modal { animation: banner-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.bingo-modal-leave-active .bingo-modal { animation: modal-out 0.2s ease-in forwards; }
+
+@keyframes modal-out {
+    from { opacity: 1; transform: scale(1); }
+    to   { opacity: 0; transform: scale(0.9); }
+}
+
+.bingo-modal-enter-active .bingo-modal-cannon .cannon-piece,
+.bingo-modal .cannon-piece {
+    --duration: 0.9s;
+}
+
 .bingo-toast {
     position: fixed;
     bottom: 32px;
