@@ -271,7 +271,7 @@ async function saveAndPlay() {
     )
 
     const savedCells = await boardService.getCellsForBoard(board.board_id)
-    const shuffled = [...savedCells].sort(() => Math.random() - 0.5)
+    const shuffled = [...savedCells].sort(() => Math.random() - 0.5).slice(0, size * size)
     const cellPositions = shuffled.map((cell, index) => ({ cell_id: cell.cell_id, position: index }))
 
     const game = await boardService.createGame(board.board_id, cellPositions)
