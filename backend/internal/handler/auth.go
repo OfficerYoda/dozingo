@@ -294,6 +294,6 @@ func userToOutput(user generated.User, avatarURLs *avatar.URLBuilder, fallbackUR
 		UserID:    user.ID.String(),
 		Username:  user.Username,
 		Email:     user.Email,
-		AvatarURL: avatarURLs.URL(user.AvatarKey, fallbackURL), // TODO:
+		AvatarURL: avatarURLs.URL(user.AvatarKey, fallbackURL),
 	}
 }

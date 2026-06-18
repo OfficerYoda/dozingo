@@ -83,7 +83,7 @@ func (s *TwoFactor) Confirm(ctx context.Context, passcode string) ([]string, err
 		return []string{}, err
 	}
 
-	user2fa, err := s.validateTOTP(ctx, pendingSession.UserID, pendingSession.Token, passcode)
+	user2fa, err := s.validateTOTP(ctx, pendingSession.UserID, passcode)
 	if err != nil {
 		return []string{}, err
 	}
@@ -100,14 +100,24 @@ func (s *TwoFactor) Confirm(ctx context.Context, passcode string) ([]string, err
 	hashedCodes := hashCodes(recoveryCodes)
 
 	err = s.txRunner.WithTx(ctx, func(r repository.Repos) error {
-		_, err = r.TwoFactor.MarkVerified(ctx, user2fa.UserID)
-		if err != nil {
+		txErr := r.TwoFactor.SetLastUsedCode(ctx, user2fa.UserID, passcode)
+		if txErr != nil {
+			return fmt.Errorf("store last used code: %w", err)
+		}
+
+		_, txErr = r.TwoFactor.MarkVerified(ctx, user2fa.UserID)
+		if txErr != nil {
 			return fmt.Errorf("mark user 2fa verified: %w", err)
 		}
 
-		_, err = r.RecoveryCodes.Create(ctx, user2fa.UserID, hashedCodes)
-		if err != nil {
+		_, txErr = r.RecoveryCodes.Create(ctx, user2fa.UserID, hashedCodes)
+		if txErr != nil {
 			return fmt.Errorf("store recovery codes: %w", err)
+		}
+
+		_, txErr = r.Sessions.SetTwoFAPending(ctx, pendingSession.Token, false)
+		if txErr != nil {
+			return fmt.Errorf("clear 2fa pending status: %w", err)
 		}
 
 		return nil
@@ -125,13 +135,21 @@ func (s *TwoFactor) Verify(ctx context.Context, passcode string) error {
 		return err
 	}
 
-	user2fa, err := s.validateTOTP(ctx, sessionUser.UserID, sessionUser.Token, passcode)
+	user2fa, err := s.validateTOTP(ctx, sessionUser.UserID, passcode)
 	if err != nil {
 		return err
 	}
 
 	if !user2fa.TotpVerifiedAt.Valid {
 		return fmt.Errorf("2fa not verified: %w", domain.ErrForbidden)
+	}
+
+	if err := s.twoFactor.SetLastUsedCode(ctx, sessionUser.UserID, passcode); err != nil {
+		return fmt.Errorf("store last used code: %w", err)
+	}
+
+	if _, err := s.sessions.SetTwoFAPending(ctx, sessionUser.Token, false); err != nil {
+		return fmt.Errorf("clear 2fa pending status: %w", err)
 	}
 
 	return nil
@@ -183,7 +201,7 @@ func (s *TwoFactor) RegenerateCodes(ctx context.Context, password string, totpCo
 		return nil, fmt.Errorf("2fa not active: %w", domain.ErrForbidden)
 	}
 
-	err = s.verifyPasswordAndAuth(ctx, sessionUser.UserID, user2fa.TotpSecret, password, totpCode, recoveryCode)
+	err = s.verifyPasswordAndAuth(ctx, sessionUser.UserID, user2fa, password, totpCode, recoveryCode)
 	if err != nil {
 		return nil, err
 	}
@@ -233,7 +251,7 @@ func (s *TwoFactor) Disable(ctx context.Context, password string, totpCode, reco
 		return fmt.Errorf("2fa not active: %w", domain.ErrForbidden)
 	}
 
-	if err := s.verifyPasswordAndAuth(ctx, sessionUser.UserID, user2fa.TotpSecret, password, totpCode, recoveryCode); err != nil {
+	if err := s.verifyPasswordAndAuth(ctx, sessionUser.UserID, user2fa, password, totpCode, recoveryCode); err != nil {
 		return err
 	}
 
@@ -250,8 +268,8 @@ func (s *TwoFactor) Disable(ctx context.Context, password string, totpCode, reco
 	})
 }
 
-// verifyPasswordAndAuth requires exactly one of totpCode and recoveryCode to be nil
-func (s *TwoFactor) verifyPasswordAndAuth(ctx context.Context, userID pgtype.UUID, totpSecret, password string, totpCode, recoveryCode *string) error {
+// verifyPasswordAndAuth requires exactly one of totpCode and recoveryCode to be provided.
+func (s *TwoFactor) verifyPasswordAndAuth(ctx context.Context, userID pgtype.UUID, user2fa generated.UserTwoFactor, password string, totpCode, recoveryCode *string) error {
 	switch {
 	case totpCode == nil && recoveryCode == nil:
 		return fmt.Errorf("totp code or recovery code required: %w", domain.ErrBadInput)
@@ -268,8 +286,15 @@ func (s *TwoFactor) verifyPasswordAndAuth(ctx context.Context, userID pgtype.UUI
 	}
 
 	if totpCode != nil {
-		if !totp.Validate(*totpCode, totpSecret) {
+		if user2fa.LastUsedCode.Valid &&
+			subtle.ConstantTimeCompare([]byte(user2fa.LastUsedCode.String), []byte(*totpCode)) == 1 {
+			return fmt.Errorf("code already used: %w", domain.ErrBadInput)
+		}
+		if !totp.Validate(*totpCode, user2fa.TotpSecret) {
 			return fmt.Errorf("invalid totp code: %w", domain.ErrBadInput)
+		}
+		if err := s.twoFactor.SetLastUsedCode(ctx, userID, *totpCode); err != nil {
+			return fmt.Errorf("store last used code: %w", err)
 		}
 
 		return nil
@@ -298,20 +323,19 @@ func (s *TwoFactor) consumeRecoveryCode(ctx context.Context, userID pgtype.UUID,
 	return fmt.Errorf("invalid recovery code: %w", domain.ErrBadInput)
 }
 
-func (s *TwoFactor) validateTOTP(ctx context.Context, userID pgtype.UUID, sessionToken, passcode string) (*generated.UserTwoFactor, error) {
+func (s *TwoFactor) validateTOTP(ctx context.Context, userID pgtype.UUID, passcode string) (*generated.UserTwoFactor, error) {
 	user2fa, err := s.twoFactor.GetByUserID(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("retrieve user two factor: %w", err)
 	}
 
-	valid := totp.Validate(passcode, user2fa.TotpSecret)
-	if !valid {
-		return nil, fmt.Errorf("invalid code: %w", domain.ErrBadInput)
+	if user2fa.LastUsedCode.Valid &&
+		subtle.ConstantTimeCompare([]byte(user2fa.LastUsedCode.String), []byte(passcode)) == 1 {
+		return nil, fmt.Errorf("code already used: %w", domain.ErrBadInput)
 	}
 
-	_, err = s.sessions.SetTwoFAPending(ctx, sessionToken, false)
-	if err != nil {
-		return nil, fmt.Errorf("clear 2fa pending status: %w", err)
+	if !totp.Validate(passcode, user2fa.TotpSecret) {
+		return nil, fmt.Errorf("invalid code: %w", domain.ErrBadInput)
 	}
 
 	return &user2fa, nil

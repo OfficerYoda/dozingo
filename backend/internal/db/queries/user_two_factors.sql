@@ -26,3 +26,9 @@ ON CONFLICT (user_id) DO UPDATE
         totp_verified_at = NULL,
         updated_at       = now()
 RETURNING *;
+
+-- name: SetLastUsedCode :exec
+UPDATE user_two_factors
+SET last_used_code = @code,
+    updated_at     = now()
+WHERE user_id = @user_id;

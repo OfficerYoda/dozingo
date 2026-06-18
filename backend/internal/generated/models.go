@@ -190,6 +190,7 @@ type UserTwoFactor struct {
 	TotpVerifiedAt pgtype.Timestamptz `json:"totp_verified_at"`
 	CreatedAt      pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+	LastUsedCode   pgtype.Text        `json:"last_used_code"`
 }
 
 type VerificationToken struct {

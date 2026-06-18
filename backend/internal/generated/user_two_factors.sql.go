@@ -14,7 +14,7 @@ import (
 const createTwoFactor = `-- name: CreateTwoFactor :one
 INSERT INTO user_two_factors (user_id, totp_secret)
 VALUES ($1, $2)
-RETURNING id, user_id, totp_secret, totp_verified_at, created_at, updated_at
+RETURNING id, user_id, totp_secret, totp_verified_at, created_at, updated_at, last_used_code
 `
 
 type CreateTwoFactorParams struct {
@@ -32,6 +32,7 @@ func (q *Queries) CreateTwoFactor(ctx context.Context, arg CreateTwoFactorParams
 		&i.TotpVerifiedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.LastUsedCode,
 	)
 	return i, err
 }
@@ -47,7 +48,7 @@ func (q *Queries) DeleteTwoFactor(ctx context.Context, userID pgtype.UUID) error
 }
 
 const getTwoFactorByUserID = `-- name: GetTwoFactorByUserID :one
-SELECT id, user_id, totp_secret, totp_verified_at, created_at, updated_at FROM user_two_factors
+SELECT id, user_id, totp_secret, totp_verified_at, created_at, updated_at, last_used_code FROM user_two_factors
 WHERE user_id = $1
 `
 
@@ -61,6 +62,7 @@ func (q *Queries) GetTwoFactorByUserID(ctx context.Context, userID pgtype.UUID) 
 		&i.TotpVerifiedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.LastUsedCode,
 	)
 	return i, err
 }
@@ -70,7 +72,7 @@ UPDATE user_two_factors
 SET totp_verified_at = now(),
     updated_at = now()
 WHERE user_id = $1
-RETURNING id, user_id, totp_secret, totp_verified_at, created_at, updated_at
+RETURNING id, user_id, totp_secret, totp_verified_at, created_at, updated_at, last_used_code
 `
 
 func (q *Queries) MarkTwoFactorVerified(ctx context.Context, userID pgtype.UUID) (UserTwoFactor, error) {
@@ -83,8 +85,26 @@ func (q *Queries) MarkTwoFactorVerified(ctx context.Context, userID pgtype.UUID)
 		&i.TotpVerifiedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.LastUsedCode,
 	)
 	return i, err
+}
+
+const setLastUsedCode = `-- name: SetLastUsedCode :exec
+UPDATE user_two_factors
+SET last_used_code = $1,
+    updated_at     = now()
+WHERE user_id = $2
+`
+
+type SetLastUsedCodeParams struct {
+	Code   pgtype.Text `json:"code"`
+	UserID pgtype.UUID `json:"user_id"`
+}
+
+func (q *Queries) SetLastUsedCode(ctx context.Context, arg SetLastUsedCodeParams) error {
+	_, err := q.db.Exec(ctx, setLastUsedCode, arg.Code, arg.UserID)
+	return err
 }
 
 const upsertTwoFactor = `-- name: UpsertTwoFactor :one
@@ -94,7 +114,7 @@ ON CONFLICT (user_id) DO UPDATE
     SET totp_secret      = EXCLUDED.totp_secret,
         totp_verified_at = NULL,
         updated_at       = now()
-RETURNING id, user_id, totp_secret, totp_verified_at, created_at, updated_at
+RETURNING id, user_id, totp_secret, totp_verified_at, created_at, updated_at, last_used_code
 `
 
 type UpsertTwoFactorParams struct {
@@ -112,6 +132,7 @@ func (q *Queries) UpsertTwoFactor(ctx context.Context, arg UpsertTwoFactorParams
 		&i.TotpVerifiedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.LastUsedCode,
 	)
 	return i, err
 }

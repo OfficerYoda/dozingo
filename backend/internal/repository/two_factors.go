@@ -58,3 +58,10 @@ func (r *TwoFactor) MarkVerified(ctx context.Context, userID pgtype.UUID) (gener
 func (r *TwoFactor) Delete(ctx context.Context, userID pgtype.UUID) error {
 	return pgmap.TranslatePgErr(r.queries.DeleteTwoFactor(ctx, userID))
 }
+
+func (r *TwoFactor) SetLastUsedCode(ctx context.Context, userID pgtype.UUID, code string) error {
+	return pgmap.TranslatePgErr(r.queries.SetLastUsedCode(ctx, generated.SetLastUsedCodeParams{
+		UserID: userID,
+		Code:   pgtype.Text{String: code, Valid: true},
+	}))
+}

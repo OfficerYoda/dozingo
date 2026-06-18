@@ -41,6 +41,19 @@ func generateTOTPCode(t *testing.T, secret string) string {
 	return code
 }
 
+// generateFreshTOTPCode produces a valid 6-digit TOTP code guaranteed to be
+// different from the current window's code by using the next 30-second window.
+// Use this after a previous TOTP code has already been consumed (e.g. after
+// confirm2FA) to avoid hitting the replay guard.
+func generateFreshTOTPCode(t *testing.T, secret string) string {
+	t.Helper()
+	code, err := totp.GenerateCode(secret, time.Now().Add(30*time.Second))
+	if err != nil {
+		t.Fatalf("generateFreshTOTPCode: failed to generate code: %v", err)
+	}
+	return code
+}
+
 // confirm2FA calls POST /api/auth/2fa/confirm with a valid TOTP code as the
 // given user. Fails the test if confirm does not return 200 with recovery codes.
 func confirm2FA(t *testing.T, userID, secret string) {
@@ -264,7 +277,7 @@ func TestConfirm2FA_AlreadyVerified_Returns409(t *testing.T) {
 
 	uid := userIDFromString(t, userID)
 	row, _ := load2FARow(t, uid)
-	code := generateTOTPCode(t, row.TotpSecret)
+	code := generateFreshTOTPCode(t, row.TotpSecret)
 	w := doRequestWithCookies(http.MethodPost, "/api/auth/2fa/confirm",
 		map[string]any{"code": code}, cookiesFor(userID))
 	assertStatus(t, w, http.StatusConflict)
@@ -282,7 +295,7 @@ func TestVerify2FA_Success(t *testing.T) {
 	// Simulate login: mark session pending as the login flow would do.
 	setSessionPending(t, userCookies[userID].Value)
 
-	code := generateTOTPCode(t, secret)
+	code := generateFreshTOTPCode(t, secret)
 	w := doRequestWithCookies(http.MethodPost, "/api/auth/2fa/verify",
 		map[string]any{"code": code}, cookiesFor(userID))
 	assertStatus(t, w, http.StatusNoContent)
@@ -482,7 +495,7 @@ func TestLogin_With2FA_FullFlow(t *testing.T) {
 
 	// The user calls /verify with the pending session cookie
 	pendingCookie := &http.Cookie{Name: "session_token", Value: tok}
-	code := generateTOTPCode(t, secret)
+	code := generateFreshTOTPCode(t, secret)
 	verifyW := doRequestWithCookies(http.MethodPost, "/api/auth/2fa/verify",
 		map[string]any{"code": code}, []*http.Cookie{pendingCookie})
 	assertStatus(t, verifyW, http.StatusNoContent)
@@ -722,7 +735,7 @@ func TestRegenerateCodes_WithTOTP_Success(t *testing.T) {
 	secret := setup2FA(t, userID)
 	oldCodes := confirm2FAWithCodes(t, userID, secret)
 
-	totpCode := generateTOTPCode(t, secret)
+	totpCode := generateFreshTOTPCode(t, secret)
 	w := doRequestWithCookies(http.MethodPost, "/api/auth/2fa/regenerate-codes",
 		map[string]any{"password": "testpassword123", "code": totpCode},
 		cookiesFor(userID))
@@ -778,7 +791,7 @@ func TestRegenerateCodes_WrongPassword_Returns401(t *testing.T) {
 	secret := setup2FA(t, userID)
 	confirm2FA(t, userID, secret)
 
-	totpCode := generateTOTPCode(t, secret)
+	totpCode := generateFreshTOTPCode(t, secret)
 	w := doRequestWithCookies(http.MethodPost, "/api/auth/2fa/regenerate-codes",
 		map[string]any{"password": "wrongpassword1", "code": totpCode},
 		cookiesFor(userID))
@@ -818,7 +831,7 @@ func TestRegenerateCodes_BothAuthMethods_Returns400(t *testing.T) {
 	secret := setup2FA(t, userID)
 	codes := confirm2FAWithCodes(t, userID, secret)
 
-	totpCode := generateTOTPCode(t, secret)
+	totpCode := generateFreshTOTPCode(t, secret)
 	w := doRequestWithCookies(http.MethodPost, "/api/auth/2fa/regenerate-codes",
 		map[string]any{"password": "testpassword123", "code": totpCode, "recovery_code": codes[0]},
 		cookiesFor(userID))
@@ -854,7 +867,7 @@ func TestDisable2FA_WithTOTP_Success(t *testing.T) {
 	secret := setup2FA(t, userID)
 	confirm2FA(t, userID, secret)
 
-	totpCode := generateTOTPCode(t, secret)
+	totpCode := generateFreshTOTPCode(t, secret)
 	w := doRequestWithCookies(http.MethodDelete, "/api/auth/2fa",
 		map[string]any{"password": "testpassword123", "code": totpCode},
 		cookiesFor(userID))
@@ -914,7 +927,7 @@ func TestDisable2FA_WrongPassword_Returns401(t *testing.T) {
 	secret := setup2FA(t, userID)
 	confirm2FA(t, userID, secret)
 
-	totpCode := generateTOTPCode(t, secret)
+	totpCode := generateFreshTOTPCode(t, secret)
 	w := doRequestWithCookies(http.MethodDelete, "/api/auth/2fa",
 		map[string]any{"password": "wrongpassword1", "code": totpCode},
 		cookiesFor(userID))
@@ -954,7 +967,7 @@ func TestDisable2FA_BothAuthMethods_Returns400(t *testing.T) {
 	secret := setup2FA(t, userID)
 	codes := confirm2FAWithCodes(t, userID, secret)
 
-	totpCode := generateTOTPCode(t, secret)
+	totpCode := generateFreshTOTPCode(t, secret)
 	w := doRequestWithCookies(http.MethodDelete, "/api/auth/2fa",
 		map[string]any{"password": "testpassword123", "code": totpCode, "recovery_code": codes[0]},
 		cookiesFor(userID))
@@ -978,4 +991,73 @@ func TestDisable2FA_No2FA_Returns403(t *testing.T) {
 		map[string]any{"password": "testpassword123", "code": "123456"},
 		cookiesFor(userID))
 	assertStatus(t, w, http.StatusForbidden)
+}
+
+// ===== Replay prevention =====
+
+func TestVerify2FA_CodeReuse_Returns400(t *testing.T) {
+	setupTest(t)
+
+	userID := createTestUser(t, "replayverify", "replayverify@example.com")
+	secret := setup2FA(t, userID)
+	confirm2FA(t, userID, secret)
+
+	// First login: mark session pending, use the code once.
+	code := generateFreshTOTPCode(t, secret)
+	setSessionPending(t, userCookies[userID].Value)
+	w := doRequestWithCookies(http.MethodPost, "/api/auth/2fa/verify",
+		map[string]any{"code": code}, cookiesFor(userID))
+	assertStatus(t, w, http.StatusNoContent)
+
+	// Second login: mark the same session pending again and replay the code.
+	// totp.Validate would still accept it (same 30s window), but our guard must not.
+	setSessionPending(t, userCookies[userID].Value)
+	w2 := doRequestWithCookies(http.MethodPost, "/api/auth/2fa/verify",
+		map[string]any{"code": code}, cookiesFor(userID))
+	assertStatus(t, w2, http.StatusBadRequest)
+}
+
+func TestRegenerateCodes_CodeReuse_Returns400(t *testing.T) {
+	setupTest(t)
+
+	userID := createTestUser(t, "replayregen", "replayregen@example.com")
+	secret := setup2FA(t, userID)
+	confirm2FA(t, userID, secret)
+
+	// Use the TOTP code for regenerate once.
+	code := generateFreshTOTPCode(t, secret)
+	w := doRequestWithCookies(http.MethodPost, "/api/auth/2fa/regenerate-codes",
+		map[string]any{"password": "testpassword123", "code": code},
+		cookiesFor(userID))
+	assertStatus(t, w, http.StatusOK)
+
+	// Immediately replay the same code — must be rejected.
+	w2 := doRequestWithCookies(http.MethodPost, "/api/auth/2fa/regenerate-codes",
+		map[string]any{"password": "testpassword123", "code": code},
+		cookiesFor(userID))
+	assertStatus(t, w2, http.StatusBadRequest)
+}
+
+func TestDisable2FA_CodeReuse_Returns400(t *testing.T) {
+	setupTest(t)
+
+	// Use regenerate-codes to consume the code (disable would succeed and
+	// remove 2FA, making a second disable attempt impossible). This verifies
+	// the shared last_used_code guard across endpoints.
+	userID := createTestUser(t, "replaydisable", "replaydisable@example.com")
+	secret := setup2FA(t, userID)
+	confirm2FA(t, userID, secret)
+
+	// Consume the code via regenerate first.
+	code := generateFreshTOTPCode(t, secret)
+	w := doRequestWithCookies(http.MethodPost, "/api/auth/2fa/regenerate-codes",
+		map[string]any{"password": "testpassword123", "code": code},
+		cookiesFor(userID))
+	assertStatus(t, w, http.StatusOK)
+
+	// Now replay the same code against disable — must be rejected.
+	w2 := doRequestWithCookies(http.MethodDelete, "/api/auth/2fa",
+		map[string]any{"password": "testpassword123", "code": code},
+		cookiesFor(userID))
+	assertStatus(t, w2, http.StatusBadRequest)
 }
