@@ -136,13 +136,10 @@ async function handlePWRequest() {
     info.value = ''
     loading.value = true
     try {
-        const status = await pwRequest(email.value)
-        if (status !== null) {
-            error.value = 'Something went wrong. Please try again.'
-            return
-        }
+        await pwRequest(email.value)
         info.value = 'If we find your account, you will receive a mail to reset your password. This can take up to 5 minutes.'
-        return;
+    } catch {
+        error.value = 'Something went wrong. Please try again.'
     } finally {
         loading.value = false
     }

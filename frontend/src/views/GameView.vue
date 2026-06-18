@@ -1,6 +1,7 @@
 <template>
     <section>
         <div class="container">
+            <p v-if="error" class="game-load-error">{{ error }}</p>
             <div class="top-item-bar">
                 <div class="top-board-info">
                     <div class="stats">
@@ -624,6 +625,11 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+
+.game-load-error {
+    color: var(--color-danger, #e53e3e);
+    padding: 1rem 0;
+}
 
 .top-item-bar {
     display: flex;

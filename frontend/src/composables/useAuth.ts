@@ -33,7 +33,7 @@ async function logout(): Promise<void> {
     state.user = null
 }
 
-async function pwRequest(email: string) {
+async function pwRequest(email: string): Promise<void> {
     await authService.forgotPassword(email)
 }
 
