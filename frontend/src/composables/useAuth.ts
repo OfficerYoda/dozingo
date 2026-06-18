@@ -1,12 +1,7 @@
 import { reactive, readonly } from 'vue'
-
-interface User {
-    user_id: string
-    username: string
-    email: string | null
-    avatar_url: string | null 
-}
-
+import * as authService from '../services/auth.services' 
+import type { User } from '../services/api.type'
+ 
 const state = reactive<{
     user: User | null
     ready: boolean
@@ -16,9 +11,8 @@ const state = reactive<{
 })
 
 async function fetchUser(): Promise<void> {
-    try {
-        const res = await fetch('/api/users/me', { credentials: 'include' })
-        state.user = res.ok ? await res.json() : null
+    try { 
+        state.user = await authService.getMe()
     } catch {
         state.user = null
     } finally {
@@ -26,44 +20,21 @@ async function fetchUser(): Promise<void> {
     }
 }
 
-async function login(username: string, password: string): Promise<number | null> {
-    const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ username, password }),
-    })
-    if (!res.ok) return res.status
-    state.user = await res.json()
-    return null
+async function login(username: string, password: string): Promise<void> {
+    state.user = await authService.login(username, password)
 }
 
-async function register(username: string, password: string, email?: string): Promise<number | null> {
-    const res = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ username, password, ...(email ? { email } : {}) }),
-    })
-    if (!res.ok) return res.status
-    state.user = await res.json()
-    return null
+async function register(username: string, password: string, email?: string): Promise<void> {
+    state.user = await authService.register(username, password, email)
 }
 
 async function logout(): Promise<void> {
-    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
+    await authService.logout()
     state.user = null
 }
 
-async function pwRequest(email: string): Promise<number | null> {
-    const res = await fetch('/api/auth/forgot-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ email }),
-    })
-    if (!res.ok) return res.status
-    return null
+async function pwRequest(email: string) {
+    await authService.forgotPassword(email)
 }
 
 export function useAuth() {
