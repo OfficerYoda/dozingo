@@ -9,11 +9,11 @@ import (
 	"github.com/officeryoda/dozingo/internal/pgmap"
 )
 
-type UserPasswords struct {
+type Passwords struct {
 	queries *generated.Queries
 }
 
-func (r *UserPasswords) GetHashForUserID(ctx context.Context, userID pgtype.UUID) (string, error) {
+func (r *Passwords) GetHashForUserID(ctx context.Context, userID pgtype.UUID) (string, error) {
 	hash, err := r.queries.GetPasswordHashByUserID(ctx, userID)
 	if err != nil {
 		return "", pgmap.TranslatePgErr(err)
@@ -22,7 +22,7 @@ func (r *UserPasswords) GetHashForUserID(ctx context.Context, userID pgtype.UUID
 	return hash, nil
 }
 
-func (r *UserPasswords) Upsert(ctx context.Context, userID pgtype.UUID, passwordHash string) (generated.UserPassword, error) {
+func (r *Passwords) Upsert(ctx context.Context, userID pgtype.UUID, passwordHash string) (generated.UserPassword, error) {
 	userPassword, err := r.queries.UpsertUserPassword(ctx, generated.UpsertUserPasswordParams{
 		UserID:       userID,
 		PasswordHash: passwordHash,

@@ -26,12 +26,12 @@ func NewURLBuilder(publicURL, bucket string) (*URLBuilder, error) {
 	}, nil
 }
 
-func (b *URLBuilder) URL(avatarKey string) *string {
+func (b *URLBuilder) URL(avatarKey, fallbackURL string) string {
 	if b == nil {
-		return nil
+		return fallbackURL
 	}
 	if strings.TrimSpace(avatarKey) == "" {
-		return nil
+		return fallbackURL
 	}
 	u := url.URL{
 		Scheme: b.scheme,
@@ -40,5 +40,5 @@ func (b *URLBuilder) URL(avatarKey string) *string {
 	}
 	s := u.String()
 
-	return &s
+	return s
 }

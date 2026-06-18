@@ -89,6 +89,7 @@ func TestRegister_GeneratorFails_StillSucceedsWithDefaultKey(t *testing.T) {
 	w := doRequest(http.MethodPost, "/api/auth/register", map[string]any{
 		"username": "genfail",
 		"password": "mypassword123",
+		"email":    "genfail@example.com",
 	})
 	assertStatus(t, w, http.StatusOK)
 
@@ -132,6 +133,7 @@ func TestRegister_UploaderFails_StillSucceedsWithDefaultKey(t *testing.T) {
 	w := doRequest(http.MethodPost, "/api/auth/register", map[string]any{
 		"username": "uploadfail",
 		"password": "mypassword123",
+		"email":    "uploadfail@example.com",
 	})
 	assertStatus(t, w, http.StatusOK)
 
@@ -162,6 +164,7 @@ func TestRegister_GeneratorErrorDoesNotLeak(t *testing.T) {
 	w := doRequest(http.MethodPost, "/api/auth/register", map[string]any{
 		"username": "leaktest",
 		"password": "mypassword123",
+		"email":    "leaktest@example.com",
 	})
 	assertStatus(t, w, http.StatusOK)
 

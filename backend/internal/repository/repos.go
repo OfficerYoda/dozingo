@@ -14,9 +14,11 @@ type Repos struct {
 	GameCells          *GameCells
 	Games              *Games
 	Informations       *Informations
-	Passwords          *UserPasswords
+	Passwords          *Passwords
+	RecoveryCodes      *RecoveryCodes
 	Stats              *Stats
 	Sessions           *Sessions
+	TwoFactor          *TwoFactor
 	Users              *Users
 	VerificationTokens *VerificationTokens
 	Votes              *Votes
@@ -36,9 +38,11 @@ func NewWithDBTX(db generated.DBTX) Repos {
 		GameCells:          &GameCells{queries: queries},
 		Games:              &Games{queries: queries},
 		Informations:       &Informations{queries: queries},
-		Passwords:          &UserPasswords{queries: queries},
+		Passwords:          &Passwords{queries: queries},
+		RecoveryCodes:      &RecoveryCodes{queries: queries},
 		Stats:              &Stats{queries: queries},
 		Sessions:           &Sessions{queries: queries},
+		TwoFactor:          &TwoFactor{queries: queries},
 		Users:              &Users{queries: queries},
 		VerificationTokens: &VerificationTokens{queries: queries},
 		Votes:              &Votes{queries: queries},

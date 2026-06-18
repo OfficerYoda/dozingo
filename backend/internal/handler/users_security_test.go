@@ -27,7 +27,7 @@ func TestSecurityInformation_AnonSession_401(t *testing.T) {
 func TestSecurityInformation_Authenticated(t *testing.T) {
 	setupTest(t)
 
-	resp := createTestUserWithRegister(t, "secuser", "pw12345678", nil)
+	resp := createTestUserWithRegister(t, "secuser", "pw12345678", stringPtr("secuser@example.com"))
 	userID := (*resp)["user_id"].(string)
 
 	w := doRequestWithCookies(http.MethodGet, "/api/users/me/security", nil, cookiesFor(userID))
@@ -60,7 +60,7 @@ func TestSecurityInformation_Authenticated(t *testing.T) {
 func TestSecurityInformation_ActiveSessionsCount(t *testing.T) {
 	setupTest(t)
 
-	resp := createTestUserWithRegister(t, "secmulti", "pw12345678", nil)
+	resp := createTestUserWithRegister(t, "secmulti", "pw12345678", stringPtr("secmulti@example.com"))
 	userID := (*resp)["user_id"].(string)
 
 	// Open a second session via login.
@@ -82,7 +82,7 @@ func TestSecurityInformation_ActiveSessionsCount(t *testing.T) {
 func TestSecurityInformation_ActiveSessionsCount_ExcludesExpired(t *testing.T) {
 	setupTest(t)
 
-	resp := createTestUserWithRegister(t, "secexpired", "pw12345678", nil)
+	resp := createTestUserWithRegister(t, "secexpired", "pw12345678", stringPtr("secexpired@example.com"))
 	userID := (*resp)["user_id"].(string)
 	cookie := cookiesFor(userID)
 

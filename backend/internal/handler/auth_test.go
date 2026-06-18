@@ -35,28 +35,6 @@ func TestRegister_Success(t *testing.T) {
 	}
 }
 
-func TestRegister_WithoutEmail(t *testing.T) {
-	setupTest(t)
-
-	body := map[string]any{
-		"username": "noemailuser",
-		"password": "mypassword123",
-	}
-
-	w := doRequest(http.MethodPost, "/api/auth/register", body)
-	assertStatus(t, w, http.StatusOK)
-
-	var resp map[string]any
-	decodeJSON(t, w, &resp)
-
-	assertJSONField(t, resp, "username", "noemailuser")
-
-	// Email should be null/nil when not provided
-	if resp["email"] != nil {
-		t.Errorf("expected email to be null, got %v", resp["email"])
-	}
-}
-
 func TestRegister_WithEmail_SendsVerificationMail(t *testing.T) {
 	setupTest(t)
 
@@ -85,20 +63,6 @@ func TestRegister_WithEmail_SendsVerificationMail(t *testing.T) {
 	userID := userIDFromString(t, resp["user_id"].(string))
 	if got := countValidTokens(t, userID, generated.TokenTypeEmailVerification); got != 1 {
 		t.Errorf("expected 1 valid email_verification token in DB after register, got %d", got)
-	}
-}
-
-func TestRegister_WithoutEmail_NoVerificationMail(t *testing.T) {
-	setupTest(t)
-
-	w := doRequest(http.MethodPost, "/api/auth/register", map[string]any{
-		"username": "regnoemail",
-		"password": "mypassword123",
-	})
-	assertStatus(t, w, http.StatusOK)
-
-	if fakeMailer.verifyCount() != 0 {
-		t.Errorf("expected no verification mail when registering without email, got %d", fakeMailer.verifyCount())
 	}
 }
 
@@ -223,30 +187,6 @@ func TestLogin_NonexistentUser(t *testing.T) {
 	assertStatus(t, w, http.StatusUnauthorized)
 }
 
-func TestLogin_WithoutEmail(t *testing.T) {
-	setupTest(t)
-
-	createTestUserWithRegister(t, "noemaillogin", "mypassword", nil)
-
-	body := map[string]any{
-		"username": "noemaillogin",
-		"password": "mypassword",
-	}
-
-	w := doRequest(http.MethodPost, "/api/auth/login", body)
-	assertStatus(t, w, http.StatusOK)
-
-	var resp map[string]any
-	decodeJSON(t, w, &resp)
-
-	assertJSONField(t, resp, "username", "noemaillogin")
-
-	// Email should be null for user registered without email
-	if resp["email"] != nil {
-		t.Errorf("expected email to be null, got %v", resp["email"])
-	}
-}
-
 /// ===== Register: cookies & ID =====
 
 func TestRegister_ReturnsID(t *testing.T) {
@@ -266,6 +206,7 @@ func TestRegister_SetsSessionCookie(t *testing.T) {
 	w := doRequest(http.MethodPost, "/api/auth/register", map[string]any{
 		"username": "cookieuser",
 		"password": "mypassword123",
+		"email":    "cookieuser@example.com",
 	})
 	assertStatus(t, w, http.StatusOK)
 
@@ -308,6 +249,7 @@ func TestRegister_AttachesExistingAnonSession(t *testing.T) {
 	w := doRequestWithCookies(http.MethodPost, "/api/auth/register", map[string]any{
 		"username": "anonattach",
 		"password": "anonattach123",
+		"email":    "anonattach@example.com",
 	}, []*http.Cookie{cookie})
 	assertStatus(t, w, http.StatusOK)
 
@@ -374,7 +316,7 @@ func TestLogin_AttachesExistingAnonSession(t *testing.T) {
 
 	// Register a user first (this will create its own session, but we don't
 	// reuse it here -- we want a fresh anon cookie below).
-	createTestUserWithRegister(t, "anonloginer", "pw12345678", nil)
+	createTestUserWithRegister(t, "anonloginer", "pw12345678", stringPtr("anonloginer@example.com"))
 
 	token, cookie := mintAnonSession(t, 30*24*time.Hour)
 
@@ -411,6 +353,7 @@ func TestLogout_AuthenticatedDeletesSessionAndClearsCookie(t *testing.T) {
 	r := doRequest(http.MethodPost, "/api/auth/register", map[string]any{
 		"username": "logoutuser",
 		"password": "pw12345678",
+		"email":    "logoutuser@example.com",
 	})
 	assertStatus(t, r, http.StatusOK)
 	cookie := extractSessionCookie(r)

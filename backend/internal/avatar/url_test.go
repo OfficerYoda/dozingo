@@ -19,12 +19,9 @@ func TestNewURLBuilder_ValidHTTPS(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	got := b.URL("a.png")
-	if got == nil {
-		t.Fatalf("expected non-nil URL for non-empty key")
-	}
-	if *got != "https://pics.garage.example.com/a.png" {
-		t.Errorf("expected https URL, got %q", *got)
+	got := b.URL("a.png", "")
+	if got != "https://pics.garage.example.com/a.png" {
+		t.Errorf("expected https URL, got %q", got)
 	}
 }
 
@@ -41,13 +38,10 @@ func TestURLBuilder_URL_BasicHTTP(t *testing.T) {
 	if err != nil {
 		t.Fatalf("setup: %v", err)
 	}
-	got := b.URL("abcd.svg")
-	if got == nil {
-		t.Fatal("expected non-nil URL")
-	}
+	got := b.URL("abcd.svg", "")
 	const want = "http://profile-pictures.garage.test/abcd.svg"
-	if *got != want {
-		t.Errorf("expected %q, got %q", want, *got)
+	if got != want {
+		t.Errorf("expected %q, got %q", want, got)
 	}
 }
 
@@ -56,50 +50,47 @@ func TestURLBuilder_URL_HostWithPort(t *testing.T) {
 	if err != nil {
 		t.Fatalf("setup: %v", err)
 	}
-	got := b.URL("key.png")
-	if got == nil {
-		t.Fatal("expected non-nil URL")
-	}
+	got := b.URL("key.png", "")
 	const want = "http://pics.garage.test:3900/key.png"
-	if *got != want {
-		t.Errorf("expected %q, got %q", want, *got)
+	if got != want {
+		t.Errorf("expected %q, got %q", want, got)
 	}
 }
 
 func TestURLBuilder_URL_PreservesUUIDStyleKey(t *testing.T) {
 	b, _ := NewURLBuilder("http://garage.test", "profile-pictures")
 	key := "11111111-2222-3333-4444-555555555555.png"
-	got := b.URL(key)
-	if got == nil {
-		t.Fatal("expected non-nil URL")
-	}
-	if want := "http://profile-pictures.garage.test/" + key; *got != want {
-		t.Errorf("expected %q, got %q", want, *got)
+	got := b.URL(key, "")
+	if want := "http://profile-pictures.garage.test/" + key; got != want {
+		t.Errorf("expected %q, got %q", want, got)
 	}
 }
 
-func TestURLBuilder_URL_EmptyKey_ReturnsNil(t *testing.T) {
+func TestURLBuilder_URL_EmptyKey_ReturnsFallback(t *testing.T) {
 	b, _ := NewURLBuilder("http://garage.test", "pics")
-	if got := b.URL(""); got != nil {
-		t.Errorf("expected nil for empty key, got %q", *got)
+	const fallback = "http://profile-pictures.garage.test/default.svg"
+	if got := b.URL("", fallback); got != fallback {
+		t.Errorf("expected fallback for empty key, got %q", got)
 	}
 }
 
-func TestURLBuilder_URL_WhitespaceKey_ReturnsNil(t *testing.T) {
+func TestURLBuilder_URL_WhitespaceKey_ReturnsFallback(t *testing.T) {
 	b, _ := NewURLBuilder("http://garage.test", "pics")
-	if got := b.URL("   "); got != nil {
-		t.Errorf("expected nil for whitespace-only key, got %q", *got)
+	const fallback = "http://profile-pictures.garage.test/default.svg"
+	if got := b.URL("   ", fallback); got != fallback {
+		t.Errorf("expected fallback for whitespace-only key, got %q", got)
 	}
-	if got := b.URL("\t\n"); got != nil {
-		t.Errorf("expected nil for whitespace-only key, got %q", *got)
+	if got := b.URL("\t\n", fallback); got != fallback {
+		t.Errorf("expected fallback for whitespace-only key, got %q", got)
 	}
 }
 
-func TestURLBuilder_URL_NilReceiver_ReturnsNil(t *testing.T) {
+func TestURLBuilder_URL_NilReceiver_ReturnsFallback(t *testing.T) {
 	// The production code defensively guards against a nil *URLBuilder
 	// receiver. This test pins that contract so callers can rely on it.
 	var b *URLBuilder
-	if got := b.URL("anything.png"); got != nil {
-		t.Errorf("expected nil URL from nil builder, got %q", *got)
+	const fallback = "http://profile-pictures.garage.test/default.svg"
+	if got := b.URL("anything.png", fallback); got != fallback {
+		t.Errorf("expected fallback URL from nil builder, got %q", got)
 	}
 }

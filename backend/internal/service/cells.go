@@ -49,7 +49,7 @@ func (s *Cells) ListByBoardID(ctx context.Context, boardID pgtype.UUID) ([]gener
 }
 
 func (s *Cells) Create(ctx context.Context, in CreateCellInput) (generated.Cell, error) {
-	err := checkIfCallerOwnsBoard(ctx, s, in.BoardID)
+	err := s.checkIfCallerOwnsBoard(ctx, in.BoardID)
 	if err != nil {
 		return generated.Cell{}, err
 	}
@@ -68,12 +68,13 @@ func (s *Cells) Create(ctx context.Context, in CreateCellInput) (generated.Cell,
 }
 
 func (s *Cells) Update(ctx context.Context, in UpdateCellInput) (generated.Cell, error) {
-	err := checkIfCallerOwnsBoard(ctx, s, in.BoardID)
+	err := s.checkIfCallerOwnsBoard(ctx, in.BoardID)
 	if err != nil {
 		return generated.Cell{}, err
 	}
 
-	if err := s.assertCellOnBoard(ctx, in.CellID, in.BoardID); err != nil {
+	err = s.assertCellOnBoard(ctx, in.CellID, in.BoardID)
+	if err != nil {
 		return generated.Cell{}, err
 	}
 
@@ -81,15 +82,17 @@ func (s *Cells) Update(ctx context.Context, in UpdateCellInput) (generated.Cell,
 }
 
 func (s *Cells) Delete(ctx context.Context, in DeleteCellInput) error {
-	if err := checkIfCallerOwnsBoard(ctx, s, in.BoardID); err != nil {
+	err := s.checkIfCallerOwnsBoard(ctx, in.BoardID)
+	if err != nil {
 		return err
 	}
 
-	if err := s.assertCellOnBoard(ctx, in.CellID, in.BoardID); err != nil {
+	err = s.assertCellOnBoard(ctx, in.CellID, in.BoardID)
+	if err != nil {
 		return err
 	}
 
-	_, err := s.cells.Delete(ctx, repository.DeleteCellInput(in))
+	_, err = s.cells.Delete(ctx, repository.DeleteCellInput(in))
 
 	return err
 }
@@ -106,7 +109,7 @@ func (s *Cells) assertCellOnBoard(ctx context.Context, cellID, boardID pgtype.UU
 	return nil
 }
 
-func checkIfCallerOwnsBoard(ctx context.Context, s *Cells, boardID pgtype.UUID) error {
+func (s *Cells) checkIfCallerOwnsBoard(ctx context.Context, boardID pgtype.UUID) error {
 	sessionUser, err := middleware.RequireSession(ctx, s.queries)
 	if err != nil {
 		return fmt.Errorf("session required: %w", err)
