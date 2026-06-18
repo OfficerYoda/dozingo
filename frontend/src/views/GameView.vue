@@ -17,10 +17,6 @@
                     <Timer :size="15" class="top-stat-icon"/>
                     <span class="top-stat-value">{{ formattedTime }}</span>
                 </div>
-                <div class="top-stat-pill">
-                    <CheckSquare :size="15" class="top-stat-icon"/>
-                    <span class="top-stat-value">{{ checkedCells.size }}<span class="top-stat-total"> / {{ selectedCells.length }}</span></span>
-                </div>
                 <button class="top-stat-pill top-fullscreen-btn" type="button" @click="toggleFullscreen" :aria-label="isFullscreen ? 'Fullscreen beenden' : 'Fullscreen'">
                     <Minimize2 v-if="isFullscreen" :size="15"/>
                     <Maximize2 v-else :size="15"/>
@@ -159,7 +155,7 @@
                     </div>
                     <h1 class="party-title">DOZINGO!</h1>
                     <p class="party-subtitle">{{ formattedTime }} · alle {{ selectedCells.length }} Felder geschafft</p>
-                    <RouterLink to="/" class="btn btn-primary mt-3" @click="dismissParty">Zur Startseite</RouterLink>
+                    <RouterLink to="/" class="btn btn-primary mt-3">Zur Startseite</RouterLink>
                 </div>
             </div>
         </Teleport>
@@ -204,7 +200,6 @@ const router = useRouter()
 const { pageTitle } = usePageTitle('Bingo Game')
 
 const board = ref<Board | null>(null)
-const error = ref<string | null>(null)
 const selectedCells = ref<Cell[]>([])
 const gameId = ref<string>('')
 const userVote = ref<number | null>(null)
@@ -214,7 +209,6 @@ const gameState = ref<'stopped' | 'running' | 'completed'>('stopped')
 const revealedCells = ref<Set<number>>(new Set())
 const checkedCells = ref<Set<string>>(new Set())
 const isRevealing = ref(false)
-const showParty = ref(false)
 const bingoToast = ref(false)
 const showBingoModal = ref(false)
 const bingoModalDismissed = ref(false)
@@ -256,11 +250,6 @@ const sweepingCells = ref(new Map<string, number>())
 let bingoToastTimeout: ReturnType<typeof setTimeout> | null = null
 const confettiColors = ['#4052B6', '#C0185A', '#2E7D32', '#F79F1F', '#5A5781', '#E3DFFF', '#EA2027']
 const partyEmojis = ['🎉', '🎊', '🥳', '🎲', '🏆', '⭐', '✨', '🎯', '🍾', '🎈', '💫', '🔥', '🎉', '🎊', '🥳', '🎲', '🏆', '⭐', '✨', '🎯']
-
-function dismissParty() {
-    showParty.value = false
-    stopTechno()
-}
 
 // --- Techno-Beat (Web Audio, full-bar pre-scheduling) ---
 let audioCtx: AudioContext | null = null
@@ -428,10 +417,9 @@ async function handleLikeClick() {
 // --- Data loading ---
 async function loadGame() {
     gameId.value = route.params.game_id as string
-    error.value = null
 
     const gameRes = await fetch(`/api/games/${gameId.value}`, { credentials: 'include' })
-    if (!gameRes.ok) { error.value = 'Spiel nicht gefunden'; return }
+    if (!gameRes.ok) return
     const game = await gameRes.json()
 
     const [boardRes, cellsRes] = await Promise.all([
@@ -439,8 +427,7 @@ async function loadGame() {
         fetch(`/api/games/${gameId.value}/cells`, { credentials: 'include' }),
     ])
 
-    if (!boardRes.ok) { error.value = 'Board nicht gefunden'; return }
-    if (!cellsRes.ok) { error.value = 'Zellen nicht gefunden'; return }
+    if (!boardRes.ok || !cellsRes.ok) return
 
     board.value = await boardRes.json()
     if (board.value) {
@@ -494,20 +481,10 @@ async function startGame() {
     startTimer()
 }
 
-function resetGame() {
-    stopTimer()
-    elapsedSeconds.value = 0
-    checkedCells.value = new Set()
-    revealedCells.value = new Set()
-    isRevealing.value = false
-    gameState.value = 'stopped'
-}
-
 async function completeGame() {
     if (gameState.value === 'completed') return
     gameState.value = 'completed'
     stopTimer()
-    showParty.value = true
     startTechno()
     try {
         await fetch(`/api/games/${gameId.value}/status`, {
