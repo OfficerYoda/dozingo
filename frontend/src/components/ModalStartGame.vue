@@ -53,22 +53,8 @@
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { Heart, X, LayoutGrid, Play } from 'lucide-vue-next'
-
-interface Board {
-    board_id: string
-    title: string
-    description: string
-    play_count: number
-    score: number
-    size: number
-    author_id: string
-}
-
-interface Cell {
-    cell_id: string
-    content: string
-    value: number
-}
+import * as boardService from '@/services/board.service'
+import type { Board, Cell } from '@/services/api.type'
 
 const props = defineProps<{
     modelValue: boolean
@@ -83,25 +69,12 @@ const emit = defineEmits<{
 
 async function createGameAndNav() {
     const cells: Cell[] = [...props.cells]
-
     shuffle(cells)
-
-    const body = cells.map((cell, index) => ({
-        cell_id: cell.cell_id,
-        position: index,
-    }))
-
-    const createGame = await fetch('/api/boards/' + props.board.board_id + '/games', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(body),
-    })
-
-    if (!createGame.ok) return
-
-    const game = await createGame.json()
-    router.push('/game/' + game.game_id)
+    const cellPositions = cells.map((cell, index) => ({ cell_id: cell.cell_id, position: index }))
+    try {
+        const game = await boardService.createGame(props.board.board_id, cellPositions)
+        router.push('/game/' + game.game_id)
+    } catch { /* ignore */ }
 }
 
 function shuffle(array: Cell[]) {

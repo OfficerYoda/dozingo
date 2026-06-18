@@ -29,3 +29,10 @@ export async function forgotPassword(email: string): Promise<void> {
         body: JSON.stringify({ email }),
     })
 }
+
+export async function changePassword(oldPassword: string, newPassword: string): Promise<void> {
+    return apiFetch("/api/auth/change-password", {
+        method: 'POST',
+        body: JSON.stringify({ old_password: oldPassword, new_password: newPassword }),
+    })
+}

@@ -34,6 +34,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { useChangePasswordModal } from '@/composables/useChangePasswordModal'
+import * as authService from '@/services/auth.services'
 
 const { changePasswordModalOpen, closeChangePasswordModal } = useChangePasswordModal()
 
@@ -73,17 +74,11 @@ async function submit() {
 
   loading.value = true
   try {
-    const res = await fetch('/api/auth/change-password', {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ old_password: oldPassword.value, new_password: newPassword.value }),
-    })
-
-    if (res.ok) {
-      success.value = true
-      setTimeout(close, 1500)
-    } else if (res.status === 401) {
+    await authService.changePassword(oldPassword.value, newPassword.value)
+    success.value = true
+    setTimeout(close, 1500)
+  } catch (e: unknown) {
+    if (e instanceof Error && e.message.includes('401')) {
       error.value = 'Das aktuelle Passwort ist falsch.'
     } else {
       error.value = 'Ein Fehler ist aufgetreten. Bitte versuche es erneut.'

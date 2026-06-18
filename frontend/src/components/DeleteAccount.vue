@@ -28,6 +28,7 @@ import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDeleteModal } from '@/composables/useDeleteModal'
 import { useAuth } from '@/composables/useAuth'
+import * as userService from '@/services/user.service'
 
 const { deleteModalOpen, closeDeleteModal } = useDeleteModal()
 const { logout } = useAuth()
@@ -53,17 +54,11 @@ async function submit() {
 
   loading.value = true
   try {
-    const res = await fetch('/api/users/me', {
-      method: 'DELETE',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password: password.value }),
-    })
-
-    if (res.ok) {
-      await logout()
-      router.push('/')
-    } else if (res.status === 401) {
+    await userService.deleteMe(password.value)
+    await logout()
+    router.push('/')
+  } catch (e: unknown) {
+    if (e instanceof Error && e.message.includes('401')) {
       error.value = 'Falsches Passwort.'
     } else {
       error.value = 'Ein Fehler ist aufgetreten. Bitte versuche es erneut.'

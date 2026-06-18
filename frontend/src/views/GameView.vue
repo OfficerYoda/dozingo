@@ -153,15 +153,6 @@ import * as gameService from '@/services/game.service'
 import * as voteService from '@/services/vote.service'
 import type { Board, Cell } from '@/services/api.type'
 
-interface GameCell {
-    game_cell_id: string
-    cell_id: string | null
-    content: string
-    game_id: string
-    is_marked: boolean
-    position: number
-}
-
 useI18n()
 const route = useRoute()
 const { pageTitle } = usePageTitle('Bingo Game')
@@ -350,24 +341,22 @@ async function loadGame() {
     gameId.value = route.params.game_id as string
     error.value = null
 
-    const gameRes = await fetch(`/api/games/${gameId.value}`, { credentials: 'include' })
-    if (!gameRes.ok) { error.value = 'Spiel nicht gefunden'; return }
-    const game = await gameRes.json()
+    let game
+    try {
+        game = await gameService.getGameById(gameId.value)
+    } catch { error.value = 'Spiel nicht gefunden'; return }
 
-    const [boardRes, cellsRes] = await Promise.all([
-        fetch(`/api/boards/${game.board_id}`, { credentials: 'include' }),
-        fetch(`/api/games/${gameId.value}/cells`, { credentials: 'include' }),
-    ])
+    let boardData, gameCells
+    try {
+        [boardData, gameCells] = await Promise.all([
+            boardService.getBoardById(game.board_id),
+            gameService.getGameCells(gameId.value),
+        ])
+    } catch { error.value = 'Daten konnten nicht geladen werden'; return }
 
-    if (!boardRes.ok) { error.value = 'Board nicht gefunden'; return }
-    if (!cellsRes.ok) { error.value = 'Zellen nicht gefunden'; return }
-
-    board.value = await boardRes.json()
-    if (board.value) {
-        pageTitle.value = board.value.title
-        loadVote(board.value.board_id)
-    }
-    const gameCells: GameCell[] = await cellsRes.json()
+    board.value = boardData
+    pageTitle.value = boardData.title
+    loadVote(boardData.board_id)
 
     selectedCells.value = gameCells
         .sort((a, b) => a.position - b.position)
@@ -381,7 +370,6 @@ async function loadGame() {
         gameCells.filter(gc => gc.is_marked).map(gc => gc.game_cell_id)
     )
 
-    // Falls Spiel server-seitig bereits abgeschlossen → direkt locken
     if (game.status === 'completed') {
         await startGame()
         gameState.value = 'completed'
@@ -426,12 +414,7 @@ async function completeGame() {
     showParty.value = true
     startTechno()
     try {
-        await fetch(`/api/games/${gameId.value}/status`, {
-            method: 'PUT',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: 'completed' }),
-        })
+        await gameService.completeGame(gameId.value)
     } catch {
         // best-effort: UI bleibt locked auch bei Netzwerk-Fehler
     }
@@ -449,13 +432,7 @@ async function handleCellClick(cellId: string) {
     checkedCells.value = next
 
     try {
-        const res = await fetch(`/api/games/${gameId.value}/cells/${cellId}`, {
-            method: 'PUT',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ is_marked: nextChecked }),
-        })
-        if (!res.ok) throw new Error('mark failed')
+        await gameService.markGameCell(gameId.value, cellId, nextChecked)
     } catch {
         // rollback on failure
         const rollback = new Set(checkedCells.value)
