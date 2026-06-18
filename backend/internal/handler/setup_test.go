@@ -349,6 +349,14 @@ func TestMain(m *testing.M) {
 	repos := repository.New(testPool)
 	txRunner := repository.NewTxRunner(testPool)
 
+	// Fixed 32-byte test key for TOTP encryption (not used in production).
+	testTOTPKey := []byte("test-totp-key-32-bytes-long!!!!!")
+	testTOTPCipher, err3 := auth.NewTOTPCipher(testTOTPKey)
+	if err3 != nil {
+		slog.Error("failed to create test TOTP cipher", "error", err3)
+		os.Exit(1)
+	}
+
 	// Build a deterministic avatar.URLBuilder for tests. With this config
 	// avatar URLs come out as http://profile-pictures.garage.test/<key>.
 	var err2 error
@@ -371,7 +379,7 @@ func TestMain(m *testing.M) {
 	NewVotesHandler(votesSvc).Register(apiGroup)
 	NewAuthHandler(service.NewAuth(repos, queries, fakeMailer, txRunner, fakeAvatarGen.Generate, fakeUploader), testAvatarURLs, testFallbackAvatarURL).Register(apiGroup)
 	NewUsersHandler(service.NewUsers(&repos, queries, fakeMailer, txRunner, fakeUploader), votesSvc, testAvatarURLs, testFallbackAvatarURL).Register(apiGroup)
-	NewTwoFactor(service.NewTwoFactor(&repos, queries, txRunner)).Register(apiGroup)
+	NewTwoFactor(service.NewTwoFactor(&repos, queries, txRunner, testTOTPCipher)).Register(apiGroup)
 
 	// Clean tables before running tests to ensure a fresh state
 	truncateAllTables()

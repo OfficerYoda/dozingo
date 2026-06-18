@@ -22,6 +22,7 @@ type TwoFactor struct {
 	recoveryCodes *repository.RecoveryCodes
 	sessions      *repository.Sessions
 	twoFactor     *repository.TwoFactor
+	cipher        *auth.TOTPCipher
 	queries       *generated.Queries
 	txRunner      repository.TxRunner
 }
@@ -30,12 +31,14 @@ func NewTwoFactor(
 	repos *repository.Repos,
 	queries *generated.Queries,
 	txRunner repository.TxRunner,
+	cipher *auth.TOTPCipher,
 ) *TwoFactor {
 	return &TwoFactor{
 		passwords:     repos.Passwords,
 		recoveryCodes: repos.RecoveryCodes,
 		sessions:      repos.Sessions,
 		twoFactor:     repos.TwoFactor,
+		cipher:        cipher,
 		queries:       queries,
 		txRunner:      txRunner,
 	}
@@ -64,7 +67,12 @@ func (s *TwoFactor) Setup(ctx context.Context) (*otp.Key, error) {
 		return nil, fmt.Errorf("generate otp key: %w", err)
 	}
 
-	_, err = s.twoFactor.Upsert(ctx, sessionUser.UserID, key.Secret())
+	encryptedSecret, err := s.cipher.Seal(sessionUser.UserID.Bytes, key.Secret())
+	if err != nil {
+		return nil, fmt.Errorf("encrypt totp secret: %w", err)
+	}
+
+	_, err = s.twoFactor.Upsert(ctx, sessionUser.UserID, encryptedSecret)
 	if err != nil {
 		return nil, fmt.Errorf("store otp key: %w", err)
 	}
@@ -290,7 +298,13 @@ func (s *TwoFactor) verifyPasswordAndAuth(ctx context.Context, userID pgtype.UUI
 			subtle.ConstantTimeCompare([]byte(user2fa.LastUsedCode.String), []byte(*totpCode)) == 1 {
 			return fmt.Errorf("code already used: %w", domain.ErrBadInput)
 		}
-		if !totp.Validate(*totpCode, user2fa.TotpSecretEncrypted) {
+
+		secret, err := s.cipher.Open(userID.Bytes, user2fa.TotpSecretEncrypted)
+		if err != nil {
+			return fmt.Errorf("decrypt totp secret: %w", err)
+		}
+
+		if !totp.Validate(*totpCode, secret) {
 			return fmt.Errorf("invalid totp code: %w", domain.ErrBadInput)
 		}
 		if err := s.twoFactor.SetLastUsedCode(ctx, userID, *totpCode); err != nil {
@@ -334,7 +348,12 @@ func (s *TwoFactor) validateTOTP(ctx context.Context, userID pgtype.UUID, passco
 		return nil, fmt.Errorf("code already used: %w", domain.ErrBadInput)
 	}
 
-	if !totp.Validate(passcode, user2fa.TotpSecretEncrypted) {
+	secret, err := s.cipher.Open(userID.Bytes, user2fa.TotpSecretEncrypted)
+	if err != nil {
+		return nil, fmt.Errorf("decrypt totp secret: %w", err)
+	}
+
+	if !totp.Validate(passcode, secret) {
 		return nil, fmt.Errorf("invalid code: %w", domain.ErrBadInput)
 	}
 

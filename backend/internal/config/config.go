@@ -14,8 +14,6 @@ type Config struct {
 	Port         int    `env:"PORT" envDefault:"4242"`
 	SecureCookie bool   `env:"SECURE_COOKIE" envDefault:"true"`
 
-	// TOTPEncryptionKey is a base64-encoded 32-byte key used to encrypt TOTP
-	// secrets at rest (AES-256-GCM). Generate with: openssl rand -base64 32
 	TOTPEncryptionKey string `env:"TOTP_ENCRYPTION_KEY,required"`
 
 	ResendAPIKey      string `env:"RESEND_API_KEY" required:"true"`
@@ -29,7 +27,6 @@ type Config struct {
 }
 
 // DecodeTOTPKey decodes and validates the TOTP encryption key.
-// Returns the raw 32-byte key or an error if the value is invalid.
 func (c *Config) DecodeTOTPKey() ([]byte, error) {
 	key, err := base64.StdEncoding.DecodeString(c.TOTPEncryptionKey)
 	if err != nil {
@@ -38,6 +35,7 @@ func (c *Config) DecodeTOTPKey() ([]byte, error) {
 	if len(key) != 32 {
 		return nil, fmt.Errorf("TOTP_ENCRYPTION_KEY: must decode to 32 bytes, got %d", len(key))
 	}
+
 	return key, nil
 }
 

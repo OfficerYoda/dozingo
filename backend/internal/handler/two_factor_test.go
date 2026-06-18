@@ -275,9 +275,7 @@ func TestConfirm2FA_AlreadyVerified_Returns409(t *testing.T) {
 	// manually marking the session pending again.
 	setSessionPending(t, userCookies[userID].Value)
 
-	uid := userIDFromString(t, userID)
-	row, _ := load2FARow(t, uid)
-	code := generateFreshTOTPCode(t, row.TotpSecretEncrypted)
+	code := generateFreshTOTPCode(t, secret)
 	w := doRequestWithCookies(http.MethodPost, "/api/auth/2fa/confirm",
 		map[string]any{"code": code}, cookiesFor(userID))
 	assertStatus(t, w, http.StatusConflict)
@@ -355,15 +353,9 @@ func TestVerify2FA_TotpNotYetVerified_Returns403(t *testing.T) {
 	// User has a totp row (setup was called) but never confirmed it.
 	// Verify must reject with 403 because totp_verified_at is NULL.
 	userID := createTestUser(t, "unverifiedtotp", "unverifiedtotp@example.com")
-	setup2FA(t, userID) // session now pending, totp row inserted but not verified
+	secret := setup2FA(t, userID) // session now pending, totp row inserted but not verified
 
-	uid := userIDFromString(t, userID)
-	row, ok := load2FARow(t, uid)
-	if !ok {
-		t.Fatal("expected totp row after setup")
-	}
-
-	code := generateTOTPCode(t, row.TotpSecretEncrypted)
+	code := generateTOTPCode(t, secret)
 	w := doRequestWithCookies(http.MethodPost, "/api/auth/2fa/verify",
 		map[string]any{"code": code}, cookiesFor(userID))
 	assertStatus(t, w, http.StatusForbidden)

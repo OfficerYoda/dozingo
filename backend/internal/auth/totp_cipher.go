@@ -11,8 +11,8 @@ import (
 
 const (
 	totpCipherVersion byte = 0x01
-	nonceSize              = 12 // standard GCM nonce
-	keySize                = 32 // AES-256
+	nonceSize         int  = 12 // standard GCM nonce
+	keySize           int  = 32 // AES-256
 )
 
 // TOTPCipher encrypts and decrypts TOTP secrets using AES-256-GCM.
@@ -27,7 +27,6 @@ type TOTPCipher struct {
 	aead cipher.AEAD
 }
 
-// NewTOTPCipher creates a cipher from a 32-byte AES-256 key.
 func NewTOTPCipher(key []byte) (*TOTPCipher, error) {
 	if len(key) != keySize {
 		return nil, fmt.Errorf("totp cipher key must be %d bytes, got %d", keySize, len(key))
@@ -46,8 +45,7 @@ func NewTOTPCipher(key []byte) (*TOTPCipher, error) {
 	return &TOTPCipher{aead: gcm}, nil
 }
 
-// Seal encrypts a TOTP secret and returns a base64-encoded ciphertext string
-// suitable for storage in the database. userID is the raw 16-byte UUID used as AAD.
+// Seal encrypts a TOTP secret and returns a base64-encoded ciphertext string.
 func (c *TOTPCipher) Seal(userID [16]byte, plaintext string) (string, error) {
 	nonce := make([]byte, nonceSize)
 	if _, err := rand.Read(nonce); err != nil {
@@ -66,7 +64,6 @@ func (c *TOTPCipher) Seal(userID [16]byte, plaintext string) (string, error) {
 }
 
 // Open decrypts a base64-encoded ciphertext previously produced by Seal.
-// userID must be the same raw 16-byte UUID that was passed to Seal.
 func (c *TOTPCipher) Open(userID [16]byte, encoded string) (string, error) {
 	raw, err := base64.StdEncoding.DecodeString(encoded)
 	if err != nil {

@@ -17,6 +17,7 @@ import (
 	chimw "github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/officeryoda/dozingo/internal/auth"
 	"github.com/officeryoda/dozingo/internal/avatar"
 	"github.com/officeryoda/dozingo/internal/config"
 	"github.com/officeryoda/dozingo/internal/email"
@@ -61,6 +62,15 @@ func run() error {
 
 	repos := repository.New(pool)
 
+	totpKey, err := cfg.DecodeTOTPKey()
+	if err != nil {
+		return fmt.Errorf("decoding TOTP encryption key: %w", err)
+	}
+	totpCipher, err := auth.NewTOTPCipher(totpKey)
+	if err != nil {
+		return fmt.Errorf("creating TOTP cipher: %w", err)
+	}
+
 	avatarURLs, err := avatar.NewURLBuilder(cfg.GaragePublicURL, cfg.GarageBucketName)
 	if err != nil {
 		return fmt.Errorf("building avatar URL builder: %w", err)
@@ -78,7 +88,7 @@ func run() error {
 		}).Start(ctx)
 
 	router := createRouter(cfg)
-	registerRoutes(ctx, router, repos, pool, cfg, avatarURLs, garage)
+	registerRoutes(ctx, router, repos, pool, cfg, avatarURLs, garage, totpCipher)
 
 	return serveHTTP(ctx, createServer(cfg.Port, router))
 }
@@ -131,6 +141,7 @@ func registerRoutes(
 	cfg *config.Config,
 	avatarURLs *avatar.URLBuilder,
 	garage *storage.Garage,
+	totpCipher *auth.TOTPCipher,
 ) {
 	emailSender := email.New(cfg)
 	avatarGen := avatar.RandomProfilePicture
@@ -153,7 +164,7 @@ func registerRoutes(
 	gameCellsSvc := service.NewGameCells(&repos, queries)
 	gamesSvc := service.NewGames(&repos, queries, txRunner)
 	statsSvc := service.NewStats(&repos, queries)
-	twoFASvc := service.NewTwoFactor(&repos, queries, txRunner)
+	twoFASvc := service.NewTwoFactor(&repos, queries, txRunner, totpCipher)
 	usersSvc := service.NewUsers(&repos, queries, emailSender, txRunner, garage)
 	votesSvc := service.NewVotes(&repos, queries)
 
