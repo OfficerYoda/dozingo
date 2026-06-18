@@ -25,8 +25,8 @@ function closeMenu(){
         <nav>
           <ul>
             <li><RouterLink to="/" class="sidebar-buttons upper-buttons"><Home :size="20" />{{ $t('nav.home') }}</RouterLink></li>
-            <li><RouterLink to="/cardeditor" class="sidebar-buttons upper-buttons"><SquarePen :size="20"/>{{ $t('nav.cardEditor') }}</RouterLink></li>
             <li><RouterLink to="/boards" class="sidebar-buttons upper-buttons"><LayoutGrid :size="20"/>{{ $t('nav.boards') }}</RouterLink></li>
+            <li><RouterLink to="/cardeditor" class="sidebar-buttons upper-buttons"><SquarePen :size="20"/>{{ $t('nav.cardEditor') }}</RouterLink></li>
             <li><RouterLink to="/components" class="sidebar-buttons upper-buttons"><Computer :size="20"/>Components(only for dev)</RouterLink></li>
           </ul>
         </nav>
@@ -101,7 +101,6 @@ function closeMenu(){
 
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { Home, Settings, LogOut, LogIn, UserCircle, UserPlus, Menu, Computer, SquarePen, LayoutGrid } from 'lucide-vue-next'
 import { useAuth } from '@/composables/useAuth'
@@ -114,7 +113,6 @@ import { usePageTitle } from '@/composables/usePageTitle'
 const { openLoginModal } = useLoginModal()
 const { openRegisterModal } = useRegisterModal()
 const { locale } = useI18n()
-const router = useRouter()
 const auth = useAuth()
 const { pageTitle } = usePageTitle()
 const profileOpen = ref(false)
@@ -141,7 +139,7 @@ watch(locale, (newLocale) => {
 
 async function handleLogout() {
   await auth.logout()
-  router.push('/')
+  window.location.href = '/'
 }
 </script>
 

@@ -73,20 +73,12 @@
         class="mb-3"
       >
         <template #slide="{ item: board }">
-          <button class="card card-border-blue slider-board-card" @click="clickBoard(board)">
-            <div class="card-body">
-              <h3>{{ board.title }}</h3>
-              <small>{{ board.description ?? '—' }}</small>
-            </div>
-            <hr class="mb-2">
-            <div class="card-footer">
-              <span class="card-meta-text">{{ t('home.card.times', { count: formatCount(board.play_count) }) }}</span>
-              <div class="like-group">
-                <Heart :size="20" />
-                <span class="card-meta-text">{{ formatCount(board.score) }}</span>
-              </div>
-            </div>
-          </button>
+          <BoardCard
+            :board="board"
+            :played-label="t('home.card.times', { count: formatCount(board.play_count) })"
+            class="slider-board-card"
+            @click="clickBoard(board)"
+          />
         </template>
       </SliderSection>
 
@@ -105,20 +97,12 @@
         :per-page-sm="1"
       >
         <template #slide="{ item: board }">
-          <button class="card card-border-blue slider-board-card" @click="clickBoard(board)">
-            <div class="card-body">
-              <h3>{{ board.title }}</h3>
-              <small>{{ board.description ?? '—' }}</small>
-            </div>
-            <hr class="mb-2">
-            <div class="card-footer">
-              <span class="card-meta-text">{{ t('home.card.times', { count: formatCount(board.play_count) }) }}</span>
-              <div class="like-group">
-                <Heart :size="20" />
-                <span class="card-meta-text">{{ formatCount(board.score) }}</span>
-              </div>
-            </div>
-          </button>
+          <BoardCard
+            :board="board"
+            :played-label="t('home.card.times', { count: formatCount(board.play_count) })"
+            class="slider-board-card"
+            @click="clickBoard(board)"
+          />
         </template>
       </SliderSection>
     </div>
@@ -136,8 +120,9 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Heart, GamepadDirectional, SquarePlus, LayoutGrid, Medal } from 'lucide-vue-next'
+import { GamepadDirectional, SquarePlus, LayoutGrid, Medal } from 'lucide-vue-next'
 import SliderSection from '@/components/SliderSection.vue'
+import BoardCard from '@/components/BoardCard.vue'
 import ModalStartGame from '@/components/ModalStartGame.vue'
 import { usePageTitle } from '@/composables/usePageTitle'
 import * as boardService from '@/services/board.service'
@@ -276,31 +261,8 @@ onMounted(loadStats)
 }
 
 /* Card */
-.card-body {
-  text-align: left;
-}
-
-.card-footer {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-}
-
-.card-meta-text {
-  color: var(--color-subheading);
-  font-weight: 600;
-  font-size: 0.8125rem;
-}
-
-/* Like group */
-.like-group {
-  display: flex;
-  flex-direction: row;
-  gap: 4px;
-}
-
-.like-group svg {
-  color: var(--color-subheading);
+.slider-board-card {
+  height: 100%;
 }
 
 .icon-circle {
