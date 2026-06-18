@@ -277,7 +277,7 @@ func TestConfirm2FA_AlreadyVerified_Returns409(t *testing.T) {
 
 	uid := userIDFromString(t, userID)
 	row, _ := load2FARow(t, uid)
-	code := generateFreshTOTPCode(t, row.TotpSecret)
+	code := generateFreshTOTPCode(t, row.TotpSecretEncrypted)
 	w := doRequestWithCookies(http.MethodPost, "/api/auth/2fa/confirm",
 		map[string]any{"code": code}, cookiesFor(userID))
 	assertStatus(t, w, http.StatusConflict)
@@ -363,7 +363,7 @@ func TestVerify2FA_TotpNotYetVerified_Returns403(t *testing.T) {
 		t.Fatal("expected totp row after setup")
 	}
 
-	code := generateTOTPCode(t, row.TotpSecret)
+	code := generateTOTPCode(t, row.TotpSecretEncrypted)
 	w := doRequestWithCookies(http.MethodPost, "/api/auth/2fa/verify",
 		map[string]any{"code": code}, cookiesFor(userID))
 	assertStatus(t, w, http.StatusForbidden)

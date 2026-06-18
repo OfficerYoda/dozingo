@@ -184,13 +184,13 @@ type UserPassword struct {
 }
 
 type UserTwoFactor struct {
-	ID             pgtype.UUID        `json:"id"`
-	UserID         pgtype.UUID        `json:"user_id"`
-	TotpSecret     string             `json:"totp_secret"`
-	TotpVerifiedAt pgtype.Timestamptz `json:"totp_verified_at"`
-	CreatedAt      pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
-	LastUsedCode   pgtype.Text        `json:"last_used_code"`
+	ID                  pgtype.UUID        `json:"id"`
+	UserID              pgtype.UUID        `json:"user_id"`
+	TotpSecretEncrypted string             `json:"totp_secret_encrypted"`
+	TotpVerifiedAt      pgtype.Timestamptz `json:"totp_verified_at"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+	LastUsedCode        pgtype.Text        `json:"last_used_code"`
 }
 
 type VerificationToken struct {

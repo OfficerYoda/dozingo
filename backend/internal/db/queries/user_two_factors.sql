@@ -3,8 +3,8 @@ SELECT * FROM user_two_factors
 WHERE user_id = @user_id;
 
 -- name: CreateTwoFactor :one
-INSERT INTO user_two_factors (user_id, totp_secret)
-VALUES (@user_id, @totp_secret)
+INSERT INTO user_two_factors (user_id, totp_secret_encrypted)
+VALUES (@user_id, @totp_secret_encrypted)
 RETURNING *;
 
 -- name: MarkTwoFactorVerified :one
@@ -19,12 +19,12 @@ DELETE FROM user_two_factors
 WHERE user_id = @user_id;
 
 -- name: UpsertTwoFactor :one
-INSERT INTO user_two_factors (user_id, totp_secret)
-VALUES (@user_id, @totp_secret)
+INSERT INTO user_two_factors (user_id, totp_secret_encrypted)
+VALUES (@user_id, @totp_secret_encrypted)
 ON CONFLICT (user_id) DO UPDATE
-    SET totp_secret      = EXCLUDED.totp_secret,
-        totp_verified_at = NULL,
-        updated_at       = now()
+    SET totp_secret_encrypted = EXCLUDED.totp_secret_encrypted,
+        totp_verified_at      = NULL,
+        updated_at            = now()
 RETURNING *;
 
 -- name: SetLastUsedCode :exec

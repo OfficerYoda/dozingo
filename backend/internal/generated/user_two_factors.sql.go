@@ -12,23 +12,23 @@ import (
 )
 
 const createTwoFactor = `-- name: CreateTwoFactor :one
-INSERT INTO user_two_factors (user_id, totp_secret)
+INSERT INTO user_two_factors (user_id, totp_secret_encrypted)
 VALUES ($1, $2)
-RETURNING id, user_id, totp_secret, totp_verified_at, created_at, updated_at, last_used_code
+RETURNING id, user_id, totp_secret_encrypted, totp_verified_at, created_at, updated_at, last_used_code
 `
 
 type CreateTwoFactorParams struct {
-	UserID     pgtype.UUID `json:"user_id"`
-	TotpSecret string      `json:"totp_secret"`
+	UserID              pgtype.UUID `json:"user_id"`
+	TotpSecretEncrypted string      `json:"totp_secret_encrypted"`
 }
 
 func (q *Queries) CreateTwoFactor(ctx context.Context, arg CreateTwoFactorParams) (UserTwoFactor, error) {
-	row := q.db.QueryRow(ctx, createTwoFactor, arg.UserID, arg.TotpSecret)
+	row := q.db.QueryRow(ctx, createTwoFactor, arg.UserID, arg.TotpSecretEncrypted)
 	var i UserTwoFactor
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
-		&i.TotpSecret,
+		&i.TotpSecretEncrypted,
 		&i.TotpVerifiedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -48,7 +48,7 @@ func (q *Queries) DeleteTwoFactor(ctx context.Context, userID pgtype.UUID) error
 }
 
 const getTwoFactorByUserID = `-- name: GetTwoFactorByUserID :one
-SELECT id, user_id, totp_secret, totp_verified_at, created_at, updated_at, last_used_code FROM user_two_factors
+SELECT id, user_id, totp_secret_encrypted, totp_verified_at, created_at, updated_at, last_used_code FROM user_two_factors
 WHERE user_id = $1
 `
 
@@ -58,7 +58,7 @@ func (q *Queries) GetTwoFactorByUserID(ctx context.Context, userID pgtype.UUID) 
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
-		&i.TotpSecret,
+		&i.TotpSecretEncrypted,
 		&i.TotpVerifiedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -72,7 +72,7 @@ UPDATE user_two_factors
 SET totp_verified_at = now(),
     updated_at = now()
 WHERE user_id = $1
-RETURNING id, user_id, totp_secret, totp_verified_at, created_at, updated_at, last_used_code
+RETURNING id, user_id, totp_secret_encrypted, totp_verified_at, created_at, updated_at, last_used_code
 `
 
 func (q *Queries) MarkTwoFactorVerified(ctx context.Context, userID pgtype.UUID) (UserTwoFactor, error) {
@@ -81,7 +81,7 @@ func (q *Queries) MarkTwoFactorVerified(ctx context.Context, userID pgtype.UUID)
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
-		&i.TotpSecret,
+		&i.TotpSecretEncrypted,
 		&i.TotpVerifiedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -108,27 +108,27 @@ func (q *Queries) SetLastUsedCode(ctx context.Context, arg SetLastUsedCodeParams
 }
 
 const upsertTwoFactor = `-- name: UpsertTwoFactor :one
-INSERT INTO user_two_factors (user_id, totp_secret)
+INSERT INTO user_two_factors (user_id, totp_secret_encrypted)
 VALUES ($1, $2)
 ON CONFLICT (user_id) DO UPDATE
-    SET totp_secret      = EXCLUDED.totp_secret,
-        totp_verified_at = NULL,
-        updated_at       = now()
-RETURNING id, user_id, totp_secret, totp_verified_at, created_at, updated_at, last_used_code
+    SET totp_secret_encrypted = EXCLUDED.totp_secret_encrypted,
+        totp_verified_at      = NULL,
+        updated_at            = now()
+RETURNING id, user_id, totp_secret_encrypted, totp_verified_at, created_at, updated_at, last_used_code
 `
 
 type UpsertTwoFactorParams struct {
-	UserID     pgtype.UUID `json:"user_id"`
-	TotpSecret string      `json:"totp_secret"`
+	UserID              pgtype.UUID `json:"user_id"`
+	TotpSecretEncrypted string      `json:"totp_secret_encrypted"`
 }
 
 func (q *Queries) UpsertTwoFactor(ctx context.Context, arg UpsertTwoFactorParams) (UserTwoFactor, error) {
-	row := q.db.QueryRow(ctx, upsertTwoFactor, arg.UserID, arg.TotpSecret)
+	row := q.db.QueryRow(ctx, upsertTwoFactor, arg.UserID, arg.TotpSecretEncrypted)
 	var i UserTwoFactor
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
-		&i.TotpSecret,
+		&i.TotpSecretEncrypted,
 		&i.TotpVerifiedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,

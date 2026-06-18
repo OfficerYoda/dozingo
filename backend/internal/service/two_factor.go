@@ -290,7 +290,7 @@ func (s *TwoFactor) verifyPasswordAndAuth(ctx context.Context, userID pgtype.UUI
 			subtle.ConstantTimeCompare([]byte(user2fa.LastUsedCode.String), []byte(*totpCode)) == 1 {
 			return fmt.Errorf("code already used: %w", domain.ErrBadInput)
 		}
-		if !totp.Validate(*totpCode, user2fa.TotpSecret) {
+		if !totp.Validate(*totpCode, user2fa.TotpSecretEncrypted) {
 			return fmt.Errorf("invalid totp code: %w", domain.ErrBadInput)
 		}
 		if err := s.twoFactor.SetLastUsedCode(ctx, userID, *totpCode); err != nil {
@@ -334,7 +334,7 @@ func (s *TwoFactor) validateTOTP(ctx context.Context, userID pgtype.UUID, passco
 		return nil, fmt.Errorf("code already used: %w", domain.ErrBadInput)
 	}
 
-	if !totp.Validate(passcode, user2fa.TotpSecret) {
+	if !totp.Validate(passcode, user2fa.TotpSecretEncrypted) {
 		return nil, fmt.Errorf("invalid code: %w", domain.ErrBadInput)
 	}
 

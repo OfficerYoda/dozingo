@@ -22,10 +22,10 @@ func (r *TwoFactor) GetByUserID(ctx context.Context, userID pgtype.UUID) (genera
 	return twoFactor, nil
 }
 
-func (r *TwoFactor) Create(ctx context.Context, userID pgtype.UUID, totpSecret string) (generated.UserTwoFactor, error) {
+func (r *TwoFactor) Create(ctx context.Context, userID pgtype.UUID, encryptedSecret string) (generated.UserTwoFactor, error) {
 	twoFactor, err := r.queries.CreateTwoFactor(ctx, generated.CreateTwoFactorParams{
-		UserID:     userID,
-		TotpSecret: totpSecret,
+		UserID:              userID,
+		TotpSecretEncrypted: encryptedSecret,
 	})
 	if err != nil {
 		return generated.UserTwoFactor{}, pgmap.TranslatePgErr(err)
@@ -34,10 +34,10 @@ func (r *TwoFactor) Create(ctx context.Context, userID pgtype.UUID, totpSecret s
 	return twoFactor, nil
 }
 
-func (r *TwoFactor) Upsert(ctx context.Context, userID pgtype.UUID, totpSecret string) (generated.UserTwoFactor, error) {
+func (r *TwoFactor) Upsert(ctx context.Context, userID pgtype.UUID, encryptedSecret string) (generated.UserTwoFactor, error) {
 	twoFactor, err := r.queries.UpsertTwoFactor(ctx, generated.UpsertTwoFactorParams{
-		UserID:     userID,
-		TotpSecret: totpSecret,
+		UserID:              userID,
+		TotpSecretEncrypted: encryptedSecret,
 	})
 	if err != nil {
 		return generated.UserTwoFactor{}, pgmap.TranslatePgErr(err)
