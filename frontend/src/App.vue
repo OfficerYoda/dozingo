@@ -102,6 +102,7 @@ function closeMenu(){
 
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { Home, Settings, LogOut, LogIn, UserCircle, UserPlus, Menu, Computer, SquarePen, LayoutGrid } from 'lucide-vue-next'
 import { useAuth } from '@/composables/useAuth'
@@ -116,6 +117,7 @@ const { openLoginModal } = useLoginModal()
 const { openRegisterModal } = useRegisterModal()
 const { locale } = useI18n()
 const auth = useAuth()
+const router = useRouter()
 const { pageTitle } = usePageTitle()
 const profileOpen = ref(false)
 const profileMenuRef = ref<HTMLElement | null>(null)
@@ -140,8 +142,9 @@ watch(locale, (newLocale) => {
 })
 
 async function handleLogout() {
+  profileOpen.value = false
   await auth.logout()
-  window.location.href = '/'
+  router.push('/')
 }
 </script>
 
