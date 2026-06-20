@@ -1,7 +1,7 @@
 import { apiFetch } from "./api"
-import type { User } from "./api.type"
+import type { User, LoginTwoFAPending } from "./api.type"
 
-export async function login(username: string, password: string): Promise<User> {
+export async function login(username: string, password: string): Promise<User | LoginTwoFAPending> {
     return apiFetch("/api/auth/login", {
         method: 'POST',
         body: JSON.stringify({ username, password }),

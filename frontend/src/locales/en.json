@@ -31,13 +31,45 @@
       "subtitle": "Authentication",
       "twoFa": "2FA Security",
       "disabled": "Currently Disabled",
+      "twoFaEnabled": "Active",
       "enable": "Enable",
+      "disable": "Disable",
       "lastPasswordChange": "Last password change",
       "change": "Change",
       "loginNotification": "Login Notification",
       "loginNotificationDesc": "Get notified for each login",
       "loginRequired": "Please log in to view security settings.",
-      "loginBtn": "Log in"
+      "loginBtn": "Log in",
+      "twoFaSetup": {
+        "title": "Set up 2FA",
+        "scanQr": "Scan the QR code with your authenticator app",
+        "orEnterSecret": "Or enter this code manually:",
+        "next": "Next",
+        "confirmTitle": "Confirm code",
+        "confirmDesc": "Enter the 6-digit code from your app",
+        "confirmBtn": "Confirm",
+        "codesTitle": "Recovery Codes",
+        "codesDesc": "Save these codes securely. Each code can only be used once.",
+        "done": "Done"
+      },
+      "twoFaDisable": {
+        "title": "Disable 2FA",
+        "desc": "Enter your password and a TOTP code or recovery code.",
+        "password": "Password",
+        "useTotpCode": "Use TOTP code",
+        "useRecoveryCode": "Use recovery code",
+        "disableBtn": "Disable 2FA",
+        "cancel": "Cancel"
+      },
+      "twoFaVerify": {
+        "title": "Two-Factor Authentication",
+        "desc": "Enter the 6-digit code from your authenticator app.",
+        "useRecovery": "Use recovery code",
+        "verifyBtn": "Confirm",
+        "recoveryTitle": "Recovery Code",
+        "recoveryDesc": "Enter one of your recovery codes.",
+        "backToTotp": "Use TOTP code"
+      }
     },
     "display": {
       "title": "Display",

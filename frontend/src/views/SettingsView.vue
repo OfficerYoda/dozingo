@@ -46,9 +46,11 @@
           <Smartphone :size="23" />
           <div class="account-security-info">
             <span>{{ $t('settings.security.twoFa') }}</span>
-            <small>{{ $t('settings.security.disabled') }}</small>
+            <small v-if="twoFaEnabled" class="status-enabled">{{ $t('settings.security.twoFaEnabled') }}</small>
+            <small v-else>{{ $t('settings.security.disabled') }}</small>
           </div>
-          <button class="btn btn-primary">{{ $t('settings.security.enable') }}</button>
+          <button v-if="twoFaEnabled" class="btn btn-danger" @click="disableTwoFactorOpen = true">{{ $t('settings.security.disable') }}</button>
+          <button v-else class="btn btn-primary" @click="openTwoFactorModal">{{ $t('settings.security.enable') }}</button>
         </div>
 
         <div class="highlighedcard">
@@ -155,6 +157,8 @@
 
   <DeleteAccount/>
   <ChangePassword/>
+  <TwoFactorSetup @done="fetchSecurityInfo" />
+  <TwoFactorDisable v-model="disableTwoFactorOpen" @done="fetchSecurityInfo" />
 </template>
 
 <script setup lang="ts">
@@ -165,12 +169,19 @@ import { usePageTitle } from '@/composables/usePageTitle'
 import { ShieldUser, Smartphone, Key, Bell, Palette, Moon, Eye, Languages, UserX, UserCircle } from 'lucide-vue-next'
 import DeleteAccount from '@/components/DeleteAccount.vue';
 import ChangePassword from '@/components/ChangePassword.vue';
+import TwoFactorSetup from '@/components/TwoFactorSetup.vue';
+import TwoFactorDisable from '@/components/TwoFactorDisable.vue';
 import { useChangePasswordModal } from '@/composables/useChangePasswordModal'
 import { useDeleteModal } from '@/composables/useDeleteModal'
+import { useTwoFactorModal } from '@/composables/useTwoFactorModal'
 import * as userService from '@/services/user.service'
 
 const { openChangePasswordModal } = useChangePasswordModal()
 const { openDeleteModal } = useDeleteModal()
+const { openTwoFactorModal } = useTwoFactorModal()
+
+const disableTwoFactorOpen = ref(false)
+const twoFaEnabled = ref(false)
 
 const auth = useAuth()
 if (!auth.state.ready) {
@@ -201,6 +212,7 @@ async function fetchSecurityInfo() {
     passwordLastChanged.value = date.toLocaleDateString(locale.value === 'de' ? 'de-DE' : 'en-US', {
       year: 'numeric', month: 'long', day: 'numeric'
     })
+    twoFaEnabled.value = data.two_factor_enabled
   } catch { /* ignore */ }
 }
 
@@ -624,5 +636,10 @@ input:checked+.slider:before {
 .guest-icon {
   color: var(--color-text-subtle);
   flex-shrink: 0;
+}
+
+.status-enabled {
+  color: var(--color-success, #38a169);
+  font-weight: 600;
 }
 </style>

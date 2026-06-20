@@ -94,6 +94,7 @@ function closeMenu(){
 
       <LoginModal />
       <RegisterModal />
+      <LoginTwoFactorModal />
       <div class="disable-layer" id="disable-layer" @click="closeMenu"></div>
     </div>
   </div>
@@ -108,6 +109,7 @@ import { useLoginModal } from '@/composables/useLoginModal'
 import { useRegisterModal } from '@/composables/useRegisterModal'
 import LoginModal from '@/components/LoginView.vue'
 import RegisterModal from '@/components/RegisterView.vue'
+import LoginTwoFactorModal from '@/components/LoginTwoFactor.vue'
 import { usePageTitle } from '@/composables/usePageTitle'
 
 const { openLoginModal } = useLoginModal()

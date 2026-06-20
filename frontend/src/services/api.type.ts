@@ -7,6 +7,23 @@ export interface User {
 
 export interface UserSecurity {
     password_last_changed_at: string
+    active_sessions: number
+    last_login_at: string
+    two_factor_enabled: boolean
+    unused_recovery_keys: number
+}
+
+export interface TwoFASetup {
+    secret: string
+    otp_auth_url: string
+}
+
+export interface TwoFAConfirm {
+    recovery_codes: string[]
+}
+
+export interface LoginTwoFAPending {
+    two_fa_pending: true
 }
 
 export interface Board {

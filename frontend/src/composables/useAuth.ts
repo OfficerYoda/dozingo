@@ -1,7 +1,8 @@
 import { reactive, readonly } from 'vue'
-import * as authService from '../services/auth.services' 
+import * as authService from '../services/auth.services'
 import type { User } from '../services/api.type'
- 
+import { useLoginTwoFactorModal } from './useLoginTwoFactorModal'
+
 const state = reactive<{
     user: User | null
     ready: boolean
@@ -11,7 +12,7 @@ const state = reactive<{
 })
 
 async function fetchUser(): Promise<void> {
-    try { 
+    try {
         state.user = await authService.getMe()
     } catch {
         state.user = null
@@ -21,7 +22,13 @@ async function fetchUser(): Promise<void> {
 }
 
 async function login(username: string, password: string): Promise<void> {
-    state.user = await authService.login(username, password)
+    const result = await authService.login(username, password)
+    if ('two_fa_pending' in result && result.two_fa_pending) {
+        const { openLoginTwoFactorModal } = useLoginTwoFactorModal()
+        openLoginTwoFactorModal()
+        return
+    }
+    state.user = result as import('../services/api.type').User
 }
 
 async function register(username: string, password: string, email?: string): Promise<void> {

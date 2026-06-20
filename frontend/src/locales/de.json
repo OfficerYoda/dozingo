@@ -31,13 +31,45 @@
       "subtitle": "Authentifizierung",
       "twoFa": "2FA-Sicherheit",
       "disabled": "Aktuell deaktiviert",
+      "twoFaEnabled": "Aktiv",
       "enable": "Aktivieren",
+      "disable": "Deaktivieren",
       "lastPasswordChange": "Letzte Passwortänderung",
       "change": "Ändern",
       "loginNotification": "Login-Benachrichtigung",
       "loginNotificationDesc": "Bei jedem Login benachrichtigt werden",
       "loginRequired": "Bitte melde dich an, um die Sicherheitseinstellungen zu sehen.",
-      "loginBtn": "Anmelden"
+      "loginBtn": "Anmelden",
+      "twoFaSetup": {
+        "title": "2FA einrichten",
+        "scanQr": "Scanne den QR-Code mit deiner Authenticator-App",
+        "orEnterSecret": "Oder gib diesen Code manuell ein:",
+        "next": "Weiter",
+        "confirmTitle": "Code bestätigen",
+        "confirmDesc": "Gib den 6-stelligen Code aus deiner App ein",
+        "confirmBtn": "Bestätigen",
+        "codesTitle": "Recovery Codes",
+        "codesDesc": "Speichere diese Codes sicher. Jeder Code kann nur einmal verwendet werden.",
+        "done": "Fertig"
+      },
+      "twoFaDisable": {
+        "title": "2FA deaktivieren",
+        "desc": "Gib dein Passwort und einen TOTP-Code oder Recovery Code ein.",
+        "password": "Passwort",
+        "useTotpCode": "TOTP-Code verwenden",
+        "useRecoveryCode": "Recovery Code verwenden",
+        "disableBtn": "2FA deaktivieren",
+        "cancel": "Abbrechen"
+      },
+      "twoFaVerify": {
+        "title": "Zwei-Faktor-Authentifizierung",
+        "desc": "Gib den 6-stelligen Code aus deiner Authenticator-App ein.",
+        "useRecovery": "Recovery Code verwenden",
+        "verifyBtn": "Bestätigen",
+        "recoveryTitle": "Recovery Code",
+        "recoveryDesc": "Gib einen deiner Recovery Codes ein.",
+        "backToTotp": "TOTP-Code verwenden"
+      }
     },
     "display": {
       "title": "Anzeige",
