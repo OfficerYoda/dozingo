@@ -34,7 +34,12 @@
 
       <SliderSection :items="boards" :per-page="3" :per-page-md="2" :per-page-sm="1">
         <template #slide="{ item: board }">
-          <BoardCard :key="`${board.board_id}-${boardsVersion}`" :board="board" :played-label="`Played ${board.play_count} times`" @click="clickBoard(board.board_id)" @vote-changed="(v: number | null) => onBoardVoteChange(v, board)" />
+          <div class="board-card-wrapper">
+            <BoardCard :key="`${board.board_id}-${boardsVersion}`" :board="board" :played-label="`Played ${board.play_count} times`" @click="clickBoard(board.board_id)" @vote-changed="(v: number | null) => onBoardVoteChange(v, board)" />
+            <div class="delete-overlay" @click.stop="boardToDelete = board; showDeleteModal = true">
+              <img src="/trash.png" alt="Delete board" class="delete-icon" />
+            </div>
+          </div>
         </template>
       </SliderSection>
     </div>
@@ -60,6 +65,13 @@
     :author-name="authorName"
   />
 
+  <ModalDeleteBoard
+    v-if="boardToDelete"
+    v-model="showDeleteModal"
+    :board="boardToDelete"
+    @deleted="fetchAllUserBoards"
+  />
+
   </div>
 </template>
 
@@ -71,6 +83,7 @@ import { useRoute, useRouter } from 'vue-router'
 import SliderSection from '@/components/SliderSection.vue'
 import BoardCard from '@/components/BoardCard.vue'
 import ModalStartGame from '@/components/ModalStartGame.vue'
+import ModalDeleteBoard from '@/components/ModalDeleteBoard.vue'
 import { usePageTitle } from '@/composables/usePageTitle'
 import * as boardService from '@/services/board.service'
 import * as userService from '@/services/user.service'
@@ -186,6 +199,8 @@ fetchLikedBoards()
 fetchActiveGames()
 
 const showModal = ref(false)
+const showDeleteModal = ref(false)
+const boardToDelete = ref<Board | null>(null)
 
 function clickBoard(boardID: string) {
     fetchAllCellsForBoard(boardID)
@@ -246,5 +261,33 @@ function onBoardVoteChange(vote: number | null, board: Board) {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+}
+
+.board-card-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.delete-overlay {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  opacity: 0;
+  transition: opacity 0.15s;
+  cursor: pointer;
+}
+
+.board-card-wrapper:hover .delete-overlay {
+  opacity: 1;
+}
+
+.delete-icon {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+[data-theme="dark"] .delete-icon {
+  filter: brightness(0) invert(1);
 }
 </style>

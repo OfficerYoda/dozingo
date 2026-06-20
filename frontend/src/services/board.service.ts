@@ -51,3 +51,7 @@ export async function createGame(boardId: string, cells: GameCellPosition[]): Pr
         body: JSON.stringify(cells),
     })
 }
+
+export async function deleteBoard(boardId: string): Promise<void> {
+    return apiFetch(`/api/boards/${boardId}`, { method: 'DELETE' })
+}

@@ -373,11 +373,16 @@ async function saveUsername() {
   width: 1.2rem;
   height: 1.2rem;
   object-position: 3rem, 0.5rem;
+  filter: brightness(0) invert(1);
 }
 
 .pencil-icon {
   width: 1rem;
   height: 1rem;
+}
+
+[data-theme="dark"] .pencil-icon {
+  filter: brightness(0) invert(1);
 }
 
 .display-title svg {
