@@ -123,7 +123,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick } from 'vue';
+import { ref, computed, nextTick, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { FilePlus, CirclePlus, Trash2, Play } from 'lucide-vue-next';
@@ -144,7 +144,7 @@ const saveError = ref(false)
 const validationError = ref(false)
 const notEnoughEntriesError = ref(false)
 const submitted = ref(false)
-const entries = ref<Entry[]>([{ term: '', rarity: 'common' }, { term: '', rarity: 'common' }, { term: '', rarity: 'common' }])
+const entries = ref<Entry[]>([{ term: '', rarity: 'common' }])
 const selectedSize = ref('5x5')
 
 const { t } = useI18n()
@@ -170,8 +170,17 @@ const entryHintText = computed(() => {
 
 const rarityValue: Record<string, number> = { common: 1, uncommon: 2, rare: 3, legendary: 4 }
 
-function addRow() {
+watch(requiredEntries, (needed) => {
+  while (entries.value.length < needed) {
+    entries.value.push({ term: '', rarity: 'common' })
+  }
+}, { immediate: true })
+
+async function addRow() {
   entries.value.push({ term: '', rarity: 'common' })
+  await nextTick()
+  const inputs = document.querySelectorAll<HTMLInputElement>('input[data-index]')
+  inputs[inputs.length - 1]?.focus()
 }
 
 async function addRowAt(index: number) {
@@ -231,7 +240,7 @@ async function saveBoard() {
     title.value = ''
     description.value = ''
     selectedSize.value = '5x5'
-    entries.value = [{ term: '', rarity: 'common' }, { term: '', rarity: 'common' }, { term: '', rarity: 'common' }]
+    entries.value = Array.from({ length: requiredEntries.value }, () => ({ term: '', rarity: 'common' }))
     submitted.value = false
     saveSuccess.value = true
   } catch {
