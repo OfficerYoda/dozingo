@@ -177,6 +177,10 @@ Table games {
   bingo_count integer [not null, default: 0]
   ~timestamps
   
+  indexes {
+    board_id
+    player_id
+  }
   checks {
     `status IN ('active', 'abandoned')`
   }
@@ -202,3 +206,20 @@ Table game_cells {
 
 Ref: game_cells.game_id > games.id [delete: cascade]
 Ref: game_cells.cell_id > cells.id [delete: set null]
+
+Table game_sessions {
+  id uuid [pk, default: `gen_random_uuid()`]
+  game_id uuid [not null]
+  started_at timestamptz [not null, default: `now()`]
+  ended_at timestamptz [note: 'null while the session is still active']
+  last_heartbeat_at timestamptz [not null, default: `now()`, note: 'updated by client heartbeat pings']
+  ~timestamps
+
+  indexes {
+    game_id
+    last_heartbeat_at [note: 'partial index WHERE ended_at IS NULL; used by stale-session cleanup worker']
+    `COALESCE(ended_at, last_heartbeat_at)` [note: 'expression index for time-windowed playtime aggregation']
+  }
+}
+
+Ref: game_sessions.game_id > games.id [delete: cascade]
