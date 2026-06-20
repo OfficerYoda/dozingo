@@ -122,7 +122,7 @@ func seed(pool *pgxpool.Pool) error {
 // truncateAll removes all data from tables in the correct order (respecting foreign keys).
 func truncateAll(ctx context.Context, tx pgx.Tx) error {
 	slog.Info("Truncating all tables")
-	_, err := tx.Exec(ctx, "TRUNCATE game_cells, games, votes, cells, boards, sessions, user_passwords, user_authentications, users CASCADE")
+	_, err := tx.Exec(ctx, "TRUNCATE game_sessions, game_cells, games, votes, cells, boards, sessions, user_passwords, user_authentications, users CASCADE")
 	if err != nil {
 		return fmt.Errorf("truncating tables: %w", err)
 	}
@@ -313,6 +313,17 @@ func seedGames(ctx context.Context, q *generated.Queries, userIDs, sessionIDs, b
 			_, err = q.UpdateGameStatus(ctx, updateParams)
 			if err != nil {
 				return fmt.Errorf("updating game %d status to %q: %w", gameIdx, g.Status, err)
+			}
+		}
+
+		// Create a game session to mirror what the service layer does at runtime.
+		if _, err = q.CreateGameSession(ctx, game.ID); err != nil {
+			return fmt.Errorf("creating game session for game %d: %w", gameIdx, err)
+		}
+		// Abandoned games should have no open session (same as UpdateStatus path).
+		if g.Status == "abandoned" {
+			if _, err = q.EndGameSessions(ctx, game.ID); err != nil {
+				return fmt.Errorf("ending game session for abandoned game %d: %w", gameIdx, err)
 			}
 		}
 
