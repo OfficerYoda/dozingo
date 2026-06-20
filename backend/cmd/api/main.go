@@ -34,6 +34,8 @@ const (
 	sessionCleanupInterval      = 1 * time.Hour
 	tokenCleanupInterval        = 1 * time.Hour
 	avatarOrphanCleanupInterval = 1 * time.Hour
+	gameAbandonInterval         = 1 * time.Hour
+	gameAbandonTimeout          = 6 * time.Hour
 	shutdownTimeout             = 10 * time.Second
 	defaultAvatarKey            = "default"
 )
@@ -78,14 +80,7 @@ func run() error {
 
 	garage := storage.NewGarage(ctx, cfg)
 
-	worker.NewPeriodic("session_cleanup", sessionCleanupInterval,
-		repos.Sessions.DeleteExpiredSessions).Start(ctx)
-	worker.NewPeriodic("verification_token_cleanup", tokenCleanupInterval,
-		repos.VerificationTokens.DeleteExpired).Start(ctx)
-	worker.NewPeriodic("avatar_orphan_cleanup", avatarOrphanCleanupInterval,
-		func(ctx context.Context) error {
-			return garage.SweepOrphanAvatars(ctx, repos.Users, storage.DefaultSweepConfig())
-		}).Start(ctx)
+	startWorkers(ctx, repos, garage)
 
 	router := createRouter(cfg)
 	registerRoutes(ctx, router, repos, pool, cfg, avatarURLs, garage, totpCipher)
@@ -111,6 +106,31 @@ func connectDB(databaseURL string) (*pgxpool.Pool, error) {
 	slog.Info("connected to database")
 
 	return pool, nil
+}
+
+func startWorkers(ctx context.Context, repos repository.Repos, garage *storage.Garage) {
+	worker.NewPeriodic("session_cleanup", sessionCleanupInterval,
+		repos.Sessions.DeleteExpiredSessions).Start(ctx)
+
+	worker.NewPeriodic("verification_token_cleanup", tokenCleanupInterval,
+		repos.VerificationTokens.DeleteExpired).Start(ctx)
+
+	worker.NewPeriodic("avatar_orphan_cleanup", avatarOrphanCleanupInterval,
+		func(ctx context.Context) error {
+			return garage.SweepOrphanAvatars(ctx, repos.Users, storage.DefaultSweepConfig())
+		}).Start(ctx)
+
+	worker.NewPeriodic("game_abandon", gameAbandonInterval,
+		func(ctx context.Context) error {
+			n, err := repos.Games.AbandonInactive(ctx, gameAbandonTimeout)
+			if err != nil {
+				return err
+			}
+			if n > 0 {
+				slog.Info("abandoned inactive games", "count", n)
+			}
+			return nil
+		}).Start(ctx)
 }
 
 // createRouter creates a Chi router with standard middleware and a root health page.

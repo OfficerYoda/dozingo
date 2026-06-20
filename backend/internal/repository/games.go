@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 
@@ -108,4 +109,14 @@ func (r *Games) SetBingoCount(ctx context.Context, gameID pgtype.UUID, count int
 	}
 
 	return game, nil
+}
+
+// AbandonInactive returns the number of games affected.
+func (r *Games) AbandonInactive(ctx context.Context, timeout time.Duration) (int64, error) {
+	n, err := r.queries.AbandonInactiveGames(ctx, pgmap.PgIntervalFromDuration(&timeout))
+	if err != nil {
+		return 0, pgmap.TranslatePgErr(err)
+	}
+
+	return n, nil
 }

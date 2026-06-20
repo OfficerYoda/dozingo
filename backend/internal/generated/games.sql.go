@@ -11,6 +11,21 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const abandonInactiveGames = `-- name: AbandonInactiveGames :execrows
+UPDATE games
+SET status = 'abandoned'
+WHERE status = 'active'
+  AND updated_at < now() - $1::INTERVAL
+`
+
+func (q *Queries) AbandonInactiveGames(ctx context.Context, timeout pgtype.Interval) (int64, error) {
+	result, err := q.db.Exec(ctx, abandonInactiveGames, timeout)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const createGame = `-- name: CreateGame :one
 INSERT INTO games (player_id, session_id, board_id)
 VALUES ($1, $2, $3)
