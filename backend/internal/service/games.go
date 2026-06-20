@@ -13,12 +13,13 @@ import (
 )
 
 type Games struct {
-	games     *repository.Games
-	gameCells *repository.GameCells
-	boards    *repository.Boards
-	cells     *repository.Cells
-	queries   *generated.Queries
-	txRunner  repository.TxRunner
+	games        *repository.Games
+	gameCells    *repository.GameCells
+	gameSessions *repository.GameSessions
+	boards       *repository.Boards
+	cells        *repository.Cells
+	queries      *generated.Queries
+	txRunner     repository.TxRunner
 }
 
 func NewGames(
@@ -27,12 +28,13 @@ func NewGames(
 	txRunner repository.TxRunner,
 ) *Games {
 	return &Games{
-		games:     repos.Games,
-		gameCells: repos.GameCells,
-		boards:    repos.Boards,
-		cells:     repos.Cells,
-		queries:   queries,
-		txRunner:  txRunner,
+		games:        repos.Games,
+		gameCells:    repos.GameCells,
+		gameSessions: repos.GameSessions,
+		boards:       repos.Boards,
+		cells:        repos.Cells,
+		queries:      queries,
+		txRunner:     txRunner,
 	}
 }
 
@@ -121,6 +123,11 @@ func (s *Games) Create(ctx context.Context, in CreateGameInput) (generated.Game,
 			return fmt.Errorf("create game cells: %w", err)
 		}
 
+		_, err = r.GameSessions.Create(ctx, game.ID)
+		if err != nil {
+			return fmt.Errorf("create game session: %w", err)
+		}
+
 		return nil
 	})
 	if err != nil {
@@ -136,12 +143,23 @@ func (s *Games) UpdateStatus(ctx context.Context, in UpdateGameStatusInput) (gen
 		return generated.Game{}, err
 	}
 
-	return s.games.UpdateStatus(ctx, repository.UpdateGameStatusInput{
+	game, err := s.games.UpdateStatus(ctx, repository.UpdateGameStatusInput{
 		GameID:    in.GameID,
 		Status:    in.Status,
 		PlayerID:  sessionUser.UserID,
 		SessionID: sessionUser.SessionID,
 	})
+	if err != nil {
+		return generated.Game{}, err
+	}
+
+	if game.Status != generated.GameStatusActive {
+		if _, err := s.gameSessions.EndSessions(ctx, in.GameID); err != nil {
+			return generated.Game{}, fmt.Errorf("end game sessions: %w", err)
+		}
+	}
+
+	return game, nil
 }
 
 func (s *Games) Delete(ctx context.Context, gameID pgtype.UUID) error {

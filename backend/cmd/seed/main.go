@@ -98,7 +98,7 @@ func seed(pool *pgxpool.Pool) error {
 		return err
 	}
 
-	if err := seedGames(ctx, q, userIDs, sessionIDs, boardIDs, cellIDs); err != nil {
+	if err := seedGames(ctx, tx, q, userIDs, sessionIDs, boardIDs, cellIDs); err != nil {
 		return err
 	}
 
@@ -122,7 +122,7 @@ func seed(pool *pgxpool.Pool) error {
 // truncateAll removes all data from tables in the correct order (respecting foreign keys).
 func truncateAll(ctx context.Context, tx pgx.Tx) error {
 	slog.Info("Truncating all tables")
-	_, err := tx.Exec(ctx, "TRUNCATE game_cells, games, votes, cells, boards, sessions, user_passwords, user_authentications, users CASCADE")
+	_, err := tx.Exec(ctx, "TRUNCATE game_sessions, game_cells, games, votes, cells, boards, sessions, user_passwords, user_authentications, users CASCADE")
 	if err != nil {
 		return fmt.Errorf("truncating tables: %w", err)
 	}
@@ -276,7 +276,7 @@ func seedVotes(ctx context.Context, q *generated.Queries, userIDs, boardIDs []pg
 	return nil
 }
 
-func seedGames(ctx context.Context, q *generated.Queries, userIDs, sessionIDs, boardIDs []pgtype.UUID, cellIDsByBoard map[int][]pgtype.UUID) error {
+func seedGames(ctx context.Context, tx pgx.Tx, q *generated.Queries, userIDs, sessionIDs, boardIDs []pgtype.UUID, cellIDsByBoard map[int][]pgtype.UUID) error {
 	slog.Info("Seeding games", "count", len(games))
 
 	for gameIdx, g := range games {
@@ -313,6 +313,32 @@ func seedGames(ctx context.Context, q *generated.Queries, userIDs, sessionIDs, b
 			_, err = q.UpdateGameStatus(ctx, updateParams)
 			if err != nil {
 				return fmt.Errorf("updating game %d status to %q: %w", gameIdx, g.Status, err)
+			}
+		}
+
+		// Seed game sessions. Each entry represents one play interval.
+		// All sessions except the last of an active game are closed (ended_at =
+		// last_heartbeat_at), simulating the player leaving and coming back.
+		// The last session of an active game stays open so playtime keeps
+		// accumulating; abandoned games have every session closed.
+		for i, s := range g.Sessions {
+			startedAt := time.Now().Add(-time.Duration(s.StartedAgoMinutes) * time.Minute)
+			heartbeatAt := startedAt.Add(time.Duration(s.DurationMinutes) * time.Minute)
+
+			isLastSession := i == len(g.Sessions)-1
+			isOpen := isLastSession && g.Status == "active"
+
+			var endedAt *time.Time
+			if !isOpen {
+				endedAt = &heartbeatAt
+			}
+
+			if _, err = tx.Exec(ctx,
+				`INSERT INTO game_sessions (game_id, started_at, last_heartbeat_at, ended_at)
+				 VALUES ($1, $2, $3, $4)`,
+				game.ID, startedAt, heartbeatAt, endedAt,
+			); err != nil {
+				return fmt.Errorf("creating game session %d for game %d: %w", i, gameIdx, err)
 			}
 		}
 

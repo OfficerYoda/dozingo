@@ -19,6 +19,7 @@ Table users {
   username text [unique, not null]
   email text [unique, not null]
   email_verified_at timestamptz [note: 'null means unverified or no email']
+  avatar_key text [not null, default: 'default.svg']
   ~timestamps
 }
 
@@ -118,6 +119,9 @@ Table boards {
   author_id uuid [note: 'null when author was deleted']
   ~timestamps
 
+  indexes {
+    title [type: gin, note: 'GIN trgm index for full-text title search']
+  }
   checks {
     `size >= 4 AND size <= 6`
   }
@@ -177,8 +181,13 @@ Table games {
   bingo_count integer [not null, default: 0]
   ~timestamps
   
+  indexes {
+    board_id
+    player_id
+  }
   checks {
     `status IN ('active', 'abandoned')`
+    `bingo_count >= 0`
   }
 }
 
@@ -202,3 +211,20 @@ Table game_cells {
 
 Ref: game_cells.game_id > games.id [delete: cascade]
 Ref: game_cells.cell_id > cells.id [delete: set null]
+
+Table game_sessions {
+  id uuid [pk, default: `gen_random_uuid()`]
+  game_id uuid [not null]
+  started_at timestamptz [not null, default: `now()`]
+  ended_at timestamptz [note: 'null while the session is still active']
+  last_heartbeat_at timestamptz [not null, default: `now()`, note: 'updated by client heartbeat pings']
+  ~timestamps
+
+  indexes {
+    game_id
+    last_heartbeat_at [note: 'partial index WHERE ended_at IS NULL; used by stale-session cleanup worker']
+    `COALESCE(ended_at, last_heartbeat_at)` [note: 'expression index for time-windowed playtime aggregation']
+  }
+}
+
+Ref: game_sessions.game_id > games.id [delete: cascade]

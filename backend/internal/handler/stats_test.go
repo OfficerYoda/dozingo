@@ -45,22 +45,13 @@ func TestGetRecentStats_DefaultDuration(t *testing.T) {
 	assertJSONInt(t, resp, "cells", 0)
 }
 
-// TestGetRecentStats_InvalidDuration documents the current behavior: the
-// DurationParam.OnParamSet hook swallows time.ParseDuration errors and leaves
-// Value as the zero duration. The handler accepts the request and returns
-// zero counts (the SQL window collapses to (now, now]). This may not be ideal
-// long-term but it is the contract today; pin it down so any change is
-// deliberate.
+// TestGetRecentStats_InvalidDuration verifies that an unparseable duration
+// query parameter returns 422 Unprocessable Entity.
 func TestGetRecentStats_InvalidDuration(t *testing.T) {
 	setupTest(t)
-	userID := createTestUser(t, "statsuser_invalid", "statsuser_invalid@example.com")
-	createTestBoard(t, "Invalid Board", 4, userID, nil)
 
-	resp := fetchRecentStats(t, "?duration=notvalid")
-	assertJSONInt(t, resp, "bingos", 0)
-	assertJSONInt(t, resp, "games", 0)
-	assertJSONInt(t, resp, "boards", 0)
-	assertJSONInt(t, resp, "cells", 0)
+	w := doRequest(http.MethodGet, "/api/stats/recent?duration=notvalid", nil)
+	assertStatus(t, w, http.StatusUnprocessableEntity)
 }
 
 func TestGetRecentStats_CountsBoards(t *testing.T) {

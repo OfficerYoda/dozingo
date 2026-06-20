@@ -2,6 +2,7 @@ package types
 
 import (
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"time"
 
@@ -12,8 +13,9 @@ import (
 // duration values without string parsing overhead.
 // Note: due to huma reasons the json "default" tag does not work with this type
 type DurationParam struct {
-	Value time.Duration
-	raw   string
+	Value    time.Duration
+	raw      string
+	parseErr error
 }
 
 func (d DurationParam) Schema(_ huma.Registry) *huma.Schema {
@@ -34,7 +36,22 @@ func (d *DurationParam) OnParamSet(isSet bool, _ any) {
 	if !isSet {
 		return
 	}
-	d.Value, _ = time.ParseDuration(d.raw)
+	d.Value, d.parseErr = time.ParseDuration(d.raw)
+}
+
+// Resolve implements huma.ResolverWithPath. It is called by huma after the
+// parameter is parsed and returns a 422 if the raw input is not a valid Go
+// duration string.
+func (d *DurationParam) Resolve(_ huma.Context, prefix *huma.PathBuffer) []error {
+	if d.parseErr != nil {
+		return []error{&huma.ErrorDetail{
+			Location: prefix.String(),
+			Message:  fmt.Sprintf("invalid duration %q: expected a Go duration like 24h, 1h30m, 1.5h", d.raw),
+			Value:    d.raw,
+		}}
+	}
+
+	return nil
 }
 
 // UnmarshalJSON allows DurationParam to be used in JSON request bodies.

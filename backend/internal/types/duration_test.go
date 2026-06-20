@@ -5,6 +5,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/danielgtaylor/huma/v2"
 )
 
 func TestDurationParam_UnmarshalJSON_Valid(t *testing.T) {
@@ -99,13 +101,38 @@ func TestDurationParam_OnParamSet_NotSet(t *testing.T) {
 func TestDurationParam_OnParamSet_InvalidString(t *testing.T) {
 	var d DurationParam
 
-	// Bad input: OnParamSet swallows the parse error and leaves Value
-	// as the zero duration. This is intentional behavior; document it.
 	d.Receiver().SetString("notaduration")
 	d.OnParamSet(true, nil)
 
+	// Value is zeroed when the parse fails; the error is surfaced via Resolve.
 	if d.Value != 0 {
 		t.Errorf("expected Value=0 for invalid input, got %v", d.Value)
+	}
+
+	errs := d.Resolve(nil, &huma.PathBuffer{})
+	if len(errs) == 0 {
+		t.Fatal("expected Resolve to return an error for invalid duration, got none")
+	}
+}
+
+func TestDurationParam_Resolve_Valid(t *testing.T) {
+	var d DurationParam
+
+	d.Receiver().SetString("1h30m")
+	d.OnParamSet(true, nil)
+
+	errs := d.Resolve(nil, &huma.PathBuffer{})
+	if len(errs) != 0 {
+		t.Errorf("expected no errors for valid duration, got %v", errs)
+	}
+}
+
+func TestDurationParam_Resolve_NotSet(t *testing.T) {
+	var d DurationParam
+	// Never called OnParamSet (param omitted from request).
+	errs := d.Resolve(nil, &huma.PathBuffer{})
+	if len(errs) != 0 {
+		t.Errorf("expected no errors when param is not set, got %v", errs)
 	}
 }
 

@@ -47,11 +47,20 @@ type voteData struct {
 // pre-session, user-only flow); when both are set, the game has both a
 // player_id and a session_id (a logged-in user playing from a session that
 // was minted while they were anonymous).
+// gameSessionSeed describes one play session for a seeded game.
+// StartedAgoMinutes controls when the session began relative to now();
+// DurationMinutes controls how long the player was active.
+type gameSessionSeed struct {
+	StartedAgoMinutes int
+	DurationMinutes   int
+}
+
 type gameData struct {
 	PlayerIdx  int
 	SessionIdx int
 	BoardIdx   int
-	Status     string // "active" or "abandoned"
+	Status     string            // "active" or "abandoned"
+	Sessions   []gameSessionSeed // one or more play sessions
 }
 
 // gameCellData holds a game cell to seed.
@@ -823,34 +832,65 @@ var votes = []voteData{
 
 // games defines game sessions. Each game is played by a user on a board.
 var games = []gameData{
-	// User 0 plays board 0 (Mathe 1 Bingo, size 3 -> 9 cells) - active
-	{PlayerIdx: 0, SessionIdx: -1, BoardIdx: 0, Status: "active"},
-	// User 1 plays board 0 (Mathe 1 Bingo) - active
-	{PlayerIdx: 1, SessionIdx: -1, BoardIdx: 0, Status: "active"},
-	// User 2 plays board 3 (Theoretische Informatik, size 4 -> 16 cells) - active
-	{PlayerIdx: 2, SessionIdx: -1, BoardIdx: 3, Status: "active"},
-	// User 3 plays board 6 (Algorithmen und Datenstrukturen, size 5 -> 25 cells) - abandoned
-	{PlayerIdx: 3, SessionIdx: -1, BoardIdx: 6, Status: "abandoned"},
-	// User 5 plays board 1 (Lineare Algebra Klassiker, size 3 -> 9 cells) - active
-	{PlayerIdx: 5, SessionIdx: -1, BoardIdx: 1, Status: "active"},
-
-	// Game 5: Anonymous (session 0 = "seed-anon-fresh-token-0001") plays board 0
-	// (Mathe 1 Bingo, size 4 -> 16 cells) - active
-	{PlayerIdx: -1, SessionIdx: 0, BoardIdx: 0, Status: "active"},
-	// Game 6: Anonymous (session 1 = "seed-anon-near-expiry-0002") plays board 3
-	// (Theoretische Informatik, size 4 -> 16 cells) - abandoned
-	{PlayerIdx: -1, SessionIdx: 1, BoardIdx: 3, Status: "abandoned"},
-	// Game 7: maxmustermann playing through his bound session
-	// (session 3 = "seed-user-max-token-0010"). Has both player_id and session_id.
-	// Board 8 (Datenbanken Vorlesung, size 5 -> 25 cells) - active
-	{PlayerIdx: 0, SessionIdx: 3, BoardIdx: 8, Status: "active"},
-
-	// Game 8: admin plays own board 15 (Programmierkurs Klassiker, size 4 -> 16 cells) - active
-	{PlayerIdx: 12, SessionIdx: -1, BoardIdx: 15, Status: "active"},
-	// Game 9: admin plays own board 17 (Admin Debug Bingo, size 4 -> 16 cells) - active
-	{PlayerIdx: 12, SessionIdx: -1, BoardIdx: 17, Status: "active"},
-	// Game 10: admin plays existing board 6 (Algorithmen, size 5 -> 25 cells) via bound session - active
-	{PlayerIdx: 12, SessionIdx: 5, BoardIdx: 6, Status: "active"},
+	// Game 0: User 0 plays board 0 (Mathe 1 Bingo, size 3 -> 9 cells) - active
+	// Played once yesterday, then came back today.
+	{PlayerIdx: 0, SessionIdx: -1, BoardIdx: 0, Status: "active", Sessions: []gameSessionSeed{
+		{StartedAgoMinutes: 26 * 60, DurationMinutes: 8},
+		{StartedAgoMinutes: 2 * 60, DurationMinutes: 12},
+	}},
+	// Game 1: User 1 plays board 0 (Mathe 1 Bingo) - active
+	// Single short session, currently in progress.
+	{PlayerIdx: 1, SessionIdx: -1, BoardIdx: 0, Status: "active", Sessions: []gameSessionSeed{
+		{StartedAgoMinutes: 30, DurationMinutes: 7},
+	}},
+	// Game 2: User 2 plays board 3 (Theoretische Informatik, size 4 -> 16 cells) - active
+	// Tried briefly 42h ago, resumed today for a longer session.
+	{PlayerIdx: 2, SessionIdx: -1, BoardIdx: 3, Status: "active", Sessions: []gameSessionSeed{
+		{StartedAgoMinutes: 42 * 60, DurationMinutes: 15},
+		{StartedAgoMinutes: 6 * 60, DurationMinutes: 34},
+	}},
+	// Game 3: User 3 plays board 6 (Algorithmen und Datenstrukturen, size 5 -> 25 cells) - abandoned
+	// Short single session 36h ago, then abandoned.
+	{PlayerIdx: 3, SessionIdx: -1, BoardIdx: 6, Status: "abandoned", Sessions: []gameSessionSeed{
+		{StartedAgoMinutes: 36 * 60, DurationMinutes: 5},
+	}},
+	// Game 4: User 5 plays board 1 (Lineare Algebra Klassiker, size 3 -> 9 cells) - active
+	// Single session started an hour ago.
+	{PlayerIdx: 5, SessionIdx: -1, BoardIdx: 1, Status: "active", Sessions: []gameSessionSeed{
+		{StartedAgoMinutes: 60, DurationMinutes: 21},
+	}},
+	// Game 5: Anonymous (session 0) plays board 0 (Mathe 1 Bingo, size 4 -> 16 cells) - active
+	// Played 18h ago, still open.
+	{PlayerIdx: -1, SessionIdx: 0, BoardIdx: 0, Status: "active", Sessions: []gameSessionSeed{
+		{StartedAgoMinutes: 18 * 60, DurationMinutes: 9},
+	}},
+	// Game 6: Anonymous (session 1) plays board 3 (Theoretische Informatik) - abandoned
+	// Brief session 44h ago, abandoned.
+	{PlayerIdx: -1, SessionIdx: 1, BoardIdx: 3, Status: "abandoned", Sessions: []gameSessionSeed{
+		{StartedAgoMinutes: 44 * 60, DurationMinutes: 3},
+	}},
+	// Game 7: maxmustermann via bound session, board 8 (Datenbanken, size 5 -> 25 cells) - active
+	// Played yesterday, came back for a long session this afternoon.
+	{PlayerIdx: 0, SessionIdx: 3, BoardIdx: 8, Status: "active", Sessions: []gameSessionSeed{
+		{StartedAgoMinutes: 20 * 60, DurationMinutes: 25},
+		{StartedAgoMinutes: 4 * 60, DurationMinutes: 45},
+	}},
+	// Game 8: admin plays board 15 (Programmierkurs Klassiker, size 4 -> 16 cells) - active
+	// Single session 12h ago.
+	{PlayerIdx: 12, SessionIdx: -1, BoardIdx: 15, Status: "active", Sessions: []gameSessionSeed{
+		{StartedAgoMinutes: 12 * 60, DurationMinutes: 18},
+	}},
+	// Game 9: admin plays board 17 (Admin Debug Bingo, size 4 -> 16 cells) - active
+	// Played near the 48h boundary, then again yesterday morning.
+	{PlayerIdx: 12, SessionIdx: -1, BoardIdx: 17, Status: "active", Sessions: []gameSessionSeed{
+		{StartedAgoMinutes: 47 * 60, DurationMinutes: 10},
+		{StartedAgoMinutes: 24 * 60, DurationMinutes: 26},
+	}},
+	// Game 10: admin plays board 6 (Algorithmen, size 5 -> 25 cells) via bound session - active
+	// One long session recently.
+	{PlayerIdx: 12, SessionIdx: 5, BoardIdx: 6, Status: "active", Sessions: []gameSessionSeed{
+		{StartedAgoMinutes: 40, DurationMinutes: 38},
+	}},
 }
 
 // gameCells defines the game_cells for each game index.

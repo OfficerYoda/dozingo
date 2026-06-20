@@ -12,6 +12,7 @@ type Repos struct {
 	Boards             *Boards
 	Cells              *Cells
 	GameCells          *GameCells
+	GameSessions       *GameSessions
 	Games              *Games
 	Informations       *Informations
 	Passwords          *Passwords
@@ -36,6 +37,7 @@ func NewWithDBTX(db generated.DBTX) Repos {
 		Boards:             &Boards{queries: queries, db: db},
 		Cells:              &Cells{queries: queries},
 		GameCells:          &GameCells{queries: queries},
+		GameSessions:       &GameSessions{queries: queries},
 		Games:              &Games{queries: queries},
 		Informations:       &Informations{queries: queries},
 		Passwords:          &Passwords{queries: queries},
