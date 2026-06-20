@@ -1,15 +1,15 @@
 <template>
   <div className="container">
-    <div v-if="!auth.state.ready">Loading...</div>
-    <div v-else-if="!auth.state.user">Not logged in.</div>
+    <div v-if="!auth.state.ready">{{ t('profile.loading') }}</div>
+    <div v-else-if="!auth.state.user">{{ t('profile.notLoggedIn') }}</div>
     <div v-else class="profile-header">
       <img v-if="auth.state.user.avatar_url" :src="auth.state.user.avatar_url" alt="Profile picture" class="profile-avatar" />
       <img v-else src="/user.png" alt="Profile picture" class="profile-avatar" />
-      <h1>Welcome, {{ auth.state.user.username }}!</h1>
+      <h1>{{ t('profile.welcome', { username: auth.state.user.username }) }}</h1>
     </div>
 
     <div class="container" style="padding-right: 0%; padding-left: 0%;">
-      <h2 class="mb-0">Continue your unfinished Boards:</h2>
+      <h2 class="mb-0">{{ t('profile.continueBoards') }}</h2>
 
       <p v-if="error" class="error-text">{{ error }}</p>
 
@@ -22,7 +22,7 @@
             </div>
             <hr class="mb-2">
             <div class="card-footer">
-              <span class="card-meta-text">Continue playing</span>
+              <span class="card-meta-text">{{ t('profile.continuePlaying') }}</span>
             </div>
           </button>
         </template>
@@ -30,7 +30,7 @@
 
       <p v-if="error" class="error-text">{{ error }}</p>
 
-      <h2 class="mb-0">Explore your {{ boards.length }} boards</h2>
+      <h2 class="mb-0">{{ t('profile.exploreBoards', { count: boards.length }) }}</h2>
 
       <SliderSection :items="boards" :per-page="3" :per-page-md="2" :per-page-sm="1">
         <template #slide="{ item: board }">
@@ -44,7 +44,7 @@
       </SliderSection>
     </div>
 
-        <h2 class="mb-0">Explore your {{ likedBoards.length }} liked boards</h2>
+          <h2 class="mb-0">{{ t('profile.likedBoards', { count: likedBoards.length }) }}</h2>
 
     <SliderSection :items="likedBoards" :per-page="3" :per-page-md="2" :per-page-sm="1">
       <template #slide="{ item: vote }">

@@ -25,7 +25,7 @@
   },
   "settings": {
     "title": "Einstellungen",
-    "guest": "Hallo, Fremder!",
+    "guest": "Hallo!",
     "security": {
       "title": "Kontosicherheit",
       "subtitle": "Authentifizierung",
@@ -69,6 +69,15 @@
       "deactivateDesc": "Dein Konto und alle zugehörigen Daten dauerhaft löschen.",
       "deactivateBtn": "Löschen"
     }
+  },
+  "profile": {
+    "loading": "Wird geladen...",
+    "notLoggedIn": "Nicht angemeldet.",
+    "welcome": "Willkommen, {username}!",
+    "continueBoards": "Deine angefangenen Boards:",
+    "continuePlaying": "Weiterspielen",
+    "exploreBoards": "Deine {count} Boards:",
+    "likedBoards": "Deine {count} gelikten Boards:"
   },
   "boards": {
     "title": "Alle Karten erkunden",
