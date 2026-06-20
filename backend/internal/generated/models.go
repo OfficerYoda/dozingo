@@ -15,7 +15,6 @@ type GameStatus string
 
 const (
 	GameStatusActive    GameStatus = "active"
-	GameStatusCompleted GameStatus = "completed"
 	GameStatusAbandoned GameStatus = "abandoned"
 )
 
@@ -117,13 +116,14 @@ type Cell struct {
 }
 
 type Game struct {
-	ID        pgtype.UUID        `json:"id"`
-	PlayerID  pgtype.UUID        `json:"player_id"`
-	BoardID   pgtype.UUID        `json:"board_id"`
-	Status    GameStatus         `json:"status"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
-	SessionID pgtype.UUID        `json:"session_id"`
+	ID         pgtype.UUID        `json:"id"`
+	PlayerID   pgtype.UUID        `json:"player_id"`
+	BoardID    pgtype.UUID        `json:"board_id"`
+	Status     GameStatus         `json:"status"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
+	SessionID  pgtype.UUID        `json:"session_id"`
+	BingoCount int32              `json:"bingo_count"`
 }
 
 type GameCell struct {

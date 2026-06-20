@@ -16,11 +16,12 @@ import (
 // ===== Input/Output types =====
 
 type gameOutput struct {
-	GameID    string  `json:"game_id" format:"uuid"`
-	BoardID   *string `json:"board_id" format:"uuid"`
-	PlayerID  *string `json:"player_id" format:"uuid"`
-	SessionID *string `json:"session_id" format:"uuid"`
-	Status    string  `json:"status"`
+	GameID     string  `json:"game_id" format:"uuid"`
+	BoardID    *string `json:"board_id" format:"uuid"`
+	PlayerID   *string `json:"player_id" format:"uuid"`
+	SessionID  *string `json:"session_id" format:"uuid"`
+	Status     string  `json:"status"`
+	BingoCount int32   `json:"bingo_count"`
 }
 
 type getGameByIDInput struct {
@@ -62,7 +63,7 @@ type createGameOutput struct {
 }
 
 type updateGameStatusInputBody struct {
-	Status string `json:"status" enum:"active,completed,abandoned" doc:"Game lifecycle state. Must be one of: active, completed, abandoned."`
+	Status string `json:"status" enum:"active,abandoned" doc:"Game lifecycle state. Must be one of: active, abandoned."`
 }
 
 type updateGameStatusInput struct {
@@ -231,10 +232,11 @@ func (h *GamesHandler) delete(ctx context.Context, in *deleteGameInput) (*struct
 
 func gameToOutput(game generated.Game) gameOutput {
 	return gameOutput{
-		GameID:    game.ID.String(),
-		BoardID:   pgmap.StringFromPgUUID(game.BoardID),
-		PlayerID:  pgmap.StringFromPgUUID(game.PlayerID),
-		SessionID: pgmap.StringFromPgUUID(game.SessionID),
-		Status:    string(game.Status),
+		GameID:     game.ID.String(),
+		BoardID:    pgmap.StringFromPgUUID(game.BoardID),
+		PlayerID:   pgmap.StringFromPgUUID(game.PlayerID),
+		SessionID:  pgmap.StringFromPgUUID(game.SessionID),
+		Status:     string(game.Status),
+		BingoCount: game.BingoCount,
 	}
 }

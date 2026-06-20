@@ -165,7 +165,6 @@ Ref: votes.board_id > boards.id [delete: cascade]
 
 enum game_status {
   "active"
-  "completed"
   "abandoned"
 }
 
@@ -175,10 +174,11 @@ Table games {
   session_id uuid [note: 'null when session expired']
   board_id uuid [note: 'null if board was deleted']
   status game_status [not null, default: 'active']
+  bingo_count integer [not null, default: 0]
   ~timestamps
-
+  
   checks {
-    `status IN ('active', 'completed', 'abandoned')`
+    `status IN ('active', 'abandoned')`
   }
 }
 

@@ -190,7 +190,7 @@ func TestUpdateGameStatus(t *testing.T) {
 
 	w := doRequestWithCookies(http.MethodPut,
 		fmt.Sprintf("/api/games/%s/status", gameID),
-		map[string]any{"status": "completed"},
+		map[string]any{"status": "abandoned"},
 		cookiesFor(userID),
 	)
 	assertStatus(t, w, http.StatusOK)
@@ -199,7 +199,7 @@ func TestUpdateGameStatus(t *testing.T) {
 	decodeJSON(t, w, &resp)
 
 	assertJSONField(t, resp, "game_id", gameID)
-	assertJSONField(t, resp, "status", "completed")
+	assertJSONField(t, resp, "status", "abandoned")
 }
 
 func TestUpdateGameStatus_Abandoned(t *testing.T) {
@@ -230,7 +230,7 @@ func TestUpdateGameStatus_InvalidValue_Rejected(t *testing.T) {
 	userID, boardID := setupForGames(t)
 	gameID := createTestGame(t, userID, boardID)
 
-	for _, bad := range []string{"garbage", "", "ACTIVE", "deleted", "pending"} {
+	for _, bad := range []string{"garbage", "", "ACTIVE", "deleted", "pending", "completed"} {
 		t.Run("status="+bad, func(t *testing.T) {
 			w := doRequestWithCookies(http.MethodPut,
 				fmt.Sprintf("/api/games/%s/status", gameID),
@@ -250,7 +250,7 @@ func TestUpdateGameStatus_NotFound(t *testing.T) {
 
 	w := doRequestWithCookies(http.MethodPut,
 		"/api/games/00000000-0000-0000-0000-000000000000/status",
-		map[string]any{"status": "completed"},
+		map[string]any{"status": "abandoned"},
 		cookiesFor(userID),
 	)
 	assertStatus(t, w, http.StatusNotFound)
@@ -267,7 +267,7 @@ func TestUpdateGameStatus_WrongPlayer(t *testing.T) {
 	// domain.ErrUnauthorized -> 401.
 	w := doRequestWithCookies(http.MethodPut,
 		fmt.Sprintf("/api/games/%s/status", gameID),
-		map[string]any{"status": "completed"},
+		map[string]any{"status": "abandoned"},
 		cookiesFor(stranger),
 	)
 	assertStatus(t, w, http.StatusForbidden)
@@ -501,14 +501,14 @@ func TestUpdateGameStatus_Anonymous(t *testing.T) {
 
 	w := doRequestWithCookies(http.MethodPut,
 		fmt.Sprintf("/api/games/%s/status", gameID),
-		map[string]any{"status": "completed"},
+		map[string]any{"status": "abandoned"},
 		[]*http.Cookie{cookie},
 	)
 	assertStatus(t, w, http.StatusOK)
 
 	var resp map[string]any
 	decodeJSON(t, w, &resp)
-	assertJSONField(t, resp, "status", "completed")
+	assertJSONField(t, resp, "status", "abandoned")
 }
 
 // TestDeleteGame_AnonymousNonOwner verifies that a different anonymous caller
