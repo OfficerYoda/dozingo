@@ -98,7 +98,7 @@ func seed(pool *pgxpool.Pool) error {
 		return err
 	}
 
-	if err := seedGames(ctx, q, userIDs, sessionIDs, boardIDs, cellIDs); err != nil {
+	if err := seedGames(ctx, tx, q, userIDs, sessionIDs, boardIDs, cellIDs); err != nil {
 		return err
 	}
 
@@ -276,7 +276,7 @@ func seedVotes(ctx context.Context, q *generated.Queries, userIDs, boardIDs []pg
 	return nil
 }
 
-func seedGames(ctx context.Context, q *generated.Queries, userIDs, sessionIDs, boardIDs []pgtype.UUID, cellIDsByBoard map[int][]pgtype.UUID) error {
+func seedGames(ctx context.Context, tx pgx.Tx, q *generated.Queries, userIDs, sessionIDs, boardIDs []pgtype.UUID, cellIDsByBoard map[int][]pgtype.UUID) error {
 	slog.Info("Seeding games", "count", len(games))
 
 	for gameIdx, g := range games {
@@ -316,8 +316,18 @@ func seedGames(ctx context.Context, q *generated.Queries, userIDs, sessionIDs, b
 			}
 		}
 
-		// Create a game session to mirror what the service layer does at runtime.
-		if _, err = q.CreateGameSession(ctx, game.ID); err != nil {
+		// Create a game session with realistic timestamps so playtime stats
+		// return non-zero values. Active sessions have no ended_at so their
+		// playtime still accumulates from started_at; abandoned sessions are
+		// immediately closed.
+		playtime := time.Duration(g.PlaytimeMinutes) * time.Minute
+		startedAt := pgtype.Timestamptz{Time: time.Now().Add(-playtime), Valid: true}
+		heartbeatAt := startedAt
+		if _, err = tx.Exec(ctx,
+			`INSERT INTO game_sessions (game_id, started_at, last_heartbeat_at)
+			 VALUES ($1, $2, $3)`,
+			game.ID, startedAt, heartbeatAt,
+		); err != nil {
 			return fmt.Errorf("creating game session for game %d: %w", gameIdx, err)
 		}
 		// Abandoned games should have no open session (same as UpdateStatus path).

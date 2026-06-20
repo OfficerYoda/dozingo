@@ -48,10 +48,11 @@ type voteData struct {
 // player_id and a session_id (a logged-in user playing from a session that
 // was minted while they were anonymous).
 type gameData struct {
-	PlayerIdx  int
-	SessionIdx int
-	BoardIdx   int
-	Status     string // "active" or "abandoned"
+	PlayerIdx       int
+	SessionIdx      int
+	BoardIdx        int
+	Status          string // "active" or "abandoned"
+	PlaytimeMinutes int    // realistic play duration for the seed session
 }
 
 // gameCellData holds a game cell to seed.
@@ -824,33 +825,33 @@ var votes = []voteData{
 // games defines game sessions. Each game is played by a user on a board.
 var games = []gameData{
 	// User 0 plays board 0 (Mathe 1 Bingo, size 3 -> 9 cells) - active
-	{PlayerIdx: 0, SessionIdx: -1, BoardIdx: 0, Status: "active"},
+	{PlayerIdx: 0, SessionIdx: -1, BoardIdx: 0, Status: "active", PlaytimeMinutes: 12},
 	// User 1 plays board 0 (Mathe 1 Bingo) - active
-	{PlayerIdx: 1, SessionIdx: -1, BoardIdx: 0, Status: "active"},
+	{PlayerIdx: 1, SessionIdx: -1, BoardIdx: 0, Status: "active", PlaytimeMinutes: 7},
 	// User 2 plays board 3 (Theoretische Informatik, size 4 -> 16 cells) - active
-	{PlayerIdx: 2, SessionIdx: -1, BoardIdx: 3, Status: "active"},
+	{PlayerIdx: 2, SessionIdx: -1, BoardIdx: 3, Status: "active", PlaytimeMinutes: 34},
 	// User 3 plays board 6 (Algorithmen und Datenstrukturen, size 5 -> 25 cells) - abandoned
-	{PlayerIdx: 3, SessionIdx: -1, BoardIdx: 6, Status: "abandoned"},
+	{PlayerIdx: 3, SessionIdx: -1, BoardIdx: 6, Status: "abandoned", PlaytimeMinutes: 5},
 	// User 5 plays board 1 (Lineare Algebra Klassiker, size 3 -> 9 cells) - active
-	{PlayerIdx: 5, SessionIdx: -1, BoardIdx: 1, Status: "active"},
+	{PlayerIdx: 5, SessionIdx: -1, BoardIdx: 1, Status: "active", PlaytimeMinutes: 21},
 
 	// Game 5: Anonymous (session 0 = "seed-anon-fresh-token-0001") plays board 0
 	// (Mathe 1 Bingo, size 4 -> 16 cells) - active
-	{PlayerIdx: -1, SessionIdx: 0, BoardIdx: 0, Status: "active"},
+	{PlayerIdx: -1, SessionIdx: 0, BoardIdx: 0, Status: "active", PlaytimeMinutes: 9},
 	// Game 6: Anonymous (session 1 = "seed-anon-near-expiry-0002") plays board 3
 	// (Theoretische Informatik, size 4 -> 16 cells) - abandoned
-	{PlayerIdx: -1, SessionIdx: 1, BoardIdx: 3, Status: "abandoned"},
+	{PlayerIdx: -1, SessionIdx: 1, BoardIdx: 3, Status: "abandoned", PlaytimeMinutes: 3},
 	// Game 7: maxmustermann playing through his bound session
 	// (session 3 = "seed-user-max-token-0010"). Has both player_id and session_id.
 	// Board 8 (Datenbanken Vorlesung, size 5 -> 25 cells) - active
-	{PlayerIdx: 0, SessionIdx: 3, BoardIdx: 8, Status: "active"},
+	{PlayerIdx: 0, SessionIdx: 3, BoardIdx: 8, Status: "active", PlaytimeMinutes: 45},
 
 	// Game 8: admin plays own board 15 (Programmierkurs Klassiker, size 4 -> 16 cells) - active
-	{PlayerIdx: 12, SessionIdx: -1, BoardIdx: 15, Status: "active"},
+	{PlayerIdx: 12, SessionIdx: -1, BoardIdx: 15, Status: "active", PlaytimeMinutes: 18},
 	// Game 9: admin plays own board 17 (Admin Debug Bingo, size 4 -> 16 cells) - active
-	{PlayerIdx: 12, SessionIdx: -1, BoardIdx: 17, Status: "active"},
+	{PlayerIdx: 12, SessionIdx: -1, BoardIdx: 17, Status: "active", PlaytimeMinutes: 26},
 	// Game 10: admin plays existing board 6 (Algorithmen, size 5 -> 25 cells) via bound session - active
-	{PlayerIdx: 12, SessionIdx: 5, BoardIdx: 6, Status: "active"},
+	{PlayerIdx: 12, SessionIdx: 5, BoardIdx: 6, Status: "active", PlaytimeMinutes: 60},
 }
 
 // gameCells defines the game_cells for each game index.
