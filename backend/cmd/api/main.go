@@ -36,6 +36,8 @@ const (
 	avatarOrphanCleanupInterval = 1 * time.Hour
 	gameAbandonInterval         = 1 * time.Hour
 	gameAbandonTimeout          = 6 * time.Hour
+	gameSessionCleanupInterval  = 1 * time.Minute
+	gameSessionStaleTimeout     = 1 * time.Minute
 	shutdownTimeout             = 10 * time.Second
 	defaultAvatarKey            = "default"
 )
@@ -129,6 +131,20 @@ func startWorkers(ctx context.Context, repos repository.Repos, garage *storage.G
 			if n > 0 {
 				slog.Info("abandoned inactive games", "count", n)
 			}
+
+			return nil
+		}).Start(ctx)
+
+	worker.NewPeriodic("game_session_cleanup", gameSessionCleanupInterval,
+		func(ctx context.Context) error {
+			n, err := repos.GameSessions.CloseStaleSessions(ctx, gameSessionStaleTimeout)
+			if err != nil {
+				return err
+			}
+			if n > 0 {
+				slog.Info("closed stale game sessions", "count", n)
+			}
+
 			return nil
 		}).Start(ctx)
 }
@@ -182,6 +198,7 @@ func registerRoutes(
 	boardsSvc := service.NewBoards(&repos, queries)
 	cellsSvc := service.NewCells(&repos, queries)
 	gameCellsSvc := service.NewGameCells(&repos, queries)
+	gameSessionsSvc := service.NewGameSessions(&repos, queries)
 	gamesSvc := service.NewGames(&repos, queries, txRunner)
 	statsSvc := service.NewStats(&repos, queries)
 	twoFASvc := service.NewTwoFactor(&repos, queries, txRunner, totpCipher)
@@ -192,6 +209,7 @@ func registerRoutes(
 	handler.NewBoardsHandler(boardsSvc).Register(apiGroup)
 	handler.NewCellsHandler(cellsSvc).Register(apiGroup)
 	handler.NewGameCellsHandler(gameCellsSvc).Register(apiGroup)
+	handler.NewGameSessionsHandler(gameSessionsSvc).Register(apiGroup)
 	handler.NewGamesHandler(gamesSvc).Register(apiGroup)
 	handler.NewHealthHandler(pool).Register(api) // Don't use apiGroup here to get around middleware
 	handler.NewStatsHandler(statsSvc).Register(apiGroup)
