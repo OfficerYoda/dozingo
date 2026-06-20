@@ -36,8 +36,15 @@ async function register(username: string, password: string, email?: string): Pro
 }
 
 async function logout(): Promise<void> {
-    await authService.logout()
+    // UI-State sofort leeren — Reactive Updates triggern jetzt, nicht erst nach Server-Antwort.
     state.user = null
+    // Server-Call best-effort: wenn die Session schon abgelaufen ist (401) oder das
+    // Backend Probleme hat, soll der User trotzdem ausgeloggt erscheinen.
+    try {
+        await authService.logout()
+    } catch {
+        // bewusst ignorieren — lokal ist der User raus, Cookie wird ggf. später invalidiert
+    }
 }
 
 async function pwRequest(email: string): Promise<void> {

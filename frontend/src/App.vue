@@ -143,8 +143,11 @@ watch(locale, (newLocale) => {
 
 async function handleLogout() {
   profileOpen.value = false
-  await auth.logout()
+  // state.user wird in auth.logout() SYNCHRON auf null gesetzt → Navbar updated sofort.
+  // Backend-Call läuft im Hintergrund (best-effort), Navigation kann parallel passieren.
+  const logoutPromise = auth.logout()
   router.push('/')
+  await logoutPromise
 }
 </script>
 
