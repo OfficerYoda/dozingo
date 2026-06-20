@@ -14,6 +14,7 @@ import (
 type GameCells struct {
 	gameCells *repository.GameCells
 	games     *repository.Games
+	boards    *repository.Boards
 	queries   *generated.Queries
 }
 
@@ -21,6 +22,7 @@ func NewGameCells(repos *repository.Repos, queries *generated.Queries) *GameCell
 	return &GameCells{
 		gameCells: repos.GameCells,
 		games:     repos.Games,
+		boards:    repos.Boards,
 		queries:   queries,
 	}
 }
@@ -29,6 +31,14 @@ type UpdateGameCellMarkInput struct {
 	GameCellID pgtype.UUID
 	GameID     pgtype.UUID
 	IsMarked   bool
+}
+
+// UpdateMarkResult is the return value of UpdateMark. It includes the updated
+// cell plus bingo information computed server-side.
+type UpdateMarkResult struct {
+	Cell       generated.GameCell
+	BingoCount int32
+	BingoDelta int32
 }
 
 func (s *GameCells) ListByGameID(ctx context.Context, gameID pgtype.UUID) ([]generated.GameCell, error) {
@@ -41,27 +51,70 @@ func (s *GameCells) ListByGameID(ctx context.Context, gameID pgtype.UUID) ([]gen
 	return s.gameCells.ListByGameID(ctx, gameID)
 }
 
-func (s *GameCells) UpdateMark(ctx context.Context, in UpdateGameCellMarkInput) (generated.GameCell, error) {
+func (s *GameCells) UpdateMark(ctx context.Context, in UpdateGameCellMarkInput) (UpdateMarkResult, error) {
 	_, err := checkIfCallerOwnsGame(ctx, s.games, s.queries, in.GameID)
 	if err != nil {
-		return generated.GameCell{}, err
+		return UpdateMarkResult{}, err
 	}
 
-	if err := s.assertGameCellOnGame(ctx, in.GameCellID, in.GameID); err != nil {
-		return generated.GameCell{}, err
+	err = s.assertGameCellOnGame(ctx, in.GameCellID, in.GameID)
+	if err != nil {
+		return UpdateMarkResult{}, err
 	}
 
-	return s.gameCells.UpdateMark(ctx, repository.UpdateGameCellMarkInput(in))
+	cell, err := s.gameCells.UpdateMark(ctx, repository.UpdateGameCellMarkInput(in))
+	if err != nil {
+		return UpdateMarkResult{}, err
+	}
+
+	gameRow, err := s.games.Get(ctx, in.GameID)
+	if err != nil {
+		return UpdateMarkResult{}, err
+	}
+	oldBingoCount := gameRow.BingoCount
+
+	newBingoCount, err := s.computeAndSetBingoCount(ctx, in.GameID, gameRow.BoardID)
+	if err != nil {
+		return UpdateMarkResult{}, err
+	}
+
+	return UpdateMarkResult{
+		Cell:       cell,
+		BingoCount: newBingoCount,
+		BingoDelta: newBingoCount - oldBingoCount,
+	}, nil
 }
 
-// assertGameCellOnGame fetches the game_cell by its id and verifies it
-// really belongs to the game the caller named in the URL. The
-// repository's UpdateGameCellMark SQL already scopes to (id, game_id)
-// in the WHERE clause and would reject a cross-game id with no-rows.
-// This extra check is defense-in-depth: it surfaces the error as an
-// explicit "cell not found in this game" before the mutation runs and
-// protects against a future SQL regression that drops the game_id
-// scoping.
+func (s *GameCells) computeAndSetBingoCount(ctx context.Context, gameID, boardID pgtype.UUID) (int32, error) {
+	if !boardID.Valid {
+		gameRow, err := s.games.Get(ctx, gameID)
+		if err != nil {
+			return 0, err
+		}
+
+		return gameRow.BingoCount, nil
+	}
+
+	board, err := s.boards.Get(ctx, boardID)
+	if err != nil {
+		return 0, fmt.Errorf("get board for bingo check: %w", err)
+	}
+
+	cells, err := s.gameCells.ListByGameID(ctx, gameID)
+	if err != nil {
+		return 0, fmt.Errorf("list game cells for bingo check: %w", err)
+	}
+
+	newCount := countCompleteBingos(cells, board.Size)
+
+	updatedGame, err := s.games.SetBingoCount(ctx, gameID, newCount)
+	if err != nil {
+		return 0, fmt.Errorf("set bingo count: %w", err)
+	}
+
+	return updatedGame.BingoCount, nil
+}
+
 func (s *GameCells) assertGameCellOnGame(ctx context.Context, gameCellID, gameID pgtype.UUID) error {
 	cell, err := s.gameCells.GetByID(ctx, gameCellID)
 	if err != nil {
