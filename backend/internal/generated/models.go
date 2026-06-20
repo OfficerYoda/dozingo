@@ -137,6 +137,16 @@ type GameCell struct {
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }
 
+type GameSession struct {
+	ID              pgtype.UUID        `json:"id"`
+	GameID          pgtype.UUID        `json:"game_id"`
+	StartedAt       pgtype.Timestamptz `json:"started_at"`
+	EndedAt         pgtype.Timestamptz `json:"ended_at"`
+	LastHeartbeatAt pgtype.Timestamptz `json:"last_heartbeat_at"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+}
+
 type RecoveryCode struct {
 	ID        pgtype.UUID        `json:"id"`
 	UserID    pgtype.UUID        `json:"user_id"`
