@@ -19,6 +19,7 @@ Table users {
   username text [unique, not null]
   email text [unique, not null]
   email_verified_at timestamptz [note: 'null means unverified or no email']
+  avatar_key text [not null, default: 'default.svg']
   ~timestamps
 }
 
@@ -118,6 +119,9 @@ Table boards {
   author_id uuid [note: 'null when author was deleted']
   ~timestamps
 
+  indexes {
+    title [type: gin, note: 'GIN trgm index for full-text title search']
+  }
   checks {
     `size >= 4 AND size <= 6`
   }
@@ -183,6 +187,7 @@ Table games {
   }
   checks {
     `status IN ('active', 'abandoned')`
+    `bingo_count >= 0`
   }
 }
 
