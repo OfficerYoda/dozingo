@@ -221,6 +221,34 @@ func (q *Queries) ListGamesBySession(ctx context.Context, sessionID pgtype.UUID)
 	return items, nil
 }
 
+const setBingoCount = `-- name: SetBingoCount :one
+UPDATE games
+SET bingo_count = $1
+WHERE id = $2
+RETURNING id, player_id, board_id, status, created_at, updated_at, session_id, bingo_count
+`
+
+type SetBingoCountParams struct {
+	BingoCount int32       `json:"bingo_count"`
+	GameID     pgtype.UUID `json:"game_id"`
+}
+
+func (q *Queries) SetBingoCount(ctx context.Context, arg SetBingoCountParams) (Game, error) {
+	row := q.db.QueryRow(ctx, setBingoCount, arg.BingoCount, arg.GameID)
+	var i Game
+	err := row.Scan(
+		&i.ID,
+		&i.PlayerID,
+		&i.BoardID,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.SessionID,
+		&i.BingoCount,
+	)
+	return i, err
+}
+
 const updateGameStatus = `-- name: UpdateGameStatus :one
 UPDATE games
 SET status = $1

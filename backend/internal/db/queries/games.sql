@@ -37,6 +37,12 @@ WHERE id = @game_id
   )
 RETURNING *;
 
+-- name: SetBingoCount :one
+UPDATE games
+SET bingo_count = @bingo_count
+WHERE id = @game_id
+RETURNING *;
+
 -- name: DeleteGame :one
 DELETE FROM games
 WHERE id = @game_id

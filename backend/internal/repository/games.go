@@ -97,3 +97,15 @@ func (r *Games) Delete(ctx context.Context, gameID pgtype.UUID) (generated.Game,
 
 	return game, nil
 }
+
+func (r *Games) SetBingoCount(ctx context.Context, gameID pgtype.UUID, count int32) (generated.Game, error) {
+	game, err := r.queries.SetBingoCount(ctx, generated.SetBingoCountParams{
+		GameID:     gameID,
+		BingoCount: count,
+	})
+	if err != nil {
+		return generated.Game{}, pgmap.TranslatePgErr(err)
+	}
+
+	return game, nil
+}
