@@ -11,10 +11,25 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const abandonInactiveGames = `-- name: AbandonInactiveGames :execrows
+UPDATE games
+SET status = 'abandoned'
+WHERE status = 'active'
+  AND updated_at < now() - $1::INTERVAL
+`
+
+func (q *Queries) AbandonInactiveGames(ctx context.Context, timeout pgtype.Interval) (int64, error) {
+	result, err := q.db.Exec(ctx, abandonInactiveGames, timeout)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const createGame = `-- name: CreateGame :one
 INSERT INTO games (player_id, session_id, board_id)
 VALUES ($1, $2, $3)
-RETURNING id, player_id, board_id, status, created_at, updated_at, session_id
+RETURNING id, player_id, board_id, status, created_at, updated_at, session_id, bingo_count
 `
 
 type CreateGameParams struct {
@@ -34,6 +49,7 @@ func (q *Queries) CreateGame(ctx context.Context, arg CreateGameParams) (Game, e
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.SessionID,
+		&i.BingoCount,
 	)
 	return i, err
 }
@@ -41,7 +57,7 @@ func (q *Queries) CreateGame(ctx context.Context, arg CreateGameParams) (Game, e
 const deleteGame = `-- name: DeleteGame :one
 DELETE FROM games
 WHERE id = $1
-RETURNING id, player_id, board_id, status, created_at, updated_at, session_id
+RETURNING id, player_id, board_id, status, created_at, updated_at, session_id, bingo_count
 `
 
 func (q *Queries) DeleteGame(ctx context.Context, gameID pgtype.UUID) (Game, error) {
@@ -55,12 +71,13 @@ func (q *Queries) DeleteGame(ctx context.Context, gameID pgtype.UUID) (Game, err
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.SessionID,
+		&i.BingoCount,
 	)
 	return i, err
 }
 
 const getGameByID = `-- name: GetGameByID :one
-SELECT id, player_id, board_id, status, created_at, updated_at, session_id FROM games
+SELECT id, player_id, board_id, status, created_at, updated_at, session_id, bingo_count FROM games
 WHERE id = $1
 `
 
@@ -75,12 +92,13 @@ func (q *Queries) GetGameByID(ctx context.Context, gameID pgtype.UUID) (Game, er
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.SessionID,
+		&i.BingoCount,
 	)
 	return i, err
 }
 
 const getGames = `-- name: GetGames :many
-SELECT id, player_id, board_id, status, created_at, updated_at, session_id FROM games
+SELECT id, player_id, board_id, status, created_at, updated_at, session_id, bingo_count FROM games
 ORDER BY created_at DESC
 `
 
@@ -101,6 +119,7 @@ func (q *Queries) GetGames(ctx context.Context) ([]Game, error) {
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.SessionID,
+			&i.BingoCount,
 		); err != nil {
 			return nil, err
 		}
@@ -113,7 +132,7 @@ func (q *Queries) GetGames(ctx context.Context) ([]Game, error) {
 }
 
 const listGamesByBoard = `-- name: ListGamesByBoard :many
-SELECT id, player_id, board_id, status, created_at, updated_at, session_id FROM games
+SELECT id, player_id, board_id, status, created_at, updated_at, session_id, bingo_count FROM games
 WHERE board_id = $1
 ORDER BY created_at DESC
 `
@@ -135,6 +154,7 @@ func (q *Queries) ListGamesByBoard(ctx context.Context, boardID pgtype.UUID) ([]
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.SessionID,
+			&i.BingoCount,
 		); err != nil {
 			return nil, err
 		}
@@ -147,7 +167,7 @@ func (q *Queries) ListGamesByBoard(ctx context.Context, boardID pgtype.UUID) ([]
 }
 
 const listGamesByPlayer = `-- name: ListGamesByPlayer :many
-SELECT id, player_id, board_id, status, created_at, updated_at, session_id FROM games
+SELECT id, player_id, board_id, status, created_at, updated_at, session_id, bingo_count FROM games
 WHERE player_id = $1
 ORDER BY created_at DESC
 `
@@ -169,6 +189,7 @@ func (q *Queries) ListGamesByPlayer(ctx context.Context, playerID pgtype.UUID) (
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.SessionID,
+			&i.BingoCount,
 		); err != nil {
 			return nil, err
 		}
@@ -181,7 +202,7 @@ func (q *Queries) ListGamesByPlayer(ctx context.Context, playerID pgtype.UUID) (
 }
 
 const listGamesBySession = `-- name: ListGamesBySession :many
-SELECT id, player_id, board_id, status, created_at, updated_at, session_id FROM games
+SELECT id, player_id, board_id, status, created_at, updated_at, session_id, bingo_count FROM games
 WHERE session_id = $1
 ORDER BY created_at DESC
 `
@@ -203,6 +224,7 @@ func (q *Queries) ListGamesBySession(ctx context.Context, sessionID pgtype.UUID)
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.SessionID,
+			&i.BingoCount,
 		); err != nil {
 			return nil, err
 		}
@@ -214,6 +236,34 @@ func (q *Queries) ListGamesBySession(ctx context.Context, sessionID pgtype.UUID)
 	return items, nil
 }
 
+const setBingoCount = `-- name: SetBingoCount :one
+UPDATE games
+SET bingo_count = $1
+WHERE id = $2
+RETURNING id, player_id, board_id, status, created_at, updated_at, session_id, bingo_count
+`
+
+type SetBingoCountParams struct {
+	BingoCount int32       `json:"bingo_count"`
+	GameID     pgtype.UUID `json:"game_id"`
+}
+
+func (q *Queries) SetBingoCount(ctx context.Context, arg SetBingoCountParams) (Game, error) {
+	row := q.db.QueryRow(ctx, setBingoCount, arg.BingoCount, arg.GameID)
+	var i Game
+	err := row.Scan(
+		&i.ID,
+		&i.PlayerID,
+		&i.BoardID,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.SessionID,
+		&i.BingoCount,
+	)
+	return i, err
+}
+
 const updateGameStatus = `-- name: UpdateGameStatus :one
 UPDATE games
 SET status = $1
@@ -222,7 +272,7 @@ WHERE id = $2
         ($3::uuid IS NOT NULL AND player_id = $3)
      OR ($3::uuid IS NULL     AND session_id = $4)
   )
-RETURNING id, player_id, board_id, status, created_at, updated_at, session_id
+RETURNING id, player_id, board_id, status, created_at, updated_at, session_id, bingo_count
 `
 
 type UpdateGameStatusParams struct {
@@ -249,6 +299,7 @@ func (q *Queries) UpdateGameStatus(ctx context.Context, arg UpdateGameStatusPara
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.SessionID,
+		&i.BingoCount,
 	)
 	return i, err
 }

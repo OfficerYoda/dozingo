@@ -55,9 +55,16 @@ func (h *StatsHandler) recent(ctx context.Context, in *recentStatsInput) (*recen
 		return nil, toHumaErr(err, "", "failed to get recent stats")
 	}
 
+	// stats.Bingos is interface{} because sqlc cannot infer the type of
+	// COALESCE(SUM(...), 0). PostgreSQL returns it as int64.
+	var bingos int64
+	if v, ok := stats.Bingos.(int64); ok {
+		bingos = v
+	}
+
 	return &recentStatsOutput{
 		Body: recentStatsOutputBody{
-			Bingos: int(stats.Bingos),
+			Bingos: int(bingos),
 			Games:  int(stats.Games),
 			Boards: int(stats.Boards),
 			Cells:  int(stats.Cells),

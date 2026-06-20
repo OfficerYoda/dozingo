@@ -4,8 +4,8 @@ package main
 //   maxmustermann      / password123
 //   lena.schmidt       / securePass!
 //   timoWerner42       / timoSecret42
-//   ghostUser01        / ghostpass        (no email)
-//   anon_student       / anonpass         (no email)
+//   ghostUser01        / ghostpass
+//   anon_student       / anonpass
 //   admin              / password123      (easy test admin)
 //
 // Seed session tokens (for local dev only):
@@ -51,7 +51,7 @@ type gameData struct {
 	PlayerIdx  int
 	SessionIdx int
 	BoardIdx   int
-	Status     string // "active", "completed", or "abandoned"
+	Status     string // "active" or "abandoned"
 }
 
 // gameCellData holds a game cell to seed.
@@ -75,8 +75,8 @@ var users = []userData{
 	{Username: "annaK99", Email: "anna.koch@stud.fu-berlin.de"},
 	{Username: "lukasBauer", Email: "lukas.bauer@stud.tu-darmstadt.de"},
 	{Username: "emiliaWolf", Email: "emilia.wolf@stud.uni-koeln.de"},
-	{Username: "ghostUser01", Email: ""},
-	{Username: "anon_student", Email: ""},
+	{Username: "ghostUser01", Email: "ghost.user01@mail.dozingo.de"},
+	{Username: "anon_student", Email: "anon.student@mail.dozingo.de"},
 	{Username: "admin", Email: "admin@mail.dozingo.de"},
 }
 
@@ -823,8 +823,8 @@ var votes = []voteData{
 
 // games defines game sessions. Each game is played by a user on a board.
 var games = []gameData{
-	// User 0 plays board 0 (Mathe 1 Bingo, size 3 -> 9 cells) - completed
-	{PlayerIdx: 0, SessionIdx: -1, BoardIdx: 0, Status: "completed"},
+	// User 0 plays board 0 (Mathe 1 Bingo, size 3 -> 9 cells) - active
+	{PlayerIdx: 0, SessionIdx: -1, BoardIdx: 0, Status: "active"},
 	// User 1 plays board 0 (Mathe 1 Bingo) - active
 	{PlayerIdx: 1, SessionIdx: -1, BoardIdx: 0, Status: "active"},
 	// User 2 plays board 3 (Theoretische Informatik, size 4 -> 16 cells) - active
@@ -842,11 +842,11 @@ var games = []gameData{
 	{PlayerIdx: -1, SessionIdx: 1, BoardIdx: 3, Status: "abandoned"},
 	// Game 7: maxmustermann playing through his bound session
 	// (session 3 = "seed-user-max-token-0010"). Has both player_id and session_id.
-	// Board 8 (Datenbanken Vorlesung, size 5 -> 25 cells) - completed
-	{PlayerIdx: 0, SessionIdx: 3, BoardIdx: 8, Status: "completed"},
+	// Board 8 (Datenbanken Vorlesung, size 5 -> 25 cells) - active
+	{PlayerIdx: 0, SessionIdx: 3, BoardIdx: 8, Status: "active"},
 
-	// Game 8: admin plays own board 15 (Programmierkurs Klassiker, size 4 -> 16 cells) - completed
-	{PlayerIdx: 12, SessionIdx: -1, BoardIdx: 15, Status: "completed"},
+	// Game 8: admin plays own board 15 (Programmierkurs Klassiker, size 4 -> 16 cells) - active
+	{PlayerIdx: 12, SessionIdx: -1, BoardIdx: 15, Status: "active"},
 	// Game 9: admin plays own board 17 (Admin Debug Bingo, size 4 -> 16 cells) - active
 	{PlayerIdx: 12, SessionIdx: -1, BoardIdx: 17, Status: "active"},
 	// Game 10: admin plays existing board 6 (Algorithmen, size 5 -> 25 cells) via bound session - active

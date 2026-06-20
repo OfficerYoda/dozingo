@@ -104,18 +104,16 @@ func TestGetRecentStats_CountsBingos(t *testing.T) {
 	boardID := createTestBoard(t, "Bingos Board", 4, userID, nil)
 	gameID := createTestGame(t, userID, boardID)
 
-	// Mark the game as completed so the bingos filter picks it up. The
-	// API doesn't expose a "complete the game" endpoint that bypasses the
-	// bingo-detection logic, so we flip the row directly.
+	// Set bingo_count directly; the client is responsible for incrementing
+	// it server-side detection is a future concern.
 	_, err := testPool.Exec(context.Background(),
-		`UPDATE games SET status = 'completed', updated_at = now() WHERE id = $1`,
-		gameID)
+		`UPDATE games SET bingo_count = 3, updated_at = now() WHERE id = $1`, gameID)
 	if err != nil {
-		t.Fatalf("failed to mark game completed: %v", err)
+		t.Fatalf("failed to set bingo_count: %v", err)
 	}
 
 	resp := fetchRecentStats(t, "?duration=1h")
-	assertJSONInt(t, resp, "bingos", 1)
+	assertJSONInt(t, resp, "bingos", 3)
 	assertJSONInt(t, resp, "games", 1)
 }
 
@@ -136,11 +134,11 @@ func TestGetRecentStats_ExcludesOldData(t *testing.T) {
 
 	ctx := context.Background()
 
-	// Mark the game completed BEFORE backdating; the trigger will bump
-	// updated_at to now() but the next stage backdates it again.
+	// Set bingo_count BEFORE backdating; the trigger will bump updated_at to
+	// now() but the next stage backdates it again.
 	if _, err := testPool.Exec(ctx,
-		`UPDATE games SET status = 'completed' WHERE id = $1`, gameID); err != nil {
-		t.Fatalf("failed to mark game completed: %v", err)
+		`UPDATE games SET bingo_count = 1 WHERE id = $1`, gameID); err != nil {
+		t.Fatalf("failed to set bingo_count: %v", err)
 	}
 
 	// Suppress the set_updated_at triggers so the backdate sticks.

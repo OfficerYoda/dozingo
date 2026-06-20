@@ -13,18 +13,18 @@ import (
 
 const getRecentStats = `-- name: GetRecentStats :one
 SELECT
-    COUNT(*) FILTER (WHERE status = 'completed' AND updated_at >= now() - $1::INTERVAL) AS bingos,
-    COUNT(*) FILTER (WHERE created_at >= now() - $1::INTERVAL)                           AS games,
-    (SELECT COUNT(*) FROM boards WHERE created_at >= now() - $1::INTERVAL)               AS boards,
-    (SELECT COUNT(*) FROM cells  WHERE created_at >= now() - $1::INTERVAL)               AS cells
+    COALESCE(SUM(bingo_count) FILTER (WHERE updated_at >= now() - $1::INTERVAL), 0) AS bingos,
+    COUNT(*) FILTER (WHERE created_at >= now() - $1::INTERVAL)                       AS games,
+    (SELECT COUNT(*) FROM boards WHERE created_at >= now() - $1::INTERVAL)            AS boards,
+    (SELECT COUNT(*) FROM cells  WHERE created_at >= now() - $1::INTERVAL)            AS cells
 FROM games
 `
 
 type GetRecentStatsRow struct {
-	Bingos int64 `json:"bingos"`
-	Games  int64 `json:"games"`
-	Boards int64 `json:"boards"`
-	Cells  int64 `json:"cells"`
+	Bingos interface{} `json:"bingos"`
+	Games  int64       `json:"games"`
+	Boards int64       `json:"boards"`
+	Cells  int64       `json:"cells"`
 }
 
 func (q *Queries) GetRecentStats(ctx context.Context, period pgtype.Interval) (GetRecentStatsRow, error) {

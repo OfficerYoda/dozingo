@@ -42,8 +42,19 @@ type updateGameCellMarkInput struct {
 	Body       updateGameCellMarkInputBody
 }
 
+type updateGameCellMarkOutputBody struct {
+	GameCellID string  `json:"game_cell_id" format:"uuid"`
+	GameID     string  `json:"game_id" format:"uuid"`
+	CellID     *string `json:"cell_id" format:"uuid"`
+	Content    string  `json:"content"`
+	Position   int32   `json:"position"`
+	IsMarked   bool    `json:"is_marked"`
+	BingoCount int32   `json:"bingo_count"`
+	BingoDelta int32   `json:"bingo_delta"`
+}
+
 type updateGameCellMarkOutput struct {
-	Body gameCellOutput
+	Body updateGameCellMarkOutputBody
 }
 
 // ===== Handler =====
@@ -86,7 +97,7 @@ func (h *GameCellsHandler) list(ctx context.Context, in *getGameCellsByGameIDInp
 }
 
 func (h *GameCellsHandler) updateMark(ctx context.Context, in *updateGameCellMarkInput) (*updateGameCellMarkOutput, error) {
-	cell, err := h.svc.UpdateMark(ctx, service.UpdateGameCellMarkInput{
+	result, err := h.svc.UpdateMark(ctx, service.UpdateGameCellMarkInput{
 		GameCellID: in.GameCellID.Value,
 		GameID:     in.GameID.Value,
 		IsMarked:   in.Body.IsMarked,
@@ -95,7 +106,20 @@ func (h *GameCellsHandler) updateMark(ctx context.Context, in *updateGameCellMar
 		return nil, toHumaErr(err, "game cell not found", "failed to update game cell")
 	}
 
-	return &updateGameCellMarkOutput{Body: gameCellToOutput(cell)}, nil
+	cell := gameCellToOutput(result.Cell)
+
+	return &updateGameCellMarkOutput{
+		Body: updateGameCellMarkOutputBody{
+			GameCellID: cell.GameCellID,
+			GameID:     cell.GameID,
+			CellID:     cell.CellID,
+			Content:    cell.Content,
+			Position:   cell.Position,
+			IsMarked:   cell.IsMarked,
+			BingoCount: result.BingoCount,
+			BingoDelta: result.BingoDelta,
+		},
+	}, nil
 }
 
 func gameCellToOutput(cell generated.GameCell) gameCellOutput {
