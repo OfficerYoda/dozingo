@@ -30,7 +30,7 @@ import * as voteService from '@/services/vote.service'
 import type { Board } from '@/services/api.type'
 
 const props = defineProps<{ board: Board; playedLabel?: string }>()
-const emit = defineEmits<{ click: [] }>()
+const emit = defineEmits<{ click: []; 'vote-changed': [vote: number | null] }>()
 
 const { t } = useI18n()
 const { state } = useAuth()
@@ -65,6 +65,7 @@ async function handleLike() {
             score.value += userVote.value === -1 ? 2 : 1
             userVote.value = 1
         }
+        emit('vote-changed', userVote.value)
     } catch { /* state bleibt unverändert */ }
 }
 </script>

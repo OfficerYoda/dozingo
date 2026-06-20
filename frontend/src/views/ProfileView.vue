@@ -34,41 +34,21 @@
 
       <SliderSection :items="boards" :per-page="3" :per-page-md="2" :per-page-sm="1">
         <template #slide="{ item: board }">
-          <button class="card card-border-blue profile-slider-card" @click="clickBoard(board.board_id)">
-            <div class="card-body">
-              <h3>{{ board.title }}</h3>
-              <small>{{ board.description }}</small>
-            </div>
-            <hr class="mb-2">
-            <div class="card-footer">
-              <span class="card-meta-text">Played {{ board.play_count }} times</span>
-              <div class="like-group">
-                <Heart :size="20" />
-                <span class="card-meta-text">{{ board.score }}</span>
-              </div>
-            </div>
-          </button>
+          <BoardCard :key="`${board.board_id}-${boardsVersion}`" :board="board" :played-label="`Played ${board.play_count} times`" @click="clickBoard(board.board_id)" @vote-changed="(v: number | null) => onBoardVoteChange(v, board)" />
         </template>
       </SliderSection>
     </div>
-    
+
         <h2 class="mb-0">Explore your {{ likedBoards.length }} liked boards</h2>
 
     <SliderSection :items="likedBoards" :per-page="3" :per-page-md="2" :per-page-sm="1">
       <template #slide="{ item: vote }">
-        <button class="card card-border-blue profile-slider-card" @click="clickBoard(vote.board_id)">
-          <div class="card-body">
-            <h3>{{ vote.title }}</h3>
-            <small>{{ vote.description }}</small>
-          </div>
-          <hr class="mb-2">
-          <div class="card-footer">
-            <div class="like-group">
-              <Heart :size="20" />
-              <span class="card-meta-text">{{ vote.vote_score }}</span>
-            </div>
-          </div>
-        </button>
+        <BoardCard
+          :key="vote.board_id"
+          :board="{ board_id: vote.board_id, title: vote.title, description: vote.description, score: vote.vote_score, vote_count: vote.vote_count, size: 0, author_id: '', play_count: 0 }"
+          @click="clickBoard(vote.board_id)"
+          @vote-changed="(v: number | null) => onLikedBoardVoteChanged(v, vote.board_id)"
+        />
       </template>
     </SliderSection>
 
@@ -88,8 +68,8 @@ import { useAuth } from '@/composables/useAuth'
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router'
-import { Heart } from 'lucide-vue-next'
 import SliderSection from '@/components/SliderSection.vue'
+import BoardCard from '@/components/BoardCard.vue'
 import ModalStartGame from '@/components/ModalStartGame.vue'
 import { usePageTitle } from '@/composables/usePageTitle'
 import * as boardService from '@/services/board.service'
@@ -117,6 +97,7 @@ const { t } = useI18n()
 
 const error = ref<string | null>(null)
 const boards = ref<Board[]>([])
+const boardsVersion = ref(0)
 const likedBoards = ref<Vote[]>([])
 const activeGames = ref<ActiveGame[]>([])
 const cells = ref<Cell[]>([])
@@ -208,6 +189,31 @@ const showModal = ref(false)
 
 function clickBoard(boardID: string) {
     fetchAllCellsForBoard(boardID)
+}
+
+function onLikedBoardVoteChanged(vote: number | null, boardId: string) {
+    if (!vote) {
+        likedBoards.value = likedBoards.value.filter(b => b.board_id !== boardId)
+        fetchAllUserBoards().then(() => boardsVersion.value++)
+    }
+}
+
+function onBoardVoteChange(vote: number | null, board: Board) {
+    if (vote === 1) {
+        if (!likedBoards.value.find(b => b.board_id === board.board_id)) {
+            likedBoards.value = [...likedBoards.value, {
+                vote_id: '',
+                board_id: board.board_id,
+                vote_value: 1,
+                title: board.title,
+                description: board.description,
+                vote_score: board.score,
+                vote_count: board.vote_count,
+            }]
+        }
+    } else {
+        likedBoards.value = likedBoards.value.filter(b => b.board_id !== board.board_id)
+    }
 }
 </script>
 
