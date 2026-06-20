@@ -375,7 +375,22 @@ func seedGames(ctx context.Context, q *generated.Queries, userIDs, sessionIDs, b
 			}
 		}
 
-		slog.Info("Game cells seeded", "game_idx", gameIdx, "cell_count", len(cells), "marked_count", countMarked(cells))
+		// Re-fetch after marking so bingo count reflects the final state.
+		gameCellRows, err = q.GetGameCellsByGameID(ctx, game.ID)
+		if err != nil {
+			return fmt.Errorf("re-fetching game cells for bingo count (game %d): %w", gameIdx, err)
+		}
+		bingoCount := seedComputeBingoCount(gameCellRows, boards[g.BoardIdx].Size)
+		if bingoCount > 0 {
+			if _, err = q.SetBingoCount(ctx, generated.SetBingoCountParams{
+				BingoCount: bingoCount,
+				GameID:     game.ID,
+			}); err != nil {
+				return fmt.Errorf("setting bingo count for game %d: %w", gameIdx, err)
+			}
+		}
+
+		slog.Info("Game cells seeded", "game_idx", gameIdx, "cell_count", len(cells), "marked_count", countMarked(cells), "bingo_count", bingoCount)
 	}
 
 	return nil
@@ -389,6 +404,58 @@ func countMarked(cells []gameCellData) int {
 		}
 	}
 	return count
+}
+
+// seedComputeBingoCount counts complete lines (rows, columns, diagonals) on a
+// size×size board from the given game cells. It mirrors the logic in
+// internal/service/bingo.go without importing that package.
+func seedComputeBingoCount(cells []generated.GameCell, size int32) int32 {
+	if size == 0 || int32(len(cells)) != size*size {
+		return 0
+	}
+
+	marked := make([]bool, size*size)
+	for i := range cells {
+		c := &cells[i]
+		if c.Position >= 0 && c.Position < size*size {
+			marked[c.Position] = c.IsMarked
+		}
+	}
+
+	var count int32
+	// Rows
+	for row := range size {
+		if seedLineComplete(marked, row*size, 1, size) {
+			count++
+		}
+	}
+	// Columns
+	for col := range size {
+		if seedLineComplete(marked, col, size, size) {
+			count++
+		}
+	}
+	// Main diagonal (top-left → bottom-right)
+	if seedLineComplete(marked, 0, size+1, size) {
+		count++
+	}
+	// Anti-diagonal (top-right → bottom-left)
+	if seedLineComplete(marked, size-1, size-1, size) {
+		count++
+	}
+
+	return count
+}
+
+// seedLineComplete checks whether `size` cells starting at `start` with the
+// given `step` are all marked.
+func seedLineComplete(marked []bool, start, step, size int32) bool {
+	for i := range size {
+		if !marked[start+i*step] {
+			return false
+		}
+	}
+	return true
 }
 
 // seedAvatars uploads a deterministic default.svg plus one DiceBear avatar

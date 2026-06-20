@@ -285,13 +285,6 @@ components:
     GameCellOutput:
       additionalProperties: false
       properties:
-        $schema:
-          description: A URL to the JSON Schema for this object.
-          examples:
-            - https://example.com/schemas/GameCellOutput.json
-          format: uri
-          readOnly: true
-          type: string
         cell_id:
           format: uuid
           type:
@@ -328,6 +321,9 @@ components:
           format: uri
           readOnly: true
           type: string
+        bingo_count:
+          format: int32
+          type: integer
         board_id:
           format: uuid
           type:
@@ -354,6 +350,7 @@ components:
         - player_id
         - session_id
         - status
+        - bingo_count
       type: object
     GetSecurityInformationOutputBody:
       additionalProperties: false
@@ -754,6 +751,50 @@ components:
       required:
         - is_marked
       type: object
+    UpdateGameCellMarkOutputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/UpdateGameCellMarkOutputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        bingo_count:
+          format: int32
+          type: integer
+        bingo_delta:
+          format: int32
+          type: integer
+        cell_id:
+          format: uuid
+          type:
+            - string
+            - "null"
+        content:
+          type: string
+        game_cell_id:
+          format: uuid
+          type: string
+        game_id:
+          format: uuid
+          type: string
+        is_marked:
+          type: boolean
+        position:
+          format: int32
+          type: integer
+      required:
+        - game_cell_id
+        - game_id
+        - cell_id
+        - content
+        - position
+        - is_marked
+        - bingo_count
+        - bingo_delta
+      type: object
     UpdateGameStatusInputBody:
       additionalProperties: false
       properties:
@@ -765,10 +806,9 @@ components:
           readOnly: true
           type: string
         status:
-          description: "Game lifecycle state. Must be one of: active, completed, abandoned."
+          description: "Game lifecycle state. Must be one of: active, abandoned."
           enum:
             - active
-            - completed
             - abandoned
           type: string
       required:
@@ -1735,7 +1775,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GameCellOutput"
+                $ref: "#/components/schemas/UpdateGameCellMarkOutputBody"
           description: OK
         default:
           content:

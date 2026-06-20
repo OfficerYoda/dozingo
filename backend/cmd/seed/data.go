@@ -4,8 +4,8 @@ package main
 //   maxmustermann      / password123
 //   lena.schmidt       / securePass!
 //   timoWerner42       / timoSecret42
-//   ghostUser01        / ghostpass        (no email)
-//   anon_student       / anonpass         (no email)
+//   ghostUser01        / ghostpass
+//   anon_student       / anonpass
 //   admin              / password123      (easy test admin)
 //
 // Seed session tokens (for local dev only):
@@ -75,8 +75,8 @@ var users = []userData{
 	{Username: "annaK99", Email: "anna.koch@stud.fu-berlin.de"},
 	{Username: "lukasBauer", Email: "lukas.bauer@stud.tu-darmstadt.de"},
 	{Username: "emiliaWolf", Email: "emilia.wolf@stud.uni-koeln.de"},
-	{Username: "ghostUser01", Email: ""},
-	{Username: "anon_student", Email: ""},
+	{Username: "ghostUser01", Email: "ghost.user01@mail.dozingo.de"},
+	{Username: "anon_student", Email: "anon.student@mail.dozingo.de"},
 	{Username: "admin", Email: "admin@mail.dozingo.de"},
 }
 
