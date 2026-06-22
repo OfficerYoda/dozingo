@@ -18,7 +18,10 @@
                     <Timer :size="15" class="top-stat-icon"/>
                     <span class="top-stat-value">{{ formattedTime }}</span>
                 </div>
-                <button class="top-stat-pill top-fullscreen-btn" type="button" @click="toggleFullscreen" :aria-label="isFullscreen ? 'Fullscreen beenden' : 'Fullscreen'">
+                <button class="top-stat-pill top-action-btn" type="button" @click="shareGame" aria-label="Teilen" id="shareGame">
+                    <Share2 :size="15"/>
+                </button>
+                <button class="top-stat-pill top-action-btn top-fullscreen-btn" type="button" @click="toggleFullscreen" :aria-label="isFullscreen ? 'Fullscreen beenden' : 'Fullscreen'">
                     <Minimize2 v-if="isFullscreen" :size="15"/>
                     <Maximize2 v-else :size="15"/>
                 </button>
@@ -167,7 +170,7 @@
 import { ref, computed, nextTick, watch, useTemplateRef, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
-import { Heart, Play, Timer, Sparkles, Dices, Star, ArrowLeft, Maximize2, Minimize2 } from 'lucide-vue-next'
+import { Heart, Play, Timer, Sparkles, Dices, Star, ArrowLeft, Maximize2, Minimize2, Share2 } from 'lucide-vue-next'
 import { usePageTitle } from '@/composables/usePageTitle'
 import * as boardService from '@/services/board.service'
 import * as gameService from '@/services/game.service'
@@ -227,6 +230,21 @@ function toggleFullscreen() {
 function onFullscreenChange() {
     isFullscreen.value = !!document.fullscreenElement
 }
+
+function shareGame() {
+    navigator.share({
+        title: board.value?.title ?? 'Dozingo',
+        url: window.location.href,
+    }).catch(() => {})
+}
+
+function checkSharing(){
+    let sharebtn = document.getElementById("shareGame")
+    if(!navigator.canShare() && sharebtn){
+        sharebtn.style.display = 'none';
+    }
+}
+
 const sweepingCells = ref(new Map<string, number>())
 let bingoToastTimeout: ReturnType<typeof setTimeout> | null = null
 const confettiColors = ['var(--color-heading)', '#C0185A', '#2E7D32', '#F79F1F', 'var(--color-subheading)', 'var(--color-input-bg)', '#EA2027']
@@ -624,6 +642,7 @@ onMounted(() => {
     resizeObserver = new ResizeObserver(updateShadow)
     if (boardContainerRef.value) resizeObserver.observe(boardContainerRef.value)
     updateShadow()
+    checkSharing()
     loadGame()
     document.addEventListener('fullscreenchange', onFullscreenChange)
 })
@@ -708,6 +727,19 @@ onUnmounted(() => {
     white-space: nowrap;
 }
 
+.top-action-btn {
+    border: none;
+    cursor: pointer;
+    color: var(--color-subheading);
+    padding: 6px 10px;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.top-action-btn:hover {
+    background-color: var(--color-interactive-track);
+    color: var(--color-heading);
+}
+
 .top-fullscreen-btn {
     border: none;
     cursor: pointer;
@@ -719,6 +751,12 @@ onUnmounted(() => {
 .top-fullscreen-btn:hover {
     background-color: var(--color-interactive-track);
     color: var(--color-heading);
+}
+
+@media (max-width: 600px) {
+    .top-fullscreen-btn {
+        display: none;
+    }
 }
 
 .top-stat-icon {
