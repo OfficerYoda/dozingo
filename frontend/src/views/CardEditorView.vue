@@ -51,7 +51,7 @@
             <thead>
               <tr class="table-header">
                 <th class="col-term">{{ $t('cardEditor.termColumn') }}</th>
-                <th class="col-rarity">{{ $t('cardEditor.rarityColumn') }}</th>
+                <!--<th class="col-rarity">{{ $t('cardEditor.rarityColumn') }}</th>-->
                 <th class="col-delete"></th>
               </tr>
             </thead>
@@ -65,6 +65,7 @@
                     @keydown.enter.prevent="addRowAt(index)"
                     @keydown.backspace="onBackspace(index, entry)" />
                 </td>
+                <!--
                 <td class="td-rarity">
                   <select class="entry-select" v-model="entry.rarity">
                     <option value="common">{{ $t('cardEditor.rarity.common') }}</option>
@@ -73,6 +74,7 @@
                     <option value="legendary">{{ $t('cardEditor.rarity.legendary') }}</option>
                   </select>
                 </td>
+                -->
                 <td class="td-delete">
                   <button class="btn btn-danger btn-icon" @click="removeRow(index)">
                     <Trash2 :size="16" />
@@ -234,7 +236,7 @@ async function saveBoard() {
     await Promise.all(
       entries.value
         .filter(e => e.term.trim())
-        .map(e => boardService.createCell(board.board_id, e.term, rarityValue[e.rarity] ?? 1))
+        .map(e => boardService.createCell(board.board_id, e.term, 1)) //das rarity nicht mehr genutzt wird, wird standartmäßig 1 für common mitgeschickt bis die Funktion gebraucht wird
     )
 
     title.value = ''
