@@ -18,7 +18,7 @@
                     <Timer :size="15" class="top-stat-icon"/>
                     <span class="top-stat-value">{{ formattedTime }}</span>
                 </div>
-                <button class="top-stat-pill top-action-btn" type="button" @click="shareGame" :aria-label="copyToast ? 'Link kopiert!' : 'Teilen'">
+                <button class="top-stat-pill top-action-btn" :class="{ 'share-copied': copyToast }" type="button" @click="shareGame" :aria-label="copyToast ? 'Link kopiert!' : 'Teilen'">
                     <Check v-if="copyToast" :size="15" class="share-check"/>
                     <Share2 v-else :size="15"/>
                 </button>
@@ -745,6 +745,15 @@ onUnmounted(() => {
 .top-action-btn:disabled {
     opacity: 0.35;
     cursor: not-allowed;
+}
+
+.share-copied {
+    background-color: color-mix(in srgb, #2E7D32 15%, var(--color-input-bg));
+    color: #2E7D32;
+}
+
+.share-copied:hover {
+    background-color: color-mix(in srgb, #2E7D32 25%, var(--color-input-bg));
 }
 
 .share-check {
