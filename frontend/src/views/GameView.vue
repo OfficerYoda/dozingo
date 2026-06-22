@@ -177,6 +177,7 @@ import * as boardService from '@/services/board.service'
 import * as gameService from '@/services/game.service'
 import * as voteService from '@/services/vote.service'
 import type { Board, Cell, GameCell } from '@/services/api.type'
+import { seedCompletedLines as _seedCompletedLines, checkBingo as _checkBingo } from '@/utils/bingo'
 
 useI18n()
 const route = useRoute()
@@ -543,17 +544,7 @@ function finishGame() {
 }
 
 function seedCompletedLines(cells: Cell[], checked: Set<string>, size: number) {
-    const isChecked = (r: number, c: number) => checked.has(cells[r * size + c]?.cell_id ?? '')
-    for (let r = 0; r < size; r++)
-        if (Array.from({ length: size }, (_, c) => isChecked(r, c)).every(Boolean))
-            completedLines.value.add(`row${r}`)
-    for (let c = 0; c < size; c++)
-        if (Array.from({ length: size }, (_, r) => isChecked(r, c)).every(Boolean))
-            completedLines.value.add(`col${c}`)
-    if (Array.from({ length: size }, (_, i) => isChecked(i, i)).every(Boolean))
-        completedLines.value.add('diag0')
-    if (Array.from({ length: size }, (_, i) => isChecked(i, size - 1 - i)).every(Boolean))
-        completedLines.value.add('diag1')
+    _seedCompletedLines(cells, checked, size, completedLines.value)
 }
 
 function checkBingo() {
@@ -561,67 +552,37 @@ function checkBingo() {
     const cells = selectedCells.value
     const checked = checkedCells.value
 
-    const isChecked = (row: number, col: number) =>
-        checked.has(cells[row * size + col]?.cell_id ?? '')
+    const { newLines } = _checkBingo(cells, checked, size, completedLines.value)
 
-    const lines: Array<{ key: string; indices: [number, number][] }> = []
+    if (newLines.length === 0) return
 
-    for (let r = 0; r < size; r++) {
-        lines.push({ key: `row${r}`, indices: Array.from({ length: size }, (_, c) => [r, c]) })
+    // Lauflicht: jede neue Linie sequenziell durchleuchten
+    const next = new Map(sweepingCells.value)
+    for (const line of newLines) {
+        line.indices.forEach(([r, c], step) => {
+            const cellId = cells[r * size + c]?.cell_id
+            if (cellId) next.set(cellId, step)
+        })
     }
-    for (let c = 0; c < size; c++) {
-        lines.push({ key: `col${c}`, indices: Array.from({ length: size }, (_, r) => [r, c]) })
-    }
-    lines.push({ key: 'diag0', indices: Array.from({ length: size }, (_, i) => [i, i]) })
-    lines.push({ key: 'diag1', indices: Array.from({ length: size }, (_, i) => [i, size - 1 - i]) })
-
-    // Linien die jetzt nicht mehr komplett sind aus completedLines entfernen
-    for (const line of lines) {
-        if (completedLines.value.has(line.key) && !line.indices.every(([r, c]) => isChecked(r, c))) {
-            completedLines.value.delete(line.key)
-        }
-    }
-
-    let newBingo = false
-    const newLineIndices: [number, number][][] = []
-    for (const line of lines) {
-        if (completedLines.value.has(line.key)) continue
-        if (line.indices.every(([r, c]) => isChecked(r, c))) {
-            completedLines.value.add(line.key)
-            newBingo = true
-            newLineIndices.push(line.indices)
-        }
-    }
-
-    if (newBingo) {
-        // Lauflicht: jede neue Linie sequenziell durchleuchten
-        const next = new Map(sweepingCells.value)
-        for (const indices of newLineIndices) {
-            indices.forEach(([r, c], step) => {
+    sweepingCells.value = next
+    const duration = (size - 1) * 90 + 400 // letzter delay + animationsdauer
+    setTimeout(() => {
+        const cleaned = new Map(sweepingCells.value)
+        for (const line of newLines) {
+            line.indices.forEach(([r, c]) => {
                 const cellId = cells[r * size + c]?.cell_id
-                if (cellId) next.set(cellId, step)
+                if (cellId) cleaned.delete(cellId)
             })
         }
-        sweepingCells.value = next
-        const duration = (size - 1) * 90 + 400 // letzter delay + animationsdauer
-        setTimeout(() => {
-            const cleaned = new Map(sweepingCells.value)
-            for (const indices of newLineIndices) {
-                indices.forEach(([r, c]) => {
-                    const cellId = cells[r * size + c]?.cell_id
-                    if (cellId) cleaned.delete(cellId)
-                })
-            }
-            sweepingCells.value = cleaned
-        }, duration)
+        sweepingCells.value = cleaned
+    }, duration)
 
-        if (bingoToastTimeout) clearTimeout(bingoToastTimeout)
-        if (!bingoModalDismissed.value) {
-            showBingoModal.value = true
-        } else {
-            bingoToast.value = true
-            bingoToastTimeout = setTimeout(() => { bingoToast.value = false }, 2500)
-        }
+    if (bingoToastTimeout) clearTimeout(bingoToastTimeout)
+    if (!bingoModalDismissed.value) {
+        showBingoModal.value = true
+    } else {
+        bingoToast.value = true
+        bingoToastTimeout = setTimeout(() => { bingoToast.value = false }, 2500)
     }
 }
 
