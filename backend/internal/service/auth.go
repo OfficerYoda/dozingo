@@ -192,7 +192,7 @@ func (s *Auth) Login(ctx context.Context, in LoginInput) (LoginResult, error) {
 
 	err = s.emailSender.SendLoginNotification(user.Email, time.Now())
 	if err != nil {
-		return LoginResult{}, fmt.Errorf("send mail: %w", err)
+		slog.Warn("failed to send login notification", "error", err, "user", user.Email)
 	}
 
 	return LoginResult{User: vanillaUser}, nil

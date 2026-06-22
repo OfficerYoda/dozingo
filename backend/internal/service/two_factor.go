@@ -5,6 +5,7 @@ import (
 	"crypto/subtle"
 	"errors"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
@@ -117,22 +118,22 @@ func (s *TwoFactor) Confirm(ctx context.Context, passcode string) ([]string, err
 	err = s.txRunner.WithTx(ctx, func(r repository.Repos) error {
 		txErr := r.TwoFactor.SetLastUsedCode(ctx, user2fa.UserID, passcode)
 		if txErr != nil {
-			return fmt.Errorf("store last used code: %w", err)
+			return fmt.Errorf("store last used code: %w", txErr)
 		}
 
 		_, txErr = r.TwoFactor.MarkVerified(ctx, user2fa.UserID)
 		if txErr != nil {
-			return fmt.Errorf("mark user 2fa verified: %w", err)
+			return fmt.Errorf("mark user 2fa verified: %w", txErr)
 		}
 
 		_, txErr = r.RecoveryCodes.Create(ctx, user2fa.UserID, hashedCodes)
 		if txErr != nil {
-			return fmt.Errorf("store recovery codes: %w", err)
+			return fmt.Errorf("store recovery codes: %w", txErr)
 		}
 
 		_, txErr = r.Sessions.SetTwoFAPending(ctx, pendingSession.Token, false)
 		if txErr != nil {
-			return fmt.Errorf("clear 2fa pending status: %w", err)
+			return fmt.Errorf("clear 2fa pending status: %w", txErr)
 		}
 
 		txErr = r.Sessions.DeleteOtherSessionsFromUser(ctx, pendingSession.UserID, pendingSession.SessionID)
@@ -153,7 +154,7 @@ func (s *TwoFactor) Confirm(ctx context.Context, passcode string) ([]string, err
 
 	err = s.emailSender.Send2FAActivated(user.Email, time.Now())
 	if err != nil {
-		return []string{}, fmt.Errorf("send email: %w", err)
+		slog.Warn("failed to send 2fa activated email", "error", err, "user", user.Email)
 	}
 
 	return recoveryCodes, nil
@@ -186,7 +187,7 @@ func (s *TwoFactor) Verify(ctx context.Context, passcode string) error {
 
 	err = s.emailSender.SendLoginNotification(sessionUser.Email.String, time.Now())
 	if err != nil {
-		return fmt.Errorf("send mail: %w", err)
+		slog.Warn("failed to send login notification", "error", err, "user", sessionUser.Email.String)
 	}
 
 	return nil
@@ -215,6 +216,11 @@ func (s *TwoFactor) VerifyRecoveryCode(ctx context.Context, recoveryCode string)
 	_, err = s.sessions.SetTwoFAPending(ctx, sessionUser.Token, false)
 	if err != nil {
 		return fmt.Errorf("clear 2fa pending status: %w", err)
+	}
+
+	err = s.emailSender.SendLoginNotification(sessionUser.Email.String, time.Now())
+	if err != nil {
+		slog.Warn("failed to send login notification", "error", err, "user", sessionUser.Email.String)
 	}
 
 	return nil
