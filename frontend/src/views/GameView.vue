@@ -237,7 +237,7 @@ const copyToast = ref(false)
 function shareGame() {
     const url = window.location.href
     const title = board.value?.title ?? 'Dozingo'
-    if (!navigator.share) {
+    if (navigator.share) {
         navigator.share({ title, url }).catch(() => {})
     } else {
         navigator.clipboard.writeText(url).then(() => {
