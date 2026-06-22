@@ -1,20 +1,25 @@
-name: frontend image build & push
+name: frontend build & deploy
 
 on:
   push:
     branches: [main]
     paths:
       - "frontend/**"
-      - ".github/workflows/frontend-image.yml"
+      - ".github/workflows/frontend-deploy.yml"
+      - ".github/workflows/frontend.yml"
   workflow_dispatch:
 
 concurrency:
-  group: frontend-image-${{ github.ref }}
+  group: frontend-deploy-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
+  test:
+    uses: ./.github/workflows/frontend.yml
+
   build-and-push:
     name: build & push frontend image
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -51,3 +56,27 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  deploy:
+    name: deploy to VPS
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            bash -c '
+            set -euo pipefail
+            cd /opt/services/dozingo
+
+            SERVICE=dozingo-frontend
+
+            docker compose pull "$SERVICE"
+            docker compose up -d --remove-orphans "$SERVICE"
+
+            echo "Deployed $SERVICE"
+            '

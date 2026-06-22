@@ -2,10 +2,10 @@ name: backend build & deploy
 
 on:
   push:
-    branches: [main, feat/ci]
+    branches: [main]
     paths:
       - "backend/**"
-      - ".github/workflows/build-and-deploy.yml"
+      - ".github/workflows/backend-deploy.yml"
       - ".github/workflows/backend.yml"
   workflow_dispatch:
 
