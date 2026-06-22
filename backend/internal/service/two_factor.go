@@ -5,6 +5,8 @@ import (
 	"crypto/subtle"
 	"errors"
 	"fmt"
+	"log/slog"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/pquerna/otp"
@@ -12,6 +14,7 @@ import (
 
 	"github.com/officeryoda/dozingo/internal/auth"
 	"github.com/officeryoda/dozingo/internal/domain"
+	"github.com/officeryoda/dozingo/internal/email"
 	"github.com/officeryoda/dozingo/internal/generated"
 	"github.com/officeryoda/dozingo/internal/middleware"
 	"github.com/officeryoda/dozingo/internal/repository"
@@ -21,7 +24,9 @@ type TwoFactor struct {
 	passwords     *repository.Passwords
 	recoveryCodes *repository.RecoveryCodes
 	sessions      *repository.Sessions
+	users         *repository.Users
 	twoFactor     *repository.TwoFactor
+	emailSender   email.Sender
 	cipher        *auth.TOTPCipher
 	queries       *generated.Queries
 	txRunner      repository.TxRunner
@@ -30,6 +35,7 @@ type TwoFactor struct {
 func NewTwoFactor(
 	repos *repository.Repos,
 	queries *generated.Queries,
+	emailSender email.Sender,
 	txRunner repository.TxRunner,
 	cipher *auth.TOTPCipher,
 ) *TwoFactor {
@@ -37,7 +43,9 @@ func NewTwoFactor(
 		passwords:     repos.Passwords,
 		recoveryCodes: repos.RecoveryCodes,
 		sessions:      repos.Sessions,
+		users:         repos.Users,
 		twoFactor:     repos.TwoFactor,
+		emailSender:   emailSender,
 		cipher:        cipher,
 		queries:       queries,
 		txRunner:      txRunner,
@@ -110,22 +118,22 @@ func (s *TwoFactor) Confirm(ctx context.Context, passcode string) ([]string, err
 	err = s.txRunner.WithTx(ctx, func(r repository.Repos) error {
 		txErr := r.TwoFactor.SetLastUsedCode(ctx, user2fa.UserID, passcode)
 		if txErr != nil {
-			return fmt.Errorf("store last used code: %w", err)
+			return fmt.Errorf("store last used code: %w", txErr)
 		}
 
 		_, txErr = r.TwoFactor.MarkVerified(ctx, user2fa.UserID)
 		if txErr != nil {
-			return fmt.Errorf("mark user 2fa verified: %w", err)
+			return fmt.Errorf("mark user 2fa verified: %w", txErr)
 		}
 
 		_, txErr = r.RecoveryCodes.Create(ctx, user2fa.UserID, hashedCodes)
 		if txErr != nil {
-			return fmt.Errorf("store recovery codes: %w", err)
+			return fmt.Errorf("store recovery codes: %w", txErr)
 		}
 
 		_, txErr = r.Sessions.SetTwoFAPending(ctx, pendingSession.Token, false)
 		if txErr != nil {
-			return fmt.Errorf("clear 2fa pending status: %w", err)
+			return fmt.Errorf("clear 2fa pending status: %w", txErr)
 		}
 
 		txErr = r.Sessions.DeleteOtherSessionsFromUser(ctx, pendingSession.UserID, pendingSession.SessionID)
@@ -137,6 +145,16 @@ func (s *TwoFactor) Confirm(ctx context.Context, passcode string) ([]string, err
 	})
 	if err != nil {
 		return []string{}, err
+	}
+
+	user, err := s.users.GetByID(ctx, user2fa.UserID)
+	if err != nil {
+		return []string{}, fmt.Errorf("get user: %w", err)
+	}
+
+	err = s.emailSender.Send2FAActivated(user.Email, time.Now())
+	if err != nil {
+		slog.Warn("failed to send 2fa activated email", "error", err, "user", user.Email)
 	}
 
 	return recoveryCodes, nil
@@ -157,12 +175,19 @@ func (s *TwoFactor) Verify(ctx context.Context, passcode string) error {
 		return fmt.Errorf("2fa not verified: %w", domain.ErrForbidden)
 	}
 
-	if err := s.twoFactor.SetLastUsedCode(ctx, sessionUser.UserID, passcode); err != nil {
+	err = s.twoFactor.SetLastUsedCode(ctx, sessionUser.UserID, passcode)
+	if err != nil {
 		return fmt.Errorf("store last used code: %w", err)
 	}
 
-	if _, err := s.sessions.SetTwoFAPending(ctx, sessionUser.Token, false); err != nil {
+	_, err = s.sessions.SetTwoFAPending(ctx, sessionUser.Token, false)
+	if err != nil {
 		return fmt.Errorf("clear 2fa pending status: %w", err)
+	}
+
+	err = s.emailSender.SendLoginNotification(sessionUser.Email.String, time.Now())
+	if err != nil {
+		slog.Warn("failed to send login notification", "error", err, "user", sessionUser.Email.String)
 	}
 
 	return nil
@@ -191,6 +216,11 @@ func (s *TwoFactor) VerifyRecoveryCode(ctx context.Context, recoveryCode string)
 	_, err = s.sessions.SetTwoFAPending(ctx, sessionUser.Token, false)
 	if err != nil {
 		return fmt.Errorf("clear 2fa pending status: %w", err)
+	}
+
+	err = s.emailSender.SendLoginNotification(sessionUser.Email.String, time.Now())
+	if err != nil {
+		slog.Warn("failed to send login notification", "error", err, "user", sessionUser.Email.String)
 	}
 
 	return nil
