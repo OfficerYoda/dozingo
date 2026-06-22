@@ -18,7 +18,7 @@
                     <Timer :size="15" class="top-stat-icon"/>
                     <span class="top-stat-value">{{ formattedTime }}</span>
                 </div>
-                <button class="top-stat-pill top-action-btn" type="button" @click="shareGame" aria-label="Teilen" id="shareGame">
+                <button class="top-stat-pill top-action-btn" type="button" @click="shareGame" :disabled="!canShare" aria-label="Teilen">
                     <Share2 :size="15"/>
                 </button>
                 <button class="top-stat-pill top-action-btn top-fullscreen-btn" type="button" @click="toggleFullscreen" :aria-label="isFullscreen ? 'Fullscreen beenden' : 'Fullscreen'">
@@ -231,6 +231,8 @@ function onFullscreenChange() {
     isFullscreen.value = !!document.fullscreenElement
 }
 
+const canShare = computed(() => !!navigator.share)
+
 function shareGame() {
     navigator.share({
         title: board.value?.title ?? 'Dozingo',
@@ -238,12 +240,6 @@ function shareGame() {
     }).catch(() => {})
 }
 
-function checkSharing(){
-    let sharebtn = document.getElementById("shareGame")
-    if(!navigator.canShare && sharebtn){
-        sharebtn.style.display = 'none';
-    }
-}
 
 const sweepingCells = ref(new Map<string, number>())
 let bingoToastTimeout: ReturnType<typeof setTimeout> | null = null
@@ -642,7 +638,6 @@ onMounted(() => {
     resizeObserver = new ResizeObserver(updateShadow)
     if (boardContainerRef.value) resizeObserver.observe(boardContainerRef.value)
     updateShadow()
-    checkSharing()
     loadGame()
     document.addEventListener('fullscreenchange', onFullscreenChange)
 })
@@ -738,6 +733,11 @@ onUnmounted(() => {
 .top-action-btn:hover {
     background-color: var(--color-interactive-track);
     color: var(--color-heading);
+}
+
+.top-action-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
 }
 
 .top-fullscreen-btn {
