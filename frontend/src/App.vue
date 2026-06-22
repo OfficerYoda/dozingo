@@ -146,7 +146,7 @@ async function handleLogout() {
   // state.user wird in auth.logout() SYNCHRON auf null gesetzt → Navbar updated sofort.
   // Backend-Call läuft im Hintergrund (best-effort), Navigation kann parallel passieren.
   const logoutPromise = auth.logout()
-  router.push('/')
+  router.push('/').then(() => window.location.reload())
   await logoutPromise
 }
 </script>
