@@ -1,4 +1,8 @@
 :4242 {
+    handle /openapi.yaml {
+        reverse_proxy backend:4242
+    }
+
     # Proxy all API requests to the backend service
     handle /api/* {
         reverse_proxy backend:4242
