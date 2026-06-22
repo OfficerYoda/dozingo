@@ -90,6 +90,7 @@ async function submitTotp() {
         await twoFactorService.verify(totpCode.value)
         await fetchUser()
         closeLoginTwoFactorModal()
+        window.location.reload()
     } catch (e) {
         if (e instanceof ApiError && e.status === 400) {
             error.value = 'Ungültiger Code. Bitte versuche es erneut.'
@@ -111,6 +112,7 @@ async function submitRecovery() {
         await twoFactorService.verifyRecovery(recoveryCode.value.trim().toUpperCase())
         await fetchUser()
         closeLoginTwoFactorModal()
+        window.location.reload()
     } catch (e) {
         if (e instanceof ApiError && e.status === 400) {
             error.value = 'Ungültiger Recovery Code.'

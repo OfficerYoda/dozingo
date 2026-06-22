@@ -208,7 +208,8 @@ async function handleLogin() {
     try {
         await login(username.value, password.value)
         closeLoginModal()
-        router.push('/')
+        await router.push('/')
+        window.location.reload()
     } catch (e) {
         if (e instanceof ApiError && e.status === 401) {
             error.value = 'Invalid username or password.'
