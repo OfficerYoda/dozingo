@@ -108,8 +108,8 @@
     "welcome": "Willkommen, {username}!",
     "continueBoards": "Deine angefangenen Boards:",
     "continuePlaying": "Weiterspielen",
-    "exploreBoards": "Deine {count} Boards:",
-    "likedBoards": "Deine {count} gelikten Boards:"
+    "exploreBoards": "Deine erstellten Boards:",
+    "likedBoards": "Deine gelikten Boards:"
   },
   "boards": {
     "title": "Alle Karten erkunden",
