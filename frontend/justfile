@@ -18,6 +18,10 @@ type-check:
 preview:
     npm run preview
 
-# Placeholder for future test step
+# Run tests once (CI mode)
 test:
-    @echo "No tests configured yet."
+    npm run test:run
+
+# Run tests in watch mode
+test-watch:
+    npm run test

@@ -70,3 +70,8 @@ infra-reset:
 # Open a psql shell to the local database
 db-shell:
     docker exec -it dozingo-postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"
+
+# Run all tests (backend + frontend)
+test:
+    just backend test
+    just frontend test
