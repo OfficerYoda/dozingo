@@ -240,7 +240,7 @@ function shareGame() {
 
 function checkSharing(){
     let sharebtn = document.getElementById("shareGame")
-    if(!navigator.canShare() && sharebtn){
+    if(!navigator.canShare && sharebtn){
         sharebtn.style.display = 'none';
     }
 }
