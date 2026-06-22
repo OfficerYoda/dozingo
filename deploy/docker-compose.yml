@@ -20,7 +20,7 @@ services:
     ports:
       - "3902:3902" # Web port — browser fetches avatar images from here
     volumes:
-      - ../garage.toml:/etc/garage.toml:ro
+      - ./garage.toml:/etc/garage.toml:ro
       - garage_meta:/meta
       - garage_data:/data
     environment:
@@ -42,7 +42,7 @@ services:
         condition: service_healthy
     network_mode: "service:garage"
     volumes:
-      - ../garage.toml:/etc/garage.toml:ro
+      - ./garage.toml:/etc/garage.toml:ro
       - garage_meta:/meta
     restart: "no"
     entrypoint: ["/garage"]
