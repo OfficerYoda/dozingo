@@ -12,10 +12,11 @@ No local toolchain needed — just Docker with Compose v2:
 git clone https://github.com/OfficerYoda/dozingo.git
 cd dozingo/deploy
 cp .env.example .env
-docker compose up
+docker compose up -d
 ```
 
 Open **http://localhost:4242** — the app starts with demo data already loaded.
+
 Log in with `admin` / `password123`.
 
 See [`deploy/README.md`](deploy/README.md) for more demo accounts and options.
