@@ -201,7 +201,7 @@ func registerRoutes(
 	gameSessionsSvc := service.NewGameSessions(&repos, queries)
 	gamesSvc := service.NewGames(&repos, queries, txRunner)
 	statsSvc := service.NewStats(&repos, queries)
-	twoFASvc := service.NewTwoFactor(&repos, queries, txRunner, totpCipher)
+	twoFASvc := service.NewTwoFactor(&repos, queries, emailSender, txRunner, totpCipher)
 	usersSvc := service.NewUsers(&repos, queries, emailSender, txRunner, garage)
 	votesSvc := service.NewVotes(&repos, queries)
 

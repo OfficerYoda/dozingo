@@ -16,6 +16,7 @@ var templates = template.Must(
 
 type templateData struct {
 	ActionURL string
+	Timestamp string
 }
 
 // render executes the named template with the given data and returns the

@@ -4,6 +4,7 @@ package email
 import (
 	"fmt"
 	"net/url"
+	"time"
 
 	"github.com/resend/resend-go/v3"
 
@@ -20,6 +21,8 @@ const frontendURL = "https://dozingo.de"
 type Sender interface {
 	SendResetPassword(receiverAddress, token string) error
 	SendEmailVerification(receiverAddress, token string) error
+	SendLoginNotification(receiverAddress string, loginTime time.Time) error
+	Send2FAActivated(receiverAddress string, activatedAt time.Time) error
 }
 
 type ResendSender struct {
@@ -103,4 +106,58 @@ func (s *ResendSender) SendEmailVerification(receiverAddress, token string) erro
 	}
 
 	return nil
+}
+
+func (s *ResendSender) SendLoginNotification(receiverAddress string, loginTime time.Time) error {
+	ts := loginTime.UTC().Format("Jan 02, 2006 at 15:04 UTC")
+
+	html, err := render("login_notification.html", templateData{Timestamp: ts})
+	if err != nil {
+		return err
+	}
+
+	text := "New login detected on your Dozingo account.\n\n" +
+		"Time: " + ts + "\n\n" +
+		"If this was you, no action is needed. " +
+		"If you don't recognize this activity, please reset your password immediately.\n\n" +
+		"— Dozingo"
+
+	params := &resend.SendEmailRequest{
+		From:    fmt.Sprintf("Dozingo <%s>", s.senderAddress),
+		To:      []string{receiverAddress},
+		Html:    html,
+		Text:    text,
+		Subject: "[Dozingo] New login to your account",
+	}
+
+	_, err = s.client.Emails.Send(params)
+
+	return err
+}
+
+func (s *ResendSender) Send2FAActivated(receiverAddress string, activatedAt time.Time) error {
+	ts := activatedAt.UTC().Format("Jan 02, 2006 at 15:04 UTC")
+
+	html, err := render("two_fa_activated.html", templateData{Timestamp: ts})
+	if err != nil {
+		return err
+	}
+
+	text := "Two-factor authentication has been activated on your Dozingo account.\n\n" +
+		"Activated at: " + ts + "\n\n" +
+		"From now on, you'll need your authenticator app when signing in. " +
+		"If you didn't make this change, please reset your password immediately.\n\n" +
+		"— Dozingo"
+
+	params := &resend.SendEmailRequest{
+		From:    fmt.Sprintf("Dozingo <%s>", s.senderAddress),
+		To:      []string{receiverAddress},
+		Html:    html,
+		Text:    text,
+		Subject: "[Dozingo] Two-factor authentication activated",
+	}
+
+	_, err = s.client.Emails.Send(params)
+
+	return err
 }

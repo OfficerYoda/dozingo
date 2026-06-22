@@ -190,6 +190,11 @@ func (s *Auth) Login(ctx context.Context, in LoginInput) (LoginResult, error) {
 		return LoginResult{TwoFAPending: true}, nil
 	}
 
+	err = s.emailSender.SendLoginNotification(user.Email, time.Now())
+	if err != nil {
+		slog.Warn("failed to send login notification", "error", err, "user", user.Email)
+	}
+
 	return LoginResult{User: vanillaUser}, nil
 }
 
