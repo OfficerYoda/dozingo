@@ -22,7 +22,7 @@
                 <BoardCard
                     v-for="board in boards" :key="board.board_id"
                     :board="board"
-                    :played-label="t('boards.card.played', { count: board.play_count })"
+
                     class="col-4 md-6 sm-12"
                     @click="clickBoard(board.board_id)"
                 />

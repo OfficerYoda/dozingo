@@ -75,7 +75,6 @@
         <template #slide="{ item: board }">
           <BoardCard
             :board="board"
-            :played-label="t('home.card.times', { count: formatCount(board.play_count) })"
             class="slider-board-card"
             @click="clickBoard(board)"
           />
@@ -99,7 +98,6 @@
         <template #slide="{ item: board }">
           <BoardCard
             :board="board"
-            :played-label="t('home.card.times', { count: formatCount(board.play_count) })"
             class="slider-board-card"
             @click="clickBoard(board)"
           />
@@ -152,10 +150,6 @@ async function loadStats() {
   stats.value = await statsService.getRecentStats()
 }
 
-function formatCount(n: number): string {
-  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`
-  return String(n)
-}
 
 async function fetchBoards() {
   const [liked, newest] = await Promise.all([

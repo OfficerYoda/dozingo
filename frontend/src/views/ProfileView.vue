@@ -35,7 +35,7 @@
       <SliderSection :items="boards" :per-page="3" :per-page-md="2" :per-page-sm="1">
         <template #slide="{ item: board }">
           <div class="board-card-wrapper">
-            <BoardCard :key="`${board.board_id}-${boardsVersion}`" :board="board" :played-label="`Played ${board.play_count} times`" @click="clickBoard(board.board_id)" @vote-changed="(v: number | null) => onBoardVoteChange(v, board)" />
+            <BoardCard :key="`${board.board_id}-${boardsVersion}`" :board="board" @click="clickBoard(board.board_id)" @vote-changed="(v: number | null) => onBoardVoteChange(v, board)" />
             <div class="delete-overlay" @click.stop="boardToDelete = board; showDeleteModal = true">
               <img src="/trash.png" alt="Delete board" class="delete-icon" />
             </div>
