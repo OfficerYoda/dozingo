@@ -9,24 +9,26 @@
     </div>
 
     <div class="container" style="padding-right: 0%; padding-left: 0%;">
-      <h2 class="mb-0">{{ t('profile.continueBoards') }}</h2>
+      <template v-if="activeGames.length > 0">
+        <h2 class="mb-0">{{ t('profile.continueBoards') }}</h2>
 
-      <p v-if="error" class="error-text">{{ error }}</p>
+        <p v-if="error" class="error-text">{{ error }}</p>
 
-      <SliderSection :items="activeGames" :per-page="3" :per-page-md="2" :per-page-sm="1">
-        <template #slide="{ item: game }">
-          <button class="card card-border-blue profile-slider-card" @click="router.push('/game/' + game.game_id)">
-            <div class="card-body">
-              <h3>{{ game.board_title }}</h3>
-              <small>{{ game.marked_count }} / {{ game.total_count }} cells marked</small>
-            </div>
-            <hr class="mb-2">
-            <div class="card-footer">
-              <span class="card-meta-text">{{ t('profile.continuePlaying') }}</span>
-            </div>
-          </button>
-        </template>
-      </SliderSection>
+        <SliderSection :items="activeGames" :per-page="3" :per-page-md="2" :per-page-sm="1">
+          <template #slide="{ item: game }">
+            <button class="card card-border-blue profile-slider-card" @click="router.push('/game/' + game.game_id)">
+              <div class="card-body">
+                <h3>{{ game.board_title }}</h3>
+                <small>{{ game.marked_count }} / {{ game.total_count }} cells marked</small>
+              </div>
+              <hr class="mb-2">
+              <div class="card-footer">
+                <span class="card-meta-text">{{ t('profile.continuePlaying') }}</span>
+              </div>
+            </button>
+          </template>
+        </SliderSection>
+      </template>
 
       <p v-if="error" class="error-text">{{ error }}</p>
 

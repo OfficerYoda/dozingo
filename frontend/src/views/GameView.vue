@@ -335,6 +335,7 @@ function playStab(t: number, freq: number) {
 // --- Timer ---
 const elapsedSeconds = ref(0)
 let timerInterval: ReturnType<typeof setInterval> | null = null
+let heartbeatInterval: ReturnType<typeof setInterval> | null = null
 
 const formattedTime = computed(() => {
     const m = Math.floor(elapsedSeconds.value / 60).toString().padStart(2, '0')
@@ -345,10 +346,14 @@ const formattedTime = computed(() => {
 function startTimer() {
     if (timerInterval) return
     timerInterval = setInterval(() => { elapsedSeconds.value++ }, 1000)
+    heartbeatInterval = setInterval(() => {
+        fetch(`/api/games/${gameId.value}/heartbeat`, { method: 'POST', credentials: 'include' }).catch(() => {})
+    }, 30000)
 }
 
 function stopTimer() {
     if (timerInterval) { clearInterval(timerInterval); timerInterval = null }
+    if (heartbeatInterval) { clearInterval(heartbeatInterval); heartbeatInterval = null }
 }
 
 // --- Vote ---
@@ -431,6 +436,15 @@ async function loadGame() {
         stopTimer()
         return
     }
+
+    try {
+        await fetch(`/api/games/${gameId.value}/heartbeat`, { method: 'POST', credentials: 'include' })
+        const res = await fetch(`/api/stats/playtime/games/${gameId.value}`, { credentials: 'include' })
+        if (res.ok) {
+            const data = await res.json()
+            elapsedSeconds.value = data.total_seconds
+        }
+    } catch { }
 
     startGame()
 }
