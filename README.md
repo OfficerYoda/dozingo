@@ -127,4 +127,4 @@ Run `just --list --list-submodules` for all available commands.
 
 All READMEs in this repository (`/README.md`, `backend/README.md`, `frontend/README.md`, `deploy/README.md`) were generated with AI assistance.
 
-The frontend test suite (`frontend/src/**/___tests___/`) and the backend integration test harness (`backend/internal/handler/`) were also written with AI assistance.
+The frontend test suite (`frontend/src/**/__tests__/`) and all backend tests (`backend/internal/**/*_test.go`) were also written with AI assistance.
