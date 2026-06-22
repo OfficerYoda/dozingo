@@ -174,11 +174,13 @@ func (s *TwoFactor) Verify(ctx context.Context, passcode string) error {
 		return fmt.Errorf("2fa not verified: %w", domain.ErrForbidden)
 	}
 
-	if err := s.twoFactor.SetLastUsedCode(ctx, sessionUser.UserID, passcode); err != nil {
+	err = s.twoFactor.SetLastUsedCode(ctx, sessionUser.UserID, passcode)
+	if err != nil {
 		return fmt.Errorf("store last used code: %w", err)
 	}
 
-	if _, err := s.sessions.SetTwoFAPending(ctx, sessionUser.Token, false); err != nil {
+	_, err = s.sessions.SetTwoFAPending(ctx, sessionUser.Token, false)
+	if err != nil {
 		return fmt.Errorf("clear 2fa pending status: %w", err)
 	}
 

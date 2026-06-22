@@ -108,6 +108,10 @@ func (f *fakeEmailSender) SendEmailVerification(to, token string) error {
 	return nil
 }
 
+func (f *fakeEmailSender) SendLoginNotification(_ string, _ time.Time) error { return nil }
+
+func (f *fakeEmailSender) Send2FAActivated(_ string, _ time.Time) error { return nil }
+
 func (f *fakeEmailSender) reset() {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -379,7 +383,7 @@ func TestMain(m *testing.M) {
 	NewVotesHandler(votesSvc).Register(apiGroup)
 	NewAuthHandler(service.NewAuth(repos, queries, fakeMailer, txRunner, fakeAvatarGen.Generate, fakeUploader), testAvatarURLs, testFallbackAvatarURL).Register(apiGroup)
 	NewUsersHandler(service.NewUsers(&repos, queries, fakeMailer, txRunner, fakeUploader), votesSvc, testAvatarURLs, testFallbackAvatarURL).Register(apiGroup)
-	NewTwoFactor(service.NewTwoFactor(&repos, queries, txRunner, testTOTPCipher)).Register(apiGroup)
+	NewTwoFactor(service.NewTwoFactor(&repos, queries, fakeMailer, txRunner, testTOTPCipher)).Register(apiGroup)
 
 	// Clean tables before running tests to ensure a fresh state
 	truncateAllTables()
