@@ -1,0 +1,93 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  garage:
+    image: dxflrs/garage:v2.3.0
+    restart: unless-stopped
+    ports:
+      - "3902:3902" # Web port — browser fetches avatar images from here
+    volumes:
+      - ../garage.toml:/etc/garage.toml:ro
+      - garage_meta:/meta
+      - garage_data:/data
+    environment:
+      - GARAGE_DEFAULT_ACCESS_KEY=${GARAGE_DEFAULT_ACCESS_KEY}
+      - GARAGE_DEFAULT_SECRET_KEY=${GARAGE_DEFAULT_SECRET_KEY}
+      - GARAGE_DEFAULT_BUCKET=${GARAGE_DEFAULT_BUCKET}
+    command: /garage server --single-node --default-bucket
+    healthcheck:
+      test: ["CMD", "/garage", "status"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+
+  garage-init:
+    image: dxflrs/garage:v2.3.0
+    depends_on:
+      garage:
+        condition: service_healthy
+    network_mode: "service:garage"
+    volumes:
+      - ../garage.toml:/etc/garage.toml:ro
+      - garage_meta:/meta
+    restart: "no"
+    entrypoint: ["/garage"]
+    command: ["bucket", "website", "--allow", "profile-pictures"]
+
+  migrate:
+    image: ghcr.io/officeryoda/dozingo-backend:latest
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file: .env
+    entrypoint: ["/usr/local/bin/migrate"]
+    command: ["-path", "/app/migrations", "-database", "${DATABASE_URL}", "up"]
+    restart: "no"
+
+  seed:
+    image: ghcr.io/officeryoda/dozingo-backend:latest
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      garage-init:
+        condition: service_completed_successfully
+    env_file: .env
+    entrypoint: ["/usr/local/bin/seed"]
+    restart: "no"
+
+  backend:
+    image: ghcr.io/officeryoda/dozingo-backend:latest
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      garage-init:
+        condition: service_completed_successfully
+    env_file: .env
+    restart: unless-stopped
+
+  frontend:
+    image: ghcr.io/officeryoda/dozingo-frontend:latest
+    depends_on:
+      - backend
+    ports:
+      - "4242:4242"
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  garage_meta:
+  garage_data:

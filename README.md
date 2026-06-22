@@ -4,6 +4,23 @@ A bingo game for university lectures.
 
 ---
 
+## Quick Start (Docker only)
+
+```bash
+git clone https://github.com/OfficerYoda/dozingo.git
+cd dozingo/deploy
+cp .env.example .env
+docker compose up -d
+```
+
+Open **http://localhost:4242** — the app starts with demo data already loaded.
+Log in with `admin` / `password123`.
+
+See [`deploy/README.md`](deploy/README.md) for full details, more demo accounts,
+and how to wipe data.
+
+---
+
 ## Repository Structure
 
 This is a monorepo containing both the backend and frontend:
@@ -19,7 +36,8 @@ dozingo/
 ## Prerequisites
 
 Install these two things manually. Everything else is handled by
-[mise](https://mise.jdx.dev/) (a tool version manager), Docker, and package managers.
+[mise](https://mise.jdx.dev/) (a tool version manager), Docker, and package
+managers.
 
 | Tool                      | What it's for                                                  | Install                                                                      |
 | ------------------------- | -------------------------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -78,8 +96,8 @@ API docs are at [http://localhost:4242/docs](http://localhost:4242/docs)
 
 ## Available Commands
 
-Run `just` (with no arguments) to see top-level commands.
-Run `just --list --list-submodules` to see all commands including submodules.
+Run `just` (with no arguments) to see top-level commands. Run
+`just --list --list-submodules` to see all commands including submodules.
 
 ### Root commands (infrastructure)
 
