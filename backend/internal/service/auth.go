@@ -190,6 +190,11 @@ func (s *Auth) Login(ctx context.Context, in LoginInput) (LoginResult, error) {
 		return LoginResult{TwoFAPending: true}, nil
 	}
 
+	err = s.emailSender.SendLoginNotification(user.Email, time.Now())
+	if err != nil {
+		return LoginResult{}, fmt.Errorf("send mail: %w", err)
+	}
+
 	return LoginResult{User: vanillaUser}, nil
 }
 
