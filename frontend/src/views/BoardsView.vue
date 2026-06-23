@@ -4,8 +4,8 @@
             <div class="list-header mb-4">
                 <h2 class="mb-0">{{ t('boards.title') }}</h2>
                 <div class="header-actions">
-                    <input class="btn btn-secondary" type="search" :placeholder="t('boards.searchPlaceholder')" v-model="search">
-                    <select class="btn btn-secondary" v-model="appliedFiler">
+                    <input class="" type="search" :placeholder="t('boards.searchPlaceholder')" v-model="search">
+                    <select class="" v-model="appliedFiler">
                         <option value="newest" selected >{{ t('boards.sort.newest') }}</option>
                         <option value="most-liked">{{ t('boards.sort.mostLiked') }}</option>
                         <option value="most-played">{{ t('boards.sort.mostPlayed') }}</option>
@@ -113,13 +113,30 @@ function clickBoard(boardID: string) {
 <style scoped>
 .list-header {
     display: flex;
-    flex-direction: row;
     justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
 }
 
 .header-actions {
     display: flex;
-    flex-direction: row;
     gap: 8px;
+    max-width: 100%;
+}
+
+.header-actions select, .header-actions input{
+    border-start-start-radius: 0;
+    margin: 0;
+    background-color: var(--color-bg-card-tinted);
+    outline: none;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 8px 10px;
+    display: block;
+    width: 100%;
+}
+
+.header-actions select{
+    max-width: fit-content;
 }
 </style>
