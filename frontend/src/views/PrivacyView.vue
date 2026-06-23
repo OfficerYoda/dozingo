@@ -108,7 +108,7 @@ usePageTitle(t('privacy.title'))
 
 .hero-badge {
   display: inline-block;
-  background-color: #2E7D32;
+  background-color: var(--color-accent-green);
   color: #fff;
   font-size: 0.7rem;
   font-weight: 800;
@@ -148,15 +148,15 @@ usePageTitle(t('privacy.title'))
   display: flex;
   align-items: flex-start;
   gap: 16px;
-  background-color: #fff;
-  border: 2px solid #E3DFFF;
+  background-color: var(--color-bg-surface);
+  border: 2px solid var(--color-input-bg);
   border-radius: var(--radius-lg);
   padding: 18px 20px;
   transition: border-color 0.2s, transform 0.15s;
 }
 
 .privacy-item:hover {
-  border-color: #5A5781;
+  border-color: var(--color-subheading);
   transform: translateX(4px);
 }
 
@@ -197,14 +197,14 @@ usePageTitle(t('privacy.title'))
 }
 
 .item-body a {
-  color: #4052B6;
+  color: var(--card-blue);
 }
 
 .item-badge {
   flex-shrink: 0;
   align-self: flex-start;
-  background-color: #E3DFFF;
-  color: #5A5781;
+  background-color: var(--color-input-bg);
+  color: var(--color-subheading);
   font-size: 0.6rem;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -215,8 +215,8 @@ usePageTitle(t('privacy.title'))
 }
 
 .item-badge-green {
-  background-color: #e8f5e9;
-  color: #2E7D32;
+  background-color: var(--color-accent-green-soft);
+  color: var(--color-accent-green);
 }
 
 .privacy-outro {
@@ -229,8 +229,8 @@ usePageTitle(t('privacy.title'))
 
 .outro-stamp {
   display: inline-block;
-  border: 3px solid #2E7D32;
-  color: #2E7D32;
+  border: 3px solid var(--color-accent-green);
+  color: var(--color-accent-green);
   font-size: 0.75rem;
   font-weight: 900;
   letter-spacing: 0.12em;

@@ -226,8 +226,8 @@ function resetBingo() {
 }
 
 .board-cell {
-  background-color: #fff;
-  border: 3px solid #E3DFFF;
+  background-color: var(--color-bg-surface);
+  border: 3px solid var(--color-input-bg);
   border-radius: var(--radius-lg);
   padding: 16px;
   position: relative;
@@ -240,7 +240,7 @@ function resetBingo() {
 }
 
 .board-cell:hover {
-  border-color: #5A5781;
+  border-color: var(--color-subheading);
 }
 
 .board-cell:active {
@@ -252,8 +252,8 @@ function resetBingo() {
 }
 
 .cell-checked {
-  border-color: #5A5781 !important;
-  background-color: #F0EEFF;
+  border-color: var(--color-subheading) !important;
+  background-color: var(--color-bg-card-tinted);
 }
 
 .cell-wide {
@@ -261,8 +261,8 @@ function resetBingo() {
 }
 
 .board-cell-free {
-  background-color: #5A5781;
-  border-color: #5A5781;
+  background-color: var(--color-subheading);
+  border-color: var(--color-subheading);
 }
 
 .cell-label {
@@ -284,7 +284,7 @@ function resetBingo() {
 }
 
 .cell-content a {
-  color: #4052B6;
+  color: var(--card-blue);
 }
 
 .cell-free-text {
@@ -299,8 +299,8 @@ function resetBingo() {
   right: 12px;
   width: 22px;
   height: 22px;
-  background-color: #E3DFFF;
-  color: #5A5781;
+  background-color: var(--color-input-bg);
+  color: var(--color-subheading);
   border-radius: 50%;
   font-size: 0.7rem;
   font-weight: 700;
@@ -311,7 +311,7 @@ function resetBingo() {
 }
 
 .cell-check-active {
-  background-color: #5A5781;
+  background-color: var(--color-subheading);
   color: #fff;
   transform: scale(1.15);
 }
@@ -323,12 +323,12 @@ function resetBingo() {
 }
 
 .imprint-outro strong {
-  color: #C0185A;
+  color: var(--card-red);
 }
 
 .imprint-progress {
   font-size: 0.8rem;
-  color: #5A5781;
+  color: var(--color-subheading);
   font-weight: 600;
   margin-left: 4px;
 }
