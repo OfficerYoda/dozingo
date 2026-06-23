@@ -1,15 +1,11 @@
 <template>
-  <section class="slider-section">
-    <div class="container">
-      <Splide :options="splideOptions" class="slider-splide" aria-label="slider">
-        <SplideSlide v-for="(item, index) in items" :key="index">
-          <div class="slider-slide-inner">
-            <slot name="slide" :item="item" :index="index" />
-          </div>
-        </SplideSlide>
-      </Splide>
-    </div>
-  </section>
+    <Splide :options="splideOptions" class="slider-splide" aria-label="slider">
+      <SplideSlide v-for="(item, index) in items" :key="index">
+        <div class="slider-slide-inner">
+          <slot name="slide" :item="item" :index="index" />
+        </div>
+      </SplideSlide>
+    </Splide>
 </template>
 
 <script setup lang="ts" generic="T">

@@ -1,8 +1,8 @@
 <template>
   <section>
     <div class="container">
-      <div class="hero-section grid mb-3">
-        <div class="hero-banner mb-3 col-8 md-7 sm-12">
+      <div class="grid">
+        <div class="hero-banner mb-3 col-7 md-12 sm-12">
           <div class="hero-content">
             <h2 class="hero-title">{{ t('home.hero.title') }}</h2>
             <p class="hero-subtitle">{{ t('home.hero.subtitle') }}</p>
@@ -10,7 +10,7 @@
           </div>
         </div>
 
-        <div class="card activity-card col-4 md-5 sm-12">
+        <div class="card activity-card col-5 md-12 sm-12">
           <h3 class="mb-0">{{ t('home.activity.title') }}</h3>
           <div class="raster-container">
             <div class="icon-div box">
@@ -55,7 +55,11 @@
           </div>
         </div>
       </div>
+    </div>
+  </section>
 
+  <section>
+    <div class="container">
       <div class="section-header mb-2">
         <div>
           <h2 class="mb-0">{{ t('home.mostLiked.title') }}</h2>
@@ -70,7 +74,7 @@
         :per-page-md="2"
         :per-page-sm="1"
         :type="'slide'"
-        class="mb-3"
+        class="mt-3"
       >
         <template #slide="{ item: board }">
           <BoardCard
@@ -80,7 +84,11 @@
           />
         </template>
       </SliderSection>
+    </div>
+  </section>
 
+  <section>
+    <div class="container">
       <div class="section-header mb-2">
         <div>
           <h2 class="mb-0">{{ t('home.newest.title') }}</h2>
@@ -184,10 +192,6 @@ onMounted(loadStats)
 
 <style>
 /* Hero */
-.hero-section {
-  display: flex;
-  gap: 8px;
-}
 
 .hero-banner {
   background-color: var(--color-hero-bg);
@@ -278,7 +282,7 @@ onMounted(loadStats)
   flex-direction: row;
   align-items: center;
   gap: 14px;
-  padding: 12px 16px;
+  padding-block: 12px;
   justify-content: center;
 }
 
@@ -309,11 +313,12 @@ onMounted(loadStats)
 .raster-container {
   width: 100%;
   height: 100%;
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   align-content: space-evenly;
   justify-content: space-evenly;
-  flex-wrap: wrap;
-  gap: 0;
+  overflow-x: auto;
+  gap: 8px;
 }
 
 .box {

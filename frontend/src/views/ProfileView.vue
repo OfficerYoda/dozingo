@@ -1,20 +1,24 @@
 <template>
-  <div className="container">
-    <div v-if="!auth.state.ready">{{ t('profile.loading') }}</div>
-    <div v-else-if="!auth.state.user">{{ t('profile.notLoggedIn') }}</div>
-    <div v-else class="profile-header">
-      <img v-if="auth.state.user.avatar_url" :src="auth.state.user.avatar_url" alt="Profile picture" class="profile-avatar" />
-      <img v-else src="/user.png" alt="Profile picture" class="profile-avatar" />
-      <h1>{{ t('profile.welcome', { username: auth.state.user.username }) }}</h1>
+  <section class="pb-0">
+    <div class="container">
+      <div v-if="!auth.state.ready">{{ t('profile.loading') }}</div>
+      <div v-else-if="!auth.state.user">{{ t('profile.notLoggedIn') }}</div>
+      <div v-else class="profile-header">
+        <img v-if="auth.state.user.avatar_url" :src="auth.state.user.avatar_url" alt="Profile picture" class="profile-avatar" />
+        <img v-else src="/user.png" alt="Profile picture" class="profile-avatar" />
+        <h1>{{ t('profile.welcome', { username: auth.state.user.username }) }}</h1>
+      </div>
     </div>
-
-    <div class="container" style="padding-right: 0%; padding-left: 0%;">
+  </section>
+  
+  <section>
+    <div class="container">
       <template v-if="activeGames.length > 0">
         <h2 class="mb-0">{{ t('profile.continueBoards') }}</h2>
 
         <p v-if="error" class="error-text">{{ error }}</p>
 
-        <SliderSection :items="activeGames" :per-page="3" :per-page-md="2" :per-page-sm="1">
+        <SliderSection :items="activeGames" :per-page="3" :per-page-md="2" :per-page-sm="1" class="mt-3">
           <template #slide="{ item: game }">
             <button class="card card-border-blue profile-slider-card" @click="router.push('/game/' + game.game_id)">
               <div class="card-body">
@@ -29,12 +33,16 @@
           </template>
         </SliderSection>
       </template>
+    </div>
+  </section>
 
+  <section>
+    <div class="container">
       <p v-if="error" class="error-text">{{ error }}</p>
 
       <h2 class="mb-0">{{ t('profile.exploreBoards', { count: boards.length }) }}</h2>
 
-      <SliderSection :items="boards" :per-page="3" :per-page-md="2" :per-page-sm="1">
+      <SliderSection :items="boards" :per-page="3" :per-page-md="2" :per-page-sm="1" class="mt-3">
         <template #slide="{ item: board }">
           <div class="board-card-wrapper">
             <BoardCard :key="`${board.board_id}-${boardsVersion}`" :board="board" @click="clickBoard(board.board_id)" @vote-changed="(v: number | null) => onBoardVoteChange(v, board)" />
@@ -45,19 +53,24 @@
         </template>
       </SliderSection>
     </div>
+  </section>
 
-          <h2 class="mb-0">{{ t('profile.likedBoards', { count: likedBoards.length }) }}</h2>
+  <section>
+    <div class="container">
+      <h2 class="mb-0">{{ t('profile.likedBoards', { count: likedBoards.length }) }}</h2>
 
-    <SliderSection :items="likedBoards" :per-page="3" :per-page-md="2" :per-page-sm="1">
-      <template #slide="{ item: vote }">
-        <BoardCard
-          :key="vote.board_id"
-          :board="{ board_id: vote.board_id, title: vote.title, description: vote.description, score: vote.vote_score, vote_count: vote.vote_count, size: 0, author_id: '', play_count: 0 }"
-          @click="clickBoard(vote.board_id)"
-          @vote-changed="(v: number | null) => onLikedBoardVoteChanged(v, vote.board_id)"
-        />
-      </template>
-    </SliderSection>
+      <SliderSection :items="likedBoards" :per-page="3" :per-page-md="2" :per-page-sm="1" class="mt-3">
+        <template #slide="{ item: vote }">
+          <BoardCard
+            :key="vote.board_id"
+            :board="{ board_id: vote.board_id, title: vote.title, description: vote.description, score: vote.vote_score, vote_count: vote.vote_count, size: 0, author_id: '', play_count: 0 }"
+            @click="clickBoard(vote.board_id)"
+            @vote-changed="(v: number | null) => onLikedBoardVoteChanged(v, vote.board_id)"
+          />
+        </template>
+      </SliderSection>
+    </div>
+  </section>
 
   <ModalStartGame
     v-if="selecetedBoard"
@@ -73,8 +86,6 @@
     :board="boardToDelete"
     @deleted="fetchAllUserBoards"
   />
-
-  </div>
 </template>
 
 <script setup lang="ts">
