@@ -790,9 +790,9 @@ onUnmounted(() => {
 .board-container button{
     position: relative;
     width: 100%;
-    min-width: 100px;
+    min-width: 130px;
     height: 100%;
-    min-height: 100px;
+    min-height: 110px;
     scroll-snap-align: start;
     background-color: var(--game-cell-bg);
     border: solid 0.5rem var(--color-input-bg);

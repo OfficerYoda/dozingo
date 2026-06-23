@@ -2,7 +2,7 @@
   <section>
     <div class="container">
       <div class="hero-section grid mb-3">
-        <div class="hero-banner mb-3 col-8 md-12 sm-12">
+        <div class="hero-banner mb-3 col-8 md-7 sm-12">
           <div class="hero-content">
             <h2 class="hero-title">{{ t('home.hero.title') }}</h2>
             <p class="hero-subtitle">{{ t('home.hero.subtitle') }}</p>
@@ -10,7 +10,7 @@
           </div>
         </div>
 
-        <div class="card activity-card col-4 md-12 sm-12">
+        <div class="card activity-card col-4 md-5 sm-12">
           <h3 class="mb-0">{{ t('home.activity.title') }}</h3>
           <div class="raster-container">
             <div class="icon-div box">
@@ -198,6 +198,11 @@ onMounted(loadStats)
 
 .hero-content {
   max-width: 480px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  align-items: start;
 }
 
 .hero-title {
@@ -238,10 +243,8 @@ onMounted(loadStats)
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
-}
-
-.heading {
-  color: var(--color-heading);
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
 .subheading {
@@ -276,7 +279,6 @@ onMounted(loadStats)
   align-items: center;
   gap: 14px;
   padding: 12px 16px;
-  flex-wrap: wrap;
   justify-content: center;
 }
 
@@ -306,10 +308,11 @@ onMounted(loadStats)
 
 .raster-container {
   width: 100%;
-  flex: 1;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  height: 100%;
+  display: flex;
   align-content: space-evenly;
+  justify-content: space-evenly;
+  flex-wrap: wrap;
   gap: 0;
 }
 

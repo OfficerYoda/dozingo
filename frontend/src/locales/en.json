@@ -8,7 +8,7 @@
     "signOut": "Sign Out",
     "signIn": "Sign In",
     "register": "Register",
-    "cardEditor": "Board Editor",
+    "cardEditor": "Create board ",
     "boards": "Explore boards",
     "imprint": "Imprint",
     "privacy": "Privacy Policy"
@@ -149,12 +149,12 @@
       "cells": "CELLS"
     },
     "mostLiked": {
-      "title": "Most Liked Boards",
+      "title": "Most Liked",
       "subtitle": "The community's current favorites",
       "seeAll": "See all"
     },
     "newest": {
-      "title": "Recently Added Boards",
+      "title": "Recently Added",
       "subtitle": "Fresh bingo cards from the community",
       "seeAll": "See all"
     },

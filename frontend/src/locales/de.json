@@ -8,7 +8,7 @@
     "signOut": "Abmelden",
     "signIn": "Anmelden",
     "register": "Registrieren",
-    "cardEditor": "Karten-Editor",
+    "cardEditor": "Karte erstellen",
     "boards": "Karten entdecken",
     "imprint": "Impressum",
     "privacy": "Datenschutz"
@@ -149,12 +149,12 @@
       "cells": "FELDER"
     },
     "mostLiked": {
-      "title": "Beliebteste Karten",
+      "title": "Zurzeit Beliebt",
       "subtitle": "Die aktuellen Favoriten der Community",
       "seeAll": "Alle anzeigen"
     },
     "newest": {
-      "title": "Zuletzt hinzugefügte Karten",
+      "title": "Zuletzt Hinzugefügt",
       "subtitle": "Neue Bingo-Karten aus der Community",
       "seeAll": "Alle anzeigen"
     },
