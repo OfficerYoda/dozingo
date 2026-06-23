@@ -122,6 +122,9 @@
     --color-icon-circle-bg: #EEEEF8;
     --color-icon-svg: var(--card-blue);
 
+    /* Topbar / footer tint */
+    --color-bar-bg: #aca8d718;
+
     /* Game page */
     --game-cell-bg: #ffffff;
     --game-cell-accent-bg: #5A5781;
@@ -184,6 +187,9 @@
   --color-hero-bg: #3a3880;
   --color-icon-circle-bg: #2a2550;
   --color-icon-svg: #a5b4fc;
+
+  /* Topbar / footer tint */
+  --color-bar-bg: rgba(172, 168, 215, 0.15);
 
   /* Game page */
   --game-cell-bg: #111827;

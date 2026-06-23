@@ -12,47 +12,47 @@
 
         <div class="card activity-card col-5 md-12 sm-12">
           <h3 class="mb-0">{{ t('home.activity.title') }}</h3>
-          <div class="raster-container">
-            <div class="icon-div box">
+          <dl class="raster-container">
+            <div class="stat-item">
               <div class="icon-circle">
                 <Medal :size="20" />
               </div>
               <div class="icon-text">
-                <small class="category">{{ t('home.activity.bingos') }}</small>
-                <span class="category-value">{{ stats.bingos }}</span>
+                <dt class="category">{{ t('home.activity.bingos') }}</dt>
+                <dd class="category-value">{{ stats.bingos }}</dd>
               </div>
             </div>
 
-            <div class="icon-div box">
+            <div class="stat-item">
               <div class="icon-circle">
                 <GamepadDirectional :size="20" />
               </div>
               <div class="icon-text">
-                <small class="category">{{ t('home.activity.games') }}</small>
-                <span class="category-value">{{ stats.games }}</span>
+                <dt class="category">{{ t('home.activity.games') }}</dt>
+                <dd class="category-value">{{ stats.games }}</dd>
               </div>
             </div>
 
-            <div class="icon-div box">
+            <div class="stat-item">
               <div class="icon-circle">
                 <LayoutGrid :size="20" />
               </div>
               <div class="icon-text">
-                <small class="category">{{ t('home.activity.boards') }}</small>
-                <span class="category-value">{{ stats.boards }}</span>
+                <dt class="category">{{ t('home.activity.boards') }}</dt>
+                <dd class="category-value">{{ stats.boards }}</dd>
               </div>
             </div>
 
-            <div class="icon-div box">
+            <div class="stat-item">
               <div class="icon-circle">
                 <SquarePlus :size="18" />
               </div>
               <div class="icon-text">
-                <small class="category">{{ t('home.activity.cells') }}</small>
-                <span class="category-value">{{ stats.cells }}</span>
+                <dt class="category">{{ t('home.activity.cells') }}</dt>
+                <dd class="category-value">{{ stats.cells }}</dd>
               </div>
             </div>
-          </div>
+          </dl>
         </div>
       </div>
     </div>
@@ -190,7 +190,7 @@ onMounted(fetchBoards)
 onMounted(loadStats)
 </script>
 
-<style>
+<style scoped>
 /* Hero */
 
 .hero-banner {
@@ -244,7 +244,6 @@ onMounted(loadStats)
 /* Section header */
 .section-header {
   display: flex;
-  flex-direction: row;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
@@ -261,9 +260,10 @@ onMounted(loadStats)
   flex-direction: column;
 }
 
-/* Card */
 .slider-board-card {
+  width: 100%;
   height: 100%;
+  text-align: left;
 }
 
 .icon-circle {
@@ -277,7 +277,7 @@ onMounted(loadStats)
   justify-content: center;
 }
 
-.icon-div {
+.stat-item {
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -286,7 +286,7 @@ onMounted(loadStats)
   justify-content: center;
 }
 
-.icon-div svg {
+.stat-item svg {
   color: var(--color-icon-svg);
 }
 
@@ -301,6 +301,7 @@ onMounted(loadStats)
   font-size: 0.625rem;
   font-weight: 700;
   letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .category-value {
@@ -316,20 +317,7 @@ onMounted(loadStats)
   display: grid;
   grid-template-columns: 1fr 1fr;
   align-content: space-evenly;
-  justify-content: space-evenly;
   overflow-x: auto;
   gap: 8px;
-}
-
-.box {
-  display: flex;
-  justify-content: space-evenly;
-  align-items: space-evenly;
-}
-
-.slider-board-card {
-  width: 100%;
-  height: 100%;
-  text-align: left;
 }
 </style>

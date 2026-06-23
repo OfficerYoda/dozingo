@@ -1,5 +1,5 @@
 <template>
-    <button class="card card-border-blue board-card" @click="$emit('click')">
+    <article class="card card-border-blue board-card" role="button" tabindex="0" @click="$emit('click')" @keydown.enter.space.prevent="$emit('click')">
         <div class="card-body">
             <h3>{{ board.title }}</h3>
             <small>{{ board.description ?? '—' }}</small>
@@ -21,7 +21,7 @@
                 <span class="card-meta-text">{{ formattedScore }}</span>
             </button>
         </div>
-    </button>
+    </article>
 </template>
 
 <script setup lang="ts">
@@ -83,6 +83,8 @@ async function handleLike() {
 .board-card {
     width: 100%;
     text-align: left;
+    cursor: pointer;
+    display: block;
 }
 
 .card-body {

@@ -303,18 +303,17 @@ async function saveAndPlay() {
 }
 
 .form-top {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
 }
 
 .form-title {
-  width: 50%;
-  padding-right: 5px;
+  min-width: 0;
 }
 
 .form-boardsize {
-  width: 50%;
-  padding-left: 5px;
+  min-width: 0;
 }
 
 .entries-header {

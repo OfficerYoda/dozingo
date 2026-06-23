@@ -31,7 +31,7 @@
     </section>
 </template>
 
-<style>
+<style scoped>
     .pwforgot .card{
         border-top: 5px solid var(--card-blue);
     }
@@ -52,8 +52,14 @@
     }
 
     .input-group input{
-        border-start-start-radius: 0;
         margin: 0;
+        background-color: transparent;
+        outline: none;
+        border: none;
+        border-radius: var(--radius-sm);
+        padding: 8px 10px;
+        display: block;
+        width: 100%;
     }
 
     .input-group span{
@@ -64,7 +70,7 @@
         color: var(--color-subheading);
     }
 
-    .pwforgot input{
+    .pwforgot input[type="email"]{
         background-color: var(--color-bg-card-tinted);
         outline: none;
         border: none;
@@ -74,21 +80,9 @@
         width: 100%;
     }
 
-    .password-top{
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .password-top a{
-        font-size: 0.7rem;
-        font-weight: 700;
-        color: var(--color-primary-600);
-    }
-
-    .pwforgot button{
+    .pwforgot button[type="submit"]{
         width: 100%;
-        border-radius: 999px !important;
+        border-radius: var(--radius-lg) !important;
     }
 
     .pwforgot-notice{
@@ -99,9 +93,11 @@
         padding-bottom: 5px;
     }
 
-    .pwforgot-notice a{
+    .link-btn {
         font-weight: 600;
         color: var(--color-primary-600);
+        text-decoration: underline;
+        cursor: pointer;
     }
 
     .auth-error{

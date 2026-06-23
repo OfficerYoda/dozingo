@@ -43,8 +43,8 @@
                         </button>
                     </div>
                 </div>
-                <div class="board-shadow" v-bind:class="(showShadowRight)?'board-shadow-right':''"></div>
-                <div class="board-shadow" v-bind:class="(showShadowLeft)?'board-shadow-left':''"></div>
+                <div class="board-shadow" :class="{ 'board-shadow-right': showShadowRight }"></div>
+                <div class="board-shadow" :class="{ 'board-shadow-left': showShadowLeft }"></div>
             </div>
         </div>
 
@@ -719,19 +719,6 @@ onUnmounted(() => {
 
 .share-check {
     color: #2E7D32;
-}
-
-.top-fullscreen-btn {
-    border: none;
-    cursor: pointer;
-    color: var(--color-subheading);
-    padding: 6px 10px;
-    transition: background-color 0.2s, color 0.2s;
-}
-
-.top-fullscreen-btn:hover {
-    background-color: var(--color-interactive-track);
-    color: var(--color-heading);
 }
 
 @media (max-width: 600px) {

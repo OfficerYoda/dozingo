@@ -222,16 +222,8 @@ nav li {
   border-radius: var(--radius-sm);
 }
 
-button {
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  font: inherit;
-}
-
 header {
-  background-color: #aca8d718;
+  background-color: var(--color-bar-bg);
   padding: 16px 24px;
   width: 100%;
   display: flex;

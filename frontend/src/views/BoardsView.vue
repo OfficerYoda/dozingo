@@ -4,8 +4,8 @@
             <div class="list-header mb-4">
                 <h2 class="mb-0">{{ t('boards.title') }}</h2>
                 <div class="header-actions">
-                    <input class="" type="search" :placeholder="t('boards.searchPlaceholder')" v-model="search">
-                    <select class="" v-model="appliedFiler">
+                    <input type="search" :placeholder="t('boards.searchPlaceholder')" v-model="search">
+                    <select v-model="appliedFiler">
                         <option value="newest" selected >{{ t('boards.sort.newest') }}</option>
                         <option value="most-liked">{{ t('boards.sort.mostLiked') }}</option>
                         <option value="most-played">{{ t('boards.sort.mostPlayed') }}</option>
@@ -124,8 +124,7 @@ function clickBoard(boardID: string) {
     max-width: 100%;
 }
 
-.header-actions select, .header-actions input{
-    border-start-start-radius: 0;
+.header-actions input, .header-actions select {
     margin: 0;
     background-color: var(--color-bg-card-tinted);
     outline: none;

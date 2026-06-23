@@ -24,7 +24,7 @@
 }
 
 /* === Buttons === */
-.btn, button{
+.btn {
     text-decoration: none;
     padding: 8px 12px;
     border-radius: var(--radius-sm);

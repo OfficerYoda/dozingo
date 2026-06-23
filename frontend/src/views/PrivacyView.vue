@@ -11,9 +11,9 @@
         </p>
       </div>
 
-      <div class="privacy-checklist">
+      <ul class="privacy-checklist">
 
-        <div class="privacy-item">
+        <li class="privacy-item">
           <span class="item-icon">🏢</span>
           <div class="item-body">
             <h2>{{ t('privacy.items.responsible.title') }}</h2>
@@ -21,9 +21,9 @@
               <a href="mailto:kontakt@dozingo.de">kontakt@dozingo.de</a></p>
           </div>
           <span class="item-badge">{{ t('privacy.items.responsible.badge') }}</span>
-        </div>
+        </li>
 
-        <div class="privacy-item">
+        <li class="privacy-item">
           <span class="item-icon">📋</span>
           <div class="item-body">
             <h2>{{ t('privacy.items.data.title') }}</h2>
@@ -31,18 +31,18 @@
             <p class="item-note">{{ t('privacy.items.data.note') }}</p>
           </div>
           <span class="item-badge">{{ t('privacy.items.data.badge') }}</span>
-        </div>
+        </li>
 
-        <div class="privacy-item">
+        <li class="privacy-item">
           <span class="item-icon">🎯</span>
           <div class="item-body">
             <h2>{{ t('privacy.items.purpose.title') }}</h2>
             <p>{{ t('privacy.items.purpose.content') }}</p>
           </div>
           <span class="item-badge item-badge-green">{{ t('privacy.items.purpose.badge') }}</span>
-        </div>
+        </li>
 
-        <div class="privacy-item">
+        <li class="privacy-item">
           <span class="item-icon">🍪</span>
           <div class="item-body">
             <h2>{{ t('privacy.items.cookies.title') }}</h2>
@@ -50,18 +50,18 @@
             <p class="item-note">{{ t('privacy.items.cookies.note') }}</p>
           </div>
           <span class="item-badge item-badge-green">{{ t('privacy.items.cookies.badge') }}</span>
-        </div>
+        </li>
 
-        <div class="privacy-item">
+        <li class="privacy-item">
           <span class="item-icon">🤝</span>
           <div class="item-body">
             <h2>{{ t('privacy.items.sharing.title') }}</h2>
             <p>{{ t('privacy.items.sharing.content') }}</p>
           </div>
           <span class="item-badge item-badge-green">{{ t('privacy.items.sharing.badge') }}</span>
-        </div>
+        </li>
 
-        <div class="privacy-item">
+        <li class="privacy-item">
           <span class="item-icon">⚖️</span>
           <div class="item-body">
             <h2>{{ t('privacy.items.rights.title') }}</h2>
@@ -69,9 +69,9 @@
               <a href="mailto:kontakt@dozingo.de">kontakt@dozingo.de</a></p>
           </div>
           <span class="item-badge">{{ t('privacy.items.rights.badge') }}</span>
-        </div>
+        </li>
 
-        <div class="privacy-item">
+        <li class="privacy-item">
           <span class="item-icon">🗑️</span>
           <div class="item-body">
             <h2>{{ t('privacy.items.retention.title') }}</h2>
@@ -79,9 +79,9 @@
             <p class="item-note">{{ t('privacy.items.retention.note') }}</p>
           </div>
           <span class="item-badge">{{ t('privacy.items.retention.badge') }}</span>
-        </div>
+        </li>
 
-      </div>
+      </ul>
 
       <div class="privacy-outro">
         <span class="outro-stamp">{{ t('privacy.stamp') }}</span>
@@ -137,11 +137,13 @@ usePageTitle(t('privacy.title'))
 }
 
 .privacy-checklist {
+  list-style: none;
   display: flex;
   flex-direction: column;
   gap: 10px;
   max-width: 720px;
   margin-bottom: 32px;
+  padding: 0;
 }
 
 .privacy-item {

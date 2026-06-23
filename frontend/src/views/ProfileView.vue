@@ -20,16 +20,16 @@
 
         <SliderSection :items="activeGames" :per-page="3" :per-page-md="2" :per-page-sm="1" class="mt-3">
           <template #slide="{ item: game }">
-            <button class="card card-border-blue profile-slider-card" @click="router.push('/game/' + game.game_id)">
+            <article class="card card-border-blue profile-slider-card" role="button" tabindex="0" @click="router.push('/game/' + game.game_id)" @keydown.enter.space.prevent="router.push('/game/' + game.game_id)">
               <div class="card-body">
                 <h3>{{ game.board_title }}</h3>
                 <small>{{ game.marked_count }} / {{ game.total_count }} cells marked</small>
               </div>
               <hr class="mb-2">
-              <div class="card-footer">
+              <div class="card-footer-row">
                 <span class="card-meta-text">{{ t('profile.continuePlaying') }}</span>
               </div>
-            </button>
+            </article>
           </template>
         </SliderSection>
       </template>
@@ -274,6 +274,7 @@ function onBoardVoteChange(vote: number | null, board: Board) {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  cursor: pointer;
 }
 
 .board-card-wrapper {

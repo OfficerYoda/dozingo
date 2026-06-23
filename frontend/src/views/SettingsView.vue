@@ -42,9 +42,9 @@
 
         <span class="account-security-subtitle">{{ $t('settings.security.subtitle') }}</span>
 
-        <div class="highlighedcard">
+        <div class="highlighedcard settings-row">
           <Smartphone :size="23" />
-          <div class="account-security-info">
+          <div class="settings-row-info">
             <span>{{ $t('settings.security.twoFa') }}</span>
             <small v-if="twoFaEnabled" class="status-enabled">{{ $t('settings.security.twoFaEnabled') }}</small>
             <small v-else>{{ $t('settings.security.disabled') }}</small>
@@ -53,18 +53,18 @@
           <button v-else class="btn btn-primary" @click="openTwoFactorModal">{{ $t('settings.security.enable') }}</button>
         </div>
 
-        <div class="highlighedcard">
+        <div class="highlighedcard settings-row">
           <Key :size="23" />
-          <div class="account-security-info">
+          <div class="settings-row-info">
             <span>{{ $t('settings.security.lastPasswordChange') }}</span>
             <small>{{ passwordLastChanged }}</small>
           </div>
           <button class="btn btn-primary" @click="openChangePasswordModal">{{ $t('settings.security.change') }}</button>
         </div>
 
-        <div class="display-darkmode">
+        <div class="display-darkmode settings-row">
           <Bell :size="23" />
-          <div class="display-darkmode-info">
+          <div class="settings-row-info">
             <span>{{ $t('settings.security.loginNotification') }}</span>
             <small>{{ $t('settings.security.loginNotificationDesc') }}</small>
           </div>
@@ -83,9 +83,9 @@
 
         <span class="account-security-subtitle">{{ $t('settings.display.subtitle') }}</span>
 
-        <div class="display-darkmode">
+        <div class="display-darkmode settings-row">
           <Moon :size="23" />
-          <div class="display-darkmode-info">
+          <div class="settings-row-info">
             <span>{{ $t('settings.display.darkMode') }}</span>
             <small>{{ $t('settings.display.darkModeDesc') }}</small>
           </div>
@@ -96,9 +96,9 @@
           </label>
         </div>
 
-        <div class="display-darkmode">
+        <div class="display-darkmode settings-row">
           <Eye :size="23" />
-          <div class="display-darkmode-info">
+          <div class="settings-row-info">
             <span>{{ $t('settings.display.colorCorrection') }}</span>
             <small>{{ $t('settings.display.colorCorrectionDesc') }}</small>
           </div>
@@ -111,9 +111,9 @@
           </select>
         </div>
 
-        <div class="display-darkmode">
+        <div class="display-darkmode settings-row">
           <Languages :size="23" />
-          <div class="display-darkmode-info">
+          <div class="settings-row-info">
             <span>{{ $t('settings.display.language') }}</span>
             <small>{{ $t('settings.display.languageDesc') }}</small>
           </div>
@@ -305,6 +305,31 @@ async function saveUsername() {
   background-color: var(--color-accent-red-soft);
 }
 
+.settings-row {
+  background-color: var(--color-bg-surface);
+  padding: 24px;
+  margin-top: 24px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.settings-row svg {
+  color: var(--card-blue);
+  flex-shrink: 0;
+}
+
+.settings-row span {
+  color: var(--color-heading);
+  font-size: 1rem;
+  font-weight: 550;
+}
+
+.settings-row small {
+  color: var(--color-text-subtle);
+}
+
 .highlighedcard {
   background-color: var(--color-bg-surface);
   padding: 24px;
@@ -315,7 +340,7 @@ async function saveUsername() {
   gap: 12px;
 }
 
-.highlighedcard .account-security-info {
+.settings-row-info {
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -401,26 +426,6 @@ async function saveUsername() {
   color: var(--card-yellow);
 }
 
-.account-security-info span {
-  color: var(--color-heading);
-  font-size: 1rem;
-  font-weight: 550;
-}
-
-.account-security-info small {
-  color: var(--color-text-subtle);
-}
-
-.display-darkmode span {
-  color: var(--color-heading);
-  font-size: 1rem;
-  font-weight: 550;
-}
-
-.display-darkmode small {
-  color: var(--color-text-subtle);
-}
-
 .account-security-title {
   display: flex;
   align-items: center;
@@ -431,34 +436,8 @@ async function saveUsername() {
   color: var(--card-red);
 }
 
-.display-darkmode {
-  padding: 24px;
-  margin-top: 24px;
-  background-color: var(--color-bg-surface);
-  border-radius: var(--radius-sm);
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 12px;
-}
-
-.display-darkmode svg {
-  color: var(--card-blue);
-  flex-shrink: 0;
-}
-
-.display-darkmode-info {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-}
-
 h2 {
   color: var(--color-heading);
-}
-
-.highlighedcard svg {
-  color: var(--card-blue);
 }
 
 .account-security-subtitle {
