@@ -19,7 +19,7 @@ Open **http://localhost:4242** — the app starts with demo data already loaded.
 
 Log in with `admin` / `password123`.
 
-See [`deploy/README.md`](deploy/README.md) for more demo accounts and options.
+See [`deploy/README.md`](deploy/README.md) for more details.
 
 ---
 
@@ -125,6 +125,8 @@ Run `just --list --list-submodules` for all available commands.
 
 ## AI Notice
 
-All READMEs in this repository (`/README.md`, `backend/README.md`, `frontend/README.md`, `deploy/README.md`) were generated with AI assistance.
+All READMEs in this repository (`/README.md`, `backend/README.md`,
+`frontend/README.md`, `deploy/README.md`) were generated with AI assistance.
 
-The frontend test suite (`frontend/src/**/__tests__/`) and all backend tests (`backend/internal/**/*_test.go`) were also written with AI assistance.
+The frontend test suite (`frontend/src/**/__tests__/`) and all backend tests
+(`backend/internal/**/*_test.go`) were also written with AI assistance.

@@ -25,9 +25,9 @@ Open **http://localhost:4242**
 
 ## Demo credentials
 
-| Username | Password      | Notes             |
-| -------- | ------------- | ----------------- |
-| `admin`  | `password123` | Easy test account |
+| Username | Password      |
+| -------- | ------------- |
+| `admin`  | `password123` |
 
 ## Stopping
 
