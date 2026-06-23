@@ -158,7 +158,7 @@
                         <Sparkles :size="40" class="party-sparkle"/>
                         <Dices :size="56" class="party-dice party-dice-2"/>
                     </div>
-                    <h1 class="party-title">DOZINGO!</h1>
+                    <h1 class="party-title">DOZINGO</h1>
                     <p class="party-subtitle">{{ formattedTime }} · alle {{ selectedCells.length }} Felder geschafft</p>
                     <RouterLink to="/" class="btn btn-primary mt-3">Zur Startseite</RouterLink>
                 </div>
@@ -588,14 +588,14 @@ function checkBingo() {
 
 // --- Board shadow ---
 const boardContainerRef = useTemplateRef<HTMLElement>('boardContainerRef')
-const showShadowRight = ref(true)
+const showShadowRight = ref(false)
 const showShadowLeft = ref(false)
 
 function updateShadow() {
     const el = boardContainerRef.value
     if (!el) return
     const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 1
-    const atStart = el.scrollLeft === 0
+    const atStart = el.scrollLeft <= 0
     showShadowRight.value = el.scrollWidth > el.clientWidth && !atEnd
     showShadowLeft.value = !atStart
 }
@@ -761,30 +761,23 @@ onUnmounted(() => {
 .board{
     background-color: var(--color-input-bg);
     border-radius: var(--radius-lg);
-    padding: 0.5rem;
+    padding: 8px;
     position: relative;
 }
 
 .board-scroll {
     overflow-x: auto;
     overflow-y: hidden;
-    scroll-snap-type: both mandatory;
 }
 
 .board-scroll.is-revealing {
     overflow: hidden;
-    scroll-snap-type: none;
-}
-
-.board-scroll.is-revealing button {
-    scroll-snap-align: none;
 }
 
 .board-container{
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr;
     min-width: 100%;
-    overflow-y: hidden;
+    gap: 5px;
 }
 
 .board-container button{
@@ -793,9 +786,8 @@ onUnmounted(() => {
     min-width: 130px;
     height: 100%;
     min-height: 110px;
-    scroll-snap-align: start;
     background-color: var(--game-cell-bg);
-    border: solid 0.5rem var(--color-input-bg);
+    border: 3px solid var(--color-input-bg);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -807,7 +799,7 @@ onUnmounted(() => {
     cursor: pointer;
     font: inherit;
     color: inherit;
-    transition: transform 0.6s ease, border-width 0.3s, padding 0.3s, border-color 0.3s, background-color 0.3s, color 0.3s;
+    transition: transform 0.6s ease, padding 0.3s, border-color 0.3s, background-color 0.3s, color 0.3s;
     transform-style: preserve-3d;
     backface-visibility: hidden;
     will-change: transform;
@@ -839,12 +831,11 @@ onUnmounted(() => {
 }
 
 .board-container button:not(:disabled):not(.checked):hover {
-    border-color: var(--color-primary-300);
+    border-color: var(--color-primary-500);
 }
 
 .board-container button:focus-visible {
-    outline: 3px solid var(--color-heading);
-    outline-offset: -3px;
+    box-shadow: none;
 }
 
 .board-shadow{
