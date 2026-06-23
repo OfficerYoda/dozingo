@@ -1,5 +1,3 @@
-/* In this file, we define all of our core components */
-
 /* === Alerts === */
 .alert{
     border-radius: var(--radius-md);

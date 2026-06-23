@@ -1,5 +1,3 @@
-/* In this file, we define all basics like typography and normalization */
-
 @font-face{
     font-family: "Afacad";
     src: url("./../fonts/Afacad.ttf") format("truetype");
