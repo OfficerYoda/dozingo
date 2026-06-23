@@ -96,7 +96,8 @@ See [`deploy/README.md`](deploy/README.md) for more details.
 dozingo/
 ├── backend/    ← Go API server (see backend/README.md)
 ├── frontend/   ← Vue 3 SPA (see frontend/README.md)
-└── deploy/     ← Docker Compose setup for running the full stack
+├── deploy/     ← Docker Compose setup for running the full stack
+└── design/     ← Figma design files
 ```
 
 ---
