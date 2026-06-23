@@ -5,7 +5,6 @@ import { useLoginModal } from '@/composables/useLoginModal'
 import HomeView from '@/views/HomeView.vue'
 import SettingsView from '@/views/SettingsView.vue'
 import ProfileView from '@/views/ProfileView.vue'
-import ComponentsView from '@/views/ComponentsView.vue'
 import CardEditorView from '@/views/CardEditorView.vue'
 import BoardsView from '@/views/BoardsView.vue'
 import ForgotPasswordView from '@/views/ForgotPasswordView.vue'
@@ -26,7 +25,6 @@ const routes = [
   { path: '/forgotpw', name: 'forgotpw', component: ForgotPasswordView, meta: { guestOnly: true } },
   { path: '/settings', name: 'settings', component: SettingsView, meta: { requiresAuth: false } },
   { path: '/profile', name: 'profile', component: ProfileView, meta: { requiresAuth: true } },
-  { path: '/components', name: 'components', component: ComponentsView, meta: { requiresAuth: false } },
   { path: '/cardeditor', name: 'cardeditor', component: CardEditorView, meta: { requiresAuth: true } },
   { path: '/boards', name: 'boards', component: BoardsView, meta: { requiresAuth: false } },
   { path: '/game/:game_id', name: 'game', component: GameView, meta: { requiresAuth: false } },
