@@ -84,11 +84,13 @@ async function handleLike() {
     width: 100%;
     text-align: left;
     cursor: pointer;
-    display: block;
+    display: flex;
+    flex-direction: column;
 }
 
 .card-body {
     text-align: left;
+    flex: 1;
 }
 
 .card-footer {
