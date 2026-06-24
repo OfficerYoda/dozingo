@@ -272,5 +272,28 @@
       "rare": "Episch",
       "legendary": "Legendär"
     }
+  },
+  "verifyEmail": {
+    "title": "E-Mail-Verifizierung",
+    "verifying": "E-Mail wird verifiziert…",
+    "success": "E-Mail verifiziert! Weiterleitung…",
+    "noToken": "Kein Verifizierungstoken gefunden. Bitte überprüfe deinen Link.",
+    "expired": "Dieser Link ist abgelaufen. Bitte fordere eine neue Bestätigungs-E-Mail an.",
+    "invalid": "Dieser Link ist ungültig oder wurde bereits verwendet.",
+    "genericError": "Etwas ist schiefgelaufen. Bitte versuche es erneut."
+  },
+  "resetPassword": {
+    "title": "Passwort zurücksetzen",
+    "subtitle": "Wähle ein neues Passwort",
+    "newPassword": "Neues Passwort",
+    "confirmPassword": "Passwort bestätigen",
+    "submit": "Passwort zurücksetzen",
+    "submitting": "Wird zurückgesetzt…",
+    "success": "Passwort aktualisiert! Weiterleitung…",
+    "noToken": "Kein Reset-Token gefunden. Bitte überprüfe deinen Link.",
+    "mismatch": "Passwörter stimmen nicht überein.",
+    "expired": "Dieser Link ist abgelaufen. Bitte fordere einen neuen Passwort-Reset an.",
+    "invalid": "Dieser Link ist ungültig oder wurde bereits verwendet.",
+    "genericError": "Etwas ist schiefgelaufen. Bitte versuche es erneut."
   }
 }

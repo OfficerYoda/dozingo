@@ -272,5 +272,28 @@
       "rare": "Epic",
       "legendary": "Legendary"
     }
+  },
+  "verifyEmail": {
+    "title": "Email Verification",
+    "verifying": "Verifying your email…",
+    "success": "Email verified! Redirecting…",
+    "noToken": "No verification token found. Please check your link.",
+    "expired": "This link has expired. Please request a new verification email.",
+    "invalid": "This link is invalid or has already been used.",
+    "genericError": "Something went wrong. Please try again."
+  },
+  "resetPassword": {
+    "title": "Reset Password",
+    "subtitle": "Choose a new password",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm Password",
+    "submit": "Reset Password",
+    "submitting": "Resetting…",
+    "success": "Password updated! Redirecting…",
+    "noToken": "No reset token found. Please check your link.",
+    "mismatch": "Passwords do not match.",
+    "expired": "This link has expired. Please request a new password reset.",
+    "invalid": "This link is invalid or has already been used.",
+    "genericError": "Something went wrong. Please try again."
   }
 }

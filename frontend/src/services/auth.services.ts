@@ -36,3 +36,17 @@ export async function changePassword(oldPassword: string, newPassword: string): 
         body: JSON.stringify({ old_password: oldPassword, new_password: newPassword }),
     })
 }
+
+export async function verifyEmail(token: string): Promise<void> {
+    return apiFetch("/api/auth/verify-email", {
+        method: 'POST',
+        body: JSON.stringify({ token }),
+    })
+}
+
+export async function newPassword(token: string, newPassword: string): Promise<void> {
+    return apiFetch("/api/auth/new-password", {
+        method: 'POST',
+        body: JSON.stringify({ token, new_password: newPassword }),
+    })
+}

@@ -8,6 +8,8 @@ import ProfileView from '@/views/ProfileView.vue'
 import CardEditorView from '@/views/CardEditorView.vue'
 import BoardsView from '@/views/BoardsView.vue'
 import ForgotPasswordView from '@/views/ForgotPasswordView.vue'
+import ResetPasswordView from '@/views/ResetPasswordView.vue'
+import VerifyEmailView from '@/views/VerifyEmailView.vue'
 import GameView from '@/views/GameView.vue'
 import NotFoundView from '@/views/NotFoundView.vue'
 import ImprintView from '@/views/ImprintView.vue'
@@ -23,6 +25,8 @@ declare module 'vue-router' {
 const routes = [
   { path: '/', name: 'home', component: HomeView, meta: { requiresAuth: false } },
   { path: '/forgotpw', name: 'forgotpw', component: ForgotPasswordView, meta: { guestOnly: true } },
+  { path: '/reset-password', name: 'reset-password', component: ResetPasswordView, meta: { requiresAuth: false } },
+  { path: '/verify-email', name: 'verify-email', component: VerifyEmailView, meta: { requiresAuth: false } },
   { path: '/settings', name: 'settings', component: SettingsView, meta: { requiresAuth: false } },
   { path: '/profile', name: 'profile', component: ProfileView, meta: { requiresAuth: true } },
   { path: '/cardeditor', name: 'cardeditor', component: CardEditorView, meta: { requiresAuth: true } },
