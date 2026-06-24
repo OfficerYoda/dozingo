@@ -308,6 +308,12 @@ async function saveAndPlay() {
   gap: 10px;
 }
 
+@media (max-width: 480px) {
+  .form-top {
+    grid-template-columns: 1fr;
+  }
+}
+
 .form-title {
   min-width: 0;
 }
