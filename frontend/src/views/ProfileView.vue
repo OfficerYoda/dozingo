@@ -151,7 +151,7 @@ async function fetchActiveGames() {
         const games: Game[] = await gameService.getGamesByUser(auth.state.user.user_id)
         const active = games.filter(g => g.status === 'active')
 
-        activeGames.value = await Promise.all(active.map(async (g) => {
+        const results = await Promise.all(active.map(async (g) => {
             let board_title = g.board_id ?? 'Unknown board'
             try {
                 const board = await boardService.getBoardById(g.board_id)
@@ -168,6 +168,7 @@ async function fetchActiveGames() {
 
             return { game_id: g.game_id, board_id: g.board_id, board_title, marked_count, total_count }
         }))
+        activeGames.value = results.filter(g => !(g.total_count > 0 && g.marked_count === g.total_count))
     } catch { /* ignore */ }
 }
 
