@@ -14,10 +14,19 @@ type Users struct {
 	queries *generated.Queries
 }
 
-func (r *Users) GetForPasswordLogin(ctx context.Context, username string) (generated.GetUserForPasswordLoginRow, error) {
-	user, err := r.queries.GetUserForPasswordLogin(ctx, username)
+func (r *Users) GetForPasswordLoginByUsername(ctx context.Context, username string) (generated.GetUserForPasswordLoginByUsernameRow, error) {
+	user, err := r.queries.GetUserForPasswordLoginByUsername(ctx, username)
 	if err != nil {
-		return generated.GetUserForPasswordLoginRow{}, pgmap.TranslatePgErr(err)
+		return generated.GetUserForPasswordLoginByUsernameRow{}, pgmap.TranslatePgErr(err)
+	}
+
+	return user, nil
+}
+
+func (r *Users) GetForPasswordLoginByEmail(ctx context.Context, email string) (generated.GetUserForPasswordLoginByEmailRow, error) {
+	user, err := r.queries.GetUserForPasswordLoginByEmail(ctx, email)
+	if err != nil {
+		return generated.GetUserForPasswordLoginByEmailRow{}, pgmap.TranslatePgErr(err)
 	}
 
 	return user, nil

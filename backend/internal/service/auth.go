@@ -71,8 +71,8 @@ type RegisterInput struct {
 }
 
 type LoginInput struct {
-	Username string
-	Password string
+	Identifier string // username or email address
+	Password   string
 }
 
 // LoginResult is the return value of Login. When TwoFAPending is true the
@@ -151,26 +151,50 @@ func (s *Auth) assignGeneratedAvatar(ctx context.Context, user generated.User) (
 }
 
 func (s *Auth) Login(ctx context.Context, in LoginInput) (LoginResult, error) {
-	user, err := s.users.GetForPasswordLogin(ctx, in.Username)
-	if err != nil {
-		if errors.Is(err, domain.ErrNotFound) {
+	type loginUser struct {
+		id           pgtype.UUID
+		username     string
+		email        string
+		avatarKey    string
+		passwordHash string
+	}
+
+	var lu loginUser
+	var fetchErr error
+	if strings.Contains(in.Identifier, "@") {
+		u, err := s.users.GetForPasswordLoginByEmail(ctx, in.Identifier)
+		if err != nil {
+			fetchErr = err
+		} else {
+			lu = loginUser{u.ID, u.Username, u.Email, u.AvatarKey, u.PasswordHash}
+		}
+	} else {
+		u, err := s.users.GetForPasswordLoginByUsername(ctx, in.Identifier)
+		if err != nil {
+			fetchErr = err
+		} else {
+			lu = loginUser{u.ID, u.Username, u.Email, u.AvatarKey, u.PasswordHash}
+		}
+	}
+
+	if fetchErr != nil {
+		if errors.Is(fetchErr, domain.ErrNotFound) {
 			auth.CheckPasswordAgainstDummy(in.Password)
 			return LoginResult{}, domain.ErrUnauthorized
 		}
-
-		return LoginResult{}, fmt.Errorf("user retrieval for login: %w", err)
+		return LoginResult{}, fmt.Errorf("user retrieval for login: %w", fetchErr)
 	}
 
-	err = auth.CheckPassword(in.Password, user.PasswordHash)
+	err := auth.CheckPassword(in.Password, lu.passwordHash)
 	if err != nil {
 		return LoginResult{}, fmt.Errorf("password mismatch: %w", err)
 	}
 
 	vanillaUser := generated.User{
-		ID:        user.ID,
-		Username:  user.Username,
-		Email:     user.Email,
-		AvatarKey: user.AvatarKey,
+		ID:        lu.id,
+		Username:  lu.username,
+		Email:     lu.email,
+		AvatarKey: lu.avatarKey,
 	}
 	sessionToken, err := s.attachUserToSession(ctx, vanillaUser)
 	if err != nil {
@@ -190,9 +214,9 @@ func (s *Auth) Login(ctx context.Context, in LoginInput) (LoginResult, error) {
 		return LoginResult{TwoFAPending: true}, nil
 	}
 
-	err = s.emailSender.SendLoginNotification(user.Email, time.Now())
+	err = s.emailSender.SendLoginNotification(lu.email, time.Now())
 	if err != nil {
-		slog.Warn("failed to send login notification", "error", err, "user", user.Email)
+		slog.Warn("failed to send login notification", "error", err, "user", lu.email)
 	}
 
 	return LoginResult{User: vanillaUser}, nil

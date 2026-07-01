@@ -1,8 +1,14 @@
--- name: GetUserForPasswordLogin :one
+-- name: GetUserForPasswordLoginByUsername :one
 SELECT u.id, u.username, u.email, u.avatar_key, up.password_hash
 FROM users u
 INNER JOIN user_passwords up ON up.user_id = u.id
 WHERE u.username = @username;
+
+-- name: GetUserForPasswordLoginByEmail :one
+SELECT u.id, u.username, u.email, u.avatar_key, up.password_hash
+FROM users u
+INNER JOIN user_passwords up ON up.user_id = u.id
+WHERE u.email = @email;
 
 -- name: GetSessionUserByToken :one
 -- user_id may be NULL for anon sessions
