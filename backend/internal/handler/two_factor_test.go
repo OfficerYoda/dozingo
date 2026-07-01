@@ -93,7 +93,7 @@ func loginWith2FA(t *testing.T, username string) (tok string, cookie *http.Cooki
 	t.Helper()
 	tok, anonCookie := mintAnonSession(t, 24*time.Hour)
 	w := doRequestWithCookies(http.MethodPost, "/api/auth/login",
-		map[string]any{"username": username, "password": "testpassword123"},
+		map[string]any{"identifier": username, "password": "testpassword123"},
 		[]*http.Cookie{anonCookie})
 	assertStatus(t, w, http.StatusOK)
 	return tok, &http.Cookie{Name: "session_token", Value: tok}
@@ -291,7 +291,7 @@ func TestConfirm2FA_InvalidatesOtherSessions(t *testing.T) {
 	// Session B: a second login on a fresh anonymous session.
 	_, anonCookie := mintAnonSession(t, 24*time.Hour)
 	w := doRequestWithCookies(http.MethodPost, "/api/auth/login",
-		map[string]any{"username": "multisession", "password": "testpassword123"},
+		map[string]any{"identifier": "multisession", "password": "testpassword123"},
 		[]*http.Cookie{anonCookie})
 	assertStatus(t, w, http.StatusOK)
 	cookieB := anonCookie // session promoted to authenticated
@@ -414,7 +414,7 @@ func TestLogin_With2FAEnabled_ReturnsTwoFAPending(t *testing.T) {
 
 	tok, anonCookie := mintAnonSession(t, 24*time.Hour)
 	w := doRequestWithCookies(http.MethodPost, "/api/auth/login",
-		map[string]any{"username": "login2fauser", "password": "testpassword123"},
+		map[string]any{"identifier": "login2fauser", "password": "testpassword123"},
 		[]*http.Cookie{anonCookie})
 
 	// Login succeeds (200) but signals that 2FA is required
@@ -449,7 +449,7 @@ func TestLogin_Without2FA_Succeeds(t *testing.T) {
 
 	tok, anonCookie := mintAnonSession(t, 24*time.Hour)
 	w := doRequestWithCookies(http.MethodPost, "/api/auth/login",
-		map[string]any{"username": "no2falogin", "password": "testpassword123"},
+		map[string]any{"identifier": "no2falogin", "password": "testpassword123"},
 		[]*http.Cookie{anonCookie})
 
 	assertStatus(t, w, http.StatusOK)
@@ -487,7 +487,7 @@ func TestLogin_With2FA_SessionMarkedPending(t *testing.T) {
 
 	tok, anonCookie := mintAnonSession(t, 24*time.Hour)
 	doRequestWithCookies(http.MethodPost, "/api/auth/login",
-		map[string]any{"username": "pendingloginuser", "password": "testpassword123"},
+		map[string]any{"identifier": "pendingloginuser", "password": "testpassword123"},
 		[]*http.Cookie{anonCookie})
 
 	// Regardless of HTTP status, the session row in the DB must have pending=true
@@ -514,7 +514,7 @@ func TestLogin_With2FA_FullFlow(t *testing.T) {
 	// Login returns 200 with two_fa_pending=true and marks session pending
 	tok, anonCookie := mintAnonSession(t, 24*time.Hour)
 	loginW := doRequestWithCookies(http.MethodPost, "/api/auth/login",
-		map[string]any{"username": "fullflowuser", "password": "testpassword123"},
+		map[string]any{"identifier": "fullflowuser", "password": "testpassword123"},
 		[]*http.Cookie{anonCookie})
 	assertStatus(t, loginW, http.StatusOK)
 
@@ -565,7 +565,7 @@ func TestPendingSession_BlocksProtectedEndpoints(t *testing.T) {
 
 	tok, anonCookie := mintAnonSession(t, 24*time.Hour)
 	loginW := doRequestWithCookies(http.MethodPost, "/api/auth/login",
-		map[string]any{"username": "pendingblockuser", "password": "testpassword123"},
+		map[string]any{"identifier": "pendingblockuser", "password": "testpassword123"},
 		[]*http.Cookie{anonCookie})
 	assertStatus(t, loginW, http.StatusOK)
 
@@ -914,7 +914,7 @@ func TestDisable2FA_WithTOTP_Success(t *testing.T) {
 	doRequestWithCookies(http.MethodPost, "/api/auth/logout", nil, cookiesFor(userID))
 	tok, anonCookie := mintAnonSession(t, 24*time.Hour)
 	loginW := doRequestWithCookies(http.MethodPost, "/api/auth/login",
-		map[string]any{"username": "disabletotp", "password": "testpassword123"},
+		map[string]any{"identifier": "disabletotp", "password": "testpassword123"},
 		[]*http.Cookie{anonCookie})
 	assertStatus(t, loginW, http.StatusOK)
 

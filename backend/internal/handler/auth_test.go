@@ -141,8 +141,8 @@ func TestLogin_Success(t *testing.T) {
 	createTestUserWithRegister(t, "loginuser", "correctpassword", stringPtr("login@example.com"))
 
 	body := map[string]any{
-		"username": "loginuser",
-		"password": "correctpassword",
+		"identifier": "loginuser",
+		"password":   "correctpassword",
 	}
 
 	w := doRequest(http.MethodPost, "/api/auth/login", body)
@@ -167,8 +167,8 @@ func TestLogin_WrongPassword(t *testing.T) {
 	createTestUserWithRegister(t, "wrongpwuser", "correctpassword", stringPtr("wrongpw@example.com"))
 
 	body := map[string]any{
-		"username": "wrongpwuser",
-		"password": "wrongpassword",
+		"identifier": "wrongpwuser",
+		"password":   "wrongpassword",
 	}
 
 	w := doRequest(http.MethodPost, "/api/auth/login", body)
@@ -179,12 +179,88 @@ func TestLogin_NonexistentUser(t *testing.T) {
 	setupTest(t)
 
 	body := map[string]any{
-		"username": "doesnotexist",
-		"password": "somepassword",
+		"identifier": "doesnotexist",
+		"password":   "somepassword",
 	}
 
 	w := doRequest(http.MethodPost, "/api/auth/login", body)
 	assertStatus(t, w, http.StatusUnauthorized)
+}
+
+/// ===== Login: identifier field (email or username) =====
+
+func TestLogin_ByEmail_Success(t *testing.T) {
+	setupTest(t)
+
+	createTestUserWithRegister(t, "emailloginuser", "correctpassword", stringPtr("emaillogin@example.com"))
+
+	w := doRequest(http.MethodPost, "/api/auth/login", map[string]any{
+		"identifier": "emaillogin@example.com",
+		"password":   "correctpassword",
+	})
+	assertStatus(t, w, http.StatusOK)
+
+	var resp map[string]any
+	decodeJSON(t, w, &resp)
+
+	assertJSONField(t, resp, "username", "emailloginuser")
+	assertJSONField(t, resp, "email", "emaillogin@example.com")
+}
+
+func TestLogin_ByUsername_Success(t *testing.T) {
+	setupTest(t)
+
+	createTestUserWithRegister(t, "usernameloginuser", "correctpassword", stringPtr("usernamelogin@example.com"))
+
+	w := doRequest(http.MethodPost, "/api/auth/login", map[string]any{
+		"identifier": "usernameloginuser",
+		"password":   "correctpassword",
+	})
+	assertStatus(t, w, http.StatusOK)
+
+	var resp map[string]any
+	decodeJSON(t, w, &resp)
+
+	assertJSONField(t, resp, "username", "usernameloginuser")
+	assertJSONField(t, resp, "email", "usernamelogin@example.com")
+}
+
+func TestLogin_ByEmail_WrongPassword(t *testing.T) {
+	setupTest(t)
+
+	createTestUserWithRegister(t, "emailwrongpw", "correctpassword", stringPtr("emailwrongpw@example.com"))
+
+	w := doRequest(http.MethodPost, "/api/auth/login", map[string]any{
+		"identifier": "emailwrongpw@example.com",
+		"password":   "wrongpassword",
+	})
+	assertStatus(t, w, http.StatusUnauthorized)
+}
+
+func TestLogin_ByEmail_NonexistentEmail(t *testing.T) {
+	setupTest(t)
+
+	w := doRequest(http.MethodPost, "/api/auth/login", map[string]any{
+		"identifier": "ghost@example.com",
+		"password":   "somepassword",
+	})
+	assertStatus(t, w, http.StatusUnauthorized)
+}
+
+func TestLogin_ByEmail_SetsSessionCookie(t *testing.T) {
+	setupTest(t)
+
+	createTestUserWithRegister(t, "emailcookieuser", "pw12345678", stringPtr("emailcookie@example.com"))
+
+	w := doRequest(http.MethodPost, "/api/auth/login", map[string]any{
+		"identifier": "emailcookie@example.com",
+		"password":   "pw12345678",
+	})
+	assertStatus(t, w, http.StatusOK)
+
+	if c := extractSessionCookie(w); c == nil || c.Value == "" {
+		t.Fatal("expected login-by-email to set a session_token cookie")
+	}
 }
 
 /// ===== Register: cookies & ID =====
@@ -301,8 +377,8 @@ func TestLogin_SetsSessionCookie(t *testing.T) {
 	createTestUserWithRegister(t, "logincookie", "pw12345678", stringPtr("lc@example.com"))
 
 	w := doRequest(http.MethodPost, "/api/auth/login", map[string]any{
-		"username": "logincookie",
-		"password": "pw12345678",
+		"identifier": "logincookie",
+		"password":   "pw12345678",
 	})
 	assertStatus(t, w, http.StatusOK)
 
@@ -321,8 +397,8 @@ func TestLogin_AttachesExistingAnonSession(t *testing.T) {
 	token, cookie := mintAnonSession(t, 30*24*time.Hour)
 
 	w := doRequestWithCookies(http.MethodPost, "/api/auth/login", map[string]any{
-		"username": "anonloginer",
-		"password": "pw12345678",
+		"identifier": "anonloginer",
+		"password":   "pw12345678",
 	}, []*http.Cookie{cookie})
 	assertStatus(t, w, http.StatusOK)
 
