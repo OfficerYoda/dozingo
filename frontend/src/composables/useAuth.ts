@@ -21,8 +21,8 @@ async function fetchUser(): Promise<void> {
     }
 }
 
-async function login(username: string, password: string): Promise<void> {
-    const result = await authService.login(username, password)
+async function login(identifier: string, password: string): Promise<void> {
+    const result = await authService.login(identifier, password)
     if ('two_fa_pending' in result && result.two_fa_pending) {
         const { openLoginTwoFactorModal } = useLoginTwoFactorModal()
         openLoginTwoFactorModal()

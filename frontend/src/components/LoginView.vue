@@ -11,7 +11,7 @@
                         <label for="username">Username or Email</label>
                         <div class="input-group">
                             <span><User :size="20" /></span>
-                            <input v-model="username" type="text" id="username" required tabindex="1">
+                            <input v-model="identifier" type="text" id="username" required tabindex="1">
                         </div>
                     </div>
                     <div class="mb-3">
@@ -152,7 +152,7 @@ const { login } = useAuth()
 const { loginModalOpen, closeLoginModal } = useLoginModal()
 const { openRegisterModal } = useRegisterModal()
 
-const username = ref('')
+const identifier = ref('')
 const password = ref('')
 const error = ref('')
 const loading = ref(false)
@@ -160,7 +160,7 @@ const loginCardRef = ref<HTMLElement | null>(null)
 
 watch(loginModalOpen, (open) => {
     if (open) {
-        username.value = ''
+        identifier.value = ''
         password.value = ''
         error.value = ''
         nextTick(() => {
@@ -206,7 +206,7 @@ async function handleLogin() {
     error.value = ''
     loading.value = true
     try {
-        await login(username.value, password.value)
+        await login(identifier.value, password.value)
         closeLoginModal()
         await router.push('/')
         window.location.reload()
