@@ -108,8 +108,8 @@ func TestDeleteUser_InvalidatesAllSessions(t *testing.T) {
 
 	// A second login produces session B.
 	loginResp := doRequest(http.MethodPost, "/api/auth/login", map[string]any{
-		"username": "delmulti",
-		"password": "correctpw1",
+		"identifier": "delmulti",
+		"password":   "correctpw1",
 	})
 	assertStatus(t, loginResp, http.StatusOK)
 	cookieB := extractSessionCookie(loginResp)

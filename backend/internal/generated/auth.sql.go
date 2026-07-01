@@ -58,14 +58,14 @@ func (q *Queries) GetSessionUserByToken(ctx context.Context, token string) (GetS
 	return i, err
 }
 
-const getUserForPasswordLogin = `-- name: GetUserForPasswordLogin :one
+const getUserForPasswordLoginByEmail = `-- name: GetUserForPasswordLoginByEmail :one
 SELECT u.id, u.username, u.email, u.avatar_key, up.password_hash
 FROM users u
 INNER JOIN user_passwords up ON up.user_id = u.id
-WHERE u.username = $1
+WHERE u.email = $1
 `
 
-type GetUserForPasswordLoginRow struct {
+type GetUserForPasswordLoginByEmailRow struct {
 	ID           pgtype.UUID `json:"id"`
 	Username     string      `json:"username"`
 	Email        string      `json:"email"`
@@ -73,9 +73,37 @@ type GetUserForPasswordLoginRow struct {
 	PasswordHash string      `json:"password_hash"`
 }
 
-func (q *Queries) GetUserForPasswordLogin(ctx context.Context, username string) (GetUserForPasswordLoginRow, error) {
-	row := q.db.QueryRow(ctx, getUserForPasswordLogin, username)
-	var i GetUserForPasswordLoginRow
+func (q *Queries) GetUserForPasswordLoginByEmail(ctx context.Context, email string) (GetUserForPasswordLoginByEmailRow, error) {
+	row := q.db.QueryRow(ctx, getUserForPasswordLoginByEmail, email)
+	var i GetUserForPasswordLoginByEmailRow
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.AvatarKey,
+		&i.PasswordHash,
+	)
+	return i, err
+}
+
+const getUserForPasswordLoginByUsername = `-- name: GetUserForPasswordLoginByUsername :one
+SELECT u.id, u.username, u.email, u.avatar_key, up.password_hash
+FROM users u
+INNER JOIN user_passwords up ON up.user_id = u.id
+WHERE u.username = $1
+`
+
+type GetUserForPasswordLoginByUsernameRow struct {
+	ID           pgtype.UUID `json:"id"`
+	Username     string      `json:"username"`
+	Email        string      `json:"email"`
+	AvatarKey    string      `json:"avatar_key"`
+	PasswordHash string      `json:"password_hash"`
+}
+
+func (q *Queries) GetUserForPasswordLoginByUsername(ctx context.Context, username string) (GetUserForPasswordLoginByUsernameRow, error) {
+	row := q.db.QueryRow(ctx, getUserForPasswordLoginByUsername, username)
+	var i GetUserForPasswordLoginByUsernameRow
 	err := row.Scan(
 		&i.ID,
 		&i.Username,

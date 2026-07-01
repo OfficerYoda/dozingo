@@ -232,15 +232,15 @@ func TestNewPassword_Success(t *testing.T) {
 
 	// Logging in with the new password must work.
 	loginNew := doRequest(http.MethodPost, "/api/auth/login", map[string]any{
-		"username": "npuser",
-		"password": "freshpw98765",
+		"identifier": "npuser",
+		"password":   "freshpw98765",
 	})
 	assertStatus(t, loginNew, http.StatusOK)
 
 	// Logging in with the old password must fail.
 	loginOld := doRequest(http.MethodPost, "/api/auth/login", map[string]any{
-		"username": "npuser",
-		"password": "originalpw1",
+		"identifier": "npuser",
+		"password":   "originalpw1",
 	})
 	assertStatus(t, loginOld, http.StatusUnauthorized)
 
@@ -354,8 +354,8 @@ func TestNewPassword_InvalidatesAllSessions(t *testing.T) {
 	cookieA := userCookies[userIDStr]
 
 	loginResp := doRequest(http.MethodPost, "/api/auth/login", map[string]any{
-		"username": "multisess",
-		"password": "originalpw1",
+		"identifier": "multisess",
+		"password":   "originalpw1",
 	})
 	assertStatus(t, loginResp, http.StatusOK)
 	cookieB := extractSessionCookie(loginResp)
@@ -419,15 +419,15 @@ func TestChangePassword_Success(t *testing.T) {
 
 	// Logging in with the new password must work.
 	loginNew := doRequest(http.MethodPost, "/api/auth/login", map[string]any{
-		"username": "cpuser",
-		"password": "freshpw98765",
+		"identifier": "cpuser",
+		"password":   "freshpw98765",
 	})
 	assertStatus(t, loginNew, http.StatusOK)
 
 	// Logging in with the old password must fail.
 	loginOld := doRequest(http.MethodPost, "/api/auth/login", map[string]any{
-		"username": "cpuser",
-		"password": "originalpw1",
+		"identifier": "cpuser",
+		"password":   "originalpw1",
 	})
 	assertStatus(t, loginOld, http.StatusUnauthorized)
 }
@@ -450,8 +450,8 @@ func TestChangePassword_WrongOldPassword(t *testing.T) {
 
 	// Old password must still be valid (no change happened).
 	loginOld := doRequest(http.MethodPost, "/api/auth/login", map[string]any{
-		"username": "cpwrong",
-		"password": "originalpw1",
+		"identifier": "cpwrong",
+		"password":   "originalpw1",
 	})
 	assertStatus(t, loginOld, http.StatusOK)
 }
@@ -502,8 +502,8 @@ func TestChangePassword_InvalidatesOtherSessions(t *testing.T) {
 	cookieA := userCookies[userIDStr]
 
 	loginResp := doRequest(http.MethodPost, "/api/auth/login", map[string]any{
-		"username": "cpmulti",
-		"password": "originalpw1",
+		"identifier": "cpmulti",
+		"password":   "originalpw1",
 	})
 	assertStatus(t, loginResp, http.StatusOK)
 	cookieB := extractSessionCookie(loginResp)

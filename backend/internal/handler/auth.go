@@ -54,8 +54,8 @@ type registerInput struct {
 }
 
 type loginInputBody struct {
-	Username string `json:"username" required:"true" maxLength:"200"`
-	Password string `json:"password" required:"true" minLength:"8" maxLength:"72"`
+	Identifier string `json:"identifier" required:"true" maxLength:"200"`
+	Password   string `json:"password" required:"true" minLength:"8" maxLength:"72"`
 }
 
 type loginInput struct {
@@ -209,8 +209,8 @@ func (h *AuthHandler) register(ctx context.Context, in *registerInput) (*userOut
 
 func (h *AuthHandler) login(ctx context.Context, in *loginInput) (*loginOutput, error) {
 	result, err := h.svc.Login(ctx, service.LoginInput{
-		Username: in.Body.Username,
-		Password: in.Body.Password,
+		Identifier: in.Body.Identifier,
+		Password:   in.Body.Password,
 	})
 	if err != nil {
 		return nil, toHumaErr(err, "", "failed to login user")

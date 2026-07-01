@@ -38,9 +38,10 @@ describe('useAuth – fetchUser', () => {
 describe('useAuth – login', () => {
     it('sets user on successful non-2FA login', async () => {
         const mockUser = { user_id: '2', username: 'bob', email: null, avatar_url: null }
+        const mockLogin = vi.fn().mockResolvedValue(mockUser)
         vi.doMock('@/services/auth.services', () => ({
             getMe: vi.fn().mockRejectedValue(new Error()),
-            login: vi.fn().mockResolvedValue(mockUser),
+            login: mockLogin,
         }))
         vi.doMock('@/composables/useLoginTwoFactorModal', () => ({
             useLoginTwoFactorModal: () => ({ openLoginTwoFactorModal: vi.fn() }),
@@ -48,6 +49,34 @@ describe('useAuth – login', () => {
         const auth = await setup()
         await auth.login('bob', 'pw')
         expect(auth.state.user).toMatchObject({ user_id: '2' })
+    })
+
+    it('forwards username identifier to authService.login', async () => {
+        const mockLogin = vi.fn().mockResolvedValue({ user_id: '2', username: 'bob', email: null, avatar_url: null })
+        vi.doMock('@/services/auth.services', () => ({
+            getMe: vi.fn().mockRejectedValue(new Error()),
+            login: mockLogin,
+        }))
+        vi.doMock('@/composables/useLoginTwoFactorModal', () => ({
+            useLoginTwoFactorModal: () => ({ openLoginTwoFactorModal: vi.fn() }),
+        }))
+        const auth = await setup()
+        await auth.login('bob', 'pw')
+        expect(mockLogin).toHaveBeenCalledWith('bob', 'pw')
+    })
+
+    it('forwards email identifier to authService.login', async () => {
+        const mockLogin = vi.fn().mockResolvedValue({ user_id: '2', username: 'bob', email: 'bob@example.com', avatar_url: null })
+        vi.doMock('@/services/auth.services', () => ({
+            getMe: vi.fn().mockRejectedValue(new Error()),
+            login: mockLogin,
+        }))
+        vi.doMock('@/composables/useLoginTwoFactorModal', () => ({
+            useLoginTwoFactorModal: () => ({ openLoginTwoFactorModal: vi.fn() }),
+        }))
+        const auth = await setup()
+        await auth.login('bob@example.com', 'pw')
+        expect(mockLogin).toHaveBeenCalledWith('bob@example.com', 'pw')
     })
 
     it('opens 2FA modal and does not set user when two_fa_pending', async () => {

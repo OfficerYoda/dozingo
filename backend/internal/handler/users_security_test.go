@@ -65,8 +65,8 @@ func TestSecurityInformation_ActiveSessionsCount(t *testing.T) {
 
 	// Open a second session via login.
 	loginResp := doRequest(http.MethodPost, "/api/auth/login", map[string]any{
-		"username": "secmulti",
-		"password": "pw12345678",
+		"identifier": "secmulti",
+		"password":   "pw12345678",
 	})
 	assertStatus(t, loginResp, http.StatusOK)
 
@@ -88,8 +88,8 @@ func TestSecurityInformation_ActiveSessionsCount_ExcludesExpired(t *testing.T) {
 
 	// Open a second session via login, then log it out immediately.
 	loginResp := doRequest(http.MethodPost, "/api/auth/login", map[string]any{
-		"username": "secexpired",
-		"password": "pw12345678",
+		"identifier": "secexpired",
+		"password":   "pw12345678",
 	})
 	assertStatus(t, loginResp, http.StatusOK)
 	cookieB := extractSessionCookie(loginResp)
