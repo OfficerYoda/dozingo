@@ -1,6 +1,6 @@
 # Dozingo
 
-A bingo game for university lectures.
+A bingo game for university lectures. Live instance available under [dozingo.de](https://dozingo.de/).
 
 ---
 
